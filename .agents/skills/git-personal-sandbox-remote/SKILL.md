@@ -75,6 +75,17 @@ without re-implementing them:
   — sibling skill for when a **fork** IS desired (e.g., upstream contribution).
 - [`gitignore-rules`](../gitignore-rules/SKILL.md) — alternative for files that
   do not need version control at all.
+- [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md)
+  — higher-level composer that consumes this skill as the personal-destination
+  layer when fanning out a parallel branch's commits across multiple destinations.
+
+## Composition by Higher-Level Skills
+
+| Composer Skill | Role of this skill in the pipeline |
+|---|---|
+| [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md) §3c | This skill owns sandbox creation, dual-remote setup, and push hygiene; the decommission composer adds the **rebuild-on-merge-base** fallback when the sandbox already contains the parallel branch's history from an earlier broad `--all` push. |
+| [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md) | This skill owns the dual-remote contract; the restack composer keeps the sandbox stacked on top of a moving team branch via `rebase --onto` and a six-axis equality audit before the gated `--force-with-lease` push. |
+| [`git-personal-content-extraction`](../git-personal-content-extraction/SKILL.md) | **Prerequisite** for the extraction composer: the `personal` remote and `personal/sandbox` branch created by THIS skill are where the extracted personal commits are slot-inserted (at their original chronological position) at the end of each purification round. |
 
 ---
 
@@ -85,8 +96,9 @@ without re-implementing them:
 | VCS | Git 2.x+ |
 | Shell | PowerShell 5.1+ or POSIX shell |
 | GitHub access | Permission to create repositories under your account on the target host (github.com or GHE) |
-| Auth (path A) | `gh` CLI authenticated to the target host |
-| Auth (path B) | Personal Access Token (PAT) with `repo` scope, exported via `$env:GITHUB_TOKEN` (NEVER pasted in chat) |
+| Auth (Route A — preferred) | Git Credential Manager + PAT stored in OS keychain (Windows Vault / macOS Keychain / libsecret). MANDATORY for LFS-enabled remotes. |
+| Auth (Route B — non-LFS only) | Personal Access Token (PAT) with `repo` (+ `delete_repo` for teardown) scope, exported via `$env:GITHUB_TOKEN` (process scope) or `[Environment]::SetEnvironmentVariable('GITHUB_TOKEN', ..., 'User')` (persistent) — NEVER pasted in chat |
+| Auth (Route C) | `gh` CLI authenticated to the target host |
 
 ---
 
@@ -142,12 +154,60 @@ part).
 | **B — REST API + PAT** | `gh` unavailable OR not authenticated on the target host | Phase 1B |
 
 For Path B, the user MUST generate a PAT at `https://<host>/settings/tokens`
-with scope `repo` and export it as an environment variable in the current
-shell — NEVER paste it in chat:
+with scope `repo` and export it as an environment variable — NEVER paste it
+in chat. Use one of two methods:
+
+**Method 1 — Process-scope (single shell, fastest):**
 
 ```powershell
-$env:GITHUB_TOKEN = '<paste-PAT-here>'
+# Use Read-Host -AsSecureString to avoid the value appearing in shell history
+$secure = Read-Host -AsSecureString 'Paste PAT'
+$env:GITHUB_TOKEN = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+  [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
 ```
+
+**Method 2 — User-scope (persistent across shells, survives reboot):**
+
+```powershell
+$secure = Read-Host -AsSecureString 'Paste PAT'
+$plain  = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+  [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+[Environment]::SetEnvironmentVariable('GITHUB_TOKEN', $plain, 'User')
+```
+
+> [!IMPORTANT]
+> **Cross-shell visibility gotcha (Windows):** After `SetEnvironmentVariable
+> (..., 'User')`, the variable is NOT visible in the current shell or in
+> already-running child shells via `$env:GITHUB_TOKEN`. Only freshly-spawned
+> processes inherit the new User-scope value. The agent's execution shell
+> is often a long-lived child that does NOT see updates made from a
+> different terminal. Two recovery paths:
+>
+> 1. **Restart the agent's shell** (close + reopen the integrated terminal), OR
+> 2. **Read directly from the registry-backed User scope** without relying on
+>    process inheritance:
+>
+>    ```powershell
+>    $t = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User')
+>    # Use $t in subsequent commands instead of $env:GITHUB_TOKEN
+>    ```
+>
+> The direct-read pattern is the agent's preferred fallback because it
+> avoids the shell-restart round trip.
+
+**Auth probe** — verify the PAT works against the correct host BEFORE
+proceeding to Phase 1:
+
+```powershell
+$t = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User')
+if (-not $t) { $t = $env:GITHUB_TOKEN }
+Invoke-RestMethod -Uri 'https://<api-base>/user' `
+  -Headers @{ 'Authorization' = "Bearer $t"; 'User-Agent' = 'copilot-agent' } `
+  | Select-Object login
+```
+
+The `login` field MUST equal `<user>` from Phase 0b. A mismatch means the PAT
+belongs to a different identity — STOP and reissue.
 
 > [!CAUTION]
 > If a PAT is ever pasted into chat or any persisted artifact, it MUST be
@@ -273,30 +333,97 @@ git -C <repo-path> commit -m "<type>(<scope>): <subject>"
 
 ### Phase 4 — Push to `personal` (PAT-Safe)
 
-#### 4a — Path A: `gh` CLI authenticated → simple push with `-u`
+> [!CAUTION]
+> **LFS-enabled remotes leak embedded-PAT URLs UNCONDITIONALLY.**
+> If the remote has Git LFS enabled (most GitHub Enterprise repos with binary
+> assets do), `git-lfs` emits an informational stderr line on every push:
+>
+> ```text
+> Locking support detected on remote "https://<user>:<PAT>@<host>/<user>/<repo>.git".
+> ```
+>
+> This line contains the **full embedded-PAT URL** and is written BEFORE any
+> stderr-to-file redirect can capture it in some shells (it leaks to the
+> parent terminal regardless of `2> file`). Treat any embedded-PAT push to
+> an LFS-enabled remote as a guaranteed PAT compromise.
+>
+> **Detection** — if Phase 0c's auth probe response indicates LFS, OR if
+> `git -C <repo> lfs ls-files --all` returns ≥1 row, OR if the source repo
+> uses LFS, MANDATE **Route A (Credential Manager)** below. Route B
+> (embedded URL) is FORBIDDEN for LFS remotes.
 
-When `gh` (or a Credential Manager bound to the correct identity) is
-authenticated, the `-u` flag is safe because credentials come from the helper,
-not from the URL:
+#### 4a — Route A: Git Credential Manager (MANDATORY for LFS remotes; RECOMMENDED otherwise)
+
+Credential Manager stores the PAT in the OS keychain (Windows Credential
+Vault / macOS Keychain / `libsecret`), bound to the host. The git URL stays
+clean (no `user:PAT@host` form), so no leak surface exists in stderr,
+`.git/config`, terminal scrollback, or chat transcripts.
+
+**Setup (once per host)**:
 
 ```powershell
+# 1. Enable Credential Manager globally
+git config --global credential.helper manager
+
+# 2. Clear any prior cached credential for this host
+cmdkey /list | Select-String <host>            # show current binding(s)
+cmdkey /delete:git:https://<host>              # remove the old one if wrong
+
+# 3. Clear any leaked PAT from environment (defense-in-depth)
+[Environment]::SetEnvironmentVariable('GITHUB_TOKEN', $null, 'User')
+Remove-Item Env:\GITHUB_TOKEN -ErrorAction SilentlyContinue
+
+# 4. Trigger the credential dialog via a cheap authenticated op
+git -C <repo-path> ls-remote personal
+#   → Windows "Sign in" dialog appears
+#   → Choose "Token" → paste fresh PAT → check "Save credential"
+#   → PAT now lives in Credential Vault, bound to <host>
+
+# 5. Verify storage
+cmdkey /list | Select-String <host>
+#   → must show: Target: git:https://<host>
+```
+
+**Push**:
+
+```powershell
+# -u is now SAFE because the URL contains no credentials
 git -C <repo-path> push -u personal personal/<purpose>
 ```
 
-#### 4b — Path B: PAT only → push WITHOUT `-u`, then set tracking separately
+**Retrieving the stored PAT for a one-shot REST API call** (e.g., to PATCH
+repo settings) without re-prompting the user:
 
-When authentication is via a PAT embedded in a one-shot URL, the `-u` flag is
-**FORBIDDEN** — it would write the embedded-PAT URL into `.git/config` as the
-branch's upstream tracking metadata (a second PAT leak surface beyond the
-`[remote]` URL). See
+```powershell
+$cred = (Write-Output "protocol=https`nhost=<host>`n`n" | git credential fill 2>$null)
+$pat  = (($cred | Select-String '^password=').Line -replace '^password=', '')
+# … use $pat in Invoke-RestMethod Authorization header …
+$pat = $null; [GC]::Collect()    # discard immediately
+```
+
+#### 4b — Route B: Embedded-PAT URL (FORBIDDEN for LFS remotes; tolerated for non-LFS one-shots)
+
+When the remote is **not** LFS-enabled and Credential Manager is unavailable
+(headless CI, ephemeral environment), the embedded-PAT URL pattern is
+tolerated with strict safeguards.
+
+The `-u` flag is **FORBIDDEN** — it would write the embedded-PAT URL into
+`.git/config` as the branch's upstream tracking metadata (a second PAT leak
+surface beyond the `[remote]` URL). See
 [`git-github-auth-fallback`](../git-github-auth-fallback/SKILL.md) §3.2.1.
 
 The correct two-step pattern:
 
 ```powershell
-# 1. Push WITHOUT -u using a one-shot URL with embedded PAT
-$AdHocUrl = "https://<user>:$env:GITHUB_TOKEN@<host>/<user>/<repo>.git"
-git -C <repo-path> push $AdHocUrl personal/<purpose>:personal/<purpose>
+# 1. Push WITHOUT -u using a one-shot URL with embedded PAT, stderr to file
+$t = [Environment]::GetEnvironmentVariable('GITHUB_TOKEN','User')
+$AdHocUrl = "https://<user>:$t@<host>/<user>/<repo>.git"
+$log = "$env:TEMP\push_$([guid]::NewGuid()).log"
+& git -C <repo-path> push $AdHocUrl personal/<purpose>:personal/<purpose> 2> $log
+# Display sanitized stderr (PAT redacted), then delete the log
+(Get-Content $log -Raw) -replace [regex]::Escape($t), '<PAT-REDACTED>'
+Remove-Item $log
+$t = $null; [GC]::Collect()
 
 # 2. Set upstream tracking via the CLEAN named remote (no PAT)
 git -C <repo-path> fetch personal
@@ -311,10 +438,90 @@ The `config --get` output MUST be the literal string `personal` — NOT a URL.
 If it shows a URL, recover per
 [`git-github-auth-fallback`](../git-github-auth-fallback/SKILL.md) §3.2.2.
 
+> [!WARNING]
+> The stderr-redaction in step 1 only works for **non-LFS remotes**. For LFS
+> remotes git-lfs writes its "Locking support detected" line to the parent
+> terminal in a way that bypasses the `2> $log` redirect — the PAT will leak
+> to the terminal regardless. Use Route A.
+
 > [!CAUTION]
 > PowerShell may render `git push`'s stderr as a red error block even when the
 > push succeeded — look for `[new branch]` in the output to confirm success.
 > Do not assume failure from the colored framing alone.
+
+#### 4c — Mid-push Recovery: Default-Branch Lock
+
+If you push more than one branch in a single `git push --all` (or push two
+branches sequentially before configuring), the **first branch becomes the
+remote's default branch** automatically. You then cannot delete it via
+`git push --delete` — the remote rejects with:
+
+```text
+! [remote rejected]  <branch> (refusing to delete the current branch: refs/heads/<branch>)
+```
+
+**Recovery** — switch the default branch via REST PATCH first, then delete:
+
+```powershell
+# Pull PAT from Credential Manager (see Route A snippet above for the helper call)
+$headers = @{ 'Accept'='application/vnd.github+json'; 'User-Agent'='copilot-agent'; 'Authorization'="Bearer $pat" }
+$body    = @{ default_branch = 'personal/<purpose>' } | ConvertTo-Json
+
+# GitHub Enterprise: <api-base> = <host>/api/v3
+# github.com:        <api-base> = api.github.com
+Invoke-RestMethod -Method Patch `
+  -Uri "https://<api-base>/repos/<user>/<repo>" `
+  -Headers $headers -ContentType 'application/json' -Body $body
+
+# Now the delete succeeds
+git -C <repo-path> push personal --delete <unwanted-branch>
+```
+
+This applies whenever `git push --all`, `git push --mirror`, or an accidental
+multi-branch push contaminates the personal remote with team branches.
+Always prefer **single-branch pushes** (`git push personal personal/<purpose>`)
+to avoid this trap entirely.
+
+#### 4d — LFS Object Completeness Pre-Push
+
+A personal sandbox of an LFS-enabled team repo is incomplete (and effectively
+read-only on the binary assets) unless all LFS objects are uploaded. The
+clone may be a [git-lfs-selective-clone](../git-lfs-selective-clone/SKILL.md)
+style pointer-only clone, so most objects are missing locally.
+
+**Audit BEFORE the first push to personal**:
+
+```powershell
+# Total unique LFS pointers across all reachable history
+git -C <repo-path> lfs ls-files --all | Measure-Object | Select-Object -ExpandProperty Count
+
+# fsck the entire object graph
+git -C <repo-path> lfs fsck
+```
+
+> [!IMPORTANT]
+> The `*` vs `-` marker in `git lfs ls-files --all` indicates **working-tree
+> presence at HEAD**, NOT object-store presence. A `-` does NOT mean the
+> object is missing from `.git/lfs/objects/`. Use `git lfs fsck` (which
+> walks the whole object graph) for ground truth.
+
+**Fetch missing objects from team origin** (cheap, uses team-origin
+credentials):
+
+```powershell
+git -C <repo-path> lfs fetch --all origin
+```
+
+**Verify on-disk storage** matches the expected count and size:
+
+```powershell
+$sz = (Get-ChildItem "<repo-path>\.git\lfs\objects" -Recurse -File | Measure-Object -Property Length -Sum)
+"files: $($sz.Count)  size: $([math]::Round($sz.Sum/1MB,2)) MB"
+```
+
+Only after `lfs fsck` returns OK and all object versions are local should
+you push to personal. Otherwise the push hits `(missing) <oid>` mid-upload
+and aborts.
 
 ---
 
@@ -327,13 +534,26 @@ Once both branches exist, your day-to-day routine becomes:
 | Personal-file work (build config, sandbox) | Stay on `personal/<purpose>` |
 | Team-branch work | `git checkout <team-branch>` (your personal files vanish from the working tree — expected; they only exist on the personal branch) |
 | Team commit complete | `git push origin <team-branch>` (NEVER `git push --all`) |
-| Rebase personal branch onto latest team work | `git checkout personal/<purpose>; git rebase <team-branch>; git push personal --force-with-lease` |
+| Rebase personal branch onto latest team work | Delegate to the [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md) composer — it runs `rebase --onto`, resolves DU conflicts, and audits content equality via six axes before the gated `--force-with-lease` push |
 
 > [!WARNING]
 > NEVER use `git push --all` or `git push --mirror` — both would push the
 > `personal/<purpose>` branch to `origin` (the team repo), defeating the
 > entire purpose of this skill. Always push branch-by-branch with explicit
 > remote and refspec.
+
+> [!IMPORTANT]
+> **Personal-Repo Purity Principle.** The personal repo MUST contain ONLY
+> branches that do not exist on the team origin. Pushing team branches to
+> personal (via `--all`, `--mirror`, or by mistake) violates the skill's
+> contract — the personal repo's `git log` should never duplicate what
+> origin already preserves. If contamination happens, recover via Phase 4c
+> (default-branch swap + `git push personal --delete <team-branch>`).
+>
+> **Tags follow the same rule.** Do NOT push team tags to personal
+> (`git push personal --tags` is FORBIDDEN). Tags created from personal
+> branches and unique to the personal workflow MAY be pushed individually:
+> `git push personal <tag-name>`.
 
 ### 5a — Guardrail: Prevent accidental `personal/*` push to `origin`
 

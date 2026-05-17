@@ -63,7 +63,10 @@ The `SKILL.md` MUST include:
 1. **YAML Frontmatter**: name, description, category. Skill names MUST use lowercase letters, numbers, and hyphens.
    The frontmatter block (`---` ... `---`) MUST be the FIRST content in the file (line 1 column 1, no BOM, no
    preceding blank lines, **no preceding HTML comments**); any preceding character makes the agentskills.io lint
-   validator emit `Skill must provide a name` even when the YAML is otherwise valid.
+   validator emit `Skill must provide a name` even when the YAML is otherwise valid. When a workspace tradition
+   uses a namespaced Skill ID containing slashes or underscores (e.g., `dgs_ice/foo_bar`), that form is FORBIDDEN
+   in `name:` (validator enforces `^[a-z0-9-]+$`) — put the hyphenated single-segment form in `name:` and keep
+   the namespaced form in the body under `> **Skill ID:** ...` where it is not lint-validated.
 2. **Environment & Dependencies**: Mandated verification logic (`which`, version checks).
 3. **Operational Logic**: The EXACT steps provided by the user (**Zero Omission**).
 4. **SSOT Compliance**: The skill MUST NOT duplicate technical standards

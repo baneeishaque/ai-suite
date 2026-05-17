@@ -98,6 +98,9 @@ Visualize recent history and check for stashed work.
    git stash list
    ```
    * Lists all stashed changes that might need to be popped or reviewed.
+   * If any entries surface with unclear or stale origin, delegate to
+     [`git-stash-triage`](../git-stash-triage/SKILL.md) for hang-free
+     inspection, classification, and disposition.
 
 ***
 

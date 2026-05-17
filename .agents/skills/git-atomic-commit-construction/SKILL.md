@@ -819,7 +819,9 @@ PAGER=cat git stash drop
 > **Stash preservation rule:** `git stash drop`/`pop`/`clear` are destructive and require explicit per-stash user
 > authorization — even inside a "cleanup" batch. See
 > [`git-operation-rules.md` §5 — Stash Preservation](../../../ai-agent-rules/git-operation-rules.md) for the
-> Inventory → Inspect → Authorize → Act protocol and recovery window.
+> Inventory → Inspect → Authorize → Act protocol and recovery window. For triage of pre-existing stashes whose
+> origin is unclear (Bucket A/B/C/D classification, hang-free inspection, apply-not-pop), use
+> [`git-stash-triage`](../git-stash-triage/SKILL.md).
 
 #### 9g — Corrupted Rebase State Recovery
 

@@ -79,6 +79,13 @@ audit → cherry-pick → parity → promotion → cleanup pipeline.
 | [`git-commit-edit/SKILL.md` Step 7b / Step 8](../git-commit-edit/SKILL.md) | Push-authorization gate; cleanup-authorization gate (re-applied to the promotion phase here) |
 | [`git-divergence-audit/SKILL.md` §3](../git-divergence-audit/SKILL.md#3-asset-auditing-unit-by-unit) | When a deeper categorization (Technical / Documentation / Noise) of canonical-only commits is needed before deciding to cherry-pick |
 
+> **Inverse use-case**: When the parallel branch's commits do NOT belong on a
+> single destination but must be **fanned out** across canonical + opt-in +
+> personal sandbox (e.g., the parallel branch mixes functional code, optional
+> diagnostics, and personal docs), use
+> [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md)
+> instead of this skill.
+
 ## Source Conversations
 
 | Date | Topic |
@@ -459,6 +466,18 @@ source.
   upstream rewriter (per-commit branches); consult before promoting
   to ensure each branch's PR has merged or is intentionally being
   fast-forwarded.
+* [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) —
+  downstream cascade. Once this skill advances the canonical tip, any
+  branch (diagnostics, opt-in instrumentation, personal sandbox,
+  feature stack) still rooted on the pre-promotion canonical tip must
+  be restacked via the cascade composer.
+* [`git-absorbed-branch-decommission`](../git-absorbed-branch-decommission/SKILL.md) —
+  downstream cleanup. After this skill promotes `<refined>` onto
+  `<canonical>`, the original `<refined>` branch is fully absorbed by
+  `<canonical>` (by SHA in the local clone, and typically by patch-id
+  if a CI/integration team has its own cherry-pick path). Use the
+  absorbed-decommission skill to delete `<refined>` safely with a
+  verified audit trail.
 
 ***
 

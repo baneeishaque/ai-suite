@@ -22,6 +22,18 @@ Layer 1: System Tool Detection & PATH Verification  (base)
     └── Layer 3: Post-Install PATH Verification     (depends on Layer 2)
 ```
 
+> **Corporate-environment fallback:** On a corporate workstation where `winget` / `scoop`
+> / `choco` are disallowed but the organization mounts a shared tool root
+> (`<toolbase>`, e.g. a path like `C:\<toolbase>\<package>\<version>\`), Layer 2 of this
+> skill is not applicable — the organization itself is the package manager. In that case,
+> consult your organization's internal skill library (if one exists) for a
+> toolbase-interpreter-discovery skill that enumerates `<toolbase>\<package>\` version
+> directories, picks the highest stable version, resolves the executable, and prepends
+> its directory to `$env:Path` for the current session; then re-run Layer 1 / Layer 3 of
+> this skill against the activated `PATH`. This skill intentionally does NOT link to any
+> specific organization's internal library (per
+> [`redaction-portability`](../redaction-portability/SKILL.md) §0.1).
+
 ***
 
 ## 1. Layer 1 — Detection & PATH Verification

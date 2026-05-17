@@ -100,3 +100,16 @@ Once reconciliation is planned, verify content consistency between the Tips.
 - Follows [Skill Factory Protocol](../skill-factory/SKILL.md).
 - Compliance: 100% Rule 1.1 (tilde-portable).
 - Compatibility: PowerShell 5.1/Core.
+
+***
+
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Role of this skill in the pipeline |
+|---|---|
+| [`git-branch-promotion`](../git-branch-promotion/SKILL.md) §2 | Deep §3 categorization of canonical-only commits before deciding which to cherry-pick onto the refined branch. |
+| [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md) §1 | Identifies the merge-base and the parallel-branch-unique commit list that the decommission composer then classifies by content type and fans out to multiple destinations. |
+| [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md) §1 | Supplies the merge-base and per-side commit lists used as `rebase --onto` upstream and as the input for the six-axis equality audit between pre- and post-rebase sandbox tips. |
+| [`git-absorbed-branch-decommission`](../git-absorbed-branch-decommission/SKILL.md) Phase 1–2 | Supplies the ancestor-check (`rev-list --count`) and patch-id-equivalence (`log --cherry-pick`) primitives used to prove a stale branch's content is already absorbed by a live sibling before deletion. |
+| [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) Phase 1 | Supplies the per-branch merge-base discovery used to identify which dependents are still rooted on the OLD tip of a moved base branch. |
+

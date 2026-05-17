@@ -313,15 +313,48 @@ git show HEAD
 #### 10b — Tree Parity Check (Rule 3.2)
 
 After the final commit in the refinement process, the current branch **MUST**
-be compared to the backup:
+be compared to the backup. The check has three layers — each catches a class
+of regression the cheaper layer misses:
+
+**Layer 1 — file-level diff** (catches missing or extra file changes):
 
 ```bash
-git diff <current-branch> <backup-branch>
+git diff --stat <current-branch> <backup-branch>
 ```
 
-**Constraint:** The diff **MUST** be empty. Any discrepancy indicates a
-regression introduced during refinement.
-**Expected:** Empty diff (tree parity maintained).
+Expected: empty (unless the refinement was intended to change file contents,
+in which case ONLY the planned files appear).
+
+**Layer 2 — bidirectional commit coverage** (catches mega-commit folding, where
+`git commit --amend` mid-rebase silently absorbed multiple original commits
+into one):
+
+```bash
+git cherry <current-branch> <backup-branch>   # commits unique to backup
+git cherry <backup-branch> <current-branch>   # commits unique to current
+```
+
+For each commit in either output, verify it corresponds to an intentionally
+dropped, split, or reworded commit per the refinement plan. An unexpected
+"unique-to-backup" commit means its content was silently folded into another
+commit — investigate before pushing.
+
+**Layer 3 — per-file blob-hash conservation** (byte-exact final layer for files
+that should be untouched by the refinement):
+
+```bash
+for F in <list-of-non-target-files>; do
+  b=$(git rev-parse <backup-branch>:$F)
+  c=$(git rev-parse <current-branch>:$F)
+  [ "$b" != "$c" ] && echo "[DIFF] $F  backup=$b  current=$c"
+done
+```
+
+Expected: empty output. Any line printed indicates the refinement silently
+mutated a file outside its planned scope — typically caused by an `Out-File`
+/ `Set-Content` re-encoding during a conflict resolution.
+
+**Constraint:** All three layers MUST pass before any force-push.
 
 ---
 
@@ -454,6 +487,9 @@ The agent is **BLOCKED** from:
 | Protocol file has broken phase numbering mid-history | Apply micro-renumbering within the same atomic unit |
 | Cherry-pick conflicts during dependent preservation | Reference `git show <original-hash>` to preserve intent |
 | Tree parity check shows differences | Regression during refinement — re-examine extraction steps |
+| Bidirectional `git cherry` shows an unexpected unique-to-backup commit | Mega-commit folding — typically caused by `git commit --amend` mid-rebase after a conflict-resolving `git add`, which silently rewrites HEAD instead of the conflicted commit. Recovery: `rebase -i edit <mega-commit>` + `git reset HEAD~` + re-create the original commits as separate atomic units, restoring `GIT_AUTHOR_DATE` / `GIT_COMMITTER_DATE` from the originals. |
+| Per-file blob hash drifts on a file outside the refinement plan | Likely an `Out-File` / `Set-Content` re-encoding during conflict resolution (BOM injection or line-ending normalization). Restore byte-exactly with `git checkout <backup>:<path> -- <path>` or `Copy-Item -Force` from a byte-preserving source, then re-verify with `git hash-object`. |
+| Need to drop a commit that deletes file X, when a later commit re-creates X from a stale, diverged copy | Delegate to the [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md) composer — it adds the section-by-section blob divergence audit, byte-exact union-blob splice, and Lesson-2-safe (no `--amend` mid-rebase) conflict resolution. |
 | Remote diverged during long refinement | Fetch and categorize remote commits before force-push |
 | Generated file manually edited in refinement | Check for auto-generation markers first |
 | Commit message says "update metadata" without specifics | Read actual diffs before writing messages |

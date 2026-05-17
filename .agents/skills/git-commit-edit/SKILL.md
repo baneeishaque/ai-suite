@@ -562,7 +562,12 @@ The agent is **BLOCKED** from:
 | Stash pop conflicts with replayed commits | Resolve manually, `git add`, then `git stash drop` |
 | Amended commit has unexpected file count | Compare `git show --stat HEAD` against the pre-edit plan; re-amend if needed |
 | `Deletion of directory failed` during rebase | Answer `n` to retry prompt — Git will proceed; the directory is cleaned up later |
+| `git commit --amend` mid-rebase after `git add` on a conflicted commit | The conflicted commit has NOT yet been applied — `--amend` silently rewrites the **previously applied** commit (HEAD), folds the staged conflict-resolved content into the wrong commit, and the next `git rebase --continue` skips the conflicted commit because there is no remaining diff. Use `git rebase --continue` directly (preserves the conflicted commit's original message and metadata); reword via a second `rebase -i reword` afterwards. |
+| Conflict-resolved file written with PowerShell `Out-File` / `Set-Content` | These cmdlets re-encode on Windows (BOM injection, line-ending normalization, UTF-8 mangling) and break `git hash-object` byte parity. Use `Copy-Item -Force` from a byte-preserving source or `[System.IO.File]::WriteAllBytes($path, $bytes)`. Always verify with `git hash-object <path>` before `git add`. |
+| Dropping a commit that deletes file X, when a later commit re-creates X from a stale copy | Triggers an `add/add` conflict on X. Auto-resolving with "ours" or "theirs" silently loses unique content. Delegate to [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md) for the section-by-section divergence audit + union-blob splice + Lesson-2-safe conflict resolution. |
 | Force push overwrites teammate's work | Always use `--force-with-lease` instead of `--force` to prevent overwriting unknown remote commits |
+| `fatal: '<branch>' is already used by worktree at ...` when starting rebase | The target branch is checked out in another worktree (the main IDE window, typically). Use a detached HEAD in an isolated `C:\temp\gitwork-*` worktree (`git worktree add --detach`), perform the rebase there, then push the new tip by SHA: `git push origin <new-sha>:refs/heads/<branch> --force-with-lease`. After Phase 7b, sync the main worktree: `git checkout <branch>; git reset --hard origin/<branch>`. See [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) §4.6. |
+| IDE file-lock kills checkout mid-stream (`Deletion of directory failed`) | VS Code / Eclipse / JVM is indexing the workspace. Recover the partial checkout with `git reset --hard HEAD`, then redo the operation in an isolated `C:\temp\gitwork-*` worktree per [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) §4.6. |
 
 ---
 
@@ -577,6 +582,7 @@ discovery, classification, or batch logic:
 | [`git-commit-message-reword`](../git-commit-message-reword/SKILL.md) | Reads the project's commit-message rules, classifies the target commit's diff, authors a Conventional Commits message, and drives this skill's `reword` mode for a single commit. |
 | [`git-commit-message-bulk-reword`](../git-commit-message-bulk-reword/SKILL.md) | Range composer over `git-commit-message-reword`; amortizes the per-commit primitive across a contiguous commit range via a shared map and one rebase invocation. |
 | [`git-commit-identity-rewrite`](../git-commit-identity-rewrite/SKILL.md) | Rewrites author + committer identity (and optionally dates) of one or more commits by copying from a source commit; handles the parent-repo + submodule pointer cascade. |
+| [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md) | Drives this skill's `drop` mode for a commit whose deleted file is recreated downstream from a stale, diverged copy; adds the divergence audit, union-blob splice, and Lesson-2-safe conflict resolution that the base skill does not own. |
 
 ## Post-Processing
 

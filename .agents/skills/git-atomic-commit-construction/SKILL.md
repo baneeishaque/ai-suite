@@ -578,6 +578,49 @@ project does not require IDE metadata to be version-controlled. If
 the project *does* track them, coordinate with the team on which
 metadata files are shared vs personal before discarding.
 
+#### 3h — Hunk-Stage Backup Cleanup (Sidecar Discipline)
+
+Every `git add -p` session, every in-editor `e` (edit-hunk) action,
+and every programmatic `git apply` with a manually authored patch
+may leave a sidecar file on disk: `<file>.orig`, `<file>.bak`,
+`<file>.full.bak`, `<file>.rej`, `<file>.staging-tmp`, etc. These
+sidecars MUST be detected and disposed of before the commit lands,
+never absorbed into it.
+
+Four-step protocol (Detect → Classify → Verify → Never-`add`):
+
+1. **Detect** after each `git add -p` and after any `e`/`apply`:
+
+   ```powershell
+   git status --short | Select-String -Pattern '\.(orig|bak|full\.bak|rej|staging-tmp)$'
+   ```
+
+   The output MUST be empty before the commit.
+
+2. **Classify** every detected sidecar:
+   - **Recoverable** — content the agent or user still needs (e.g., a
+     `.rej` requiring manual re-application, or a `.full.bak` from
+     an aborted edit). Move it OUT of the working tree (e.g., to
+     `<workspace-root>/../scratch/` or a personal-sandbox branch).
+   - **Disposable** — content already represented in the index, HEAD,
+     or another branch. Delete directly.
+
+3. **Verify** before committing: re-run the §3h detect command and
+   confirm zero matches. Sidecars MUST NOT be added to `.gitignore`
+   as a substitute for cleanup — that hides the symptom and lets the
+   next session re-encounter the same disposal decision blind.
+
+4. **NEVER `git add` a sidecar** "to clean up history later". The
+   commit itself is the disposal decision; once a sidecar reaches the
+   index, the only safe recovery is `git reset HEAD -- <sidecar>`
+   followed by the classification above.
+
+This rule composes with §2h (Pre-Execution Safety Stash): the safety
+stash captures the pre-execution working tree once; the sidecar
+cleanup happens per `add -p` invocation inside that window.
+
+See [Atomic Commit Construction Rules §4.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#43-hunk-stage-backup-cleanup-sidecar-discipline).
+
 ---
 
 ### Step 4 — Formatting & Structural Partitioning

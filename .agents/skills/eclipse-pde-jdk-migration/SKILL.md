@@ -291,6 +291,17 @@ Maven-style name), then **rewriting `MANIFEST.MF` to the legacy name
 breaks CI**. Any fix MUST be local to the IDE — i.e., scoped to a
 `.target` file that is *not* consumed by the Tycho/Maven pipeline.
 
+> **When the CI side is the one that breaks** (resolver fails on the
+> Maven-Central-named bundle because the consumer's `MANIFEST.MF`
+> still asks for the Orbit-style BSN), the dual problem applies:
+> see [`osgi-require-bundle-to-import-package`](../osgi-require-bundle-to-import-package/SKILL.md),
+> which migrates the consumer's `Require-Bundle: <bsn>` to
+> `Import-Package: <pkg>` so the same source tree resolves on both
+> sides of the rename without any target-platform alias. Pick this
+> §6 path when you can change the target but not the manifests; pick
+> the other skill when you can change the manifests but not the
+> target.
+
 ### 6.3 Fix — PDE Maven location with bnd `<instructions>` override
 
 Add a fourth `<location>` to the active `.target` that fetches the

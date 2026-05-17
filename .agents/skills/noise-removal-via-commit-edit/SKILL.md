@@ -141,8 +141,8 @@ some projects intentionally track IDE metadata.
 ### Noise Files (<count> files)
 | # | File | Noise Type |
 |---|---|---|
-| 1 | `com.bosch.example/.project` | m2e builder/nature injection |
-| 2 | `com.bosch.example2/.project` | m2e builder/nature injection |
+| 1 | `com.acme.example1/.project` | m2e builder/nature injection |
+| 2 | `com.acme.example2/.project` | m2e builder/nature injection |
 | ... | ... | ... |
 
 ### Functional Files (<count> files, preserved)

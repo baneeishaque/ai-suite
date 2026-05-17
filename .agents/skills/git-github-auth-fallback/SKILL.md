@@ -211,6 +211,54 @@ The PAT must have scope:
 - **`repo`** — for write access to private repos and to public repos when you are not a collaborator.
 - **`workflow`** — for pushing changes that modify `.github/workflows/*`.
 
+#### 3.2.3 FORBIDDEN — embedded-PAT URL push to an LFS-enabled remote
+
+Git LFS is GitHub Enterprise's default storage for binary assets. When the
+target remote is LFS-enabled, `git-lfs` emits an informational stderr line
+on every push:
+
+```text
+Locking support detected on remote "https://<user>:<PAT>@<host>/<owner>/<repo>.git".
+Consider enabling it with:
+  $ git config lfs.https://<user>:<PAT>@<host>/<owner>/<repo>.git/info/lfs.locksverify true
+```
+
+The line is written by `git-lfs` directly to the controlling terminal in
+a way that bypasses parent-shell `2> $logFile` redirection on Windows /
+PowerShell. The embedded PAT therefore leaks to:
+
+1. The terminal scrollback (visible to anyone with desktop access)
+2. The agent's tool-call transcript (which forwards terminal output as
+   conversation context)
+3. Any chat client rendering the transcript
+
+Even with sanitization on the parent shell's captured output, the
+unsanitized form reaches the chat client first.
+
+**Detection** — assume the remote is LFS-enabled if ANY of the following hold:
+
+- The repo contains a `.gitattributes` line with `filter=lfs`
+- `git -C <repo> lfs ls-files --all` returns ≥ 1 row
+- The remote hostname is a GitHub Enterprise instance with binary assets
+  (most internal corp deployments)
+
+**Mandate** — for LFS-enabled remotes, use **Git Credential Manager** (the
+URL stays clean, the PAT lives in the OS keychain). See
+[`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)
+§4a for the dialog-trigger sequence and the `git credential fill` pattern
+for retrieving the stored PAT for one-shot REST calls.
+
+**If a PAT leak via this path has already occurred:**
+
+1. **Revoke immediately** at `https://<host>/settings/tokens` — the leaked
+   PAT MUST be considered compromised regardless of how briefly it appeared.
+2. Clear local exposures via §3.2.2.
+3. Wipe terminal scrollback (`Clear-Host` is NOT sufficient — close the
+   terminal entirely; some shells persist scrollback to disk).
+4. Reissue a fresh PAT and bind via Credential Manager per
+   [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)
+   §4a — do NOT export the new PAT to any environment variable.
+
 ### 3.3 Path C — Switch the remote to SSH
 
 When the user has an SSH key already associated with the correct GitHub account, swap the protocol:

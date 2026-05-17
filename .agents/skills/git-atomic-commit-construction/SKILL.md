@@ -336,6 +336,31 @@ into batches of at most 5 commits and request a separate `"start"` per batch:
 
 See [Atomic Commit Construction Rules §3.2](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#32-batch-by-batch-authorization-long-sequences).
 
+#### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+
+Before executing the first commit of any sequence of two or more commits
+(including any batch governed by §2g), capture an apply-not-pop safety
+snapshot of the full working-tree state (tracked modifications, staged
+hunks, AND untracked files) and re-apply it immediately so execution
+proceeds against an unchanged tree. The snapshot persists across the
+entire sequence and is verified-then-dropped only at end-of-session.
+
+Delegate the full three-phase protocol (Snapshot → Hold → Verify-and-
+Release) to [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md):
+
+- **Phase 1 — Snapshot** before the first commit: classify any
+  pre-existing stashes via [`git-stash-triage`](../git-stash-triage/SKILL.md),
+  push with `git stash push -u -m "safety: ..."`, immediately
+  `git stash apply` (NEVER `pop`), verify parity.
+- **Phase 2 — Hold** across the sequence: never drop, pop, or clear the
+  `safety:` entry mid-sequence; re-verify presence at batch boundaries.
+- **Phase 3 — Verify-and-Release** after the final commit: `git stash
+  apply` again, confirm the apply is a clean no-op against HEAD, then
+  ask the user explicitly before `git stash drop` per
+  [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md).
+
+See [Atomic Commit Construction Rules §3.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#33-pre-execution-safety-stash-mandatory-for-multi-commit-sequences).
+
 ---
 
 ### Step 3 — Interactive Hunk-Based Staging

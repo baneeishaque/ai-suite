@@ -71,11 +71,11 @@ Check the **identity block** — the first thing anyone reads:
 
 | Element | Rule | Example |
 |---|---|---|
-| `<groupId>` | Must be a real, reversed-domain package | `com.bosch.tul` |
-| `<artifactId>` | Must match project naming convention (underscore if applicable) | `tul_logging` |
+| `<groupId>` | Must be a real, reversed-domain package | `com.acme.toolkit` |
+| `<artifactId>` | Must match project naming convention (underscore if applicable) | `acme_logging` |
 | `<version>` | Must follow SemVer; no `-SNAPSHOT` in release commits | `1.0.0` |
 | `<packaging>` | Must be explicit (`jar`, `pom`, `war`) — never rely on default | `jar` |
-| `<name>` | Human-readable project name — must exist | `TUL Logging` |
+| `<name>` | Human-readable project name — must exist | `Acme Logging` |
 | `<description>` | One-sentence summary — must exist and be meaningful | Not just the artifact name |
 | `<url>` | Must be valid OR a `<!-- TODO -->` placeholder | See Step 4 |
 | `<licenses>` | Must contain at least one `<license>` with `<name>` and `<url>` | `Apache-2.0` |
@@ -105,7 +105,7 @@ git config user.name && git config user.email
 | `<organization>` | Must be the actual organization, not a placeholder |
 
 **Red flags:**
-- Generic names: `TUL Team`, `Dev Team`, `John Doe`
+- Generic names: `Acme Team`, `Dev Team`, `John Doe`
 - Generic emails: `team@example.com`, `dev@company.com`
 - Missing `<developers>` section entirely
 
@@ -228,15 +228,16 @@ After modifying `pom.xml`, check these files for stale references:
 Run a final check to ensure no invalid URLs or stale values remain:
 
 ```powershell
-# Check for common invalid URL patterns
+# Check for common invalid URL patterns — add your own org's leak markers
+# (e.g. `internal\.<corp>`, `<CORP>_ORG`, `<CORP>_PROJECT`) to the alternation below.
 Get-ChildItem -Recurse -File |
     Where-Object { $_.FullName -notmatch '\\(target|\.git)\\' } |
-    Select-String -Pattern "example\.com|fake-org|BOSCH_ORG|TUL_PROJECT|internal\.bosch" |
+    Select-String -Pattern "example\.com|fake-org|YOUR_ORG|YOUR_PROJECT|TODO" |
     Format-Table Filename, LineNumber, Line -AutoSize
 ```
 
 ```bash
-grep -rn "example\.com\|fake-org\|BOSCH_ORG\|TUL_PROJECT\|internal\.bosch" \
+grep -rn "example\.com\|fake-org\|YOUR_ORG\|YOUR_PROJECT\|TODO" \
     --include="*.xml" --include="*.yml" --include="*.md" \
     --exclude-dir='{target,.git}' .
 ```

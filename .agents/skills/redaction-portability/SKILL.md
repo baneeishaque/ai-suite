@@ -46,6 +46,135 @@ It does NOT apply to:
 - Files explicitly gitignored.
 - Build outputs / logs that are not committed.
 
+### 0.1 Repository Scope Tiers — Public vs Organization-Private
+
+Redaction is **not** a single-axis decision (placeholder vs literal). It is a **product**
+of two axes: the *string sensitivity tier* (§1) and the *repository publication scope*.
+This sub-section defines the second axis. Every workspace folder lives in exactly one
+of the following scope tiers, and the tier dictates what is allowed in committed
+artifacts of THAT folder:
+
+| Scope tier        | Examples                                          | Allowed string content                                                                                       |
+| :---------------- | :------------------------------------------------ | :----------------------------------------------------------------------------------------------------------- |
+| **Public**        | `ai-agents` (general skill library, GitHub public) | Tier C only (universal open-source identifiers). Tier A + B MUST be redacted to placeholders.                |
+| **Org-private**   | `<corp>_ai_agents` (e.g., `acme_ai_agents`)        | Tier A still redacted; **Tier B literals scoped to that organization ARE PERMITTED** (e.g., `<toolbase>`).   |
+| **Personal**      | `personal/sandbox` branch, `~/scratch/`           | Anything the author chooses; never published.                                                                |
+
+**The two cardinal rules** that follow from this matrix:
+
+1. **Public-scope artifacts MUST be self-contained.** They may not import, link to, or
+   functionally depend on any org-private or personal-scope artifact. A public consumer
+   who clones only the public repo must be able to use every skill without ever
+   discovering that an org-private sibling exists. Concretely:
+
+   - **Forbidden in a public-scope file:** `[label](../../../../<org>_ai_agents/.agents/skills/<skill>/SKILL.md)` — the target file is not in the public consumer's clone, so the link is broken, AND the link text leaks the org name + the existence of an internal skill library.
+   - **Forbidden in a public-scope file:** the literal name of an organization (`<corp>`, e.g. "Acme Corp") even in prose, unless it is the genuine subject of a Tier C open-source attribution (e.g., "the BSD license" → keep; "on a `<corp>` workstation" → use `<corp>` rather than the literal name).
+   - **Allowed in a public-scope file:** *generic* fallback prose that says "if your organization provides a shared tool root, consult your organization's internal skill library" — no name, no link.
+
+2. **Org-private-scope artifacts MAY reference public-scope artifacts — by name, not by
+   relative path.** The two repositories are independent Git repositories with separate
+   existences; a relative link from one to the other (`../../../../<public-repo>/...`)
+   resolves only inside one specific multi-root workspace layout and is broken for any
+   developer who clones the org-private repo standalone. Reference public-scope skills
+   and rules by canonical inline-code name only — e.g., write
+   ``the general `system-wide-tool-management` skill (in the public `ai-agents` repo)``
+   rather than a relative-path link. (An absolute URL to the public repo's hosted form
+   is acceptable only when the public repo's hosting location is stable and the
+   commit-pinning is acceptable for the use case; prefer name-only references.)
+
+   Org-private files MAY use literal Tier B values that are universally true *within
+   that organization* (the organization's shared tool root such as `<toolbase>`, the
+   corporate proxy host, the internal VCS URL). The org-private repo itself is the
+   de-facto namespace boundary; re-redacting `<toolbase>` everywhere adds noise without
+   adding protection. The **one** preservation: use the `<placeholder>` form **once**
+   beside the literal as a teaching aid (per §5.1), so a reader writing a future
+   companion skill knows the canonical placeholder name to use if/when the snippet
+   gets ported to public scope.
+
+**Submodule sub-case (a deterministic intra-distribution carve-out).** A parent repo
+MAY embed another repo as a Git submodule registered in the parent's `.gitmodules`
+(e.g., the `ai-agents` parent registers `ai-agent-rules` at `<parent>/ai-agent-rules/`).
+The registered mount path is deterministic because `.gitmodules` is itself a tracked,
+versioned file in the parent — every commit of the parent pins both the submodule's
+clone URL and its mount path. Together the parent + its registered submodules form a
+single **Distribution Unit**: the project's documented clone recipe is
+`git clone --recurse-submodules <parent-url>`, and a developer following that recipe
+obtains the full unit at the deterministic layout.
+
+Consequently:
+
+- **Parent ↔ registered-submodule relative paths are ALLOWED** (in either direction)
+  when they traverse the `.gitmodules`-pinned mount point. They are intra-distribution
+  paths, not inter-repo escapes. Example (legal): a parent skill at
+  `.agents/skills/<skill>/SKILL.md` linking to `../../../ai-agent-rules/<rule>.md`.
+- **The Standalone-Clone Test is evaluated against the Distribution Unit**, not the
+  enclosing worktree alone. The reference clone is
+  `git clone --recurse-submodules <parent-url>`, which is the project's documented
+  recipe. Links that resolve in that recipe pass the test.
+- **Standalone-clone of the submodule by itself remains supported** (the submodule
+  has its own clone URL), but in that mode the submodule is consumed *outside* its
+  Distribution Unit. A developer who deliberately clones only the submodule accepts
+  that links pointing into the parent will not resolve — same way partial consumption
+  of any multi-repo project has limits. The submodule's own README SHOULD note its
+  primary consumption is via the parent.
+
+What remains **categorically forbidden** even after this carve-out:
+
+- Links between two **independent repos that are NOT in a parent/submodule
+  relationship** registered in either's `.gitmodules` — e.g.,
+  `ai-agents` ↔ `<corp>_ai_agents` (sibling distributions, no `.gitmodules`
+  registration linking them). These have NO defined relative position; the
+  categorical-meaninglessness argument applies in full.
+- Links from a parent into an **unregistered** sibling folder that just happens to
+  live next to it on the author's disk (the "multi-root VS Code workspace" trap).
+  Without `.gitmodules` registration there is no Distribution Unit, no deterministic
+  mount, no project-recipe clone — just the author's local accident.
+- All Tier-leak prohibitions (link text leaking org names, etc.) apply unchanged
+  regardless of repo topology.
+
+The agent's audit therefore distinguishes two cases for any `../` that escapes the
+enclosing worktree's root: (a) does it land inside a sibling registered in the
+nearest enclosing `.gitmodules`? → ALLOWED (intra-distribution); (b) anywhere else?
+→ FORBIDDEN (inter-distribution escape).
+
+**Asymmetric linking summary:**
+
+```text
+<public-repo>      ──X──────────────────────▶ <org-private-repo>    (FORBIDDEN: unregistered sibling + leaked name)
+<public-repo>      ───▶ <public-repo>                                 (ALLOWED, relative path, intra-repo)
+<org-private-repo> ───▶ <org-private-repo>                            (ALLOWED, relative path, intra-repo)
+<org-private-repo> ───▶ `<public-skill-name>` (no link, by name only)  (ALLOWED, name-only reference)
+<org-private-repo> ──X──────────────────────▶ <public-repo> (via relative path) (FORBIDDEN: unregistered sibling, layout-dependent)
+<parent-repo>      ───▶ <registered-submodule>/<file> (via `.gitmodules` mount)  (ALLOWED, intra-distribution-unit)
+<registered-submodule> ───▶ <parent-repo>/<file> (via `../` to mount root)        (ALLOWED, intra-distribution-unit)
+<parent-repo>      ──X──▶ <unregistered-sibling-folder>/<file>                    (FORBIDDEN: no `.gitmodules` entry → local accident)
+```
+
+> The last three rows are the submodule carve-out above. A submodule **registered**
+> in the parent's `.gitmodules` has a deterministic mount path that ships with every
+> parent commit; the project's clone recipe is `git clone --recurse-submodules
+> <parent-url>`, and links across the registered mount resolve under that recipe.
+> Anything not in `.gitmodules` (an unregistered sibling folder that just happens to
+> sit next to the parent on the author's disk) gets no such guarantee and is treated
+> as an inter-repo escape.
+
+*Intra-repo* means both link endpoints live inside the same Git repository (the `../`
+chain never crosses that repo's root) — always allowed. *Intra-distribution-unit*
+means both endpoints live inside the same Distribution Unit (the enclosing repo plus
+its registered submodules) but cross a `.gitmodules`-pinned mount — also allowed.
+*Inter-distribution* (two independent repos with no parent/submodule relationship via
+`.gitmodules`) is what the FORBIDDEN rows prohibit.
+
+**The unifying principle:** no relative-path link may escape its enclosing
+Distribution Unit. The Distribution Unit is the enclosing repo PLUS every submodule
+registered in its `.gitmodules` (recursively). Within the unit, relative paths are
+first-class; across units they fail the Standalone-Clone Test.
+
+**Detection heuristic.** Before adding any inter-skill link from a public-scope file,
+resolve the link's target relative path against the public repo root — if the target
+escapes the public repo (`../../../../some-other-repo/...`), the link is illegal
+regardless of redaction of its display text.
+
 ---
 
 ## 1. The Three Sensitivity Tiers
@@ -517,6 +646,18 @@ content from §1's redaction targets.
   committed unredacted, the value is permanently in the object
   database. Reach for `git-filter-repo` or BFG if a hard scrub is
   required, but prevention is the only reliable strategy.
+- **DO NOT** insert a link from a public-scope file to an
+  org-private-scope or personal-scope file (per §0.1 rule 1). The
+  link target won't exist in the public consumer's clone, and the
+  link text itself leaks the existence and name of the private
+  artifact.
+- **DO NOT** name an organization (`<corp>`, customer
+  name) in prose in a public-scope file. Use "a corporate
+  workstation" / "your organization" / `<corp>` instead.
+- **DO NOT** rely on a sibling-folder workspace layout (multi-root
+  VS Code workspace) to make a cross-repo link "work" — it works
+  only for the original author. External consumers clone the public
+  repo standalone and the relative path silently breaks.
 
 ---
 
@@ -537,7 +678,8 @@ order; do not skip):
 
 Per-organization concrete patterns (specific FQDNs, specific user
 names) belong in **organization-specific extensions** (e.g.,
-`bosch_ai_agents/.agents/skills/`) — never in this SSOT.
+an org-private `<corp>_ai_agents/.agents/skills/` sibling repo) —
+never in this SSOT.
 
 ---
 

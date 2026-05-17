@@ -145,6 +145,13 @@ Every skill generated via the Factory MUST automatically undergo the final verif
     8. **Encoding Sanity Check** (Redaction §8 Step 5): Scan for mojibake markers (`Ã`, `â€`, `Â`, `ï¿½`) that
        redaction edits frequently introduce, and fix them before considering the audit complete.
     9. **Directory Depth Audit**: Verify the correct directory depth (e.g., `../../../` from a 3-level deep skill).
+   10. **Repository Independence Audit** (Redaction §1.0 + §1.4): When the new skill mentions ANY other repository
+       (whether by Markdown link or by prose), run the Pre-Commit Checklist from Redaction §1.4 and apply the
+       Standalone-Clone Test from §1.0 — "if I clone ONLY the enclosing repo into a fresh empty directory, does
+       every relative link resolve and does every prose reference still make sense?" Reject any relative-path link
+       whose target escapes the enclosing repo (count `../` segments) regardless of how it resolves on the author's
+       disk. Multi-root VS Code layouts are inadmissible defences. The Worked Example in Redaction §1.5
+       (a public-skill ↔ org-private-skill pair) is the reference pattern.
 - **Prohibited Behavior**: The Factory MUST NOT publish a skill that has not passed the Redaction & Portability audit.
   Half-redacted strings (e.g., `<corp-proxy-host>.<real-corp>.com`) and over-redacted public identifiers
   (e.g., redacting `Apache Commons`, `Eclipse`, `Maven Central`) are both audit failures per Redaction §10.

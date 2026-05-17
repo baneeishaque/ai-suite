@@ -322,7 +322,7 @@ If the project produces distributable artifacts (JAR, zip, installer):
 2. **Create or update the build script** (Ant, Maven, Gradle, Makefile)
    with a `release` target that produces a versioned zip matching the
    existing distribution layout. Note: build tool paths (e.g.,
-   `C:\tools\eclipse\plugins\org.apache.ant_*\bin\ant.bat`) are
+   `<tools-root>/eclipse/plugins/org.apache.ant_*/bin/ant.bat`) are
    machine-specific — use path variables or document how to locate them.
    **Do NOT include sample/test-data files** in the release zip —
    samples stay in `samples/` for development only.

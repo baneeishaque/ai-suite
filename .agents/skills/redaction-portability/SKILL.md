@@ -6,6 +6,20 @@ category: Security-Standards
 
 # Redaction & Portability Skill (v2)
 
+> ## ⛔ BLOCKING — Run This 3-Question Test Before Writing ANY of the Following
+>
+> - A markdown link with `../` that escapes the current file's enclosing repo (`[label](../../../../<other-repo>/...)`)
+> - A literal organization name, internal codename, internal product name, or internal hostname in prose
+> - A cross-repo "(see related skill in `<other-repo>`)" parenthetical
+>
+> **Test (all three MUST be YES):**
+>
+> 1. Are BOTH link endpoints in the SAME Git repository — OR in a parent + `.gitmodules`-registered-submodule pair (per §0.1 carve-out)?
+> 2. Would the link still resolve if a stranger cloned ONLY the host repo into a fresh empty directory? (Multi-root VS Code workspaces, sibling folders on the author's disk, and "I have both repos checked out" do NOT count — see §0.1 Independence rules.)
+> 3. Does the link text + surrounding prose reveal NOTHING about an org-private repo's existence, name, codename, or internal toolchain that a public reader wouldn't already know?
+>
+> Any NO → the link/mention is FORBIDDEN. The repair: drop the link in the public→private direction (use generic prose "consult your organization's internal skill library, if one exists"); use name-only references in the private→public direction (``the `<skill-name>` skill in the public `ai-agents` repo``).
+
 This skill is the **single source of truth (SSOT)** for sanitising any
 workspace artifact before it leaves the author's machine — be it a
 committed skill `SKILL.md`, a conversation log under `docs/conversations/`,

@@ -182,7 +182,10 @@ incomplete commit plans and files discovered only after execution.
 **Untracked files:** Any untracked file not excluded by `.gitignore` is
 a candidate for version control. The agent **MUST NOT** stage untracked
 files without explicit user confirmation to avoid committing credentials,
-large binaries, or environment-specific files.
+large binaries, or environment-specific files. When an untracked file's
+origin is unclear (cross-repo scratch, tool dump, captured diff), invoke
+the [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md)
+skill to classify and dispose of it before continuing the inventory.
 
 #### 1b — Use `git ls-files` as Source of Truth
 

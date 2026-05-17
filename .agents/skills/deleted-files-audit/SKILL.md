@@ -386,3 +386,7 @@ install Git via their system package manager:
   `Foo.java` + `Foo_old.java`) to prove which file is canonical and
   capture the rationale. Then use this skill to confirm no stale
   references remain after the deletion.
+- [untracked-scratch-triage](../untracked-scratch-triage/SKILL.md)
+  — the symmetric counterpart for **untracked** leftovers (this skill
+  covers deletions of tracked files; that one covers files that were
+  never tracked).

@@ -61,6 +61,9 @@ Reference exemplar: [vscode-search-exclude-glob](../vscode-search-exclude-glob/S
 The `SKILL.md` MUST include:
 
 1. **YAML Frontmatter**: name, description, category. Skill names MUST use lowercase letters, numbers, and hyphens.
+   The frontmatter block (`---` ... `---`) MUST be the FIRST content in the file (line 1 column 1, no BOM, no
+   preceding blank lines, **no preceding HTML comments**); any preceding character makes the agentskills.io lint
+   validator emit `Skill must provide a name` even when the YAML is otherwise valid.
 2. **Environment & Dependencies**: Mandated verification logic (`which`, version checks).
 3. **Operational Logic**: The EXACT steps provided by the user (**Zero Omission**).
 4. **SSOT Compliance**: The skill MUST NOT duplicate technical standards

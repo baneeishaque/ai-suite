@@ -44,7 +44,7 @@ def load_data(path: str):
 
 def save_data(path: str, data) -> None:
     with open(path, "w", encoding="utf-8") as fp:
-        json.dump(data, fp, indent=4)
+        json.dump(data, fp, indent=2)
         fp.write("\n")
 
 
@@ -55,6 +55,8 @@ def main() -> int:
     mode.add_argument("--add", action="store_true")
     mode.add_argument("--replace", action="store_true")
     mode.add_argument("--delete", action="store_true")
+    mode.add_argument("--delete-grep", action="store_true",
+                      help="Delete entry whose key CONTAINS --key as substring (for multiline keys)")
     parser.add_argument("--key", help="Key for --add or --delete")
     parser.add_argument("--old-key", help="Existing key for --replace")
     parser.add_argument("--new-key", help="Replacement key for --replace")
@@ -92,6 +94,20 @@ def main() -> int:
                 new_aa[k] = v
         data["chat.tools.terminal.autoApprove"] = new_aa
 
+    elif args.delete_grep:
+        if not args.key:
+            print("ERROR: --delete-grep requires --key (substring)", file=sys.stderr); return 2
+        hits = [k for k in aa if args.key in k]
+        if not hits:
+            print(f"ERROR: no key contains: {args.key[:80]!r}", file=sys.stderr)
+            return 1
+        if len(hits) > 1:
+            print(f"ERROR: {len(hits)} keys match substring — be more specific:", file=sys.stderr)
+            for h in hits:
+                print(f"  {h[:80]!r}", file=sys.stderr)
+            return 1
+        del aa[hits[0]]
+
     else:  # delete
         if not args.key:
             print("ERROR: --delete requires --key", file=sys.stderr); return 2
@@ -102,7 +118,7 @@ def main() -> int:
 
     save_data(args.settings, data)
     after = len(data["chat.tools.terminal.autoApprove"])
-    mode_str = "add" if args.add else "replace" if args.replace else "delete"
+    mode_str = "add" if args.add else "replace" if args.replace else "delete-grep" if args.delete_grep else "delete"
     print(f"OK ({mode_str}). entries: {before} -> {after}")
     return 0
 

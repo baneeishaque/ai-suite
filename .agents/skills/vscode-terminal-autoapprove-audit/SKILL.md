@@ -53,30 +53,40 @@ Invoke this skill when:
 
 ### 3.1 Formatting Contract — settings.json Indentation
 
-The target `settings.json` is assumed to use **4-space indentation**, which yields:
+The target file (`vscode-insiders-configuration/visual-studio-code-user-settings/settings.json`)
+is written by VS Code itself and managed by the
+[`vscode-user-settings-symlink`](../vscode-user-settings-symlink/SKILL.md) skill. The canonical
+indentation convention for this file is:
 
 | Depth | Spaces | Content |
 | :--- | :--- | :--- |
-| 1 | 4  | Top-level keys (`"chat.tools.terminal.autoApprove": { ... }`) |
-| 2 | 8  | Per-entry regex keys inside the `autoApprove` object |
-| 3 | 12 | `approve` / `matchCommandLine` sub-keys |
+| 1 | 2  | Top-level keys (`"chat.tools.terminal.autoApprove": { ... }`) |
+| 2 | 4  | Per-entry regex keys inside the `autoApprove` object |
+| 2 | 6  | Values inside `files.associations` (override — §5.1 of indent-override skill) |
+| 3 | 8  | `approve` / `matchCommandLine` sub-keys (override — §5.2 of indent-override skill) |
 
-All scripts in this skill (`audit-autoapprove.py`, `edit-entry.py`) read with
-`json.load(... object_pairs_hook=OrderedDict)` to preserve entry order and write with
-`json.dump(..., indent=4)` to preserve this contract.
+The 2-space convention comes from `promote.py` (default `indent=2`). The per-key overrides
+are **deliberate** — applied once via
+[`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) to improve
+readability of dense nested blocks.
 
-If the user's profile follows a different convention (e.g. 2-space global with 8-space
-override for `approve` / `matchCommandLine`), re-run
-[`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) §5.2
-**after** any edit by this skill to restore the per-key override:
+**After any edit that rewrites the file**, run the canonical one-shot fix:
 
 ```bash
-python3 .agents/skills/vscode-settings-indent-override/scripts/vscode-settings-indent-override.py \
-  --file <settings.json> \
-  --key "chat.tools.terminal.autoApprove" \
-  --from-spaces 6 --to-spaces 8 \
-  --target-keys approve matchCommandLine
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/fix-indents.py \
+  --settings <path/to/settings.json>
 ```
+
+This script applies both overrides atomically (approve/matchCommandLine → 8sp;
+files.associations values → 6sp) and validates JSON before writing.
+
+Use `--dry-run` to preview changes without writing.
+
+> **Script indent behaviour:**
+> - `edit-entry.py` writes `indent=2` → run `fix-indents.py` afterwards (Step 2 only needed)
+> - `audit-autoapprove.py` uses raw regex surgery (no json.dump) — but its drop pattern is
+>   calibrated to 4-space and **breaks after the file is reformatted to 2-space**. Prefer
+>   `edit-entry.py --delete` or `--delete-grep` for all single-entry drops.
 
 ***
 
@@ -238,7 +248,15 @@ python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
 python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
   --settings <path> --delete \
   --key '/^<full regex key>$/'
+
+# Delete by substring — use when key contains newlines (shell quoting breaks exact match)
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
+  --settings <path> --delete-grep \
+  --key 'npm search --json ssh mcp'
 ```
+
+> **`--delete-grep` safety**: fails if 0 or >1 keys match the substring — always unique-identify
+> before running. After deletion, run `fix-indents.py` to restore overrides.
 
 ***
 

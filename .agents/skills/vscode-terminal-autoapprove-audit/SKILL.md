@@ -51,36 +51,74 @@ Invoke this skill when:
 3. A suspected secret (password, token) is embedded in an entry key.
 4. A new auto-approve rule is proposed and must pass safety classification before addition.
 
+### 3.1 Formatting Contract — settings.json Indentation
+
+The target `settings.json` is assumed to use **4-space indentation**, which yields:
+
+| Depth | Spaces | Content |
+| :--- | :--- | :--- |
+| 1 | 4  | Top-level keys (`"chat.tools.terminal.autoApprove": { ... }`) |
+| 2 | 8  | Per-entry regex keys inside the `autoApprove` object |
+| 3 | 12 | `approve` / `matchCommandLine` sub-keys |
+
+All scripts in this skill (`audit-autoapprove.py`, `edit-entry.py`) read with
+`json.load(... object_pairs_hook=OrderedDict)` to preserve entry order and write with
+`json.dump(..., indent=4)` to preserve this contract.
+
+If the user's profile follows a different convention (e.g. 2-space global with 8-space
+override for `approve` / `matchCommandLine`), re-run
+[`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) §5.2
+**after** any edit by this skill to restore the per-key override:
+
+```bash
+python3 .agents/skills/vscode-settings-indent-override/scripts/vscode-settings-indent-override.py \
+  --file <settings.json> \
+  --key "chat.tools.terminal.autoApprove" \
+  --from-spaces 6 --to-spaces 8 \
+  --target-keys approve matchCommandLine
+```
+
 ***
 
 ## 4. Pre-Audit Setup
 
 ### 4.1 SQL Session Table
 
-Create a tracking table at the start of the audit session:
+Create a tracking table at the start of the audit session — schema mirrors the actual
+fields used during review:
 
 ```sql
-CREATE TABLE IF NOT EXISTS autoapprove_review (
-    entry_num   INTEGER PRIMARY KEY,
-    line_start  INTEGER,
-    line_end    INTEGER,
-    key_preview TEXT,
-    decision    TEXT,   -- 'keep' | 'drop' | 'migrated'
-    verdict     TEXT,   -- SAFE | MUTATES | etc.
-    notes       TEXT
+DROP TABLE IF EXISTS autoapprove_review;
+CREATE TABLE autoapprove_review (
+    seq          INTEGER PRIMARY KEY,    -- 1-based entry position at time of review
+    key_snippet  TEXT,                   -- first ~80 chars of decoded key
+    verdict      TEXT,                   -- SAFE | SAFE-IF-PIPED | HAS-DESTRUCTIVE-FLAGS | MUTATES
+    decision     TEXT,                   -- KEPT | DROPPED | MIGRATED | REPLACED
+    notes        TEXT                    -- justification, related entries, follow-up
 );
 ```
 
+If the session is interrupted and the table schema is lost, recreate it. The SQL table is
+a *side log* — the source of truth is `settings.json` itself plus the conversation.
+
 ### 4.2 Count and List Entries
 
-```python
-import json
-data = json.load(open('<settings.json path>'))
-aa = data['chat.tools.terminal.autoApprove']
-print(f"Total entries: {len(aa)}")
-for i, k in enumerate(aa.keys()):
-    print(f"[{i}] {k[:80].replace(chr(10), chr(92)+'n')}")
+Use the helper script (preferred — preserves indentation contract):
+
+```bash
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/find-entry.py \
+  --settings <path/to/settings.json> --list
 ```
+
+### 4.3 Targeted Lookup
+
+| Goal | Command |
+| :--- | :--- |
+| Print one entry by 0-based index | `find-entry.py --settings <p> --index 11` |
+| Print one entry by 1-based index | `find-entry.py --settings <p> --index 12 --one-based` |
+| Find entries containing substring | `find-entry.py --settings <p> --grep 'ssh-mcp'` |
+
+> When grepping, keys are stored with `\\` escapes — search for `ast\\.parse`, not `ast.parse`.
 
 ***
 
@@ -178,6 +216,29 @@ Every migrated regex MUST gate argument slots with `[^;&|<>$` + '`' + `()]` to b
    ```
 2. Validate: `python3 -c "import json; json.load(open('<settings.json>')); print('OK')"`
 3. Log decision as `migrated` in the SQL table.
+
+### 7.4 Script — `edit-entry.py`
+
+Handles add, in-place key replacement (for migration), and delete without touching other
+entries. Writes with `indent=4` (§3.1 contract).
+
+```bash
+# Migrate loose prefix to anchored form (position preserved)
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
+  --settings <path> --replace \
+  --old-key '"mkdir": true' \
+  --new-key '/^mkdir( -p)?( [^;&|<>$`()]+)+$/'
+
+# Add a new anchored entry at the tail
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
+  --settings <path> --add \
+  --key '/^echo( [^;&|<>$`()]*)?$/'
+
+# Delete one entry by exact key
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
+  --settings <path> --delete \
+  --key '/^<full regex key>$/'
+```
 
 ***
 

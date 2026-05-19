@@ -323,6 +323,26 @@ When the registry file contains mixed hunks (some for this artifact, some
 unrelated): use `git add -p <registry>` to stage only the relevant hunk(s)
 alongside the artifact files; leave unrelated hunks unstaged for their own commits.
 
+**When `git add -p` hunk boundaries don't align with row boundaries** (e.g.,
+two session rows land in the same hunk as an out-of-scope row), use the
+[`agents-md-stage-row.py`](scripts/agents-md-stage-row.py) script instead:
+
+```bash
+# Dry-run: preview alphabetical position
+python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+    --row "| My Skill | [path](path) | description |" \
+    --dry-run
+
+# Stage exactly one row (reads HEAD:AGENTS.md, inserts row, updates index)
+python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+    --row "| My Skill | [path](path) | description |"
+```
+
+The script reads `HEAD:AGENTS.md` (not the working tree), inserts the row at
+the alphabetically correct position, writes a new blob via `git hash-object -w`,
+and updates the index via `git update-index --cacheinfo` — so only the new row
+is staged while all other working-tree changes remain unstaged.
+
 Forbidden anti-pattern: "commit all artifacts first, then one final commit
 registers them all in AGENTS.md" — this makes individual commits incomplete
 (skill exists but is not discoverable) and destroys per-feature traceability.

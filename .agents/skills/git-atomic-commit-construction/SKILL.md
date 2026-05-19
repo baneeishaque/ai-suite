@@ -304,22 +304,30 @@ The agent **MUST NOT** proceed with any commit execution until the user
 explicitly says **"start"**. Other triggers like "commit" or "go" are
 insufficient.
 
-#### 2f — Interleaving Mandate (Submodule + Related Parent Work)
+#### 2f — Interleaving Mandate (Artifact + Registry Registration)
 
-When the working tree contains both submodule pointer advances AND parent-side
-changes that are functionally related (e.g., a cherry-picked `.gitignore`
-commit in a submodule + the parent's `.gitmodules` realignment for that same
-submodule), the Arranged Commits sequence MUST **interleave** them in
-dependency order, NOT batch all submodule syncs first and all parent edits
-last. For each submodule with a stale pointer, identify any parent-side files
-directly tied to that submodule (e.g., `.gitmodules` URL change, root
-`AGENTS.md` row referencing the submodule, CI workflow paths) and place them
-in the **same** commit per §7.2 of the rules. Truly unrelated parent edits
-may be slotted between submodule syncs only when they share a logical theme;
-otherwise place them in a final dedicated batch. The forbidden anti-pattern
-is "all 36 submodule syncs first, then all 30 parent edits last" — it
-destroys the per-feature traceability that interleaving exists to provide.
-See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-submodule--related-parent-work).
+Whenever a commit introduces or renames an artifact **and** a shared index /
+registry file (e.g., root `AGENTS.md` skills table, `.gitmodules`, CI
+workflow manifests) needs a corresponding row or entry for that artifact, the
+registry hunk MUST be **staged in the same commit** as the artifact itself —
+never batched into a separate "registration" commit at the end. This applies to:
+
+- **New skills**: root `AGENTS.md` row for the skill → same commit as the skill
+  `SKILL.md` / `scripts/` files.
+- **Submodule syncs**: `.gitmodules` URL change and any root `AGENTS.md` row
+  referencing the submodule → same commit as the submodule pointer advance.
+- **Any artifact with a shared index entry**: treat the index row as part of the
+  artifact's definition, not as metadata to collect last.
+
+When the registry file contains mixed hunks (some for this artifact, some
+unrelated): use `git add -p <registry>` to stage only the relevant hunk(s)
+alongside the artifact files; leave unrelated hunks unstaged for their own commits.
+
+Forbidden anti-pattern: "commit all artifacts first, then one final commit
+registers them all in AGENTS.md" — this makes individual commits incomplete
+(skill exists but is not discoverable) and destroys per-feature traceability.
+
+See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-artifact--registry-registration).
 
 #### 2g — Batch-by-Batch Authorization (Long Sequences)
 

@@ -68,3 +68,11 @@ python3 .agents/skills/vscode-settings-promotion/scripts/promote.py \
 
 - Verify the settings are removed from the profile-specific file.
 - Verify the settings exist in the global file and are correctly listed under `applyToAllProfiles`.
+
+***
+
+## 4. Related Skills
+
+- [VS Code Settings Indent Override](../vscode-settings-indent-override/SKILL.md) — apply per-key
+  non-standard indentation overrides after promotion (e.g. 6-space level-2 for `files.associations`,
+  8-space `approve`/`matchCommandLine` for `chat.tools.terminal.autoApprove`).

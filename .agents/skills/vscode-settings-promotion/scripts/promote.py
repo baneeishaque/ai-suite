@@ -20,7 +20,7 @@ def load_json(path: str) -> Dict[str, Any]:
         print(f"Error loading {path}: {e}")
         sys.exit(1)
 
-def save_json(path: str, data: Dict[str, Any], indent: int = 4) -> None:
+def save_json(path: str, data: Dict[str, Any], indent: int = 2) -> None:
     """Save JSON file with backup."""
     bak_path = f"{path}.bak"
     try:
@@ -37,7 +37,8 @@ def promote_settings(
     profile_path: str, 
     global_path: str, 
     keys: List[str], 
-    dry_run: bool = False
+    dry_run: bool = False,
+    indent: int = 2
 ) -> None:
     """Promote settings from profile to global and append to applyToAllProfiles."""
     
@@ -82,8 +83,8 @@ def promote_settings(
         return
 
     # Commit changes
-    save_json(profile_path, remaining_profile)
-    save_json(global_path, global_data)
+    save_json(profile_path, remaining_profile, indent=indent)
+    save_json(global_path, global_data, indent=indent)
 
     print(f"Successfully promoted {len(promoted)} settings to global scope.")
     print(f"Backups created at .bak locations.")
@@ -94,10 +95,11 @@ def main():
     parser.add_argument("--global-settings", required=True, help="Path to global settings.json")
     parser.add_argument("--keys", nargs="+", required=True, help="Keys to promote")
     parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without saving")
+    parser.add_argument("--indent", type=int, default=2, help="JSON indent width (default: 2)")
     
     args = parser.parse_args()
     
-    promote_settings(args.profile, args.global_settings, args.keys, args.dry_run)
+    promote_settings(args.profile, args.global_settings, args.keys, args.dry_run, args.indent)
 
 if __name__ == "__main__":
     main()

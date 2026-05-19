@@ -101,6 +101,24 @@ When the skill ships executable scripts under `scripts/`, every script MUST obey
    When reading `$LASTEXITCODE` after invoking another script, guard with
    `Test-Path Variable:LASTEXITCODE` to avoid strict-mode failures on first invocation.
 
+### 2.2.2 Script Delivery & Preservation Mandates
+
+Scripts are **first-class deliverables** of a skill — not disposable session artifacts:
+
+1. **Ship It (Delivery Mandate)**: Any automation script developed during a skill session MUST be committed inside
+   the skill's `scripts/` directory as part of the skill's canonical form. "The script helped during the session"
+   is sufficient and mandatory justification to ship it permanently. Leaving scripts uncommitted is a failure of
+   the Industrial standard.
+2. **Never Silent Drop (Preservation Mandate)**: Existing scripts in a skill's `scripts/` directory MUST NOT be
+   deleted, emptied, or replaced without an explicit user instruction. During skill refactors (e.g., extracting a
+   base layer), the original script MUST be migrated or superseded explicitly — not silently removed.
+3. **Supersession Documentation**: If a script is superseded by a higher-layer composer (3-layer stack refactor),
+   the SKILL.md MUST document: (a) which script replaces it, (b) the new invocation path, and (c) the rationale —
+   so no operational knowledge is lost even when the old file is intentionally removed.
+4. **Commit Inclusion**: The skill's scripts MUST appear in the same commit as the skill's `SKILL.md` — never
+   deferred to a follow-up commit. An uncommitted script that exists only in the working tree is NOT part of the
+   skill.
+
 ### 2.3 Registration
 
 - Update the root `AGENTS.md` skills table to register the new skill with its absolute path and description.

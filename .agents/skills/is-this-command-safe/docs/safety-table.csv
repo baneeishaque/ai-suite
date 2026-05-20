@@ -28,6 +28,7 @@ markdownlint-cli2,SAFE,--fix,markdownlint-cli2 <file>,Without --fix: linting onl
 mdfind,SAFE-IF-PIPED,,mdfind … alone,macOS Spotlight search. Safe alone; pipeline may inherit destructiveness.
 mdls,SAFE,,n/a,Lists macOS metadata attributes of a file. Read-only.
 mkdir,MUTATES,,n/a,"Creates directories. Always mutates filesystem. Use -p for idempotent form, still MUTATES."
+python3,SAFE-WITH-QUALIFICATION,,python3 <trusted-script> --help,"SAFE when running known read-only scripts (--help flags, audit/find/coverage scripts). MUTATES when running scripts that write files (edit-entry.py, fix-indents.py, etc.). Always classify by the script being invoked, not the interpreter alone."
 tail,SAFE,,n/a,Prints last N lines of a file. Read-only.
 true,SAFE,,n/a,No-op builtin that returns exit 0. Used as fallback after || in pipelines.
 wc,SAFE,,n/a,Counts lines/words/bytes. Read-only.

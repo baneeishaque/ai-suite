@@ -349,6 +349,47 @@ registers them all in AGENTS.md" — this makes individual commits incomplete
 
 See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-artifact--registry-registration).
 
+#### 2f.1 — Deferred Cross-Reference Hunk Pattern
+
+When two new artifacts (X and Y) ship in **separate commits B and C**, and one or
+both files already contain a "Related Skills" / index row referencing the OTHER
+artifact in the working tree, the cross-reference row must be deferred to whichever
+commit lands the artifact it points to. Concretely: commit B (introduces X) MUST
+NOT carry a row that references Y — Y does not yet exist in the tree, and the row
+would dangle until commit C lands.
+
+Three viable techniques, in order of preference:
+
+1. **`stage-file-excluding-lines.py`** (preferred — no working-tree mutation): write
+   a blob equal to the working tree minus the deferred row(s), stage it directly
+   via `git update-index --cacheinfo`, leave the working tree untouched. The
+   deferred rows are picked up cleanly by `git add <file>` for commit C.
+
+   ```bash
+   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+       --file .agents/skills/X/SKILL.md \
+       --exclude "../Y/SKILL.md" \
+       --dry-run
+
+   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+       --file .agents/skills/X/SKILL.md \
+       --exclude "../Y/SKILL.md"
+   ```
+
+2. **Temporary edit + restore** (when the script is unavailable): edit the file to
+   remove the deferred row, `git add` it, commit B, then re-insert the row in the
+   working tree for commit C. Higher risk of forgetting the restore step; use only
+   as a fallback.
+
+3. **`git add -p`** (when hunk boundaries align with row boundaries): split the
+   hunk interactively. Often fails because Markdown table rows pack multiple
+   logical entries into a single hunk; falls back to technique 1 or 2.
+
+**Forbidden anti-pattern**: staging the deferred row in commit B "to keep the file
+self-consistent" — the row points to an artifact that does not yet exist at
+commit B, breaking checkout-at-B build/lint and destroying per-commit
+traceability.
+
 #### 2g — Batch-by-Batch Authorization (Long Sequences)
 
 When the Arranged Commits sequence exceeds **5 commits**, split the preview
@@ -1081,6 +1122,7 @@ The agent is **BLOCKED** from:
 | Corrupted rebase state (`rebase-merge` dir empty) | Remove empty `.git/rebase-merge` directory to clear the broken state |
 | Commit message body just rephrases the title | Body must add WHY, not repeat WHAT |
 | Submodule pointer updated without verifying remote | Always verify the referenced commit exists in the remote submodule repo |
+| Cross-reference row to a not-yet-created artifact leaked into the earlier commit | Use `stage-file-excluding-lines.py --exclude <pointer>` (§2f.1) to stage the file minus the deferred row; the row stays in the working tree for the later commit |
 | Submodule sync commit follows legacy formatting | Always use 'Changes' and 'Metadata' headers and include chronological logs |
 | IDE auto-modified 50+ `.project` / `.classpath` files with boilerplate | Present suspected noise to user with sample diff and proposed discard command; never auto-discard — project may intentionally track IDE metadata |
 | Bulk-deleted `.settings/` directory and a tracked file disappeared | Use `git ls-files .settings/` to identify tracked files first; remove only specific untracked files, never the whole directory |

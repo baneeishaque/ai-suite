@@ -146,6 +146,97 @@ Hand off to [`vscode-autoapprove-entry-consolidation`](../vscode-autoapprove-ent
 
 ***
 
+## 4b. Batch Mode — Multiple Commands in One Pass
+
+### When to use
+
+Use Batch Mode instead of running §4 Steps 1–7 once per command when the user
+pastes or references **three or more commands** from a session log, a script,
+or any multi-command review.
+
+Batch Mode produces a single consolidated SSOT-update + autoApprove-edit plan,
+gets **one** user confirmation, and executes all writes atomically.
+
+### Step B1 — Dump commands to a scratch file
+
+Paste or write the commands one per line into a temp file (blank lines and
+`#`-comment lines are ignored by the script):
+
+```bash
+cat > /tmp/cmds.txt << 'EOF'
+<paste commands>
+EOF
+```
+
+### Step B2 — Run batch-coverage-check.py
+
+```bash
+python3 .agents/skills/command-autoapprove-onboarding/scripts/batch-coverage-check.py \
+    --commands /tmp/cmds.txt \
+    --ssot .agents/skills/is-this-command-safe/docs/safety-table.csv \
+    --settings "/Users/dk/Library/Application Support/Code - Insiders/User/settings.json"
+
+# Gaps only (skip already-COVERED rows):
+python3 ... --gaps-only
+```
+
+Output columns: `BINARY | VERDICT | SSOT | AUTOAPPROVE | STATUS`
+
+| STATUS | Meaning | Action |
+| :--- | :--- | :--- |
+| COVERED | In SSOT + autoApprove | None needed |
+| SSOT-ONLY | In SSOT, no autoApprove entry | Step B4 → onboard to autoApprove |
+| AUTOAPPROVE-ONLY | Entry exists, missing from SSOT | Step B3 → add SSOT row |
+| GAP | Neither SSOT nor autoApprove | Step B3 → classify + add SSOT row; Step B4 → onboard |
+
+Known limitations of the script:
+- Inline interpreter code (`python3 -c "..."`, `bash -c "..."`) may produce token
+  artifacts in the binary column — ignore any row whose BINARY contains quotes,
+  parentheses, or looks like a function call.
+- Complex shell command substitutions `$(...)` with embedded quotes may produce
+  false positive rows — inspect and discard by eye.
+- Compound SSOT keys (e.g. `git branch -a`, `git branch -vv`) are not matched
+  by the subcommand-only key `git branch` — add a general `git branch` row to
+  the SSOT to resolve.
+
+### Step B3 — Consolidated SSOT update (§4 Step 4, batched)
+
+For every unique GAP or AUTOAPPROVE-ONLY binary (deduplicated):
+1. Classify the binary via man page / `--help`.
+2. Append a row to `safety-table.csv` + section to `cheatsheet.md`
+   (§8 Append-Only Protocol — preserve alphabetical order).
+
+Do **all** SSOT additions in one edit pass before touching `settings.json`.
+
+### Step B4 — Consolidated autoApprove plan (§4 Steps 5–6, batched)
+
+For every SSOT-ONLY or GAP binary (after Step B3):
+1. Determine if any existing entry can be extended (consolidation §5 reuse-before-add).
+2. Produce a numbered action table:
+
+   | # | Action | Existing entry | Proposed regex | Mechanism |
+   | :--- | :--- | :--- | :--- | :--- |
+   | A | Add | — | `/^…$/` | `--add` |
+   | B | Extend | `[N] …` | `/^…$/` | `--replace` |
+
+3. **Present the full table** to the user for review.
+4. Do NOT execute any `edit-entry.py` calls until the user confirms.
+
+### Step B5 — Execute + audit
+
+1. Run `edit-entry.py` for each action (adds first, then replaces).
+2. Run `fix-indents.py`.
+3. JSON-validate `settings.json`.
+4. Re-run `batch-coverage-check.py --gaps-only` to confirm zero unresolved rows.
+
+### Step B6 — Commit (delegate to git-atomic-commit-construction)
+
+Two atomic commits per the standard protocol:
+- **Commit 1** (SSOT repo): `docs(is-this-command-safe): add <binaries> to safety-table and cheatsheet`
+- **Commit 2** (configurations-private): `chore(autoapprove): <N new entries + M extensions> for <binaries>`
+
+***
+
 ## 5. Worked Example
 
 **User asks:** *"Auto-approve `git --no-pager stash list | grep before-nginx-on-agents-md`"*

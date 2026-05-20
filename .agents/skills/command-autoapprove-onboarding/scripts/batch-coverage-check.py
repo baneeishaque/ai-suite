@@ -68,6 +68,23 @@ _SPLIT_RE = re.compile(r'\|\||&&|;|\|')
 _PREFIX_BINARIES = {"sudo", "time", "env", "nice", "nohup", "xargs"}
 
 
+def _mask_quotes(s: str) -> str:
+    """Replace quoted string contents with placeholders so ; && || | inside quotes don't split."""
+    result, i = [], 0
+    while i < len(s):
+        if s[i] in ('"', "'"):
+            q, j = s[i], i + 1
+            while j < len(s) and s[j] != q:
+                if s[j] == '\\': j += 1
+                j += 1
+            result.append('X' * (j - i + 1))
+            i = j + 1
+        else:
+            result.append(s[i])
+            i += 1
+    return ''.join(result)
+
+
 def _strip_redirects(tok: str) -> str:
     return re.sub(r'\d?>{1,2}\S*|\d?<\S*', '', tok).strip()
 
@@ -124,7 +141,18 @@ def decompose(cmdline: str) -> list[str]:
     subs = re.findall(r'\$\(([^)]+)\)|`([^`]+)`', cmdline)
     inner = [s[0] or s[1] for s in subs]
     clean = re.sub(r'\$\([^)]+\)|`[^`]+`', '', cmdline)
-    segments = re.split(_SPLIT_RE, clean) + inner
+    # Split on operators using quote-masked positions to avoid splitting inside quoted strings
+    masked = _mask_quotes(clean)
+    split_points = [(m.start(), m.end()) for m in _SPLIT_RE.finditer(masked)]
+    if split_points:
+        prev, parts = 0, []
+        for start, end in split_points:
+            parts.append(clean[prev:start])
+            prev = end
+        parts.append(clean[prev:])
+    else:
+        parts = [clean]
+    segments = parts + inner
     return [b for seg in segments for b in [_extract_binary(seg.strip())] if b]
 
 

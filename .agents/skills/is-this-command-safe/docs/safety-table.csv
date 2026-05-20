@@ -3,25 +3,31 @@ brew leaves,SAFE,,n/a,Lists explicitly installed (leaf) formulae. Read-only. --i
 brew list,SAFE,,n/a,Lists installed formulae and/or casks. Read-only. --cask and --formula narrow scope.
 brew outdated,SAFE,,n/a,Lists outdated formulae/casks. Read-only. --greedy widens scope to auto-update casks.
 cat,SAFE,,n/a,Reads and prints file contents. No mutation possible.
+cd,SAFE,,n/a,Changes the shell working directory. No filesystem mutation. Builtin.
 diff,SAFE,,n/a,Compares files line-by-line. Output only; no files modified.
-find,SAFE-IF-PIPED,"-delete; -exec rm; -exec mv; -exec sed -i","find … -print","Safe alone. Upgrade to MUTATES if any destructive flag is present."
+echo,SAFE,,n/a,Prints arguments to stdout. No mutation. Builtin.
+find,SAFE-IF-PIPED,-delete; -exec rm; -exec mv; -exec sed -i,find … -print,Safe alone. Upgrade to MUTATES if any destructive flag is present.
+git branch --show-current,SAFE,,n/a,Prints the current branch name. Read-only.
 git branch -a,SAFE,,n/a,Lists all local and remote-tracking branches. Read-only.
 git branch -vv,SAFE,,n/a,Lists branches with upstream tracking info. Read-only.
 git check-ignore,SAFE,,n/a,Tests whether paths would be ignored by .gitignore. Read-only.
 git diff,SAFE,,n/a,Shows working-tree or commit diff. Read-only.
 git log,SAFE,,n/a,Enumerates commit history. Read-only.
-git ls-tree,SAFE-IF-PIPED,,"git ls-tree --name-only HEAD","Output can be piped to xargs; classify the full pipeline."
+git ls-files,SAFE-IF-PIPED,,git ls-files alone,Lists tracked files. Safe alone; pipeline may inherit destructiveness (xargs rm / sed -i).
+git ls-tree,SAFE-IF-PIPED,,git ls-tree --name-only HEAD,Output can be piped to xargs; classify the full pipeline.
 git merge-base,SAFE,,n/a,Finds common ancestor commit. Read-only.
 git show,SAFE,,n/a,"Shows commit objects, diffs, blobs. Read-only."
 git stash list,SAFE,,n/a,Enumerates the stash stack (refs and subjects). Read-only. Contrast with `git stash push/pop/apply/drop/clear` which are MUTATES.
 git status,SAFE,,n/a,Reports working-tree state. Read-only.
-grep,SAFE-IF-PIPED,"(downstream) | xargs rm; | xargs sed -i","grep … alone","Safe alone. Full pipeline inherits downstream destructiveness."
+grep,SAFE-IF-PIPED,(downstream) | xargs rm; | xargs sed -i,grep … alone,Safe alone. Full pipeline inherits downstream destructiveness.
 head,SAFE,,n/a,Prints first N lines of a file. Read-only.
 less,SAFE,,n/a,Paginated file viewer. Read-only.
+ls,SAFE-IF-PIPED,,ls alone,Lists directory contents. Safe alone; pipeline (| xargs rm) may inherit destructiveness.
 lsof,SAFE,,n/a,Lists open files and sockets. Read-only.
-markdownlint-cli2,SAFE,"--fix","markdownlint-cli2 <file>","Without --fix: linting only. With --fix: modifies files in place."
-mdfind,SAFE-IF-PIPED,,"mdfind … alone","macOS Spotlight search. Safe alone; pipeline may inherit destructiveness."
+markdownlint-cli2,SAFE,--fix,markdownlint-cli2 <file>,Without --fix: linting only. With --fix: modifies files in place.
+mdfind,SAFE-IF-PIPED,,mdfind … alone,macOS Spotlight search. Safe alone; pipeline may inherit destructiveness.
 mdls,SAFE,,n/a,Lists macOS metadata attributes of a file. Read-only.
 mkdir,MUTATES,,n/a,"Creates directories. Always mutates filesystem. Use -p for idempotent form, still MUTATES."
 tail,SAFE,,n/a,Prints last N lines of a file. Read-only.
+true,SAFE,,n/a,No-op builtin that returns exit 0. Used as fallback after || in pipelines.
 wc,SAFE,,n/a,Counts lines/words/bytes. Read-only.

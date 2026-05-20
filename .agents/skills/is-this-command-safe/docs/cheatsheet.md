@@ -46,6 +46,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `mdfind` | 🟡 | downstream `xargs` | `mdfind` alone |
 | `mdls` | ✅ | — | n/a |
 | `mkdir` | ❌ | always mutates | `ls -d <path>` to check existence first |
+| `python3` | ⚠️ | depends on script invoked | hardcode trusted script path in regex |
 | `tail` | ✅ | — | n/a |
 | `true` | ✅ | — | n/a |
 | `wc` | ✅ | — | n/a |
@@ -206,6 +207,29 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Without `--fix`**: linting only — reports rule violations, no files changed.
 - **With `--fix`**: modifies Markdown files in-place. Confirm the match set by running without
   `--fix` first.
+
+***
+
+## Script Interpreter
+
+### `python3`
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends entirely on the script being invoked.
+- **SAFE** (read-only scripts): `python3 <script> --help`, audit scripts, find/coverage scripts that
+  only read files (e.g., `batch-coverage-check.py`, `find-entry.py`).
+- **MUTATES** (write scripts): `edit-entry.py`, `fix-indents.py`, and any script that writes to
+  `settings.json`, `safety-table.csv`, or other files.
+- **Rule**: Always classify by the **script** being invoked, not the interpreter alone.
+- **Auto-approve pattern**: Use a hardcoded path regex anchored to the specific trusted script,
+  never a generic `python3 .*` catch-all.
+
+| Invocation | Verdict |
+| :--- | :--- |
+| `python3 .../find-entry.py --list` | ✅ SAFE (read-only) |
+| `python3 .../batch-coverage-check.py` | ✅ SAFE (read-only) |
+| `python3 .../edit-entry.py --help` | ✅ SAFE (help flag only) |
+| `python3 .../edit-entry.py --add …` | ❌ MUTATES (writes settings.json) |
+| `python3 .../fix-indents.py` | ❌ MUTATES (rewrites settings.py) |
 
 ***
 

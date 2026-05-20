@@ -32,6 +32,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `git ls-tree` | 🟡 | downstream `xargs` | inspect output alone first |
 | `git merge-base` | ✅ | — | n/a |
 | `git show` | ✅ | — | n/a |
+| `git stash list` | ✅ | — | n/a |
 | `git status` | ✅ | — | n/a |
 | `grep` | 🟡 | `\| xargs rm` · `\| xargs sed -i` | `grep` alone |
 | `head` | ✅ | — | n/a |
@@ -164,6 +165,13 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 ### `git show`
 
 - **Verdict**: ✅ SAFE — Shows commit objects, diffs, tree entries, blobs. Read-only.
+
+### `git stash list`
+
+- **Verdict**: ✅ SAFE — Enumerates the stash stack (`stash@{N}` refs with subjects). Read-only.
+- **Contrast**: `git stash push`, `git stash pop`, `git stash apply`, `git stash drop`,
+  `git stash clear` all modify the stash stack or working tree and are ❌ MUTATES — NOT covered
+  by this row.
 
 ***
 

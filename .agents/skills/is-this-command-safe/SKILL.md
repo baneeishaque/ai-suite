@@ -212,6 +212,7 @@ The agent is **BLOCKED** from:
   `docs/conversations/`.
 - Anticipated future composers: `agent-execution-pre-flight-check`,
   `vscode-task-allowlist-generator` (see §1).
+- [`command-autoapprove-onboarding`](../command-autoapprove-onboarding/SKILL.md) — Orchestrator that consumes this skill's verdicts and SSOT files to onboard commands into VS Code autoApprove.
 
 ***
 

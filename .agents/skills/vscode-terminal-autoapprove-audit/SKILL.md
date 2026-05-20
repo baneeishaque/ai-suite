@@ -366,6 +366,7 @@ When no existing entry can be extended, the agent MUST:
 | [`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) | Re-indents `approve`/`matchCommandLine` sub-keys if needed |
 | [`redaction-portability`](../redaction-portability/SKILL.md) | Sanitisation contract for `docs/conversations/` logs |
 | [`vscode-autoapprove-entry-consolidation`](../vscode-autoapprove-entry-consolidation/SKILL.md) | Composer — reuse-before-add algorithm and extension-pattern catalogue for autoApprove entries |
+| [`command-autoapprove-onboarding`](../command-autoapprove-onboarding/SKILL.md) | Orchestrator — end-to-end command → cheatsheet → autoApprove onboarding pipeline that consumes this skill's scripts |
 
 ***
 

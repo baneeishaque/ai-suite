@@ -102,6 +102,19 @@ echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}' | <comm
 
 ***
 
+## 6. Composition by Higher-Level Skills
+
+When the same MCP server entry needs to land in multiple AI tools (VS Code Copilot, JetBrains Copilot,
+Copilot CLI, Claude Desktop, Cursor, Windsurf, etc.), do NOT hand-edit each tool's config. Use the
+[MCP Cross-Tool Config Sync Skill](../mcp-cross-tool-config-sync/SKILL.md), which:
+
+- Treats this skill's server-entry conventions (§2.2) as the SSOT for individual entries.
+- Wraps them in a single canonical `mcp-servers.json`.
+- Generates schema-correct per-tool files (`mcpServers` vs `servers`, `tools: ["*"]`, `inputs` passthrough).
+- Distributes via symlinks so one canonical edit propagates everywhere.
+
+***
+
 ## Design Appendix (Design Fidelity)
 
 | Feature | Change Note | Rationale |

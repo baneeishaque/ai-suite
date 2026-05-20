@@ -21,6 +21,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `brew leaves` | ✅ | — | n/a |
 | `brew list` | ✅ | — | n/a |
 | `brew outdated` | ✅ | — | n/a |
+| `cat` | ⚠️ | `cat > <file>` (overwrites); ONLY safe exception: hardcoded `cat > /tmp/cmds-parity.txt << EOF` → `batch-coverage-check.py` chain | read-only: `cat <file>` |
 | `cd` | ✅ | — | n/a |
 | `echo` | ✅ | — | n/a |
 | `diff` | ✅ | — | n/a |
@@ -105,7 +106,24 @@ find /path -name "*.log" -delete
 
 ### `cat`
 
-- **Verdict**: ✅ SAFE — Prints file contents. No mutation possible.
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends on usage form.
+- **SAFE**: `cat <file>` — reads and prints. Read-only.
+- **MUTATES**: `cat > <file>` — redirect writes/truncates target file.
+- **EXCEPTION (SAFE, hardcoded only)**: The specific chain below is auto-approved as a single
+  pattern. No other `cat > /tmp/...` form qualifies:
+  ```
+  cat > /tmp/cmds-parity.txt << 'EOF'
+  <any content>
+  EOF
+
+  python3 .../command-autoapprove-onboarding/scripts/batch-coverage-check.py \
+      --commands /tmp/cmds-parity.txt \
+      --ssot .../safety-table.csv \
+      --settings ".../settings.json"
+  ```
+  Safe because: the tmp file is write-only scratch (not a system path), the consumer is a
+  read-only audit script (`batch-coverage-check.py`), and both segments are hardcoded in the
+  regex — not a generic `/tmp` or "same filename" rule.
 
 ### `head`
 

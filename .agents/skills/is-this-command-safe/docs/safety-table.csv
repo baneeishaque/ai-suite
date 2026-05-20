@@ -2,7 +2,7 @@ binary,verdict,destructive_flags,safe_alternative,notes
 brew leaves,SAFE,,n/a,Lists explicitly installed (leaf) formulae. Read-only. --installed-on-request narrows to user-requested installs.
 brew list,SAFE,,n/a,Lists installed formulae and/or casks. Read-only. --cask and --formula narrow scope.
 brew outdated,SAFE,,n/a,Lists outdated formulae/casks. Read-only. --greedy widens scope to auto-update casks.
-cat,SAFE,,n/a,Reads and prints file contents. No mutation possible.
+cat,SAFE-WITH-QUALIFICATION,,cat <file>,SAFE when reading files. MUTATES when used with > redirect (cat > <file>). EXCEPTION: cat > /tmp/<name> << EOF is auto-approved ONLY as a hardcoded chained pattern where the EXACT second command is: python3 .../command-autoapprove-onboarding/scripts/batch-coverage-check.py --commands /tmp/<same-name> --ssot .../safety-table.csv --settings "...settings.json". No other consumer qualifies.
 cd,SAFE,,n/a,Changes the shell working directory. No filesystem mutation. Builtin.
 diff,SAFE,,n/a,Compares files line-by-line. Output only; no files modified.
 echo,SAFE,,n/a,Prints arguments to stdout. No mutation. Builtin.

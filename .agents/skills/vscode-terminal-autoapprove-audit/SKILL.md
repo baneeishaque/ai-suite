@@ -315,7 +315,38 @@ The script ([`scripts/audit-autoapprove.py`](./scripts/audit-autoapprove.py)):
 
 ## 11. Forward Policy — Adding New Entries
 
-Before adding any new entry, the agent MUST:
+### 11.1 Reuse Before Add (Primary Rule)
+
+Before creating a new entry, the agent MUST check whether an existing entry can be extended
+to cover the new command form. Prefer **extending** over **adding** to keep the list minimal.
+
+> The full extension-pattern catalogue, reuse-check procedure, collapse-eligibility tests, and
+> periodic sweep protocol live in
+> [`vscode-autoapprove-entry-consolidation`](../vscode-autoapprove-entry-consolidation/SKILL.md)
+> (composer over this skill). The summary table below is retained for inline reference only —
+> the consolidation skill is the SSOT for the algorithm.
+
+**Extension patterns:**
+
+| Existing covers | New form | Action |
+| :--- | :--- | :--- |
+| `cmd( ARGS)?$` (standalone) | `cmd( ARGS)? \| head( -N)?` (with pipe) | Replace: make the `\| head` suffix optional with `( \| head( -[0-9]+)?)?` |
+| `cmd( ARGS)?$` | `cmd --extra-flag( ARGS)?` | Replace: add `(--extra-flag )?` group to existing pattern |
+| Two near-identical entries (same binary, different arg shapes) | — | Collapse into one regex with alternation `(form1\|form2)` |
+
+**Reuse check procedure** (run before any `--add`):
+
+```bash
+# 1. Search for entries covering the same binary/tool
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/find-entry.py   --settings <path> --grep '<binary-name>'
+
+# 2. If a match exists, use --replace to extend the key; do NOT --add a new one.
+# 3. Only --add when no existing entry covers the same binary/tool at all.
+```
+
+### 11.2 Adding New Entries
+
+When no existing entry can be extended, the agent MUST:
 
 1. Classify with `is-this-command-safe` §6.
 2. If verdict is `MUTATES`: obtain explicit user confirmation.
@@ -334,6 +365,7 @@ Before adding any new entry, the agent MUST:
 | [`vscode-settings-promotion`](../vscode-settings-promotion/SKILL.md) | Promotes setting to all profiles after cleanup |
 | [`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) | Re-indents `approve`/`matchCommandLine` sub-keys if needed |
 | [`redaction-portability`](../redaction-portability/SKILL.md) | Sanitisation contract for `docs/conversations/` logs |
+| [`vscode-autoapprove-entry-consolidation`](../vscode-autoapprove-entry-consolidation/SKILL.md) | Composer — reuse-before-add algorithm and extension-pattern catalogue for autoApprove entries |
 
 ***
 

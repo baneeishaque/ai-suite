@@ -21,14 +21,17 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `brew leaves` | ✅ | — | n/a |
 | `brew list` | ✅ | — | n/a |
 | `brew outdated` | ✅ | — | n/a |
-| `cat` | ✅ | — | n/a |
+| `cd` | ✅ | — | n/a |
+| `echo` | ✅ | — | n/a |
 | `diff` | ✅ | — | n/a |
 | `find` | 🟡 | `-delete` · `-exec rm` · `-exec mv` · `-exec sed -i` | `find … -print` first |
 | `git branch -a` | ✅ | — | n/a |
 | `git branch -vv` | ✅ | — | n/a |
+| `git branch --show-current` | ✅ | — | n/a |
 | `git check-ignore` | ✅ | — | n/a |
 | `git diff` | ✅ | — | n/a |
 | `git log` | ✅ | — | n/a |
+| `git ls-files` | 🟡 | `\| xargs rm` · `\| xargs sed -i` | `git ls-files` alone |
 | `git ls-tree` | 🟡 | downstream `xargs` | inspect output alone first |
 | `git merge-base` | ✅ | — | n/a |
 | `git show` | ✅ | — | n/a |
@@ -37,12 +40,14 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `grep` | 🟡 | `\| xargs rm` · `\| xargs sed -i` | `grep` alone |
 | `head` | ✅ | — | n/a |
 | `less` | ✅ | — | n/a |
+| `ls` | 🟡 | `\| xargs rm` | `ls` alone |
 | `lsof` | ✅ | — | n/a |
 | `markdownlint-cli2` | ✅ / ⚠️ | `--fix` (edits files in-place) | omit `--fix` |
 | `mdfind` | 🟡 | downstream `xargs` | `mdfind` alone |
 | `mdls` | ✅ | — | n/a |
 | `mkdir` | ❌ | always mutates | `ls -d <path>` to check existence first |
 | `tail` | ✅ | — | n/a |
+| `true` | ✅ | — | n/a |
 | `wc` | ✅ | — | n/a |
 
 ***
@@ -113,6 +118,10 @@ find /path -name "*.log" -delete
 
 - **Verdict**: ✅ SAFE — Paginated viewer. No mutation.
 
+### `ls`
+
+- **Verdict**: 🟡 SAFE-IF-PIPED — Lists directory contents. Read-only alone. Downstream `\| xargs rm` etc. upgrades verdict.
+
 ### `wc`
 
 - **Verdict**: ✅ SAFE — Counts lines, words, bytes. Read-only.
@@ -150,9 +159,13 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Verdict**: 🟡 SAFE-IF-PIPED — Lists tree objects. Output can be piped; classify the full
   pipeline if a downstream command is added.
 
-### `git branch -a` / `git branch -vv`
+### `git branch -a` / `git branch -vv` / `git branch --show-current`
 
 - **Verdict**: ✅ SAFE — Lists local and remote-tracking branches (with upstream info). Read-only.
+
+### `git ls-files`
+
+- **Verdict**: 🟡 SAFE-IF-PIPED — Lists tracked files. Same downstream-pipeline concerns as `git ls-tree`. Safe alone.
 
 ### `git merge-base`
 
@@ -227,6 +240,22 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Verdict**: ✅ SAFE — Lists outdated formulae/casks. Read-only.
 - **Common flag**: `--greedy` includes casks with `auto_updates` or `version :latest`.
 - **Contrast**: `brew upgrade` (with or without `--greedy`) is ❌ MUTATES.
+
+***
+
+## Shell Builtins
+
+### `cd`
+
+- **Verdict**: ✅ SAFE — Changes the shell working directory. No filesystem mutation.
+
+### `echo`
+
+- **Verdict**: ✅ SAFE — Prints arguments to stdout.
+
+### `true`
+
+- **Verdict**: ✅ SAFE — No-op builtin returning exit 0. Common as `|| true` fallback after a non-fatal grep / test.
 
 ***
 

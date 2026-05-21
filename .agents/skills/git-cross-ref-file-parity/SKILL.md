@@ -150,3 +150,4 @@ is sufficient (e.g., `before-nginx`).
 | [`git-commit-comparison-audit`](../git-commit-comparison-audit/SKILL.md) | Full commit metadata + Why/What narrative across all files |
 | [`git-stash-triage`](../git-stash-triage/SKILL.md) | Classify, inspect, and dispose of stashes |
 | [`git-commit-metadata-extraction`](../git-commit-metadata-extraction/SKILL.md) | Extract full commit metadata as a primitive |
+| [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) | Bulk per-file *content* parity across every file in a ref (including a stash's untracked tree) — answers "is Ref-A fully superseded by Ref-B?" rather than "do A and B introduce the same single-file delta?" |

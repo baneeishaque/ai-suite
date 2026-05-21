@@ -243,9 +243,33 @@ if (Compare-Object $preApplyStatus $postApplyStatus -SyncWindow 0) {
   Resolve manually using `git checkout -- <file>` from the stash, or
   abort with `git checkout .` and investigate. The stash MUST be retained.
 
+#### 3c.1 — Optional: stronger per-file content audit
+
+The `stash apply` no-op check in 3c proves the working tree didn't *change*
+when the stash was re-applied — strong evidence that snapshot content is in
+HEAD, but it is a *delta*-level check. For higher confidence (especially
+when the stash captured untracked files via `-u`, where `apply` does NOT
+restore tracked-blob equality information), run the
+[`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) per-file
+blob-equality audit:
+
+```bash
+python3 .agents/skills/git-ref-content-audit/scripts/audit-ref-content.py \
+    --repo <repo-path> \
+    --stash 0 \
+    --ref-b HEAD \
+    --show-diffs
+```
+
+A `✅ FULLY SUPERSEDED` verdict upgrades 3c from "no delta on re-apply" to
+"every stashed blob byte-equal at HEAD". A `⚠️ PARTIALLY SUPERSEDED`
+verdict surfaces deliberate post-stash refinements that the `apply` no-op
+would have masked silently — inspect each `DIFFERENT` file before deciding.
+A `❌ NOT SUPERSEDED` verdict is a HARD STOP: do not proceed to 3d.
+
 #### 3d — Gated drop with explicit user authorization
 
-ONLY after 3c reports clean no-op:
+ONLY after 3c (and, if used, 3c.1) reports clean no-op / full supersession:
 
 ```text
 The safety stash has been verified as a clean no-op against HEAD. Drop
@@ -280,6 +304,7 @@ authorization.
 |---|---|
 | [`git-stash-triage`](../git-stash-triage/SKILL.md) | **Prerequisite when stash list is non-empty at Phase 1a.** Classifies pre-existing stash entries so the `safety:` push lands at a known position on the stack. |
 | [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) | When Phase 3a residue includes unexpected untracked files (e.g., hunk-stage backup sidecars per §4.3), classifies them before deciding whether to drop the safety stash. |
+| [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) | Optional Phase 3c.1 per-file blob-equality audit between the safety stash (including its `^3` untracked tree) and HEAD — upgrades the `apply` no-op check from delta-level to byte-level supersession proof. |
 
 ## Pitfalls & Recovery
 

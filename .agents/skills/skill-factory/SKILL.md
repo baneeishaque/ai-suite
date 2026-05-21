@@ -79,6 +79,12 @@ The `SKILL.md` MUST include:
 
 ### 2.2.1 Script Authoring Mandates
 
+**No-Embedded-Script Mandate**: Script source code MUST NOT be embedded inside `SKILL.md`, `AGENTS.md`, or any other
+markdown document. Markdown MUST link to the separate file under `scripts/` via a **relative** path
+(e.g., `[scripts/foo.ps1](scripts/foo.ps1)`) and MAY include a short fenced invocation example (one-liner).
+Embedding the full script body is FORBIDDEN — it breaks syntax highlighting, debugging, standalone execution, and
+the SSOT contract. See [AI Rule Standardization Rules — No-Embedded-Script Mandate](../../../ai-agent-rules/ai-rule-standardization-rules.md).
+
 When the skill ships executable scripts under `scripts/`, every script MUST obey:
 
 1. **Language**: PowerShell (`.ps1`) by default, cross-compatible with Windows PowerShell 5.1+ and PowerShell Core 7+.
@@ -175,7 +181,13 @@ Every skill generated via the Factory MUST automatically undergo the final verif
   (e.g., redacting `Apache Commons`, `Eclipse`, `Maven Central`) are both audit failures per Redaction §10.
 - **Contextual Hosting**: Documentation (logs, artifacts) MUST reside in the component's `docs/` folder.
 - **Fidelity Check**: Verify that no technical details from the source conversation were summarized or lost.
-- **Markdown Audit**: Run the **Markdown Generation** protocol to ensure 100% lint compliance.
+- **Markdown Audit**: Run the **Markdown Generation** protocol to ensure 100% lint compliance. The agent MUST re-read
+  every generated/edited markdown file and fix any stray tool-output tags (`</content>`, `<parameter ...>`), duplicated
+  lines, broken or multi-line links, unclosed fences, and embedded absolute paths BEFORE presenting the artifact.
+  Linting MUST be performed by invoking the **`markdownlint-cli2`** binary directly
+  (e.g., `markdownlint-cli2 --fix <path>` then `markdownlint-cli2 <path>`); using `npx markdownlint-cli2` is
+  **FORBIDDEN** per
+  **[Markdown Generation Rules §5](../../../ai-agent-rules/markdown-generation-rules.md#5-validation-rules-markdownlint-cli2)**.
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows
   immediately above and below to verify the sort order holds.

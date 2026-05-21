@@ -157,6 +157,20 @@ explicit `go` / `start` / numbered choice. NEVER auto-execute drops.
 
 #### 4a — Bucket A (Drop)
 
+> **Stronger pre-drop verification (recommended for safety stashes)**:
+> before invoking `stash drop`, run the
+> [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) per-file
+> blob-equality audit to prove every file the stash captures (including its
+> untracked tree at `<stash>^3`) is byte-identical or knowingly-refined in
+> the disposition target (usually `HEAD`). A `✅ FULLY SUPERSEDED` verdict
+> upgrades Bucket A from "applied content already in tree" to "every
+> stashed blob proven equal at HEAD".
+>
+> ```bash
+> python3 .agents/skills/git-ref-content-audit/scripts/audit-ref-content.py \
+>     --repo $repo --stash N --ref-b HEAD --show-diffs
+> ```
+
 ```powershell
 git -C $repo stash drop 'stash@{N}'
 git -C $repo stash list   # verify N decremented or list empty

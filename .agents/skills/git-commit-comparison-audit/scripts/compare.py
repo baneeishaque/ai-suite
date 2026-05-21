@@ -22,7 +22,7 @@ def run_audit(sha, cwd=None):
     """Run the audit.py script and return the output."""
     try:
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../"))
-        script_relative = ".agents/skills/git_commit_details_audit/scripts/audit.py"
+        script_relative = ".agents/skills/git-commit-details-audit/scripts/audit.py"
         abs_script_path = os.path.join(root, script_relative)
         
         result = subprocess.run(
@@ -41,17 +41,20 @@ def parse_audit_output(output):
     if not output: return None
     
     data = {
-        "author": "Unknown", "date": "Unknown", "message": "N/A", "repo": "Unknown",
+        "author": "Unknown", "author_date": "Unknown",
+        "committer": "Unknown", "commit_date": "Unknown",
+        "message": "N/A", "repo": "Unknown",
         "submodules": {}, # name -> pointer
         "reachability": [] # list of {type, name, tip, status}
     }
-    
+
     # Simple Metadata
-    m = re.search(r"Author: (.*)", output); d1 = m.group(1).strip() if m else "Unknown"
-    m = re.search(r"Date: (.*)", output); d2 = m.group(1).strip() if m else "Unknown"
-    m = re.search(r"Commit Message: (.*)", output); d3 = m.group(1).strip() if m else "N/A"
-    m = re.search(r"Repository: (.*)", output); d4 = m.group(1).strip() if m else "Unknown"
-    data.update({"author": d1, "date": d2, "message": d3, "repo": d4})
+    m = re.search(r"Author: (.*)", output);     data["author"]      = m.group(1).strip() if m else "Unknown"
+    m = re.search(r"AuthorDate: (.*)", output); data["author_date"] = m.group(1).strip() if m else "Unknown"
+    m = re.search(r"Committer: (.*)", output);  data["committer"]   = m.group(1).strip() if m else "Unknown"
+    m = re.search(r"CommitDate: (.*)", output); data["commit_date"] = m.group(1).strip() if m else "Unknown"
+    m = re.search(r"Commit Message: (.*)", output); data["message"] = m.group(1).strip() if m else "N/A"
+    m = re.search(r"Repository: (.*)", output);     data["repo"]    = m.group(1).strip() if m else "Unknown"
     
     # Submodule Differential Analysis
     diff_blocks = re.split(r"diff --git a/", output)
@@ -109,7 +112,9 @@ def compare_commits(sha1, sha2):
     output.append("| Attribute | Commit {0} | Commit {1} |".format(sha1[:7], sha2[:7]))
     output.append("| :--- | :--- | :--- |")
     output.append(f"| **AUTHOR** | {d1['author']} | {d2['author']} |")
-    output.append(f"| **DATE** | {d1['date']} | {d2['date']} |")
+    output.append(f"| **AUTHOR DATE** | {d1['author_date']} | {d2['author_date']} |")
+    output.append(f"| **COMMITTER** | {d1['committer']} | {d2['committer']} |")
+    output.append(f"| **COMMIT DATE** | {d1['commit_date']} | {d2['commit_date']} |")
     output.append(f"| **MESSAGE** | {d1['message'][:65]}... | {d2['message'][:65]}... |")
     
     common_subs = set(d1["submodules"].keys()) & set(d2["submodules"].keys())

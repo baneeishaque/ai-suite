@@ -53,13 +53,13 @@ def get_references_for_sha(sha, path):
 
 def format_commit_details(sha, path, repo_display_name):
     """Format the commit details into the required industrial template."""
-    # Metadata: Author, Date, Full Message
+    # Metadata: Author, AuthorDate, Committer, CommitterDate, Full Message
     metadata = run_git([
-        "show", "-s", 
-        "--format=Author: %an <%ae>%nDate: %aD%nMessage: %B", 
+        "show", "-s",
+        "--format=Author: %an <%ae>%nAuthorDate: %aD%nCommitter: %cn <%ce>%nCommitDate: %cD%nMessage: %B",
         sha
     ], cwd=path)
-    
+
     if not metadata:
         return "Error: Could not retrieve commit metadata."
 
@@ -68,7 +68,7 @@ def format_commit_details(sha, path, repo_display_name):
 
     # Changed Files Inventory
     name_status = run_git(["show", "--name-status", "--format=", sha], cwd=path)
-    
+
     # Full Hunks (Diffs)
     hunks = run_git(["show", "-p", "--format=", sha], cwd=path)
 
@@ -80,16 +80,20 @@ def format_commit_details(sha, path, repo_display_name):
     output = []
     output.append(f"Repository: {repo_display_name}")
     output.append(f"Commit SHA: {sha}")
-    
+
     # Split metadata into sections
     meta_lines = metadata.splitlines()
-    author = meta_lines[0]
-    date = meta_lines[1]
-    message = "\n".join(meta_lines[2:]).replace("Message: ", "").strip()
+    author        = meta_lines[0]
+    author_date   = meta_lines[1]
+    committer     = meta_lines[2]
+    commit_date   = meta_lines[3]
+    message       = "\n".join(meta_lines[4:]).replace("Message: ", "", 1).strip()
 
     output.append(f"Commit Message: {message}")
     output.append(author)
-    output.append(date)
+    output.append(author_date)
+    output.append(committer)
+    output.append(commit_date)
     
     output.append("-" * 40)
     output.append("### REFERENCE AUDIT (Containing Branches & Tags)")

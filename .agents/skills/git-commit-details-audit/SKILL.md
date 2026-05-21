@@ -37,7 +37,7 @@ python3 .agents/skills/git-commit-details-audit/scripts/audit.py <COMMIT_SHA>
 - `<COMMIT_SHA>`: The 40-character (full) or unique short SHA of the commit to be audited.
 
 #### Output Features:
-- **Metadata**: Author, Date, and Pedagogical Commit Message.
+- **Metadata**: Author + AuthorDate **and** Committer + CommitDate (separate identities — required for forensic audits where author ≠ committer such as rebases, cherry-picks, or filter-repo runs), plus the full pedagogical Commit Message.
 - **Advanced Reference Tracking**: Tabular identification of all branches (local/remote) and tags containing the SHA, along with their current Tips and Divergence Status.
 - **Changed Files Inventory**: High-level modification status codes.
 - **Hunk Exposure**: Full diff analysis with "Why vs. What" narrative context.

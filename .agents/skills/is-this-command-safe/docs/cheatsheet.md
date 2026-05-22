@@ -230,6 +230,15 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 
 ## Script Interpreter
 
+### `python` (Windows alias)
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — Windows / launcher-installed alias for `python3`.
+- **Same rules as `python3`**: classify by the **script** being invoked, never the interpreter
+  alone. See the `python3` section below for the SAFE / MUTATES classification table — every
+  row applies identically when the interpreter is spelled `python`.
+- **Auto-approve pattern**: hardcoded path regex anchored to the specific trusted script;
+  never a generic `python .*` catch-all.
+
 ### `python3`
 
 - **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends entirely on the script being invoked.
@@ -248,6 +257,46 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 | `python3 .../edit-entry.py --help` | ✅ SAFE (help flag only) |
 | `python3 .../edit-entry.py --add …` | ❌ MUTATES (writes settings.json) |
 | `python3 .../fix-indents.py` | ❌ MUTATES (rewrites settings.py) |
+
+### `java`
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends on what the JVM is asked to run.
+- **SAFE**: `java -version`, `java -help`, classpath inspection (`-XshowSettings`).
+- **MUTATES**: `java -jar <unknown.jar>`, `java <MainClass>` — runs arbitrary code that may
+  write files, mutate state, perform network I/O.
+- **Auto-approve pattern**: pin to specific safe flags only (e.g., `/^java -version$/`),
+  never a generic `java .*` catch-all.
+
+***
+
+## PowerShell Cmdlets (Read-Only)
+
+The following cmdlets are pure read-only or output-only and SAFE to auto-approve with an
+anchored anti-chaining regex `/^<Cmdlet>( [^;&|<>$\`()]+)+$/`. The anti-chaining char class
+is mandatory — without it, `Cmdlet args; Remove-Item -Recurse C:\` would match.
+
+| Cmdlet | Role | Verdict |
+| :--- | :--- | :--- |
+| `Get-ChildItem` | Directory listing (alias `gci`/`ls`/`dir`) | ✅ SAFE |
+| `Get-Content` | File reader (alias `cat`/`gc`/`type`) | ✅ SAFE |
+| `Get-Date` | Date/time emitter | ✅ SAFE |
+| `Get-Process` | Process listing | ✅ SAFE |
+| `Select-String` | grep-equivalent | ✅ SAFE |
+| `Test-Path` | Existence check | ✅ SAFE |
+| `Split-Path` | Pure path-component splitter | ✅ SAFE |
+| `Get-Item`, `Get-FileHash`, `Get-Command` | Metadata / hash / lookup | ✅ SAFE |
+| `Push-Location`, `Pop-Location`, `Set-Location` | Directory-stack navigation | ✅ SAFE |
+| `Sort-Object`, `Group-Object`, `Select-Object`, `ForEach-Object`, `Where-Object`, `Format-Table`, `Out-String` | Pipeline transforms / formatters | ✅ SAFE (cmdlet itself) |
+| `Write-Host` | Console output | ✅ SAFE |
+
+**Important — scriptblock executors**: `ForEach-Object { … }` and `Where-Object { … }` accept
+a scriptblock whose body is **arbitrary code**. The cmdlet name is SAFE, but a loose-prefix
+auto-approve entry (`"ForEach-Object": true`) effectively approves any code. Do NOT add a
+bare-prefix entry for these — only onboard specific anchored pipeline shapes.
+
+**MUTATES cmdlets — auto-approve only with explicit user confirmation**:
+`Copy-Item`, `Move-Item`, `Remove-Item`, `Set-Content`, `Add-Content`, `Out-File`,
+`New-Item`, `Rename-Item`.
 
 ***
 

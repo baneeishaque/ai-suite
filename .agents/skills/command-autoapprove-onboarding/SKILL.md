@@ -168,6 +168,22 @@ cat > /tmp/cmds.txt << 'EOF'
 EOF
 ```
 
+#### Step B1-alt — Bootstrap from an existing `settings.json`
+
+When the input is **not** a fresh command list but an existing autoApprove block you
+want to audit for coverage gaps, use `extract-binaries.py` to enumerate every distinct
+binary referenced across all keys:
+
+```bash
+python3 .agents/skills/command-autoapprove-onboarding/scripts/extract-binaries.py \
+  --settings <path/to/settings.json> --out /tmp/cmds.txt
+```
+
+Each line of `/tmp/cmds.txt` is one `<binary> <args>` placeholder ready for
+`batch-coverage-check.py`. The script is best-effort: regex alternations like
+`( -v| show)?` may surface phantom binaries (e.g., `show`) — inspect the output
+before feeding the next step.
+
 ### Step B2 — Run batch-coverage-check.py
 
 ```bash

@@ -258,6 +258,31 @@ python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/edit-entry.py \
 > **`--delete-grep` safety**: fails if 0 or >1 keys match the substring — always unique-identify
 > before running. After deletion, run `fix-indents.py` to restore overrides.
 
+### 7.5 Script — `batch-edit.py`
+
+When more than ~3 ops need to be applied in one session, or when keys contain backticks,
+`$`, or inner quotes that PowerShell will mangle on the command line, use `batch-edit.py`
+to drive every op from a JSONL file (no shell-quoting hazard, single Python startup):
+
+```bash
+# ops.jsonl — one operation per line; '#' and blank lines ignored
+# {"op": "add",         "key": "/^…$/"}
+# {"op": "replace",     "old": "loose-prefix", "new": "/^anchored$/"}
+# {"op": "delete",      "key": "exact-key"}
+# {"op": "delete-grep", "key": "unique-substring"}
+
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/batch-edit.py \
+  --settings <path> --ops ops.jsonl
+
+# Validate the whole plan without writing
+python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/batch-edit.py \
+  --settings <path> --ops ops.jsonl --dry-run
+```
+
+If any single op fails, the file is **NOT written** — all-or-nothing semantics.
+Tolerates BOM-prefixed UTF-8 (PowerShell 5 `Out-File -Encoding utf8` default).
+Run `fix-indents.py` afterwards (§3.1).
+
 ***
 
 ## 8. Secret Scanning
@@ -350,10 +375,32 @@ When no existing entry can be extended, the agent MUST:
 
 1. Classify with `is-this-command-safe` §6.
 2. If verdict is `MUTATES`: obtain explicit user confirmation.
-3. Use anchored regex `/^…$/` + `matchCommandLine: true`. Bare-prefix `"token": true` is
-   **FORBIDDEN** for any token that prefixes a destructive command.
+3. Use anchored regex `/^…$/`. Bare-prefix `"token": true` is **FORBIDDEN** for any token
+   that prefixes a destructive command.
 4. Apply anti-chaining character class (§7.2) in all argument slots.
-5. Scan for Tier A/B data (§8) before committing.
+5. Set `matchCommandLine` per §11.3 below.
+6. Scan for Tier A/B data (§8) before committing.
+
+### 11.3 `matchCommandLine` — Per-Verdict Policy
+
+VS Code's `matchCommandLine` flag selects how the regex is evaluated against the user's
+command line. Choose the value by safety verdict, not by personal preference:
+
+| Verdict | `matchCommandLine` | Rationale |
+| :--- | :--- | :--- |
+| ✅ SAFE (read-only) | **`false`** | VS Code splits the line on `;`, `&&`, `\|\|`, `\|` and matches each sub-command independently. Chained read-only commands (e.g., `git status; git branch; git stash list`) auto-approve only when every segment matches a SAFE entry. The anti-chaining class still belongs in the regex — it costs nothing and defends against arg-embedded `$()`/backtick substitution that the line splitter does NOT split on. |
+| 🟡 SAFE-IF-PIPED | **`true`** | Match the full pipeline literally so the SAFE downstream sink (head/grep/wc) is part of the contract. |
+| ⚠️ HAS-DESTRUCTIVE-FLAGS | **`true`** | Full-line match needed to assert the destructive flag is absent in EVERY segment. |
+| ❌ MUTATES (with user opt-in) | **`true`** | Narrow, full-line, no wildcards on the destructive flag. |
+
+**Migration helper**: `batch-edit.py` supports an `update` op for flipping the flag in bulk:
+
+```jsonl
+{"op": "update", "key": "/^git status( …)*$/", "matchCommandLine": false}
+```
+
+> Note: `fix-indents.py` re-indents `approve`/`matchCommandLine` sub-keys regardless of value;
+> no further indent adjustment is needed after a bulk flip.
 
 ***
 

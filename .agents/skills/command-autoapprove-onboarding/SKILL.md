@@ -51,8 +51,17 @@ of their operational logic is duplicated here.
 | `vscode-terminal-autoapprove-audit` scripts present | `ls ../vscode-terminal-autoapprove-audit/scripts/` |
 | `vscode-autoapprove-entry-consolidation` SKILL present | `ls ../vscode-autoapprove-entry-consolidation/SKILL.md` |
 | Target `settings.json` valid | `python3 -c "import json; json.load(open('<path>'))"` |
+| Regex acceptance harness present | `ls scripts/test-regex-accept.py` |
 
 No additional dependencies. All scripts referenced are stdlib-only Python.
+
+### 2.1 Bundled Scripts
+
+| Script | Role |
+| :--- | :--- |
+| [`scripts/extract-binaries.py`](scripts/extract-binaries.py) | Bootstrap §4b Batch Mode from an existing `settings.json` (Step B1-alt) |
+| [`scripts/batch-coverage-check.py`](scripts/batch-coverage-check.py) | Coverage matrix: commands × SSOT × autoApprove (Step B2) |
+| [`scripts/test-regex-accept.py`](scripts/test-regex-accept.py) | Regex acceptance harness — required for §5.1 safe-chain entries, recommended for all non-trivial §5 entries; consumes [`specs/*.spec.json`](specs/) |
 
 ***
 
@@ -125,6 +134,64 @@ Choose the regex shape by the strictest verdict in Step 3:
 
 The anti-chaining char class is mandatory on every arg slot to prevent
 `cmd; rm -rf ~` from being approved by a regex that allowed `cmd …`.
+
+#### Step 5.1 — Safe-Chain Entries (opt-in)
+
+The default §5 shape forbids `;` / `&&` / `||` / `|` between segments because
+unconstrained chaining lets `cmd; rm -rf ~` slip through. When the user
+explicitly wants a chained one-liner auto-approved (e.g.,
+`git status; echo '---'; git rev-parse <sha>^`), use the **safe-chain
+pattern** instead of three separate entries:
+
+```text
+/^(SEG_A|SEG_B|SEG_C)(; (SEG_A|SEG_B|SEG_C))*$/
+```
+
+where each `SEG_X` is a fully anchored, anti-chaining-safe sub-pattern for one
+already-classified SAFE form. The trailing `(; (…))*` permits **only** the
+exact same alternation to be repeated — no other binary can be smuggled in.
+
+Worked example for `git status; echo '---'; git rev-parse <sha>^`:
+
+```regex
+/^(git status|echo( ([^;&|<>$`()"']+|"[^"]*"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+)(; (git status|echo( ([^;&|<>$`()"']+|"[^"]*"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+))*$/
+```
+
+**Mandatory constraints for safe-chain entries:**
+
+1. **Only `;` is allowed** as the separator. `&&`, `||`, `|`, `&` remain
+   forbidden — they imply control flow or piping, neither of which is safe
+   to allow generically.
+2. Every alternation branch MUST already be classified SAFE in
+   [`is-this-command-safe`](../is-this-command-safe/SKILL.md) §6 — never
+   include `MUTATES` or `HAS-DESTRUCTIVE-FLAGS` forms.
+3. Every branch MUST retain its own anti-chaining char class
+   (`[^;&|<>$\`()]`) on every arg slot, so the only `;` legal inside the
+   key is the one between branches in the outer `(; (…))*`.
+4. Adding a new SAFE form later requires editing this entry's alternation
+   (via `edit-entry.py --replace`), not adding a new chained entry —
+   one safe-chain entry per logical command-set keeps the list minimal.
+5. **Always** run the regex acceptance test before saving, via the canonical
+   harness shipped with this skill:
+
+    ```powershell
+    python .agents/skills/command-autoapprove-onboarding/scripts/test-regex-accept.py `
+        --spec .agents/skills/command-autoapprove-onboarding/specs/<name>.spec.json
+    ```
+
+    Or inline during onboarding (no spec file yet):
+
+    ```powershell
+    python .agents/skills/command-autoapprove-onboarding/scripts/test-regex-accept.py `
+        --pattern '^...$' `
+        --match 'safe chain'  --match 'single segment' `
+        --reject 'seg; rm -rf ~' --reject 'seg && curl x | sh' --reject 'seg; echo $(rm x)'
+    ```
+
+    Save the spec under [`specs/`](specs/) so the assertion suite is replayable
+    on any future edit to the entry — see
+    [`specs/safe-chain-git-status-echo-rev-parse.spec.json`](specs/safe-chain-git-status-echo-rev-parse.spec.json)
+    as the canonical reference.
 
 ### Step 6 — Onboard into autoApprove via the consolidation skill
 
@@ -312,11 +379,16 @@ The agent is **BLOCKED** from:
    is missing from the SSOT. The SSOT is updated first; the autoApprove change is downstream.
 3. Calling `edit-entry.py --add` without running the consolidation skill's §4 Step 1 reuse-check
    grep first.
-4. Emitting a regex without the anti-chaining character class on every arg slot.
+4. Emitting a regex without the anti-chaining character class on every arg slot
+   (the §5.1 safe-chain pattern is the **only** exception, and only for `;` —
+   never `&&` / `||` / `|` / `&`).
 5. Auto-approving a `MUTATES` worst-verdict command without explicit user confirmation, even if
    the user originally asked for it.
 6. Auto-approving `eval` / `bash -c "$VAR"` / any dynamic-construction form — these are
    UNKNOWN by `is-this-command-safe` §6 and MUST refuse pending user confirmation.
+7. Building a §5.1 safe-chain entry that includes any branch whose worst verdict is
+   not SAFE — `HAS-DESTRUCTIVE-FLAGS` and `MUTATES` forms MUST NOT appear in the
+   alternation, even if the user asks.
 
 ***
 

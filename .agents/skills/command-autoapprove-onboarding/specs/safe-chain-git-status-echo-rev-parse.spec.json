@@ -1,0 +1,19 @@
+{
+  "_comment": "Reference spec — proves the §5.1 safe-chain entry for git status / echo / git rev-parse accepts intended chains and rejects unsafe ones. Re-run on any future edit to that entry.",
+  "pattern": "^(git status|echo( ([^;&|<>$`()\"']+|\"[^\"]*\"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+)(; (git status|echo( ([^;&|<>$`()\"']+|\"[^\"]*\"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+))*$",
+  "must_match": [
+    "git status; echo '---'; git rev-parse 419d1e6d2^",
+    "git status",
+    "echo '---'",
+    "git rev-parse HEAD",
+    "echo hello",
+    "echo hi; git status; git rev-parse HEAD~1"
+  ],
+  "must_reject": [
+    "git status; rm -rf ~",
+    "git status && echo ok",
+    "git status | grep foo",
+    "git status; echo $(rm x)",
+    "git status; echo `whoami`"
+  ]
+}

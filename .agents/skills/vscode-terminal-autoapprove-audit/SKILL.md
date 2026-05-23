@@ -381,6 +381,18 @@ When no existing entry can be extended, the agent MUST:
 5. Set `matchCommandLine` per §11.3 below.
 6. Scan for Tier A/B data (§8) before committing.
 
+**Chained one-liners**: When the user explicitly wants a `;`-chained command
+(e.g., `git status; echo '---'; git rev-parse <sha>^`) to auto-approve as a
+single line, follow the **safe-chain pattern** documented in
+[`command-autoapprove-onboarding` §5.1](../command-autoapprove-onboarding/SKILL.md#step-51--safe-chain-entries-opt-in),
+including the mandatory regex-acceptance test via
+[`scripts/test-regex-accept.py`](../command-autoapprove-onboarding/scripts/test-regex-accept.py).
+Note that if all chained segments are SAFE and use `matchCommandLine: false`
+(§11.3 default for SAFE), VS Code already splits the line on `;`/`&&`/`||`/`|`
+and matches each sub-command independently — three atomic entries suffice and
+the safe-chain pattern is unnecessary. The safe-chain pattern is for
+`matchCommandLine: true` entries only.
+
 ### 11.3 `matchCommandLine` — Per-Verdict Policy
 
 VS Code's `matchCommandLine` flag selects how the regex is evaluated against the user's

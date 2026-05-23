@@ -138,18 +138,32 @@ The anti-chaining char class is mandatory on every arg slot to prevent
 #### Step 5.1 — Safe-Chain Entries (opt-in)
 
 The default §5 shape forbids `;` / `&&` / `||` / `|` between segments because
-unconstrained chaining lets `cmd; rm -rf ~` slip through. When the user
-explicitly wants a chained one-liner auto-approved (e.g.,
-`git status; echo '---'; git rev-parse <sha>^`), use the **safe-chain
-pattern** instead of three separate entries:
+unconstrained chaining lets `cmd; rm -rf ~` slip through. There are **two paths**
+for auto-approving a chained one-liner whose every segment is independently SAFE —
+pick by the entries' `matchCommandLine` flag, governed by
+[`vscode-terminal-autoapprove-audit` §11.3](../vscode-terminal-autoapprove-audit/SKILL.md#113-matchcommandline--per-verdict-policy):
+
+**Path A — `matchCommandLine: false` (preferred for SAFE entries).**
+VS Code splits the command line on `;`, `&&`, `||`, `|` and matches each
+sub-command against the entry list independently. Three atomic SAFE entries
+(one per binary) auto-approve any permutation of the chain — no safe-chain
+entry needed. This is the canonical recommendation per §11.3 because it
+keeps the entry list minimal and inherently composable.
+
+**Path B — `matchCommandLine: true` + safe-chain entry (when split is unwanted).**
+When the entries must be `matchCommandLine: true` (e.g., `SAFE-IF-PIPED` /
+`HAS-DESTRUCTIVE-FLAGS` / `MUTATES` requirements per §11.3, or because the
+agent's tool inserts wrapper characters that defeat the splitter), VS Code
+matches the whole line as one regex. To allow chained SAFE one-liners
+without unconstrained `;`, use the **safe-chain pattern**:
 
 ```text
 /^(SEG_A|SEG_B|SEG_C)(; (SEG_A|SEG_B|SEG_C))*$/
 ```
 
-where each `SEG_X` is a fully anchored, anti-chaining-safe sub-pattern for one
-already-classified SAFE form. The trailing `(; (…))*` permits **only** the
-exact same alternation to be repeated — no other binary can be smuggled in.
+where each `SEG_X` is a fully anchored, anti-chaining-safe sub-pattern for
+one already-classified SAFE form. The trailing `(; (…))*` permits **only**
+the exact same alternation to be repeated — no other binary can be smuggled in.
 
 Worked example for `git status; echo '---'; git rev-parse <sha>^`:
 
@@ -157,7 +171,7 @@ Worked example for `git status; echo '---'; git rev-parse <sha>^`:
 /^(git status|echo( ([^;&|<>$`()"']+|"[^"]*"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+)(; (git status|echo( ([^;&|<>$`()"']+|"[^"]*"|'[^']*'))*|git rev-parse( [^;&|<>$`()]+)+))*$/
 ```
 
-**Mandatory constraints for safe-chain entries:**
+**Mandatory constraints for safe-chain entries (Path B):**
 
 1. **Only `;` is allowed** as the separator. `&&`, `||`, `|`, `&` remain
    forbidden — they imply control flow or piping, neither of which is safe

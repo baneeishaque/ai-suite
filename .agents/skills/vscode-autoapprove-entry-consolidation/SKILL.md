@@ -190,6 +190,14 @@ verbatim:
 5. Scan for Tier A/B secrets per
    [`vscode-terminal-autoapprove-audit` §8](../vscode-terminal-autoapprove-audit/SKILL.md#8-secret-scanning).
 
+For `;`-chained one-liners composed solely of already-SAFE binaries, prefer a
+single **safe-chain entry** (per
+[`command-autoapprove-onboarding` §5.1](../command-autoapprove-onboarding/SKILL.md#step-51--safe-chain-entries-opt-in))
+over N separate atomic entries — the alternation-collapse pattern (§5.3 here)
+applied at chain granularity. Always validate via
+[`scripts/test-regex-accept.py`](../command-autoapprove-onboarding/scripts/test-regex-accept.py)
+before committing.
+
 ***
 
 ## 7. Periodic Sweep Protocol

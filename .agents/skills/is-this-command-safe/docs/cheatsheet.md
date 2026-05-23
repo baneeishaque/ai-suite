@@ -194,6 +194,12 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 
 - **Verdict**: ✅ SAFE — Tests whether paths would be excluded by `.gitignore` rules. Read-only.
 
+### `git rev-parse`
+
+- **Verdict**: ✅ SAFE — Resolves a revision expression (SHA, ref name, `HEAD^`, `HEAD~N`,
+  `<sha>^{tree}`) to a full SHA, or prints repo-layout paths (`--git-dir`, `--show-toplevel`,
+  `--is-inside-work-tree`). Read-only.
+
 ### `git show`
 
 - **Verdict**: ✅ SAFE — Shows commit objects, diffs, tree entries, blobs. Read-only.

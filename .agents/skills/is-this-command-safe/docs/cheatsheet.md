@@ -171,6 +171,12 @@ find /path -name "*.log" -delete
 ### `ls`
 
 - **Verdict**: 🟡 SAFE-IF-PIPED — Lists directory contents. Read-only alone. Downstream `\| xargs rm` etc. upgrades verdict.
+- **Auto-approve pattern**: pin to a per-segment shape that admits an optional
+  `2>&1` and an optional `| (head|tail|wc)` suffix, and allow `&&`-chaining of
+  multiple `ls` segments (each segment must itself match the same shape). Example:
+  `/^ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1)?( \| (head|tail|wc)( -[0-9a-z]+)?)?( && ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1)?( \| (head|tail|wc)( -[0-9a-z]+)?)?)*$/`.
+  Because every segment is constrained to `ls`, no MUTATES binary can be smuggled
+  via the `&&` chain.
 
 ### `wc`
 

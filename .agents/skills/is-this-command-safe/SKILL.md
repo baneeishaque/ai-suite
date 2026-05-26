@@ -102,6 +102,14 @@ regardless of the binary's default classification:
 When ANY of these patterns appears in the command line, the verdict is **MUTATES** even if the
 host binary is `SAFE` or `SAFE-IF-PIPED`.
 
+**Narrow documented exception**: the
+[Hardcoded Tmp-Write→Read Exception Pattern](./docs/cheatsheet.md#hardcoded-tmp-writeread-exception-pattern)
+defines the ONLY class of chains where a `>` truncating redirect may keep an
+overall SAFE verdict. Every clause of that section MUST hold; otherwise the
+verdict remains `MUTATES`. New occurrences MUST be added by extending the
+pattern's catalogue table (with a corresponding per-binary `EXCEPTION` block
+that links back), never by inventing a new exception class inline.
+
 ***
 
 ## 5. Verdict Template (Mandated Output Format)

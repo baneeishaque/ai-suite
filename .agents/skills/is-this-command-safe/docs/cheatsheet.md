@@ -18,6 +18,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 
 | Command / Binary | Verdict | Destructive form(s) | Safe alternative / dry-run |
 | :--- | :---: | :--- | :--- |
+| `awk` | ⚠️ | `system("…")` · `\| sh` · `getline cmd \| …` · `-f <script>` | pure-projection forms only: `awk '{print $1}' <file>`, `awk -F: '{…}' <file>` |
 | `brew leaves` | ✅ | — | n/a |
 | `brew list` | ✅ | — | n/a |
 | `brew outdated` | ✅ | — | n/a |
@@ -49,9 +50,11 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `mkdir` | ❌ | always mutates | `ls -d <path>` to check existence first |
 | `python3` | ⚠️ | depends on script invoked | hardcode trusted script path in regex |
 | `sed` | ⚠️ | `-i` (in-place edit) | print-only: `sed -n 'N,Mp' <file>` |
+| `sort` | 🟡 | `-o <file>` (writes sorted output, may clobber) | `sort <file>` alone (stdout) |
 | `tail` | ✅ | — | n/a |
 | `true` | ✅ | — | n/a |
 | `wc` | ✅ | — | n/a |
+| `which` | ✅ | — | n/a |
 
 ***
 
@@ -91,6 +94,22 @@ find /path -name "*.log" -delete
 ***
 
 ## Text Search
+
+### `awk`
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — pattern-scanning language. Safety depends on the
+  script body, not the binary alone.
+- **SAFE**: pure projection / aggregation that only reads input and writes to stdout,
+  e.g. `awk '{print $1}' file.txt`, `awk -F: '{print $1, $3}' /etc/passwd`,
+  `awk '/^[a-z]/ {print NR": "$0}' file`.
+- **MUTATES (refuse / classify by the embedded command)**:
+  - `awk 'BEGIN{system("rm -rf ~")}'` — `system(…)` executes a shell command.
+  - `awk '{print}' | sh` — pipeline target is a shell.
+  - `awk '{cmd="…"; cmd | getline x}'` — `getline … | "cmd"` runs an external command.
+  - `awk -f script.awk` — loads an external script whose contents must be vetted.
+- **Auto-approve pattern**: pin to inline scripts that do **not** contain `system(`,
+  do **not** end in `| sh`, and do **not** use `-f`. Never auto-approve a generic
+  `awk .*` catch-all.
 
 ### `grep`
 
@@ -156,6 +175,19 @@ find /path -name "*.log" -delete
 ### `wc`
 
 - **Verdict**: ✅ SAFE — Counts lines, words, bytes. Read-only.
+
+### `sort`
+
+- **Verdict**: 🟡 SAFE-IF-PIPED — Lexicographic sorter. Reads input, writes sorted output
+  to stdout by default. Read-only in default form.
+- **MUTATES**: `sort -o <file>` writes the sorted output to `<file>`, potentially clobbering
+  it. Refuse / classify as MUTATES whenever `-o` is present.
+- **Auto-approve pattern**: pin to no-`-o` invocations, e.g.
+  `/^sort( -[a-zA-Z]+)*( [^;&|<>$`()]+)*( \| (head|tail)( -[0-9]+)?)?$/`.
+
+### `which`
+
+- **Verdict**: ✅ SAFE — Locates an executable in `PATH`. Read-only.
 
 ***
 

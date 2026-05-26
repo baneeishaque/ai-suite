@@ -130,7 +130,7 @@ Choose the regex shape by the strictest verdict in Step 3:
 | ✅ SAFE | Yes | Anchored `/^…$/` with anti-chaining char class `[^;&\|<>$BTICK()]` on every arg slot |
 | 🟡 SAFE-IF-PIPED | Yes IFF the literal pipeline composed only of SAFE downstream sinks (`head`, `grep`, `wc`); escape the literal pipe `\|` between segments | Same shape, with `\|` literal between segment regexes |
 | ⚠️ HAS-DESTRUCTIVE-FLAGS | Only the SAFE form (without the destructive flag) | Build the regex around the safe flag set; explicitly exclude the destructive flag |
-| ❌ MUTATES | **Only with explicit user confirmation** per [`vscode-terminal-autoapprove-audit` §11.2](../vscode-terminal-autoapprove-audit/SKILL.md#112-adding-new-entries) | Anchored, narrow, no wildcards on the destructive flag |
+| ❌ MUTATES | **Only with explicit user confirmation** per [`vscode-terminal-autoapprove-audit` §11.2](../vscode-terminal-autoapprove-audit/SKILL.md#112-adding-new-entries). For `>` truncating-redirect chains specifically, the chain MUST satisfy every clause of [`is-this-command-safe` Hardcoded Tmp-Write→Read Exception Pattern](../is-this-command-safe/docs/cheatsheet.md#hardcoded-tmp-writeread-exception-pattern); otherwise refuse. | Anchored, narrow, no wildcards on the destructive flag |
 
 The anti-chaining char class is mandatory on every arg slot to prevent
 `cmd; rm -rf ~` from being approved by a regex that allowed `cmd …`.
@@ -347,6 +347,24 @@ Two atomic commits per the standard protocol:
 | 5 | Regex shape | `/^git( --no-pager)? stash list( ARG-CLASS*)?( \| grep( -[A-Za-z]+)*( ARG-CLASS+)+)?$/` |
 | 6 | Onboard | `find-entry.py --grep stash` → 0 matches → `edit-entry.py --add`. (If a `git stash list` entry already existed without the `\| grep` suffix, hand off to consolidation §5.1 to `--replace` instead.) |
 | 7 | Audit | JSON valid; new entry visible at correct position; indent overrides reapplied |
+
+***
+
+### 5.1 Worked Example — Hardcoded Tmp-Write→Read MUTATES Exception
+
+**User asks:** *"Auto-approve `git -C <repo> diff -- <path> > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head -100 /tmp/settings_diff.txt`"*
+
+| Step | Action | Result |
+| :--- | :--- | :--- |
+| 1 | Capture | Full chain preserved verbatim. |
+| 2 | Decompose | Three segments via `;` and `&&`: `git diff > FILE`, `wc -l FILE`, `head -100 FILE`. |
+| 3 | Classify | `git diff` SAFE; **`> /tmp/settings_diff.txt` truncating redirect upgrades to MUTATES** per §4; `wc -l`, `head` both SAFE. Worst-tier = MUTATES. |
+| 4 | Extend SSOT | Add `sed` (encountered while building the broader review-pipeline catalogue) to `safety-table.csv` + `cheatsheet.md`; cross-reference the new chain into the `git diff` section under the [Hardcoded Tmp-Write→Read Exception Pattern](../is-this-command-safe/docs/cheatsheet.md#hardcoded-tmp-writeread-exception-pattern). |
+| 5 | Verify exception clauses | (1) hardcoded `/tmp/settings_diff.txt`; (2) under `/tmp`; (3) downstream consumers `wc`/`head` both SAFE; (4) only `;` + `&&` separators; (5) every arg slot retains anti-chaining class. All five hold → eligible. |
+| 6 | Build regex | `/^git( -C [^;&\|<>$BTICK()]+)? diff( --cached)?( -- [^;&\|<>$BTICK()]+)? > /tmp/settings_diff\.txt; wc -l /tmp/settings_diff\.txt && head( -[0-9]+)? /tmp/settings_diff\.txt$/` with `matchCommandLine: true` (full-line match mandatory because the chain crosses SAFE→MUTATES→SAFE segments). |
+| 7 | Spec | Author [`specs/hardcoded-chain-git-diff-tmp-settings-diff.spec.json`](specs/hardcoded-chain-git-diff-tmp-settings-diff.spec.json) with accept + reject assertions; run `test-regex-accept.py --spec …` before saving. |
+| 8 | Onboard | `find-entry.py --grep settings_diff` → 0 matches → `edit-entry.py --add` with explicit user confirmation per §7.5. |
+| 9 | Audit | JSON valid; entry rejects every form not pinned to `/tmp/settings_diff.txt`. |
 
 ***
 

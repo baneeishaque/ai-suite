@@ -174,6 +174,46 @@ For a tool family with a stable prefix (e.g., `npm <subcmd>`) where each subcomm
 grammar, do **NOT** alternation-collapse. Keep one entry per subcommand. The shared prefix is too
 short to justify a wide regex.
 
+### 5.5 Tight Token Whitelist (vs Generic Arg Slot)
+
+A SAFE binary's argument grammar can be expressed two ways: a permissive
+generic slot or an explicit token whitelist. The trade-off is acceptance
+breadth vs. promotion-safety.
+
+| Style | Regex shape | Accepts | Trade-off |
+| :--- | :--- | :--- | :--- |
+| Generic arg slot (default) | `<cmd>( [^;&\|<>$BTICK()]*)?` | Any single arg string free of chaining metacharacters (e.g., `HEAD~1`, `--cached`, `-- path/to/file`, `origin/main`) | Maximum reuse; arbitrary new flags pass without re-audit. Future MUTATES flags introduced upstream (`-i`, `--delete`, etc.) silently inherit auto-approval if the binary verdict ever shifts to `HAS-DESTRUCTIVE-FLAGS`. |
+| Tight token whitelist | `<cmd>( --cached)?( -- [^;&\|<>$BTICK()]+)?` | Only the named tokens (in the named positions) | Highest promotion-safety; the entry is auditably narrow. Rejects previously-allowed forms (`HEAD~1`, `origin/main`, …) — requires explicit extension to add a new flag. |
+
+(`BTICK` denotes a literal backtick.)
+
+**Decision rule:**
+
+1. Prefer the **tight token whitelist** when the binary is in the
+   `HAS-DESTRUCTIVE-FLAGS` category in
+   [`is-this-command-safe`](../is-this-command-safe/SKILL.md), or when the
+   user explicitly asks for "specific flags only" / "predictable behaviour".
+2. Prefer the **generic arg slot** for pure-`SAFE` binaries when the user
+   uses many different arg shapes across sessions and explicitly accepts
+   the broader surface.
+3. When promoting an entry from generic to tight, the agent MUST present
+   the **regression set** (the previously-accepted forms that the tight
+   pattern will reject) and obtain explicit user confirmation per
+   [`vscode-terminal-autoapprove-audit` §11.2](../vscode-terminal-autoapprove-audit/SKILL.md#112-adding-new-entries).
+
+**Worked example** — `git (status|log|diff|ls-files)` for a settings-review
+workflow that uses only `--cached` and `-- <path>` plus optional pipe to
+`head`/`tail`/`sed -n 'N,Mp'`:
+
+```text
+/^git( -C [^;&|<>$BTICK()]+)?( --no-pager)? (status|log|diff|ls-files)( --cached)?( -- [^;&|<>$BTICK()]+)?( \| (head|tail)( -[0-9]+)?| \| sed -n '[0-9]+(,[0-9]+)?p')?$/
+```
+
+Validate via
+[`scripts/test-regex-accept.py`](../command-autoapprove-onboarding/scripts/test-regex-accept.py)
+with both the desired accept set AND the previously-accepted reject set
+(`git diff HEAD~1`, `git log --oneline`, …) before committing.
+
 ***
 
 ## 6. Adding New Entries (Fallback)

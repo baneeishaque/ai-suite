@@ -48,6 +48,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `mdls` | ✅ | — | n/a |
 | `mkdir` | ❌ | always mutates | `ls -d <path>` to check existence first |
 | `python3` | ⚠️ | depends on script invoked | hardcode trusted script path in regex |
+| `sed` | ⚠️ | `-i` (in-place edit) | print-only: `sed -n 'N,Mp' <file>` |
 | `tail` | ✅ | — | n/a |
 | `true` | ✅ | — | n/a |
 | `wc` | ✅ | — | n/a |
@@ -100,6 +101,16 @@ find /path -name "*.log" -delete
   - `grep -rl "old" . | xargs sed -i 's/old/new/g'` → in-place mass replace.
 - **Safe workflow**: run `grep` alone to confirm the match set, then decide on downstream action.
 
+### `sed`
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends on the flag set.
+- **SAFE**: print-only forms that emit to stdout, e.g. `sed -n '1,200p' <file>`,
+  `sed 's/old/new/' <file>` (stream substitution to stdout). No file is modified.
+- **MUTATES**: `sed -i …` (or BSD `sed -i ''`) edits files in-place. Never auto-approve
+  any invocation containing `-i`.
+- **Auto-approve pattern**: pin to specific print-only invocations,
+  e.g. `/^sed -n '[0-9]+(,[0-9]+)?p'( [^;&|<>$`()]+)?$/`. Never a generic `sed .*` catch-all.
+
 ***
 
 ## File Viewing
@@ -124,6 +135,7 @@ find /path -name "*.log" -delete
   Safe because: the tmp file is write-only scratch (not a system path), the consumer is a
   read-only audit script (`batch-coverage-check.py`), and both segments are hardcoded in the
   regex — not a generic `/tmp` or "same filename" rule.
+  See [Hardcoded Tmp-Write→Read Exception Pattern](#hardcoded-tmp-writeread-exception-pattern) for the full eligibility criteria.
 
 ### `head`
 
@@ -156,6 +168,16 @@ find /path -name "*.log" -delete
 ### `git diff`
 
 - **Verdict**: ✅ SAFE — Shows working-tree or commit-to-commit diffs. Read-only.
+- **EXCEPTION (SAFE, hardcoded chain only)**: The specific chain below is auto-approved as a
+  single regex. Filename is hardcoded; no other `>` target qualifies:
+  ```
+  git [-C <path>] diff [--cached] [-- <path>] > /tmp/settings_diff.txt; \
+      wc -l /tmp/settings_diff.txt && head [-N] /tmp/settings_diff.txt
+  ```
+  Safe because: the redirect target is a hardcoded `/tmp` scratch path (not a system file),
+  both downstream consumers (`wc -l`, `head`) are read-only against that same hardcoded path,
+  and separators (`;`, `&&`) are pinned — no generic `git diff > <anything>` rule.
+  See [Hardcoded Tmp-Write→Read Exception Pattern](#hardcoded-tmp-writeread-exception-pattern) for the full eligibility criteria.
 
 ***
 
@@ -379,6 +401,49 @@ The following pipeline patterns are always `MUTATES` regardless of the source bi
 | `<any> \| tee existing-file` | Truncates and overwrites (without `-a`). |
 | `<any> \| sh` / `\| bash` | Executes upstream output as shell commands. |
 | `$(rm …)` / `` `rm …` `` | Inline mutation inside a larger command. |
+
+***
+
+## Hardcoded Tmp-Write→Read Exception Pattern
+
+A `>` truncating redirect is `MUTATES` by default (per §4 of the SKILL and the
+Dangerous Pipeline Catalogue above). One narrow class of chains may be
+auto-approved despite the `>` token, IFF every clause below holds:
+
+1. **Hardcoded target filename**: the `>` target is a literal `/tmp/<fixed-name>`
+   string baked into the regex — never a generic `/tmp/.*` or "same-stem"
+   capture. A new scratch filename requires a new entry.
+2. **Scratch path**: the target lives under `/tmp` (or another universally
+   scratch-only directory). System paths (`/etc`, `/usr`, `/var`, `~`, repo
+   working trees) are NEVER eligible.
+3. **Read-only consumers**: every downstream segment after the `>` is a
+   read-only binary classified `SAFE` in this SSOT (`wc`, `head`, `tail`,
+   `sed -n …p`, `cat`, `grep`) and operates on the SAME hardcoded path.
+4. **Pinned separators**: only `;` and `&&` may appear between segments —
+   never `||`, `|`, `&`, no command substitution, no second `>` redirect.
+5. **Per-segment anti-chaining**: every argument slot inside every segment
+   keeps the `[^;&|<>$BTICK()]` class (where `BTICK` denotes a literal
+   backtick) so no segment can be smuggled past the splitter.
+
+Documented instances in this SSOT:
+
+| Anchor binary | Reference | Chain shape |
+| :--- | :--- | :--- |
+| `cat` | [§ `cat`](#cat) | `cat > /tmp/cmds-parity.txt << EOF … python3 …/batch-coverage-check.py --commands /tmp/cmds-parity.txt …` |
+| `git diff` | [§ `git diff`](#git-diff) | `git [-C <path>] diff [--cached] [-- <path>] > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head [-N] /tmp/settings_diff.txt` |
+
+Each instance MUST link back to this pattern section so the criteria above
+are the single source of truth — never duplicate the rules in the
+per-binary section.
+
+When a new occurrence arises:
+
+1. Verify all five clauses above.
+2. Add the per-binary `EXCEPTION` block referencing this pattern by section
+   anchor (do not restate the rules).
+3. Author a `command-autoapprove-onboarding/specs/hardcoded-chain-*.spec.json`
+   capturing the regex + accept/reject assertions (the spec is required by
+   parity with [§5.1 safe-chain entries](../../command-autoapprove-onboarding/SKILL.md#step-51--safe-chain-entries-opt-in)).
 
 ***
 

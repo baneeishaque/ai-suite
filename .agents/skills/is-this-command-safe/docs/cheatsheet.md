@@ -174,7 +174,7 @@ find /path -name "*.log" -delete
 - **Auto-approve pattern**: pin to a per-segment shape that admits an optional
   `2>&1` and an optional `| (head|tail|wc)` suffix, and allow `&&`-chaining of
   multiple `ls` segments (each segment must itself match the same shape). Example:
-  `/^ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1)?( \| (head|tail|wc)( -[0-9a-z]+)?)?( && ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1)?( \| (head|tail|wc)( -[0-9a-z]+)?)?)*$/`.
+  `/^ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1| 2>/dev/null)?( \| (head|tail|wc)( -[0-9a-z]+)?)?( && ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1| 2>/dev/null)?( \| (head|tail|wc)( -[0-9a-z]+)?)?)*$/`. The stderr-redirect slot is a tight whitelist of `2>&1` / `2>/dev/null` only — never a generic `2>FILE` form, which could clobber the destination.
   Because every segment is constrained to `ls`, no MUTATES binary can be smuggled
   via the `&&` chain.
 

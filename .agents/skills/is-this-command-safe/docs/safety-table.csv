@@ -1,4 +1,5 @@
 binary,verdict,destructive_flags,safe_alternative,notes
+awk,SAFE-WITH-QUALIFICATION,system(...); | sh; getline … | "cmd"; -f <script>,awk '{print …}' <file>,"Pattern-scanning language. SAFE for pure text projection (`awk '{print $1}' file`, `awk -F: '{…}'`). MUTATES via `system(\"…\")`, piping output to a shell, or `getline cmd | …`. Never auto-approve generic awk .*; require absence of system() / | sh / -f."
 brew leaves,SAFE,,n/a,Lists explicitly installed (leaf) formulae. Read-only. --installed-on-request narrows to user-requested installs.
 brew list,SAFE,,n/a,Lists installed formulae and/or casks. Read-only. --cask and --formula narrow scope.
 brew outdated,SAFE,,n/a,Lists outdated formulae/casks. Read-only. --greedy widens scope to auto-update casks.
@@ -49,8 +50,10 @@ sed,SAFE-WITH-QUALIFICATION,-i; -i '',sed -n 'N,Mp' <file>,"Stream editor. SAFE 
 Select-Object,SAFE,,n/a,PowerShell pipeline projection/limit. Read-only.
 Select-String,SAFE,,n/a,PowerShell grep-equivalent. Read-only; pattern matching on files/streams.
 Sort-Object,SAFE,,n/a,PowerShell sorter. Read-only.
+sort,SAFE-IF-PIPED,-o <file>,sort <file>,"Lexicographic sorter. Read-only by default. MUTATES with -o <file> (writes sorted output to <file>, may clobber)."
 Split-Path,SAFE,,n/a,PowerShell path-component splitter. Pure string op; no filesystem access.
 tail,SAFE,,n/a,Prints last N lines of a file. Read-only.
 true,SAFE,,n/a,No-op builtin that returns exit 0. Used as fallback after || in pipelines.
 wc,SAFE,,n/a,Counts lines/words/bytes. Read-only.
+which,SAFE,,n/a,Locates an executable in PATH. Read-only.
 Write-Host,SAFE,,n/a,PowerShell console writer. Output only.

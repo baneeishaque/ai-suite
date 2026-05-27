@@ -56,4 +56,7 @@ tail,SAFE,,n/a,Prints last N lines of a file. Read-only.
 true,SAFE,,n/a,No-op builtin that returns exit 0. Used as fallback after || in pipelines.
 wc,SAFE,,n/a,Counts lines/words/bytes. Read-only.
 which,SAFE,,n/a,Locates an executable in PATH. Read-only.
+xargs,SAFE-IF-PIPED,xargs rm; xargs sed -i; xargs sh; xargs cp; xargs mv,xargs (grep|head|tail|wc|cat) <args>,"Argument-list builder. INHERITS destructiveness of downstream command. Auto-approve ONLY narrow read-only downstream forms: xargs grep, xargs head, xargs tail, xargs wc, xargs cat. NEVER auto-approve generic xargs <cmd>."
 Write-Host,SAFE,,n/a,PowerShell console writer. Output only.
+du,SAFE,,,"Read-only disk usage reporter. No write capability. Common flags: -s (summary) -h (human-readable). Safe with multiple path args."
+readlink,SAFE,,n/a,"Resolves symlink target. Read-only; output to stdout only. Safe with or without -f."

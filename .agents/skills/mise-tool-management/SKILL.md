@@ -13,9 +13,10 @@ environments. Each layer is a strict prerequisite for the one above it.
 
 ```text
 Layer 1: Mise Config Trust              (base — everything depends on this)
-└── Layer 2: Mise Tool Selection        (works on top of Layer 1)
-    └── Layer 3: Mise Python Setup      (a specialisation of Layer 2 for Python)
-        └── Layer 4: Mise Python Package Setup  (works on top of Layer 3)
+├── Layer 2: Mise Tool Selection        (works on top of Layer 1)
+│   └── Layer 3: Mise Python Setup      (a specialisation of Layer 2 for Python)
+│       └── Layer 4: Mise Python Package Setup  (works on top of Layer 3)
+└── Layer 5: Bypass `mise exec` Cascade (alternative consumption path; sibling of Layer 2)
 ```
 
 ***
@@ -310,11 +311,118 @@ mise exec --cd /absolute/path/to/project python@<version> -- python -m pylint --
 
 ***
 
-## 5. Full Worked Example — Pylint Setup for `sync-rules.py`
+## 5. Layer 5 — Bypass `mise exec` Cascade Protocol
+
+`mise exec` walks UP the directory tree from the current working directory and, for every
+trusted `mise.toml` it finds, ensures **every pinned tool** is installed before running your
+command. From an unrelated repo, a one-shot `mise exec -- python script.py` can trigger
+multi-GB downloads of Flutter, PHP, Composer, etc. — completely unrelated to the actual task.
+
+This layer documents the **direct-binary invocation** alternative: invoke the mise-installed
+binary by its concrete install path, which is still mise-managed (versioned, isolated from
+system Python), but skips the trust-chain walk that triggers the cascade.
+
+### 5.1 Detection — Are You at Risk of a Cascade?
+
+Run from the CWD where you'd otherwise call `mise exec`:
+
+```bash
+mise current 2>&1
+```
+
+If the output lists tools you do NOT need for the current task (e.g., `flutter@3.22.3`,
+`php@8.4.11`, `composer@...`, `ubi:adwinying/php`), `mise exec` will attempt to install all of
+them before running your command. Cascade risk = HIGH.
+
+### 5.2 Resolution — Direct-Binary Path
+
+The mise install root is conventionally:
+
+```text
+$HOME/.local/share/mise/installs/<tool>/<version>/bin/<binary>
+```
+
+To find the version directory for a given tool:
+
+```bash
+ls "$HOME/.local/share/mise/installs/<tool>" | sort -V | tail -1
+```
+
+Then invoke directly — no shim, no trust walk, no cascade:
+
+```bash
+PY_VER="$(ls "$HOME/.local/share/mise/installs/python" | sort -V | tail -1)"
+PY="$HOME/.local/share/mise/installs/python/$PY_VER/bin/python"
+PIP="$HOME/.local/share/mise/installs/python/$PY_VER/bin/pip"
+
+"$PY" --version
+"$PIP" install --user pymysql
+```
+
+**This is NOT the same as invoking from `$PATH`.** The prohibition in §8 against "Invoking
+`python` or `pip` from PATH" targets unmanaged system binaries (`/usr/bin/python3` on macOS
+is Apple Xcode 3.9, not your pinned version). The Layer 5 path is an explicit, version-pinned
+mise install — fully consistent with the environment-management mandate.
+
+### 5.3 When to Prefer Layer 5 over Layers 3/4
+
+| Situation | Use Layer 3/4 (`mise exec`) | Use Layer 5 (direct path) |
+| --- | --- | --- |
+| CWD is the project that pins the tool | ✅ | — |
+| CWD has NO `mise.toml` in ancestry | ✅ | acceptable |
+| CWD's ancestor `mise.toml` pins UNRELATED tools (cascade risk) | ❌ | ✅ |
+| Running a one-shot probe from an unrelated repo | ❌ | ✅ |
+| CI / scripted invocation where install side-effects are forbidden | ❌ | ✅ |
+
+### 5.4 Stream Convention Note (`mise trust` and Friends)
+
+`mise trust`, `mise install`, and similar housekeeping commands write their confirmation
+messages to **stderr**, not stdout, per Unix convention (stdout reserved for pipeable data
+such as resolved paths; stderr for diagnostics). If you redirect only stdout to a log file
+you will see an empty log and misinterpret the command as silently failing — always pair
+`> stdout.log 2> stderr.log` or use `2>&1` when capturing.
+
+This convention is shared with `git`, `cargo`, `rustup`, `npm` (for non-data output), and
+most modern CLIs.
+
+### 5.5 Cleanup After an Accidentally-Triggered Cascade
+
+If `mise exec` was invoked from an unsafe CWD and partial installs leaked, clean up:
+
+```bash
+# 1. List recent mise installs (lots of dirs = cascade evidence).
+ls -lt "$HOME/.local/share/mise/installs/" | head
+
+# 2. Remove specific unwanted tool installs.
+rm -rf "$HOME/.local/share/mise/installs/flutter/<version>"
+rm -rf "$HOME/.local/share/mise/installs/ubi-adwinying-php"
+rm -rf "$HOME/.local/share/mise/installs/ubi-composer-composer"
+rm -rf "$HOME/.local/share/mise/installs/vfox-version-fox-vfox-php-<version>"
+
+# 3. Remove partial download archives.
+rm -f "$HOME/.cache/mise/<tool>/<version>.zip"
+```
+
+Verify nothing the user actually wanted got deleted:
+
+```bash
+mise ls
+```
+
+### 5.6 Consumers of Layer 5
+
+- [`mysql-capability-probe-pymysql`](../mysql-capability-probe-pymysql/SKILL.md) — its
+  `probe-runner.sh` resolves python via Layer 5 to avoid the cascade when probing from any
+  repo other than the python's home project.
+- Any future cross-repo probe / installer / one-shot script.
+
+***
+
+## 6. Full Worked Example — Pylint Setup for `sync-rules.py`
 
 This section demonstrates all four layers against the real scenario.
 
-### 5.1 Layer 1: Trust Check
+### 6.1 Layer 1: Trust Check
 
 ```bash
 mise ls 2>&1
@@ -337,7 +445,7 @@ mise trust /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/mise.toml
 # → mise trusted /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts
 ```
 
-### 5.2 Layer 2: Python Version Selection
+### 6.2 Layer 2: Python Version Selection
 
 ```bash
 mise ls python --json
@@ -361,7 +469,7 @@ Offer to update? Ask user.
 mise use --path /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 ```
 
-### 5.3 Layer 3: Python Verification
+### 6.3 Layer 3: Python Verification
 
 ```bash
 mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9 -- python --version
@@ -370,7 +478,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 # → pip 24.x
 ```
 
-### 5.4 Layer 4: Pylint Setup
+### 6.4 Layer 4: Pylint Setup
 
 ```bash
 grep -i "^pylint" /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/requirements.txt
@@ -397,7 +505,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 
 ***
 
-## 6. Post-Edit File Validation Protocol
+## 7. Post-Edit File Validation Protocol
 
 After **any** edit to a project file, the agent MUST validate the file using its
 industrial-standard tool before proceeding. This catches formatting errors (e.g. stray
@@ -407,7 +515,7 @@ indentation) introduced by automated edits.
 > using the [System-Wide Tool Management Skill](../system-wide-tool-management/SKILL.md)
 > before running these commands.
 
-### 6.1 Validation Commands by File Type
+### 7.1 Validation Commands by File Type
 
 | File | Tool | Syntax Check | Format Check & Fix |
 | :--- | :--- | :--- | :--- |
@@ -434,7 +542,7 @@ indentation) introduced by automated edits.
 > - Because these are Python tools, they MUST follow Layer 4: add them to
 >   `requirements.txt` and run them via `mise exec`.
 
-### 6.2 `mise.toml` Validation & Formatting (`taplo`)
+### 7.2 `mise.toml` Validation & Formatting (`taplo`)
 
 > **Important distinction:**
 >
@@ -473,7 +581,7 @@ Common TOML formatting mistakes:
 - Missing blank line separating table sections
 - Inconsistent quote style
 
-### 6.3 `requirements.txt` Validation (`pip`)
+### 7.3 `requirements.txt` Validation (`pip`)
 
 ```bash
 pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
@@ -484,7 +592,7 @@ pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
 - ❌ Failure: any `ERROR` line — fix the package specifier before proceeding
 - No auto-formatter for `requirements.txt`; fix manually.
 
-### 6.4 Worked Example — Validation After This Session's Edits
+### 7.4 Worked Example — Validation After This Session's Edits
 
 ```bash
 # Step 1 — Syntax check
@@ -512,7 +620,7 @@ pip install --dry-run -r /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/req
 
 ***
 
-## 7. Prohibited Actions
+## 8. Prohibited Actions
 
 The agent is FORBIDDEN from:
 
@@ -526,7 +634,7 @@ The agent is FORBIDDEN from:
 - Running `mise use` without a project-scoped config target — always scope to the
   project directory, not globally.
 - **Skipping post-edit file validation** — every edited file MUST be validated with its
-  industrial-standard tool (§6) before proceeding to the next step.
+  industrial-standard tool (§7) before proceeding to the next step.
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the
   user first. The agent MUST present the error (e.g., `invalid-name` for a file name)
   and ask the user how they want to resolve it (e.g., rename the file vs disable the check).

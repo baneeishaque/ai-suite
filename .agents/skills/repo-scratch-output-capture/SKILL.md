@@ -1,0 +1,128 @@
+---
+name: repo-scratch-output-capture
+description: Redirect stdout and stderr of probes, builds, installs, and any long-running diagnostic command into a repo-root `scratch/` folder (gitignored) instead of suppressing output or writing to `/tmp`. Keeps the terminal clean while preserving complete, inspectable output co-located with the artifact under investigation.
+category: Code Hygiene & Maintenance
+---
+
+# Repo Scratch Output Capture Skill (v1)
+
+> **Skill ID:** `repo-scratch-output-capture`
+> **Version:** 1.0.0
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+
+## 1. When to Apply
+
+Apply this skill whenever a command's output is too verbose for the terminal but MUST be
+preserved for inspection (success verdict, failure trace, install log, probe result). Specifically:
+
+- Capability probes (DB version, network reach, schema introspection).
+- Package installers (`pip`, `npm`, `cargo`, `apt`, `brew`).
+- Long builds whose interesting signal is the last 20 lines.
+- Any command that runs unattended and may fail silently.
+
+Do NOT apply for:
+
+- Commands whose output is itself the deliverable (those go to the user directly).
+- One-line commands whose output already fits the terminal.
+
+## 2. Core Doctrine
+
+| Forbidden | Required |
+| --- | --- |
+| `cmd > /dev/null 2>&1` (silent failure invisible) | `cmd > scratch/cmd.out 2> scratch/cmd.err` |
+| `cmd > /tmp/x.log` (lost on reboot, not co-located with the artifact) | `cmd > <repo-root>/scratch/x.out` |
+| Writing to the CWD's containing repo when the artifact lives in another repo | Resolve `<artifact-repo-root>/scratch/` first; write there |
+| Adding `scratch/` only to `.git/info/exclude` (local-only) | Add `scratch/` to committed `.gitignore` (team-wide) |
+
+**Rationale:** A suppressed failure is a debugging time-bomb. `/tmp` divorces the trace from the
+artifact. `scratch/` next to the artifact is discoverable by every contributor and survives
+reboots while staying out of version control.
+
+## 3. Naming & Layout
+
+```text
+<repo-root>/
+├── .gitignore              # contains line: scratch/
+└── scratch/                # gitignored
+    ├── <purpose>.out       # captured stdout
+    ├── <purpose>.err       # captured stderr
+    └── <purpose>.<ext>     # any artifact the script writes
+```
+
+- `<purpose>` is a short hyphenated slug describing the command (`probe-multi`, `pip-install`,
+  `gradle-build`).
+- Always pair `.out` + `.err` siblings — many tools split signal unpredictably between the two streams.
+- Sub-folders permitted for multi-step workflows (`scratch/<workflow>/<step>.out`).
+
+## 4. Operational Logic
+
+### 4.1 Ensure-and-Capture Pattern
+
+Idempotent one-liner pattern:
+
+```bash
+REPO="$(git rev-parse --show-toplevel)"
+SCRATCH="$REPO/scratch"
+mkdir -p "$SCRATCH"
+grep -qxF 'scratch/' "$REPO/.gitignore" 2>/dev/null \
+    || echo 'scratch/' >> "$REPO/.gitignore"
+
+my-command --with --args \
+    > "$SCRATCH/my-command.out" \
+    2> "$SCRATCH/my-command.err"
+echo "Exit: $?  See $SCRATCH/my-command.{out,err}"
+```
+
+Use the bundled script [`scripts/ensure-scratch-gitignored.sh`](scripts/ensure-scratch-gitignored.sh)
+to perform the setup and emit the absolute scratch path on stdout:
+
+```bash
+SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+my-command > "$SCRATCH/my-command.out" 2> "$SCRATCH/my-command.err"
+```
+
+### 4.2 Inspection Protocol
+
+After the command exits:
+
+1. Check exit code immediately (`echo $?`).
+2. If non-zero: `tail -30 scratch/<purpose>.err` first (usually has the failure summary), then `.out`.
+3. If zero but result uncertain: `grep <verdict> scratch/<purpose>.out`; check `.err` for warnings.
+
+### 4.3 Cleanup
+
+The `scratch/` folder is ephemeral by design — delete contents freely.
+Do NOT commit scratch files. If a captured file is valuable enough to keep, move it to a tracked
+location.
+
+For triage of files that accidentally became untracked elsewhere (NOT in `scratch/`), see
+[`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md). That skill DISPOSES of unclear
+leftovers; this skill PRODUCES intentional captures — the two are SSOTs for different lifecycle phases.
+
+## 5. Composition
+
+This skill is a base primitive consumed by:
+
+- [`mysql-capability-probe-pymysql`](../mysql-capability-probe-pymysql/SKILL.md) — probe output goes
+  to `scratch/probe-*.out|err`.
+- [`mise-tool-management`](../mise-tool-management/SKILL.md) — every `mise install`,
+  `mise trust`, and `mise ls` invocation is captured to `scratch/mise-*.{out,err}` so
+  deprecation warnings emitted on stderr (e.g., `mise WARN  deprecated [ubi]: …`) are
+  not lost to terminal scroll-back.
+- Any future probe / installer / build wrapper that needs to keep the terminal clean while preserving
+  output for audit.
+
+## 6. Prohibited Behaviors
+
+- Writing scratch output to `/tmp/` (loss-on-reboot, no co-location).
+- Suppressing stderr with `2>/dev/null` for any command whose failure matters.
+- Committing files under `scratch/`.
+- Putting `scratch/` in `.git/info/exclude` only (team members hit the same problem next session).
+- Reusing `scratch/` as a build-output cache (use `target/`, `build/`, `dist/` for those).
+
+## 7. Cross-References
+
+- Anti-overlap: [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) — disposal of
+  unclear untracked files (this skill produces intentional captures).
+- Companion: [`gitignore-rules`](../gitignore-rules/SKILL.md) — for authoring the ignore entry
+  correctly across nested repos / submodules.

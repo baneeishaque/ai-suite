@@ -1,5 +1,19 @@
 # AGENTS.md
 
+## ⚠️ Permanent Operating Reminders (read every boot)
+
+1. **Atomize exploration chains.** Never combine multiple unfamiliar-path
+   probes into one `&&` / `|` chain with `2>/dev/null` suppression — it
+   silently hangs when a path is missing. Issue independent shell calls (use
+   parallel tool calls for unrelated probes). See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1](ai-agent-rules/shell-execution-rules.md).
+2. **Prefer Bash heredocs over the editor `edit` tool for large writes.**
+   The `edit` tool hangs on large / many-line operations. For whole-file
+   authoring use `cat > file <<'EOF' ... EOF`; for in-place transforms use
+   `python3 - <<'PY' ... PY`. The `edit` tool is reserved for small,
+   uniquely-anchored surgical replacements. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.2](ai-agent-rules/shell-execution-rules.md).
+
 ## Skills
 
 | Skill | Path | When to use |

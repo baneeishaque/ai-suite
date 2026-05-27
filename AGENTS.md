@@ -13,6 +13,15 @@
    `python3 - <<'PY' ... PY`. The `edit` tool is reserved for small,
    uniquely-anchored surgical replacements. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.2](ai-agent-rules/shell-execution-rules.md).
+3. **Never nest heredocs inside heredocs.** When using
+   `python3 - <<'PY'` whose body contains a Python triple-quoted string,
+   the inner content MUST NOT contain heredoc-sentinel-looking tokens
+   (`EOF`, `PY`, `MARKEREOF`, etc.) or fenced code blocks — the outer
+   heredoc terminates early and the call silently hangs. Use a
+   two-stage `cat > /tmp/payload <<'ZZZ_UNIQUE_ZZZ'` then a separate
+   `cat > /tmp/script.py <<'ZZZ_OTHER_ZZZ'` then run the script. Each
+   stage carries one heredoc with a body-unique sentinel. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.3](ai-agent-rules/shell-execution-rules.md).
 
 ## Skills
 

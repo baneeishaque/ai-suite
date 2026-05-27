@@ -4,6 +4,7 @@
 
 | Skill | Path | When to use |
 | :--- | :--- | :--- |
+| Android Feature To Shared Kotlin Lib | [`.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md`](.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md) | Extract a vertical feature slice from an Android (Java/Kotlin) app and port it to a shared pure-Kotlin/JVM library consumable by Android, Kotlin CLI, desktop, and server clients via JitPack — with submodule-first commit discipline and CRLF/LF working-tree hygiene |
 | Anti Gravity Version Checker | [`.agents/skills/antigravity-version-checker/SKILL.md`](.agents/skills/antigravity-version-checker/SKILL.md) | Audit Anti Gravity vs VS Code versions and feature parity |
 | Code Explanation | [`.agents/skills/code-explanation/SKILL.md`](.agents/skills/code-explanation/SKILL.md) | Deep-dive, pedagogical code documentation standards |
 | Command Auto-Approve Onboarding | [`.agents/skills/command-autoapprove-onboarding/SKILL.md`](.agents/skills/command-autoapprove-onboarding/SKILL.md) | Orchestrator — decompose any shell command (single / chained / multi-line / script), classify each segment via `is-this-command-safe` (extending its cheatsheet & safety-table when binaries are missing), then onboard the verdict into `chat.tools.terminal.autoApprove` via the `vscode-autoapprove-entry-consolidation` reuse-before-add algorithm; ships the §5.1 safe-chain pattern for whitelisting `;`-chained SAFE one-liners under `matchCommandLine: true`, plus `scripts/test-regex-accept.py` + `specs/*.spec.json` as the replayable regex acceptance harness |

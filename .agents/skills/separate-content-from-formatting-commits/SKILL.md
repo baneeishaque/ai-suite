@@ -228,10 +228,18 @@ python3 /path/to/skills/separate-content-from-formatting-commits/scripts/build-s
 ## Traceability
 
 This skill was extracted from a live session in which `claude/settings.json`
-in a private configurations repository contained 5 semantic changes mixed
-with a tab-indent reformat applied by Claude Code's runtime. The textual
-script produced 5 atomic commits, each on the original 2-space format, with
-a final reformat commit omitted per the user's preference.
+in a private configurations repository contained 5 semantic changes that
+needed to be split into 5 atomic commits. An initial JSON round-trip
+approach (re-serializing with tab indent) was rejected by the user because
+the working-tree file's actual format was 2-space indent with
+insertion-order keys — the round-trip would have introduced a spurious
+reformat. The format-preserving textual script then produced 5 commits,
+each landing on the original 2-space format with zero whitespace churn,
+and no trailing `style:` reformat commit was needed.
 
 Session target log: `configurations-private` branch `stash/changes-on-macOS`,
 commits `421a63e` → `718c8b3`.
+
+The lesson — **always inspect the baseline's actual byte-level format
+before choosing a script variant** — is encoded in Step 1 (Capture the
+Baseline) and the script-selection table above.

@@ -1006,6 +1006,14 @@ become unreliable.
 This guarantees that even high-entropy working states can be refactored
 into pristine, industrial-grade commit history.
 
+**Formatter-mixed files (JSON, YAML, config):** When a tool (editor,
+runtime, formatter) has also reformatted the file, the diff is too noisy
+for manual de-construction. Use the dedicated
+[`separate-content-from-formatting-commits`](../separate-content-from-formatting-commits/SKILL.md)
+skill, which automates intermediate-state building via Python helpers that
+preserve the original format across all content commits and optionally
+append a single `style:` reformat commit at the end.
+
 ---
 
 ### Step 14 — User-Requested Coupling & Deviations

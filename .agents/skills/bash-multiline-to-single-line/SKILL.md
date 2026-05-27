@@ -68,6 +68,17 @@ backslash-newline sequences). Consumers invoke the script directly.
 
 ***
 
+## 3a. Natural Successors
+
+After flattening, a common follow-up is to sort the resulting one-line
+commands by length so the smallest probes come first:
+
+| Successor | Use case |
+| :--- | :--- |
+| [text-lines-sort-by-length](../text-lines-sort-by-length/SKILL.md) | Sort the flattened commands ascending/descending by physical line length, preserving an optional `# filepath:` / shebang header block |
+
+***
+
 ## 4. Language Choice (Python, not PowerShell)
 
 `ai-rule-standardization-rules.md §4` defaults to PowerShell. Python is chosen

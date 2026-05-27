@@ -168,11 +168,118 @@ For two binaries with identical argument grammars and identical SAFE verdicts:
 
 If ANY test fails, keep the entries separate.
 
+### 5.3.1 Multi-Binary Safe-Chain Extension (Branch Append, Not Entry Add)
+
+When a user wants to auto-approve `&&`-joined chains that mix SAFE binaries which a
+single-binary safe-chain entry does not yet cover (e.g., a chain entry whose alternation
+currently lists `git (status|log|diff)`, `echo`, `wc` — and the user pastes
+`sed -n '208,214p' FILE && echo "---" && git diff FILE | grep -i PAT`), the **correct
+extension** is to APPEND new branches to the existing safe-chain alternation, **NOT** to
+add a separate per-binary chain entry.
+
+| Anti-pattern (FORBIDDEN) | Canonical pattern |
+| :--- | :--- |
+| `--add` a new `/^sed -n 'N,Mp' FILE && echo … && git diff FILE \| grep PAT$/` entry per chain shape | `--replace` the existing `/^(?:GIT\|ECHO\|WC)( && (?:GIT\|ECHO\|WC))*$/` chain entry, appending `\|SED\|CAT\|HEAD\|LS\|WHICH\|GREP\|MDLINT` to BOTH the head alternation AND the `( && …)*` trailing alternation |
+
+**Branch append protocol (per appended binary):**
+
+1. The binary MUST already be classified SAFE (or SAFE-IF-PIPED with read-only sinks only) in
+   [`is-this-command-safe`](../is-this-command-safe/SKILL.md).
+2. The branch MUST carry its own arg slot using the anti-chaining class
+   `[^;&\|<>$BTICK()]` (or the quoted-string equivalents), with no wildcards on destructive
+   flags (e.g., `markdownlint-cli2` branch MUST retain `(?! .*--fix)`).
+3. The branch MUST allow its OWN downstream sink slot (`( \| (head\|tail)( -N)?)?` etc.) so that
+   per-segment pipes survive — without this, `git diff FILE \| grep PAT` cannot match inside
+   an `&&` chain.
+4. The branch MUST be appended to BOTH alternations (head AND `( && …)*`) symmetrically — an
+   asymmetric append silently rejects chains starting with the new binary.
+5. Every accept / reject assertion from the existing entry's
+   [`specs/`](../command-autoapprove-onboarding/specs/) MUST still pass after the append.
+   New accept assertions for each appended branch MUST be added in the same edit.
+
+**Worked example — appending `sed -n`, `cat`, `head`, `ls`, `which`, `grep`, `markdownlint-cli2`
+to the `(GIT\|ECHO\|WC)` chain entry**: the resulting alternation grew from ~915 chars to ~2235
+chars (single entry; 40 entries total in `settings.json` unchanged), covering 10 newly-pasted
+diagnostic command shapes with zero new attack surface (every rejection assertion — `git status
+&& rm -rf ~`, `cat file > /etc/important`, `sed -i ...`, `markdownlint-cli2 --fix ...`,
+`grep -r secret / \| xargs rm`, `git log; rm -rf .` — still rejects).
+
+**When NOT to use branch-append (use a separate entry instead):**
+
+- The new binary is `MUTATES` or `HAS-DESTRUCTIVE-FLAGS` (e.g., `cp`, `mv`, `rm`, `sed -i`).
+- The new binary's safe grammar diverges so much from the alternation that the resulting
+  regex doubles again (~4500+ chars). Past that complexity, readability collapses and a
+  per-binary `&&`-chain entry with its own narrow alternation is clearer.
+- The chain separator the user wants is `;` (not `&&` / `||`). `;` chains belong to a
+  separate semicolon-safe-chain entry per §5.1 Safe-Chain Entries in the
+  [command-autoapprove-onboarding skill](../command-autoapprove-onboarding/SKILL.md#step-51--safe-chain-entries-opt-in)
+  — never silently widen an `&&` entry to accept `;`.
+
+### 5.3.2 Pipeline Producer–Consumer Sink Extension (`xargs`-Whitelisted Downstream)
+
+When a user wants to auto-approve a producer-consumer pipeline whose consumer is `xargs`
+(e.g., `find … | xargs grep -<flags> <PAT>` for cross-file code search), the **correct
+extension** is to widen the PRODUCER entry's sink slot to admit a new `\| xargs <safe-cmd> …`
+branch with the downstream binary HARDCODED to a read-only command — never `xargs .*`.
+
+`xargs` inherits the destructiveness of its downstream command, so `xargs rm`, `xargs sed -i`,
+`xargs sh`, `xargs cp`, `xargs mv` are all destructive. The branch MUST whitelist exactly one
+of `xargs (grep|head|tail|wc|cat)` per appended sink. See the `xargs` section in the
+[`is-this-command-safe` cheatsheet](../is-this-command-safe/docs/cheatsheet.md#xargs).
+
+**Sink extension protocol (per appended consumer):**
+
+1. The downstream binary (e.g., `grep`) MUST be SAFE alone in `is-this-command-safe`
+   (read-only — no in-place mutation flags).
+2. The branch MUST be written as a literal binary name (`\| xargs grep`), NEVER as a
+   metacharacter alternation (`\| xargs [a-z]+` is FORBIDDEN — it would admit `xargs rm`).
+3. The downstream consumer's arg slot MUST carry the anti-chaining class
+   `[^;&\|<>$BTICK()'" ]` (plus quoted-string forms), with destructive flags excluded.
+4. Trailing read-only filters MAY be admitted (`\| grep -<flags> <PAT>`, `\| head -N`,
+   `\| tail -N`, `\| wc`) so that the common `find … | xargs grep -li … | grep -v X | head -N`
+   shape is covered in one entry.
+5. The producer entry MUST add a new SSOT row for `xargs` (status: `SAFE-IF-PIPED`) the first
+   time any `xargs <…>` branch lands in any entry. The SSOT row MUST list every blocked
+   downstream binary AND every whitelisted downstream binary explicitly.
+
+**Worked example — appending `\| xargs grep …` to the `find` entry [39]:**
+
+| Aspect | Before | After |
+| :--- | :--- | :--- |
+| Sink alternation in `find` entry | `\| head` · `\| grep …` | + `\| xargs grep -<flags> <PAT> [-<flags>] [2>…] [\| grep …] [\| head]` |
+| Regex length | 1206 chars | 1833 chars |
+| `xargs` SSOT row | absent | `SAFE-IF-PIPED`, destructive list 5 binaries, safe list 5 binaries |
+| Covered commands gained | 0 | 5 (`find … \| xargs grep …` variants) |
+| Negative tests (`\| xargs rm`, `\| xargs sed -i`, `\| xargs sh`) | rejected | still rejected |
+
+**When NOT to use sink extension:**
+
+- The user's pipeline uses `xargs <mutating-cmd>` (`xargs rm`, `xargs sed -i`, `xargs sh -c`) — NEVER auto-approvable.
+- The producer is a `MUTATES` binary — don't smuggle in a destructive form via permissive sink.
+- The sink consumer is itself a chain (`\| xargs grep PAT && rm file`) — sinks must be terminal read-only filters.
+
 ### 5.4 Optional Sub-Sub-Command Group
 
-For a tool family with a stable prefix (e.g., `npm <subcmd>`) where each subcommand has a distinct
-grammar, do **NOT** alternation-collapse. Keep one entry per subcommand. The shared prefix is too
-short to justify a wide regex.
+For a tool family with a stable prefix (e.g., `npm <subcmd>`, `git <subcmd>`) where each
+subcommand has a distinct grammar, do **NOT** alternation-collapse. Keep one entry per
+subcommand. The shared prefix is too short to justify a wide regex.
+
+**Anti-pattern — over-merging `git <subcmd>` entries.** A repo's `settings.json` may carry
+many narrow git entries (e.g., `git remote -v`, `git rev-parse`, `git branch`,
+`git check-ignore`, `git show`, `git stash list`, `git (status|log|diff|ls-files)`,
+and a safe-chain entry for `&&`-chained reads). It is **tempting** to merge these into
+one mega-regex on the shared `git` prefix. **Reject this temptation** — each subcommand
+has its own legal flag set (`branch --show-current` vs `show --name-status` vs
+`check-ignore -v` …) and its own legal sink set. The resulting mega-regex would either:
+
+1. Lose specificity (e.g., would allow `git remote --show-current`, a nonsensical /
+   ambiguous form that the per-subcommand entries correctly reject), OR
+2. Grow to ~3× the sum of its parents to preserve per-subcommand constraints — defeating
+   the readability benefit of the merge.
+
+The **Collapse-eligibility test from §5.3** ("argument grammar after the binary token is
+character-for-character identical") fails for any two distinct `git` subcommands, so the
+merge violates the rule. Keep the per-subcommand entries separate.
 
 ### 5.5 Tight Token Whitelist (vs Generic Arg Slot)
 

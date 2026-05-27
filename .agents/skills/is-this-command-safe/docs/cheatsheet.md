@@ -22,7 +22,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `brew leaves` | ✅ | — | n/a |
 | `brew list` | ✅ | — | n/a |
 | `brew outdated` | ✅ | — | n/a |
-| `cat` | ⚠️ | `cat > <file>` (overwrites); ONLY safe exception: hardcoded `cat > /tmp/cmds-parity.txt << EOF` → `batch-coverage-check.py` chain | read-only: `cat <file>` |
+| `cat` | ⚠️ | `cat > <file>` (overwrites); ONLY safe exception: hardcoded `cat > /tmp/cmds-parity.txt << EOF` → `batch-coverage-check.py` chain | read-only: `cat <file>`; or pipe-sink `<safe-cmd> \| cat` (read-only pass-through, pager-equivalent) |
 | `cd` | ✅ | — | n/a |
 | `echo` | ✅ | — | n/a |
 | `diff` | ✅ | — | n/a |
@@ -43,6 +43,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `head` | ✅ | — | n/a |
 | `less` | ✅ | — | n/a |
 | `ls` | 🟡 | `\| xargs rm` | `ls` alone |
+| `xargs` | 🟡 | `xargs rm` · `xargs sed -i` · `xargs sh` · `xargs cp` · `xargs mv` | `xargs grep` · `xargs head` · `xargs tail` · `xargs wc` · `xargs cat` (read-only downstream only) |
 | `lsof` | ✅ | — | n/a |
 | `markdownlint-cli2` | ✅ / ⚠️ | `--fix` (edits files in-place) | omit `--fix` |
 | `mdfind` | 🟡 | downstream `xargs` | `mdfind` alone |
@@ -55,6 +56,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `true` | ✅ | — | n/a |
 | `wc` | ✅ | — | n/a |
 | `which` | ✅ | — | n/a |
+| `/usr/libexec/java_home` | ✅ | — | n/a |
 
 ***
 
@@ -78,6 +80,10 @@ find /path -name "*.log" -print
 # Only after confirming — destructive
 find /path -name "*.log" -delete
 ```
+- **Safe-chain participation (entry [37])**: a conservative
+  `find <paths> <flag>* [| head|tail|sort|grep]` arm is included so
+  `find ... && echo && find ... && du ...` chains auto-approve. The standalone
+  `find | xargs grep` form remains in entry [39].
 
 ### `mdfind`
 
@@ -119,6 +125,16 @@ find /path -name "*.log" -delete
   - `grep -rl "debug" . | xargs rm` → deletes all files containing "debug".
   - `grep -rl "old" . | xargs sed -i 's/old/new/g'` → in-place mass replace.
 - **Safe workflow**: run `grep` alone to confirm the match set, then decide on downstream action.
+- **Auto-approve flag forms**: the arg slot MUST admit four shapes — bare token, single-quoted
+  string, double-quoted string, **and** `--<long-flag>=<quoted-glob>` (e.g. `--include="*.kt"`,
+  `--exclude='*.bak'`). The first three cover positional pattern + path args; the fourth covers
+  long-option flags whose value is a quoted glob, which `ripgrep`-style multi-extension scans rely
+  on. Example arg-alternation slot:
+  `( ([^;&|<>$\`()'" ]+|'[^']*'|"[^"]*"|--[a-z-]+="[^"]*"|--[a-z-]+='[^']*'))+`.
+
+- **Concatenated quoted/bareword arg form**: shells permit `""Account"\|fun..."`
+  (empty-string + bareword + quoted-string concatenated as a single argv token). Entry [25]
+  in settings.json allows this by repeating the per-token alternation: `( (TOKEN)+)+`.
 
 ### `sed`
 
@@ -138,6 +154,14 @@ find /path -name "*.log" -delete
 
 - **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — safety depends on usage form.
 - **SAFE**: `cat <file>` — reads and prints. Read-only.
+- **SAFE (pipe sink)**: `<safe-upstream> | cat` — `cat` with no positional
+  argument is a read-only pass-through of stdin, functionally equivalent to
+  appending `--no-pager` (or omitting a pager) on tools like `git`. Safe as
+  a downstream sink in pipelines whose upstream is already classified SAFE,
+  alongside `head`, `tail`, `wc`, `grep`, `sed -n 'N,Mp'`. Auto-approve
+  patterns that admit a trailing `( \| (head|tail)( -N)?| \| sed -n 'N,Mp'| \| cat)?`
+  slot are canonical — see the `git (status|log|diff|ls-files)` entry under
+  [§5.5 of vscode-autoapprove-entry-consolidation](../../vscode-autoapprove-entry-consolidation/SKILL.md#55-tight-token-whitelist-vs-generic-arg-slot).
 - **MUTATES**: `cat > <file>` — redirect writes/truncates target file.
 - **EXCEPTION (SAFE, hardcoded only)**: The specific chain below is auto-approved as a single
   pattern. No other `cat > /tmp/...` form qualifies:
@@ -177,6 +201,11 @@ find /path -name "*.log" -delete
   `/^ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1| 2>/dev/null)?( \| (head|tail|wc)( -[0-9a-z]+)?)?( && ls( -[a-zA-Z]+)? [^;&|<>$`()]+( 2>&1| 2>/dev/null)?( \| (head|tail|wc)( -[0-9a-z]+)?)?)*$/`. The stderr-redirect slot is a tight whitelist of `2>&1` / `2>/dev/null` only — never a generic `2>FILE` form, which could clobber the destination. A trailing fallback slot accepts `|| true`, `|| echo "msg"`, or `|| echo 'msg'` only — the fallback target is constrained to SAFE builtins; arbitrary commands like `|| rm …` or `|| sh` are rejected.
   Because every segment is constrained to `ls`, no MUTATES binary can be smuggled
   via the `&&` chain.
+- **Sink expansion**: the per-segment sink alternation MAY include `\| grep …` (with its full
+  flag + quoted-arg shape) alongside `\| (head|tail|wc)` and `\| sed -n 'N,Mp'`. `grep` here
+  acts as a downstream read-only filter on the directory listing — equivalent to running
+  `ls … | grep -iE "<pattern>"`. The grep sub-pattern MUST retain its own anti-chaining class
+  and quoted-arg alternation so that `ls / | grep foo | xargs rm` is still rejected.
 
 ### `wc`
 
@@ -190,10 +219,44 @@ find /path -name "*.log" -delete
   it. Refuse / classify as MUTATES whenever `-o` is present.
 - **Auto-approve pattern**: pin to no-`-o` invocations, e.g.
   `/^sort( -[a-zA-Z]+)*( [^;&|<>$`()]+)*( \| (head|tail)( -[0-9]+)?)?$/`.
+- **Pipeline-sink usage**: also admitted as `find ... | sort | head -N` in entry [39].
+
+### `du`
+
+- **Verdict**: ✅ SAFE — Disk usage reporter. Read-only; no write capability.
+- **Safe forms**: `du -sh <paths> 2>/dev/null` (summarize sizes), multiple path args OK.
+- **Auto-approve pattern**: `^du( -[a-zA-Z]+)*( ([^;&|<>$`()'\" ]+|'[^']*'|\"[^\"]*\"))+( 2>/dev/null| 2>&1)?$`
+- **Safe-chain participation (entry [37])**: `du -FLAGS <paths> [2>/dev/null]`
+  is admitted as an arm so `find ... && du ... && du ...` chains auto-approve.
+
+### `readlink`
+
+- **Verdict**: ✅ SAFE — Resolves and prints a symlink's target path. Read-only; writes only to stdout.
+- **Safe forms**: `readlink <path>`, `readlink -f <path>` (canonicalize), `readlink <path> 2>&1`.
+- **Auto-approve form (in safe-chain entry [37])**: `readlink( -[a-zA-Z]+)?( <path>)+( 2>&1| 2>/dev/null)?`
 
 ### `which`
 
 - **Verdict**: ✅ SAFE — Locates an executable in `PATH`. Read-only.
+
+### `xargs`
+
+- **Verdict**: 🟡 SAFE-IF-PIPED-INTO-READ-ONLY-CMD — Argument-list builder; inherits the
+  destructiveness of its downstream command.
+- **DESTRUCTIVE forms (NEVER auto-approve)**: `xargs rm`, `xargs sed -i`, `xargs sh`,
+  `xargs cp`, `xargs mv`, `xargs <any-mutating-cmd>`.
+- **SAFE forms (auto-approve OK)**: `xargs grep` · `xargs head` · `xargs tail` ·
+  `xargs wc` · `xargs cat` — downstream binary is read-only.
+- **Auto-approve rule**: NEVER write a generic `xargs .*` pattern. Always whitelist the
+  exact downstream binary: `\| xargs (grep|head|tail|wc|cat) ...`.
+- **Typical pipeline**: `find <args> | xargs grep -<flags> <quoted-PAT>` for code search
+  across files. See entry [39] in settings.json for the full regex.
+
+### `/usr/libexec/java_home`
+
+- **Verdict**: ✅ SAFE — macOS JVM discovery utility. Read-only; lists installed JVMs
+  and their home paths. Safe forms: `-V` (list all), `-v <version>` (show path).
+- **Auto-approve pattern**: `^/usr/libexec/java_home( -[A-Za-z]+)*( 2>&1| 2>/dev/null)?( \| head( -[0-9]+)?)?$`
 
 ***
 
@@ -208,6 +271,7 @@ find /path -name "*.log" -delete
 - **Verdict**: ✅ SAFE — Shows working-tree or commit-to-commit diffs. Read-only.
 - **EXCEPTION (SAFE, hardcoded chain only)**: The specific chain below is auto-approved as a
   single regex. Filename is hardcoded; no other `>` target qualifies:
+
   ```
   git [-C <path>] diff [--cached] [-- <path>] > /tmp/settings_diff.txt; \
       wc -l /tmp/settings_diff.txt && head [-N] /tmp/settings_diff.txt
@@ -215,7 +279,8 @@ find /path -name "*.log" -delete
   Safe because: the redirect target is a hardcoded `/tmp` scratch path (not a system file),
   both downstream consumers (`wc -l`, `head`) are read-only against that same hardcoded path,
   and separators (`;`, `&&`) are pinned — no generic `git diff > <anything>` rule.
-  See [Hardcoded Tmp-Write→Read Exception Pattern](#hardcoded-tmp-writeread-exception-pattern) for the full eligibility criteria.
+  See [Hardcoded Tmp-Write→Read Exception Pattern](#hardcoded-tmp-writeread-exception-pattern)
+  for the full eligibility criteria.
 
 ***
 
@@ -263,6 +328,7 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 ### `git show`
 
 - **Verdict**: ✅ SAFE — Shows commit objects, diffs, tree entries, blobs. Read-only.
+- **Auto-approve form (in safe-chain entry [37])**: `show [0-9a-f]{6,40}( --stat| --name-only| --name-status)*( -- <path>...)?` — pins the first arg to a hex SHA so `git show -- /etc/passwd` (no SHA) is rejected.
 
 ### `git stash list`
 
@@ -270,6 +336,12 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Contrast**: `git stash push`, `git stash pop`, `git stash apply`, `git stash drop`,
   `git stash clear` all modify the stash stack or working tree and are ❌ MUTATES — NOT covered
   by this row.
+
+### `git stash show`
+
+- **Verdict**: ✅ SAFE — Displays summary or diff of a stash entry (`stash@{N}`). Read-only.
+- **Safe forms**: `git stash show`, `git stash show stash@{0} --stat`, `... --name-only`.
+- **Auto-approve form**: `stash show( stash@\{[0-9]+\})?( --stat| --name-only)?` (inside safe-chain entry [37]).
 
 ***
 
@@ -291,6 +363,11 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Without `--fix`**: linting only — reports rule violations, no files changed.
 - **With `--fix`**: modifies Markdown files in-place. Confirm the match set by running without
   `--fix` first.
+
+- **Sink expansion (auto-approve OK)**: `markdownlint-cli2 ... 2>&1 | (head|tail|wc) -N` ·
+  `... 2>&1 | grep -<flags> <quoted-PAT>` — read-only downstream filters for tallying or
+  matching specific lint codes. Entry [28] in settings.json admits these sinks while
+  preserving the `(?! .*--fix)` destructive-flag exclusion.
 
 ***
 

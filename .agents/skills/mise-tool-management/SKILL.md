@@ -16,7 +16,8 @@ Layer 1: Mise Config Trust              (base — everything depends on this)
 ├── Layer 2: Mise Tool Selection        (works on top of Layer 1)
 │   └── Layer 3: Mise Python Setup      (a specialisation of Layer 2 for Python)
 │       └── Layer 4: Mise Python Package Setup  (works on top of Layer 3)
-└── Layer 5: Bypass `mise exec` Cascade (alternative consumption path; sibling of Layer 2)
+├── Layer 5: Bypass `mise exec` Cascade (alternative consumption path; sibling of Layer 2)
+└── Layer 6: Deprecation Warning Handling & Backend Migration (cross-cuts Layers 1–5)
 ```
 
 ***
@@ -167,6 +168,10 @@ mise.toml freshness : OUTDATED (3.11 vs latest 3.13.2)
 mise use --path /absolute/path/to/project python@<chosen-version>
 
 # Install and use a new version — scoped to config
+# Wrap mise install with scratch capture (see Layer 6) so deprecation warnings on
+# stderr are preserved for audit:
+#   SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+#   mise install python@<chosen-version> > "$SCRATCH/mise-install.out" 2> "$SCRATCH/mise-install.err"
 mise install python@<chosen-version>
 mise use --path /absolute/path/to/project python@<chosen-version>
 ```
@@ -418,11 +423,170 @@ mise ls
 
 ***
 
-## 6. Full Worked Example — Pylint Setup for `sync-rules.py`
+## 6. Layer 6 — Deprecation Warning Handling & Backend Migration Protocol
+
+`mise` emits deprecation warnings on **stderr** (e.g.
+`mise WARN  deprecated [ubi]: The ubi backend is deprecated. Use the github
+backend instead …`) the first time an affected tool is resolved. Because the
+warning is on stderr and `mise install` is otherwise terse on success, the
+warning is **invisible** unless stderr is captured. This layer mandates the
+capture, surfaces the warning to the user, and drives the `mise.toml` migration.
+
+### 6.1 Capture-First Detection
+
+Every `mise install` / `mise trust` / `mise ls` invocation in an unattended or
+agent-driven flow MUST be wrapped in the scratch-capture pattern from the
+[`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) base
+skill. The scratch skill is the SSOT for the capture mechanics — this skill
+only specifies *what* to capture and *how to react* to the captured content.
+
+```bash
+SCRATCH="$(bash <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+mise install \
+    > "$SCRATCH/mise-install.out" \
+    2> "$SCRATCH/mise-install.err"
+echo "Exit: $?"
+```
+
+After every invocation, grep stderr for deprecation signals:
+
+```bash
+grep -E "deprecated|will be removed" "$SCRATCH/mise-install.err" || \
+    echo "(no deprecation warnings)"
+```
+
+### 6.2 Known Backend Deprecations
+
+| Deprecated form in `mise.toml` | Replacement | Removal version | Notes |
+| :--- | :--- | :--- | :--- |
+| `"ubi:<owner>/<repo>" = "<ver>"` | `"github:<owner>/<repo>" = "<ver>"` | mise `2027.1.0` | The `ubi` backend is deprecated workspace-wide; the `github` backend is the direct successor and supports the same `<owner>/<repo>` slug. |
+
+This table is the project's living deprecation registry. When `mise` introduces
+a new deprecation, add a row here in the same change that documents the
+migration — do NOT scatter migration notes across consumer projects.
+
+### 6.3 Migration Decision Gate
+
+When stderr contains a deprecation warning, the agent MUST:
+
+1. **Present** the literal warning text to the user (quoted from the captured
+   `.err` file).
+2. **Identify** the affected entry in `mise.toml` (file path + line number +
+   current value).
+3. **Propose** the literal replacement form from §6.2.
+4. **Cite** the removal version (so the user can decide urgency vs. risk).
+5. **Ask**: "Migrate `<old>` → `<new>` in `mise.toml`? (yes / no)"
+
+The `mise.toml` MUST NOT be edited without explicit user approval, in keeping
+with the general prohibition in §9.
+
+### 6.4 Migration Execution
+
+Upon approval, perform the edit, re-install with scratch capture, and verify
+no deprecation warning remains:
+
+```bash
+# 1. Edit mise.toml (literal replacement; preserve quoting and indentation).
+#    Use whatever in-place editor is appropriate; verify with diff.
+#    Example transformation:
+#      "ubi:adwinying/php"    = "8.4.11"
+#    →  "github:adwinying/php" = "8.4.11"
+
+# 2. Re-run install with scratch capture.
+SCRATCH="$(bash <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+mise install \
+    > "$SCRATCH/mise-install-postmigration.out" \
+    2> "$SCRATCH/mise-install-postmigration.err"
+
+# 3. Verify warning is gone.
+grep -E "deprecated|will be removed" "$SCRATCH/mise-install-postmigration.err" \
+    && echo "STILL DEPRECATED — investigate" \
+    || echo "Migration verified clean."
+
+# 4. (Optional) Validate the edited mise.toml per §8.2.
+taplo check /absolute/path/to/project/mise.toml
+taplo fmt --check /absolute/path/to/project/mise.toml
+```
+
+### 6.5 Stale-Install Cleanup
+
+After a successful backend migration, the previous backend's install directory
+under `~/.local/share/mise/installs/` is no longer referenced by `mise.toml`
+but still consumes disk. The cleanup is **two-step** because `mise uninstall`
+only removes the version directory — it does NOT remove the version-aliasing
+symlinks (`8`, `8.4`, `latest`) that pointed to it, leaving them dangling.
+
+Step 1 — Uninstall via mise (preferred over raw `rm -rf` so mise's internal
+registry, caches, and `.mise.backend.toml` are all cleaned up):
+
+```bash
+SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+mise uninstall 'ubi:<owner>/<repo>@<version>' \
+    > "$SCRATCH/mise-uninstall.out" 2> "$SCRATCH/mise-uninstall.err"
+```
+
+Step 2 — Remove the now-empty plugin root and its dangling symlinks:
+
+```bash
+ls -la "$HOME/.local/share/mise/installs/ubi-<owner>-<repo>/"   # confirm only dangling symlinks remain
+rm -rf "$HOME/.local/share/mise/installs/ubi-<owner>-<repo>"
+```
+
+Step 3 — Verify the deprecated entry is gone and the replacement is active:
+
+```bash
+mise current 2>&1 | grep -E '<tool>|<owner>'
+# → github:<owner>/<repo> <version>   (no ubi: line)
+```
+
+For wholesale removal after an accidentally-triggered cascade (multiple
+unrelated tools to delete), §5.5 owns the bulk `rm -rf` recipe; this section
+owns the targeted single-tool migration cleanup.
+
+### 6.6 Worked Example — `ubi:adwinying/php` → `github:adwinying/php`
+
+Real session against `Account-Ledger-Server-PHP/mise.toml` (2026-05-28):
+
+```bash
+# Initial capture
+SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+mise install > "$SCRATCH/mise-install.out" 2> "$SCRATCH/mise-install.err"
+# → Exit: 0
+
+tail -2 "$SCRATCH/mise-install.err"
+# mise WARN  deprecated [ubi]: The ubi backend is deprecated. Use the github
+#   backend instead (e.g., github:owner/repo). This will be removed in mise 2027.1.0.
+# mise ubi:adwinying/php@8.4.11      ✓ installed
+```
+
+Migration:
+
+```diff
+ [tools]
+-"ubi:adwinying/php" = "8.4.11"
++"github:adwinying/php" = "8.4.11"
+```
+
+Verification:
+
+```bash
+mise install > "$SCRATCH/mise-install-2.out" 2> "$SCRATCH/mise-install-2.err"
+# → Exit: 0
+grep -E "deprecated|will be removed" "$SCRATCH/mise-install-2.err" || echo "clean"
+# → clean
+tail -3 "$SCRATCH/mise-install-2.err"
+# mise github:adwinying/php@8.4.11     [2/3] verify GitHub artifact attestations
+# mise github:adwinying/php@8.4.11     [3/3] extract php-8.4.11-macos-aarch64.tar.gz
+# mise github:adwinying/php@8.4.11   ✓ installed
+```
+
+***
+
+## 7. Full Worked Example — Pylint Setup for `sync-rules.py`
 
 This section demonstrates all four layers against the real scenario.
 
-### 6.1 Layer 1: Trust Check
+### 7.1 Layer 1: Trust Check
 
 ```bash
 mise ls 2>&1
@@ -445,7 +609,7 @@ mise trust /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/mise.toml
 # → mise trusted /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts
 ```
 
-### 6.2 Layer 2: Python Version Selection
+### 7.2 Layer 2: Python Version Selection
 
 ```bash
 mise ls python --json
@@ -469,7 +633,7 @@ Offer to update? Ask user.
 mise use --path /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 ```
 
-### 6.3 Layer 3: Python Verification
+### 7.3 Layer 3: Python Verification
 
 ```bash
 mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9 -- python --version
@@ -478,7 +642,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 # → pip 24.x
 ```
 
-### 6.4 Layer 4: Pylint Setup
+### 7.4 Layer 4: Pylint Setup
 
 ```bash
 grep -i "^pylint" /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/requirements.txt
@@ -505,7 +669,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 
 ***
 
-## 7. Post-Edit File Validation Protocol
+## 8. Post-Edit File Validation Protocol
 
 After **any** edit to a project file, the agent MUST validate the file using its
 industrial-standard tool before proceeding. This catches formatting errors (e.g. stray
@@ -515,7 +679,7 @@ indentation) introduced by automated edits.
 > using the [System-Wide Tool Management Skill](../system-wide-tool-management/SKILL.md)
 > before running these commands.
 
-### 7.1 Validation Commands by File Type
+### 8.1 Validation Commands by File Type
 
 | File | Tool | Syntax Check | Format Check & Fix |
 | :--- | :--- | :--- | :--- |
@@ -542,7 +706,7 @@ indentation) introduced by automated edits.
 > - Because these are Python tools, they MUST follow Layer 4: add them to
 >   `requirements.txt` and run them via `mise exec`.
 
-### 7.2 `mise.toml` Validation & Formatting (`taplo`)
+### 8.2 `mise.toml` Validation & Formatting (`taplo`)
 
 > **Important distinction:**
 >
@@ -581,7 +745,7 @@ Common TOML formatting mistakes:
 - Missing blank line separating table sections
 - Inconsistent quote style
 
-### 7.3 `requirements.txt` Validation (`pip`)
+### 8.3 `requirements.txt` Validation (`pip`)
 
 ```bash
 pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
@@ -592,7 +756,7 @@ pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
 - ❌ Failure: any `ERROR` line — fix the package specifier before proceeding
 - No auto-formatter for `requirements.txt`; fix manually.
 
-### 7.4 Worked Example — Validation After This Session's Edits
+### 8.4 Worked Example — Validation After This Session's Edits
 
 ```bash
 # Step 1 — Syntax check
@@ -620,7 +784,7 @@ pip install --dry-run -r /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/req
 
 ***
 
-## 8. Prohibited Actions
+## 9. Prohibited Actions
 
 The agent is FORBIDDEN from:
 
@@ -634,7 +798,7 @@ The agent is FORBIDDEN from:
 - Running `mise use` without a project-scoped config target — always scope to the
   project directory, not globally.
 - **Skipping post-edit file validation** — every edited file MUST be validated with its
-  industrial-standard tool (§7) before proceeding to the next step.
+  industrial-standard tool (§8) before proceeding to the next step.
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the
   user first. The agent MUST present the error (e.g., `invalid-name` for a file name)
   and ask the user how they want to resolve it (e.g., rename the file vs disable the check).

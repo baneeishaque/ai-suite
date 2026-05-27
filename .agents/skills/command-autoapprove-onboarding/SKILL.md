@@ -88,6 +88,18 @@ fight the gate twice.
 Record the exact command string the user wants auto-approved. Preserve quoting, redirection,
 heredoc bodies. Never paraphrase.
 
+### Step 1b — Flatten backslash-newline continuations (if any)
+
+If the captured command spans multiple physical lines via trailing `\<newline>` continuations, first flatten it via
+[`bash-multiline-to-single-line`](../bash-multiline-to-single-line/SKILL.md). The runtime
+autoApprove matcher receives the command as a single string, so regex coverage analysis
+and pattern construction must operate on the flattened form.
+
+```bash
+python3 .agents/skills/bash-multiline-to-single-line/scripts/bash-multiline-to-single-line.py \
+  --file commands-to-onboard.bash
+```
+
 ### Step 2 — Decompose into atomic segments
 
 | Construct | Decomposition |

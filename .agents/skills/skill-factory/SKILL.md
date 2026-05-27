@@ -89,6 +89,7 @@ When the skill ships executable scripts under `scripts/`, every script MUST obey
 
 1. **Language**: PowerShell (`.ps1`) by default, cross-compatible with Windows PowerShell 5.1+ and PowerShell Core 7+.
    Other languages require an explicit user override or a documented technical justification.
+   **Bash Extension Mandate**: When Bash is selected (under user override or documented justification), the script file MUST use the `.bash` extension — never `.sh` — per [Bash Scripting Rules §Naming](../../../ai-agent-rules/bash-scripting-rules.md) and the [GitHub Actions Workflow Rules](../../../ai-agent-rules/github-actions-workflow-rules.md) standalone-script mandate.
 2. **Documentation Headers**: Comment-based help with `.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`, `.NOTES`
    sections — see the [Script Management Rules](../../../ai-agent-rules/script-management-rules.md).
 3. **Execution**: Documented invocations MUST use `pwsh-preview` (preferred) with `pwsh` as fallback.

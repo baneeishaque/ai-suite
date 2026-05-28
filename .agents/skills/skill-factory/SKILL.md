@@ -77,6 +77,16 @@ The `SKILL.md` MUST include:
    **[Redaction & Portability Skill](../redaction-portability/SKILL.md)** before being committed — see §3 of this
    document for the mandatory audit checklist.
 
+**No-Parallel-Rule-File Mandate**: When the Factory produces a new skill, it MUST NOT also produce a parallel
+rule file (`ai-agent-rules/<topic>-rules.md`) covering the same procedure. Rule / instruction files are
+vendor-locked (`.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, `AGENTS.md`, `CLAUDE.md`,
+`.windsurfrules`, etc.); the `agentskills.io` standard is the open, multi-vendor-portable alternative.
+Authoring a sibling rule re-introduces the vendor lock the skill was created to escape and splits the SSOT.
+An `AGENTS.md` Permanent Operating Reminder (one-line bullet pointing at the skill) is permitted and
+encouraged; a full parallel rule file is FORBIDDEN. Authoritative rationale:
+[`ai-rule-standardization-rules.md` §2 Skill-First Architecture](../../../ai-agent-rules/ai-rule-standardization-rules.md)
+and [`rule-to-skill-industrialization` §0](../rule-to-skill-industrialization/SKILL.md).
+
 ### 2.2.1 Script Authoring Mandates
 
 **No-Embedded-Script Mandate**: Script source code MUST NOT be embedded inside `SKILL.md`, `AGENTS.md`, or any other

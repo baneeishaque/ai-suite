@@ -361,13 +361,31 @@ If any file fails `jq empty`, the generator has a bug — fix it before symlinki
 
 ## 9. Phase 5 — Symlink Distribution
 
-After Phase 1 backup is verified AND Phase 4 generates pass `jq empty`:
+After Phase 1 backup is verified AND Phase 4 generates pass `jq empty`,
+each consumer tool's native MCP config file is replaced by a symlink to
+the corresponding generated artefact.
+
+**Preferred path: let the generator do it.** Per the [Script-Over-Instruction
+Principle](#73-script-language-justification), the generator script
+[`scripts/generate-configs.py`](scripts/generate-configs.py) deploys
+consumer-side symlinks automatically (relative-path, idempotent, scoped
+to the machines where each consumer's parent directory exists). One
+canonical edit + one `python3 scripts/generate-configs.py` invocation
+generates the per-tool files AND repairs/installs the consumer symlinks
+in one deterministic pass. Add new tools' link/target pairs to the
+`DEPLOY_TARGETS` map in the script.
+
+Pass `--no-deploy` to generate only (e.g., for CI / dry-run).
 
 | Tool | Native path | Symlink target |
 | :--- | :--- | :--- |
 | VS Code Insiders Copilot | `<user-home>/Library/Application Support/Code - Insiders/User/mcp.json` | `<canonical-root>/generated/vscode/mcp.json` |
 | JetBrains GitHub Copilot | `<user-home>/.config/github-copilot/intellij/mcp.json` | `<canonical-root>/generated/jetbrains/mcp.json` |
 | GitHub Copilot CLI | `<user-home>/.copilot/mcp-config.json` | `<canonical-root>/generated/copilot-cli/mcp-config.json` |
+
+The manual replace pattern below remains documented for bootstrap cases
+(brand-new consumer added before the script knows about it) and for
+audit / rollback.
 
 ### 9.1 Replace Pattern (POSIX)
 

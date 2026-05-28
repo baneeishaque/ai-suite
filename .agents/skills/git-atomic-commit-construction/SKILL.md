@@ -333,15 +333,23 @@ python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-ro
     --row "| My Skill | [path](path) | description |" \
     --dry-run
 
-# Stage exactly one row (reads HEAD:AGENTS.md, inserts row, updates index)
+# Stage exactly one row (default --mode staged: reads HEAD:AGENTS.md,
+# inserts row, updates index; working tree is NOT touched)
 python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
     --row "| My Skill | [path](path) | description |"
 ```
 
-The script reads `HEAD:AGENTS.md` (not the working tree), inserts the row at
-the alphabetically correct position, writes a new blob via `git hash-object -w`,
-and updates the index via `git update-index --cacheinfo` — so only the new row
-is staged while all other working-tree changes remain unstaged.
+In default `--mode staged`, the script reads `HEAD:AGENTS.md` (not the working
+tree), inserts the row at the alphabetically correct position, writes a new
+blob via `git hash-object -w`, and updates the index via
+`git update-index --cacheinfo` — so only the new row is staged while all other
+working-tree changes remain unstaged.
+
+The script also supports `--mode worktree` for the skill-factory registration
+case (AGENTS.md is clean and you just want the row written to the working tree
+for ordinary `git status` review and `git add`). See
+[`skill-factory/SKILL.md` §2.3](../skill-factory/SKILL.md) for the registration
+workflow.
 
 Forbidden anti-pattern: "commit all artifacts first, then one final commit
 registers them all in AGENTS.md" — this makes individual commits incomplete

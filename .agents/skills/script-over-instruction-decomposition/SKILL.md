@@ -50,6 +50,33 @@ Do NOT apply when:
 - The host artifact is purely conceptual (architecture rationale,
   trade-off discussion).
 
+## Adoption Note — Why the Prose Tier Lives in a Skill, Not a Rule
+
+The judgement / branching / gate tier that survives decomposition must
+still be authored *somewhere*. Prefer the **Agent Skills** format
+([agentskills.io](https://agentskills.io), Anthropic-originated,
+multi-vendor adopted) over a vendor-specific rule file
+(`.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, `AGENTS.md`,
+`CLAUDE.md`, `.windsurfrules`, etc.):
+
+- Skills are the **open standard**: one `SKILL.md` is consumable by
+  every conformant runtime.
+- Rules are **vendor-locked**: a `.mdc` rule is invisible to Copilot;
+  a `CLAUDE.md` is invisible to Cursor; etc.
+
+So the full preference chain is:
+
+1. **Script** (interpreter-replayed; deterministic).
+2. **Skill prose** (LLM-replayed; portable across runtimes).
+3. **Rule / instruction file** (LLM-replayed; vendor-locked) — only
+   when a vendor-specific surface is genuinely required (e.g.,
+   Permanent Operating Reminders that must fire at every boot of a
+   specific runtime).
+
+When converting an existing rule into a skill, delegate to
+[`rule-to-skill-industrialization`](../rule-to-skill-industrialization/SKILL.md);
+that skill in turn delegates back here for the tier-decomposition pass.
+
 ## The Determinism Hierarchy
 
 For any agent-facing procedure, classify each step into one tier:
@@ -202,6 +229,12 @@ See the upstream commit (`ai-suite-2` `c190f39`) and downstream sync
   Script SSOT Mandate and No-Embedded-Script Mandate.
 - **[Git Atomic Commit Construction](../git-atomic-commit-construction/SKILL.md)** —
   per-extraction commit discipline.
+- **[Skill Factory](../skill-factory/SKILL.md)** — invokes this skill
+  during §2.2.1 Tier Decomposition Mandate for every newly drafted
+  skill.
+- **[Rule to Skill Industrialization](../rule-to-skill-industrialization/SKILL.md)** —
+  invokes this skill during Phase 4 to push deterministic recipes out
+  of the blended prose and into scripts.
 
 ## Traceability
 

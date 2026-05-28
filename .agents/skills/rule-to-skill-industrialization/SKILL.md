@@ -13,6 +13,30 @@ the repository.
 
 ***
 
+## 0. Rationale — Why Skills, Not Rules
+
+Rules and instruction files are **vendor-specific**: each agent runtime
+defines its own location and format
+(`.cursor/rules/*.mdc`, `.github/copilot-instructions.md`, `AGENTS.md`,
+`CLAUDE.md`, `.windsurfrules`, etc.). A rule authored for one vendor
+is invisible to every other.
+
+The **Agent Skills** standard ([agentskills.io](https://agentskills.io),
+Anthropic-originated, multi-vendor adopted) is the open, portable
+alternative: a single `SKILL.md` with YAML frontmatter is consumable
+by every conformant runtime. Industrializing a rule into a skill is
+therefore not cosmetic — it is the migration from a vendor-locked
+artifact to a portable one.
+
+This is the **adoption** half of the "why". The **fidelity** half
+(zero data loss, traceability matrix) is covered in §1–§3 below. The
+**determinism** half — pushing deterministic steps out of prose and
+into scripts — is covered by
+[`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md)
+and MUST be applied during §2.6 of this skill.
+
+***
+
 ## 1. Preparation: The Fidelity Scan
 
 Before beginning the transformation, the agent MUST perform a surgical audit of the source rule to prevent data loss.
@@ -49,7 +73,24 @@ Before beginning the transformation, the agent MUST perform a surgical audit of 
   **Hosted VCS Permanent Link (SHA)** protocol as defined in
   **[markdown-generation-rules.md Section 4.2.8](../../../ai-agent-rules/markdown-generation-rules.md#428-cross-repository--submodule-isolation-links)**.
 
-### 2.4 Phase 4: CI/CD & Output Integrity
+### 2.4 Phase 4: Tier Decomposition (Script vs Prose)
+
+Before declaring the skill final, the agent MUST apply
+[`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md)
+to the freshly blended `SKILL.md`:
+
+1. Walk every step of every procedure.
+2. Classify each step as **Tier A** (deterministic — parse, transform,
+   validate, file-mutate) or **Tier C** (judgement, branching, gates).
+3. Extract every Tier-A step into an executable script under the new
+   skill's `scripts/` directory. Prose retains only Tier C plus a
+   one-line invocation example.
+
+A rule industrialized into a skill that still contains long bash
+recipes or Python heredocs in its prose has only completed half the
+migration. The vendor-lock is gone; the determinism gap remains.
+
+### 2.5 Phase 5: CI/CD & Output Integrity
 
 - **Output Restriction**: The agent is **BLOCKED** from manually editing auto-generated files (e.g., `README.md`,
   `agent-rules.md`).
@@ -57,7 +98,7 @@ Before beginning the transformation, the agent MUST perform a surgical audit of 
 - **Automation Reliance**: Allow the CI/CD pipeline/sync scripts to update indices automatically once the source
   rule is deleted.
 
-### 2.5 Portability & Depth Audit
+### 2.6 Portability & Depth Audit
 
 Before the final commit, the agent MUST perform a **Portability & Redaction Audit** as defined in the
 **[Skill Factory Section 3](../skill-factory/SKILL.md#3-post-drafting-checklist)**. This ensures all documentation

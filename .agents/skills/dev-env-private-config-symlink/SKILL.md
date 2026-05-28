@@ -178,7 +178,7 @@ template.
 
 ## 7. Automated Audit Script
 
-[scripts/audit-symlinks.bash](scripts/audit-symlinks.bash) walks the current
+[scripts/audit-symlinks.py](scripts/audit-symlinks.py) walks the current
 working directory for symlinks pointing at any path containing
 `configurations-private` (configurable), and reports per link:
 
@@ -219,7 +219,7 @@ The agent is **BLOCKED** from:
 
 This skill is **atomic**: it does not split into base + composer because
 the operational steps (clone / pull / symlink / verify) are tightly
-sequenced. The `audit-symlinks.bash` script is a self-contained utility
+sequenced. The `audit-symlinks.py` script is a self-contained utility
 not used by other skills.
 
 ## 11. Traceability

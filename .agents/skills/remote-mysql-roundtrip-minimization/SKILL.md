@@ -170,11 +170,32 @@ DELETE FROM accounts WHERE account_id=? AND NOT EXISTS (
 );
 ```
 
-### 5.2 Race-Safety — Keep Guards on the Mutation Itself
+### 5.2 Race-Safety Decision Matrix (TOCTOU between SELECT and DELETE)
 
-Even with a pre-count SELECT in the same packet, KEEP the `NOT EXISTS` guards on the
-DELETE. The SELECT and DELETE are not atomic with each other; a concurrent INSERT of a
-child row between them would otherwise orphan the constraint.
+Even within one `multi_query` packet, the SELECT-gate and the DELETE-mutation are NOT
+atomic. A concurrent INSERT of a child row between them would create an orphaned
+constraint. Three layered defences exist:
+
+| Option | Mechanism | Scope of protection | Cost | Verdict |
+| --- | --- | --- | --- | --- |
+| **A** Guard on the mutation | `WHERE @hc=0 AND @ht=0` (or `NOT EXISTS` re-checked inside DELETE) plus `affected_rows` inspection | Same connection only — concurrent inserter can still slip in between this packet's SELECT and DELETE; the guard merely refuses to delete if the gate flipped on THIS connection's view | Zero | **Mandatory baseline** — always keep guards on the DELETE itself |
+| **B** Row-level pessimistic lock | Wrap in a transaction; `SELECT … FOR UPDATE` on the parent and on the EXISTS targets under `REPEATABLE READ` (gap-locks included) | Locks parent row + gap-locks the index range that `NOT EXISTS` scans; concurrent INSERT into that range blocks. Does NOT protect against ungated DELETEs from other code paths | Per-request lock + transaction round-trip overhead; risk of deadlocks; only effective on InnoDB | **Optional** when ungated paths are absent and the workload is low-contention |
+| **C** Declarative FK with `ON DELETE RESTRICT` | `ALTER TABLE child ADD CONSTRAINT … FOREIGN KEY (col) REFERENCES parent(pk) ON DELETE RESTRICT` | Database-enforced **forever** across all code paths; concurrent INSERT of a child blocks the parent DELETE atomically | One-time migration cost; requires **InnoDB** on both sides; requires **zero orphans** before ALTER (otherwise ERROR 1452); FKs do **NOT** validate NULL values (top-level rows with NULL parent column are always allowed) | **Preferred long-term defence** when the schema can carry it |
+
+Prerequisites for Option C, verifiable in one shot via
+[`probe-fk-readiness.py`](../mysql-capability-probe-pymysql/scripts/probe-fk-readiness.py):
+
+- Both tables use the InnoDB engine. **MyISAM silently drops FK clauses** — the ALTER
+  succeeds, the constraint is never created. Convert with
+  `ALTER TABLE t ENGINE=InnoDB;` first.
+- Required indexes exist on the FK columns (see §5.4).
+- Zero orphan rows in the child column.
+- The top-level-row encoding for self-referential parents is genuinely NULL (FKs ignore
+  NULL); any sentinel like `0` must either be converted to NULL or excluded via a
+  trigger-enforced check.
+
+Combine A (always) with C (when feasible). B is reserved for transitional periods
+between A-only and C-ready.
 
 ### 5.3 Input Sanitisation (Security Caveat)
 
@@ -190,6 +211,112 @@ $id = $con->real_escape_string(filter_input(INPUT_POST, 'account_id'));
 
 For untyped string fields, consider splitting into a `prepare`-able SELECT and a
 `multi_query` mutation if security outweighs the round-trip savings.
+
+### 5.4 Index Prerequisite Verification
+
+Every EXISTS / NOT EXISTS gate added to a packed multi-query must hit an index that
+seeks to a single row (or fails fast). Without it, the gate degrades to a full table
+scan and the round-trip saving is wiped out by I/O.
+
+Required-index discovery and DDL application:
+
+```bash
+# Probe — read-only, exits 0 only when ALL declared indexes exist
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-required-indexes.py \
+    --secrets /path/to/secrets.env \
+    --check accounts.account_id \
+    --check accounts.parent_account_id \
+    --check transactionsv2.from_account_id \
+    --check transactionsv2.to_account_id
+
+# Apply — idempotent, no-op if the index already exists
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/apply-indexes.py \
+    --secrets /path/to/secrets.env \
+    --index transactionsv2.from_account_id \
+    --index transactionsv2.to_account_id
+```
+
+Both scripts are KEY=VALUE-secrets compatible and route through
+[`mise-tool-management`](../mise-tool-management/SKILL.md) Layer 5 via
+[`probe-runner.sh`](../mysql-capability-probe-pymysql/scripts/probe-runner.sh) when
+invoked from a project whose `mise.toml` does NOT pin python.
+
+### 5.5 EXISTS over COUNT for Pure Gates
+
+When the surfaced fact is **"does any matching row exist?"** rather than **"how many
+rows match?"**, prefer `EXISTS` over `COUNT(*)`:
+
+```sql
+-- ❌ Forces a full or index scan to count every match
+SELECT COUNT(*) FROM child WHERE parent_id=?;
+
+-- ✅ Short-circuits on first match; planner stops after one row
+SELECT EXISTS(SELECT 1 FROM child WHERE parent_id=?);
+```
+
+Use `COUNT` only when the integer is shown to the user or fed into arithmetic.
+For binary gates, `EXISTS` reduces work to one index seek + one row read.
+
+### 5.6 UNION Aggregation Pitfall
+
+`UNION` deduplicates result rows. Combining two single-literal probes via plain
+`UNION` collapses them to **at most one row** — destroying any attempt to count
+or distinguish them:
+
+```sql
+-- ❌ Always returns 0 or 1 row regardless of how many rows match either leg —
+--    UNION dedupes (1) and (1) to a single (1).
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM transactionsv2 WHERE from_account_id=?
+    UNION
+    SELECT 1 FROM transactionsv2 WHERE to_account_id=?
+) t;
+
+-- ✅ Either: project the primary key so UNION cannot dedupe to one row…
+SELECT COUNT(*) FROM (
+    SELECT id FROM transactionsv2 WHERE from_account_id=?
+    UNION
+    SELECT id FROM transactionsv2 WHERE to_account_id=?
+) t;
+
+-- ✅ …or use UNION ALL when you do not need deduplication…
+SELECT COUNT(*) FROM (
+    SELECT 1 FROM transactionsv2 WHERE from_account_id=?
+    UNION ALL
+    SELECT 1 FROM transactionsv2 WHERE to_account_id=?
+) t;
+
+-- ✅ …or split into two EXISTS connected by OR (best for pure-gate semantics)
+SELECT EXISTS(SELECT 1 FROM transactionsv2 WHERE from_account_id=?)
+    OR EXISTS(SELECT 1 FROM transactionsv2 WHERE to_account_id=?);
+```
+
+The third form is preferred in packed multi-query gates because each `EXISTS`
+short-circuits independently and both can ride dedicated single-column indexes.
+
+### 5.7 Robust Multi-Result-Set Read Loop
+
+Packed multi-queries that mix `SELECT … INTO @vars` (no result set), `DELETE`
+(no result set), and a trailing `SELECT @vars` (one result set) break the naive
+single-`store_result()` pattern: the first `store_result()` returns `false` because
+the first statement produces no row set, and the trailing SELECT is never reached.
+
+The robust pattern walks every result set, capturing the first non-null one:
+
+```php
+$row = null;
+do {
+    if ($res = $con->store_result()) {
+        $row = $res->fetch_assoc();
+        $res->free();
+    }
+} while ($con->more_results() && $con->next_result());
+```
+
+This pattern is correct regardless of which statement in the packet produces
+the row set, and it drains the connection so a subsequent `multi_query` will not
+fail with `Commands out of sync`. The reference example
+[`examples/delete_account.php`](examples/delete_account.php) uses this loop.
 
 ## 6. Composition
 

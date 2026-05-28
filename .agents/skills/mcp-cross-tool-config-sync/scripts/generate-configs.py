@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Generate per-tool MCP configuration files from a single canonical SSOT.
+"""Generate per-tool MCP configuration files from a single canonical SSOT,
+and (by default) deploy a relative symlink at each consumer's expected path.
 
 Canonical schema (./mcp-servers.json relative to this script's parent.parent):
     {
@@ -8,23 +9,31 @@ Canonical schema (./mcp-servers.json relative to this script's parent.parent):
     }
 
 Generated per-tool outputs are written to ./generated/<tool>/<filename>.
-Each tool then symlinks its native config file to the generated counterpart.
 
-Usage:
-    python3 scripts/generate-configs.py
+Each tool's consumer-side symlink (e.g., User/mcp.json -> ../../mcp/generated/vscode/mcp.json)
+is deployed automatically as a RELATIVE symlink, idempotently, ONLY when the
+parent directory of the link exists on this machine. Pass --no-deploy to skip.
 
 Adding a new tool:
     1. Write a gen_<tool>(canonical) function below.
     2. Append it to the GENERATORS tuple.
-    3. Symlink the tool's native config path to ./generated/<tool>/<filename>.
+    3. (Optional) Register a deploy target in DEPLOY_TARGETS so the consumer
+       symlink is created automatically. Keep the link path RELATIVE to ROOT
+       — the script computes the relative-symlink target itself.
 
 This is a reusable template. The active copy for a given user lives next to
 their canonical mcp-servers.json (typically a private configuration tree).
+
+Usage:
+    python3 scripts/generate-configs.py            # generate + deploy symlinks
+    python3 scripts/generate-configs.py --no-deploy # generate only
 """
 
 from __future__ import annotations
 
+import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -57,6 +66,28 @@ def with_stdio_default(server: dict) -> dict:
     if "command" in out and "type" not in out:
         out = {"type": "stdio", **out}
     return out
+
+
+def deploy_symlink(link: Path, target: Path) -> None:
+    """Create a RELATIVE symlink at `link` pointing to `target`, idempotently.
+
+    Skips silently (with a notice) if the link's PARENT directory does not exist
+    on this machine — that consumer is not installed here.
+    Replaces any existing file/symlink at `link`. Errors loudly on directories.
+    """
+    if not link.parent.exists():
+        print(f"  skip-link  {link}  (parent dir absent on this machine)")
+        return
+    if not target.exists():
+        print(f"  skip-link  {link}  (target {target} missing)", file=sys.stderr)
+        return
+    if link.is_symlink() or link.exists():
+        if link.is_dir() and not link.is_symlink():
+            sys.exit(f"refusing to replace directory at link path: {link}")
+        link.unlink()
+    relative = os.path.relpath(target, link.parent)
+    link.symlink_to(relative)
+    print(f"  linked    {link}  ->  {relative}")
 
 
 # ---------- per-tool generators ----------
@@ -96,14 +127,46 @@ def gen_jetbrains(canonical: dict) -> None:
 
 GENERATORS = (gen_copilot_cli, gen_vscode, gen_jetbrains)
 
+# Consumer-side symlink deployment map.
+# Key   = tool id (matches a gen_<tool> function's domain).
+# Value = (link path relative to ROOT, target path relative to ROOT).
+# Only entries whose link.parent EXISTS on the current machine are deployed
+# (allows the same canonical script to run on machines without every consumer
+# tool installed). Add new tools' deploy targets here as paths become known.
+DEPLOY_TARGETS: dict[str, tuple[str, str]] = {
+    "vscode": (
+        # ROOT here is <canonical-root>/mcp. For the typical private-config layout
+        # where the User folder is a sibling of mcp/, this resolves to
+        # ../vscode-insiders-configuration/visual-studio-code-user-settings/mcp.json
+        "../vscode-insiders-configuration/visual-studio-code-user-settings/mcp.json",
+        "generated/vscode/mcp.json",
+    ),
+}
+
+
+def deploy_all() -> None:
+    for tool, (link_rel, target_rel) in DEPLOY_TARGETS.items():
+        deploy_symlink(ROOT / link_rel, ROOT / target_rel)
+
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--no-deploy", action="store_true",
+                        help="generate per-tool config files but do NOT deploy consumer symlinks")
+    args = parser.parse_args()
+
     canonical = load_canonical()
     print(f"canonical: {CANONICAL.relative_to(ROOT)}")
     print(f"output:    {OUT.relative_to(ROOT)}/")
     for gen in GENERATORS:
         gen(canonical)
-    print("done.")
+    if args.no_deploy:
+        print("done (no consumer symlinks deployed).")
+    else:
+        print("deploying consumer symlinks:")
+        deploy_all()
+        print("done.")
     return 0
 
 

@@ -93,25 +93,79 @@ Each JSON element has:
 - `source.path` — which `mise.toml` declared it
 - `active` — whether it is the currently active version
 
-### 2.2 Required Version Freshness Check
+### 2.2 Required Version Freshness Check (Multi-Source)
 
-Before comparison, check whether the version pinned in `mise.toml` is itself the
-latest release of the tool:
+Before comparison, check whether the version pinned in `mise.toml` is itself
+the latest release of the tool. A single source is **not enough**: mise's
+remote index can lag the upstream by hours-to-days, and a `github:<owner>/<repo>`
+repackaging backend can lag the upstream language project by an entire minor
+version. The agent MUST query up to three independent sources and present a
+comparison table to the USER.
+
+#### 2.2.1 Tier 1 — Mise Remote Index (always)
 
 ```bash
-# Example: check latest Python available in mise
-mise ls-remote python | tail -5
+# Newest versions known to mise's resolver:
+mise ls-remote <tool>           | tail -5
+mise ls-remote 'github:<owner>/<repo>' | tail -5
 ```
 
-Present the result to the USER:
+#### 2.2.2 Tier 2 — Backend-Native Truth (for `github:` backend)
+
+The GitHub Releases API publishes a release the moment the upstream maintainer
+cuts it — before mise's index resync:
+
+```bash
+curl -s https://api.github.com/repos/<owner>/<repo>/releases/latest \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["tag_name"], "-", d["name"])'
+```
+
+For `ubi:`, `cargo:`, `npm:`, `pipx:`, and other backends, query the backend's
+own registry (crates.io, npmjs.org, PyPI) for the same effect.
+
+#### 2.2.3 Tier 3 — Upstream Language / Project Site (for repackaging backends)
+
+When the backend is a community-maintained repackaging of an upstream language
+or project (e.g., `github:adwinying/php` repackages PHP from php.net), the
+upstream's own release feed is the meta-truth — it catches the case where the
+repackager has not yet rebuilt the latest upstream release:
+
+```bash
+# Example: official PHP latest from php.net
+curl -s 'https://www.php.net/releases/index.php?json&max=1' \
+    | python3 -c 'import json,sys; d=json.load(sys.stdin); k=list(d)[0]; print(k, "->", d[k]["version"])'
+
+# Comparable feeds:
+#   Python  → https://www.python.org/api/v2/downloads/release/?is_published=true
+#   Node.js → https://nodejs.org/dist/index.json
+#   Ruby    → https://www.ruby-lang.org/en/downloads/releases/ (HTML)
+```
+
+If the repackager lags upstream by more than a patch release, surface that fact
+in the presentation table — the user may want to wait, switch backends, or
+proceed knowingly.
+
+#### 2.2.4 Presentation Table
+
+The agent MUST present all queried sources side-by-side:
 
 ```text
-mise.toml pins  : python 3.11
-Latest available: python 3.13.2
+Pinned in mise.toml         : github:adwinying/php 8.4.11
+Tier 1 — mise ls-remote     : 8.5.6  (latest mise-known)
+Tier 2 — GitHub Releases    : v8.5.6 (latest repackager release)
+Tier 3 — php.net upstream   : 8.5.6  (latest upstream PHP)
 
-Recommendation: The pinned version is not the latest.
-Offer to update mise.toml to 3.13.2, but only if the USER agrees.
+Verdict: OUTDATED — pinned is 1 minor + many patches behind on all sources.
+
+Options:
+  ① 8.5.6   — latest overall (newest features; possible BC concerns)
+  ② 8.4.21  — patch-bump on the pinned 8.4 line (lowest-risk)
+  ③ stay on 8.4.11
+
+Recommendation: present, then ask. Do NOT pre-pick.
 ```
+
+#### 2.2.5 Decision Branches
 
 - **If user wants latest** → install latest AND update `mise.toml` pin.
 - **If user wants required** → install required version; do NOT alter `mise.toml`.
@@ -178,6 +232,88 @@ mise use --path /absolute/path/to/project python@<chosen-version>
 
 - `--path` — Ensures the `use` command writes to the **project-local** `mise.toml`,
   not the global `~/.config/mise/config.toml`. This prevents polluting the global env.
+
+### 2.6 Post-Bump Cleanup of Older Version (Same-Backend Bump)
+
+When a user-approved bump installs `<tool>@<new>` while `<tool>@<old>` still
+exists under the **same backend** (e.g., `github:adwinying/php` bumped from
+`8.4.11` → `8.5.6`), the old install MUST be cleaned up so it does not consume
+disk and does not confuse `mise ls`. The cleanup recipe for this case is
+**sharply different** from the cross-backend migration cleanup in §6.5 — read
+both before acting.
+
+#### 2.6.1 Why §2.6 ≠ §6.5
+
+| Axis | Same-backend bump (§2.6) | Cross-backend migration (§6.5) |
+| :--- | :--- | :--- |
+| Backend identity | Identical (`github:` → `github:`) | Changes (`ubi:` → `github:`) |
+| Plugin install root | `~/.local/share/mise/installs/<backend>-<owner>-<repo>/` is **LIVE** (hosts the new install) | The old plugin root is **DEAD** (no version references it) |
+| Alias symlinks (`<major>`, `<major>.<minor>`, `latest`) | Auto-repointed by mise to `<new>` on install — must be kept | Point at nothing valid — removed with plugin root |
+| `mise uninstall <pkg>@<old>` | ✅ Sufficient | ✅ Necessary but **not** sufficient |
+| `rm -rf <plugin-root>` | ❌ **FORBIDDEN** — destroys the live `<new>` install | ✅ Required follow-up to remove dangling alias symlinks |
+
+#### 2.6.2 Procedure
+
+Always with scratch capture per
+[`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md):
+
+```bash
+SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+
+# Step 1 — Uninstall the OLD version only (not the plugin root).
+mise uninstall '<backend>:<owner>/<repo>@<old>' \
+    > "$SCRATCH/mise-uninstall-<old>.out" 2> "$SCRATCH/mise-uninstall-<old>.err"
+
+# Step 2 — Verify the plugin root remains LIVE with symlinks pointing at <new>.
+ls -la "$HOME/.local/share/mise/installs/<backend>-<owner>-<repo>/"
+# Expected: <new>/ directory present; <major>, <major>.<minor>, latest -> ./<new>
+
+# Step 3 — Verify only <new> is active.
+mise current 2>&1 | grep -E '<tool>|<owner>'
+mise ls '<backend>:<owner>/<repo>'
+# Expected: a single row, version <new>.
+
+# Step 4 — Optional smoke test of the binary.
+mise exec -- <binary> --version
+```
+
+If `ls -la` shows the symlinks STILL pointing at `<old>` (i.e., mise did not
+re-link them on the new install — possible if the user never ran `mise install`
+after editing the pin), re-run `mise install` from the project directory
+**before** the `mise uninstall`. NEVER `rm -rf` the plugin root to "force" the
+relink — that destroys `<new>`.
+
+#### 2.6.3 Worked Example — `github:adwinying/php` 8.4.11 → 8.5.6
+
+Real session against `Account-Ledger-Server-PHP/mise.toml` (2026-05-28):
+
+```bash
+# Edit pin in mise.toml: "github:adwinying/php" = "8.5.6"
+
+# Install new version with scratch capture.
+SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+mise install > "$SCRATCH/mise-install-8.5.6.out" 2> "$SCRATCH/mise-install-8.5.6.err"
+# → Exit: 0 ; stderr shows download+verify+extract+✓ installed
+
+mise current | grep php
+# → github:adwinying/php 8.5.6
+
+# Uninstall the old 8.4.11.
+mise uninstall 'github:adwinying/php@8.4.11' \
+    > "$SCRATCH/mise-uninstall-8.4.11.out" 2> "$SCRATCH/mise-uninstall-8.4.11.err"
+# → mise github:adwinying/php@8.4.11   ✓ uninstalled
+
+# Verify plugin root is LIVE, symlinks repointed.
+ls -la ~/.local/share/mise/installs/github-adwinying-php/
+# →  8     -> ./8.5.6
+# →  8.5   -> ./8.5.6
+# →  8.5.6/   (directory)
+# →  latest -> ./8.5.6
+# (no 8.4.11/ directory — cleaned)
+
+mise ls 'github:adwinying/php'
+# → 8.5.6  ~/lab-data/Account-Ledger-Server-PHP/mise.toml  8.5.6
+```
 
 ***
 
@@ -509,6 +645,12 @@ taplo fmt --check /absolute/path/to/project/mise.toml
 ```
 
 ### 6.5 Stale-Install Cleanup
+
+> **Contrast pointer**: §6.5 applies ONLY when the backend identifier itself
+> changed (e.g., `ubi:` → `github:`), so the OLD plugin root is dead. For a
+> same-backend version bump (e.g., `github:` 8.4.11 → 8.5.6) the plugin root
+> is still LIVE and `rm -rf` of it would destroy the new install — use §2.6
+> instead.
 
 After a successful backend migration, the previous backend's install directory
 under `~/.local/share/mise/installs/` is no longer referenced by `mise.toml`

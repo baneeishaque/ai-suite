@@ -16,6 +16,7 @@ The agent MUST activate the **GitHub Repo Commit Fetch** skill when ANY of the f
 - "What files did commit `<sha>` touch?"
 - "Get me the file `<path>` at ref `<sha>` / `<branch>` without cloning."
 - The agent needs to verify a GitHub-hosted file's content at a historical commit.
+- A higher-level skill (e.g., `github-actions-run-audit`) needs to compose these read primitives.
 
 ***
 

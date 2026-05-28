@@ -216,8 +216,8 @@ only the intended hunks — no full-file rewrite.
 
 | Script | Purpose |
 |---|---|
-| [scripts/feature-slice-inventory.bash](scripts/feature-slice-inventory.bash) | Given a feature name and an Android source root, list candidate files (Activity, layout, ApiWrapper method) that constitute the vertical slice. |
-| [scripts/jitpack-config-bootstrap.bash](scripts/jitpack-config-bootstrap.bash) | Given a library module path and a VCS owner, append the `maven-publish` block to `build.gradle.kts` and create `jitpack.yml` at the repo root. Idempotent. |
+| [scripts/feature-slice-inventory.py](scripts/feature-slice-inventory.py) | Given a feature name and an Android source root, list candidate files (Activity, layout, ApiWrapper method) that constitute the vertical slice. |
+| [scripts/jitpack-config-bootstrap.py](scripts/jitpack-config-bootstrap.py) | Given a library module path and a VCS owner, append the `maven-publish` block to `build.gradle.kts` and create `jitpack.yml` at the repo root. Idempotent. |
 
 ***
 

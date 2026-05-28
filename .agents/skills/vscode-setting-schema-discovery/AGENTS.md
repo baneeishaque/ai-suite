@@ -21,7 +21,7 @@ Invoke this skill when the user asks any of:
 ## One-Line Invocation
 
 ```bash
-./scripts/resolve-vscode-setting.bash <setting.key>
+python3 scripts/resolve-vscode-setting.py <setting.key>
 ```
 
 Auto-discovers the installed VS Code-family bundle; pass `--app <path>`
@@ -30,6 +30,6 @@ when probing a non-default fork.
 ## See Also
 
 - Active protocol → [`SKILL.md`](SKILL.md)
-- Script → [`scripts/resolve-vscode-setting.bash`](scripts/resolve-vscode-setting.bash)
+- Script → [`scripts/resolve-vscode-setting.py`](scripts/resolve-vscode-setting.py)
 - Sibling skill for *where* a tool writes (vs *what shape* it expects) →
   [`../tool-config-schema-probe/SKILL.md`](../tool-config-schema-probe/SKILL.md)

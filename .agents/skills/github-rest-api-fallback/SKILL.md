@@ -269,6 +269,9 @@ authenticate with a higher limit.
 | [`github-secrets-bulk-set`](../github-secrets-bulk-set/SKILL.md) | Set Actions secrets without `gh`. | §3 endpoint cookbook for the public-key + sealed-value workflow. |
 | [`jira-acli-operations`](../jira-acli-operations/SKILL.md) | Create PRs when `gh` is unavailable. | §3 endpoint cookbook — `POST /repos/{o}/{r}/pulls`. |
 | [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) | Create / delete an independent personal repository on GitHub (or GHE) when `gh` is unavailable. | §1.4 GHE base-URL substitution; §3 endpoint cookbook for `POST /user/repos` and `DELETE /repos/{o}/{r}`. |
+| [`github-repo-commit-fetch`](../github-repo-commit-fetch/SKILL.md) | Read-only repo data fetch (commits, file at ref) when `gh` is unavailable. | §3 endpoint cookbook — `GET /repos/{o}/{r}/commits`, `GET /repos/{o}/{r}/commits/{sha}`, `GET /repos/{o}/{r}/contents/{p}?ref={sha}`. |
+| [`github-actions-workflow-dispatch`](../github-actions-workflow-dispatch/SKILL.md) | Trigger a workflow when `gh` is unavailable. | §3 endpoint cookbook — `POST /repos/{o}/{r}/actions/workflows/{id}/dispatches`. |
+| [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) | Audit workflow runs when `gh` is unavailable. | §3 endpoint cookbook — `GET /repos/{o}/{r}/actions/workflows/{id}/runs`, `GET /repos/{o}/{r}/actions/runs/{id}`. |
 
 ***
 

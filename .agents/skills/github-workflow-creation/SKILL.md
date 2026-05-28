@@ -285,3 +285,10 @@ runs-on: ubuntu-24.04
 | Hardcoded values in scripts | Pass via arguments or environment variables |
 | Using `@v6` instead of `@v6.0.2` | Always pin to full version for reproducibility |
 | Inline scripts in workflow YAML | Extract to `.bash` files in `scripts/` folder |
+
+***
+
+## See Also
+
+- [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) — observation-side counterpart. After authoring or modifying a workflow here, use that skill to verify it actually runs, succeeds, and (when applicable) produces / commits the expected artifact.
+- [`github-actions-workflow-dispatch`](../github-actions-workflow-dispatch/SKILL.md) — trigger primitive. Required when the authored workflow includes `on: workflow_dispatch:` and the agent needs to fire it programmatically.

@@ -224,7 +224,7 @@ mise use --path /absolute/path/to/project python@<chosen-version>
 # Install and use a new version — scoped to config
 # Wrap mise install with scratch capture (see Layer 6) so deprecation warnings on
 # stderr are preserved for audit:
-#   SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+#   SCRATCH="$(python3 <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 #   mise install python@<chosen-version> > "$SCRATCH/mise-install.out" 2> "$SCRATCH/mise-install.err"
 mise install python@<chosen-version>
 mise use --path /absolute/path/to/project python@<chosen-version>
@@ -258,7 +258,7 @@ Always with scratch capture per
 [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md):
 
 ```bash
-SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 
 # Step 1 — Uninstall the OLD version only (not the plugin root).
 mise uninstall '<backend>:<owner>/<repo>@<old>' \
@@ -291,7 +291,7 @@ Real session against `Account-Ledger-Server-PHP/mise.toml` (2026-05-28):
 # Edit pin in mise.toml: "github:adwinying/php" = "8.5.6"
 
 # Install new version with scratch capture.
-SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 mise install > "$SCRATCH/mise-install-8.5.6.out" 2> "$SCRATCH/mise-install-8.5.6.err"
 # → Exit: 0 ; stderr shows download+verify+extract+✓ installed
 
@@ -583,7 +583,7 @@ skill. The scratch skill is the SSOT for the capture mechanics — this skill
 only specifies *what* to capture and *how to react* to the captured content.
 
 ```bash
-SCRATCH="$(bash <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 mise install \
     > "$SCRATCH/mise-install.out" \
     2> "$SCRATCH/mise-install.err"
@@ -635,7 +635,7 @@ no deprecation warning remains:
 #    →  "github:adwinying/php" = "8.4.11"
 
 # 2. Re-run install with scratch capture.
-SCRATCH="$(bash <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 <path-to>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 mise install \
     > "$SCRATCH/mise-install-postmigration.out" \
     2> "$SCRATCH/mise-install-postmigration.err"
@@ -668,7 +668,7 @@ Step 1 — Uninstall via mise (preferred over raw `rm -rf` so mise's internal
 registry, caches, and `.mise.backend.toml` are all cleaned up):
 
 ```bash
-SCRATCH="$(bash <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 <path>/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 mise uninstall 'ubi:<owner>/<repo>@<version>' \
     > "$SCRATCH/mise-uninstall.out" 2> "$SCRATCH/mise-uninstall.err"
 ```
@@ -697,7 +697,7 @@ Real session against `Account-Ledger-Server-PHP/mise.toml` (2026-05-28):
 
 ```bash
 # Initial capture
-SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 mise install > "$SCRATCH/mise-install.out" 2> "$SCRATCH/mise-install.err"
 # → Exit: 0
 

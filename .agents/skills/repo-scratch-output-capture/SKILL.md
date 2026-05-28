@@ -73,11 +73,11 @@ my-command --with --args \
 echo "Exit: $?  See $SCRATCH/my-command.{out,err}"
 ```
 
-Use the bundled script [`scripts/ensure-scratch-gitignored.sh`](scripts/ensure-scratch-gitignored.sh)
+Use the bundled script [`scripts/ensure-scratch-gitignored.py`](scripts/ensure-scratch-gitignored.py)
 to perform the setup and emit the absolute scratch path on stdout:
 
 ```bash
-SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 my-command > "$SCRATCH/my-command.out" 2> "$SCRATCH/my-command.err"
 ```
 

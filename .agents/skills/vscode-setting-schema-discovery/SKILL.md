@@ -74,7 +74,7 @@ Inside the bundle, the two files that matter:
 
 ### 3.2 Script
 
-[`scripts/resolve-vscode-setting.bash`](scripts/resolve-vscode-setting.bash)
+[`scripts/resolve-vscode-setting.py`](scripts/resolve-vscode-setting.py)
 implements:
 
 1. **Auto-discovery** of the bundle path (or honors `--app`).
@@ -89,11 +89,16 @@ implements:
    `agentsWindow:{default:"all"}`).
 5. **Markdown rendering** of the resolved schema as a small report.
 
+Python 3.9+ per [`scripting-language-selection-rules.md` §2](../../../ai-agent-rules/scripting-language-selection-rules.md)
+(Tier-1 default — cross-platform parity, no nested-heredoc hazard, no
+shellcheck overhead, no encoding tax). Pure stdlib (`argparse`, `json`,
+`pathlib`, `re`, `sys`); no third-party dependencies.
+
 #### Invocation
 
 ```bash
-./scripts/resolve-vscode-setting.bash workbench.editor.useModal
-./scripts/resolve-vscode-setting.bash chat.mcp.autostart --app "/Applications/Visual Studio Code.app"
+python3 scripts/resolve-vscode-setting.py workbench.editor.useModal
+python3 scripts/resolve-vscode-setting.py chat.mcp.autostart --app "/Applications/Visual Studio Code.app"
 ```
 
 #### Sample output (real `workbench.editor.useModal`, VS Code Insiders, May 2026)
@@ -120,15 +125,19 @@ Controls whether editors open in a modal overlay.
 
 When the script is unavailable, the equivalent manual procedure is:
 
-1. `grep -oE '"<setting.key>"[^}]*\}' <app-dir>/out/vs/workbench/workbench.desktop.main.js | head -1`
-   to capture the schema fragment (warning: regex stops at first `}`, which
-   may truncate nested objects — the script's brace walker is safer).
+1. Capture the schema fragment with a Python one-liner that does the brace
+   walk (regex alone stops at the first `}` and may truncate nested
+   objects):
+
+    ```bash
+    python3 -c "import sys; src=open('<app-dir>/out/vs/workbench/workbench.desktop.main.js',encoding='utf-8',errors='replace').read(); i=src.find('\"<setting.key>\":{'); print(src[i:i+800])"
+    ```
+
 2. Note every `d(<N>,null)` placeholder in the fragment.
 3. Resolve each in Python:
 
     ```bash
-    python3 -c "import json; m=json.load(open('<app-dir>/out/nls.messages.json'));
-    [print(i,'=>',repr(m[i])) for i in [5400,5401,5402,5403]]"
+    python3 -c "import json; m=json.load(open('<app-dir>/out/nls.messages.json')); [print(i,'=>',repr(m[i])) for i in [5400,5401,5402,5403]]"
     ```
 
 4. Compose the schema by hand.

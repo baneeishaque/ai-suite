@@ -36,7 +36,7 @@ hosts disable it. Before adopting this skill, **probe the live target server** v
 [`mysql-capability-probe-pymysql`](../mysql-capability-probe-pymysql/SKILL.md):
 
 ```bash
-bash .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.sh \
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
     --probe   .agents/skills/mysql-capability-probe-pymysql/scripts/probe-multi-statement.py \
     --secrets ~/Lab_Data/configurations-private/<project>/act.secrets
 ```
@@ -238,7 +238,7 @@ python3 .agents/skills/mysql-capability-probe-pymysql/scripts/apply-indexes.py \
 
 Both scripts are KEY=VALUE-secrets compatible and route through
 [`mise-tool-management`](../mise-tool-management/SKILL.md) Layer 5 via
-[`probe-runner.sh`](../mysql-capability-probe-pymysql/scripts/probe-runner.sh) when
+[`probe-runner.py`](../mysql-capability-probe-pymysql/scripts/probe-runner.py) when
 invoked from a project whose `mise.toml` does NOT pin python.
 
 ### 5.5 EXISTS over COUNT for Pure Gates

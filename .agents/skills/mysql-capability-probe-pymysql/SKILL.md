@@ -64,7 +64,7 @@ probe — the script gives an opaque `OSError` if it cannot read the file.
 ### 4.2 One-Shot Probe
 
 ```bash
-bash .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.sh \
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
     --probe   .agents/skills/mysql-capability-probe-pymysql/scripts/probe-multi-statement.py \
     --secrets /path/to/act.secrets \
     --name    probe-multi
@@ -100,7 +100,7 @@ Exit codes:
 1. Copy `probe-multi-statement.py` to `scripts/probe-<capability>.py`.
 2. Replace the `cur.execute(...)` block with the capability-specific query.
 3. Emit a single verdict line: `<CAPABILITY>: True|False  <evidence>`.
-4. Invoke via the same `probe-runner.sh` with `--probe scripts/probe-<capability>.py`.
+4. Invoke via the same `probe-runner.py` with `--probe scripts/probe-<capability>.py`.
 
 ### 4.5 Probe Catalogue (shipped scripts)
 
@@ -143,7 +143,7 @@ S=.agents/skills/mysql-capability-probe-pymysql/scripts
 This skill composes with:
 
 - [`mise-tool-management`](../mise-tool-management/SKILL.md) — Layer 5 (Bypass `mise exec`
-  Cascade) provides the direct-binary invocation rule used by `probe-runner.sh`.
+  Cascade) provides the direct-binary invocation rule used by `probe-runner.py`.
 - [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) — captures probe
   stdout/stderr to gitignored `scratch/` files.
 - [`dev-env-private-config-symlink`](../dev-env-private-config-symlink/SKILL.md) — repairs

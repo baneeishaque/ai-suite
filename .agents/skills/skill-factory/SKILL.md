@@ -85,6 +85,14 @@ markdown document. Markdown MUST link to the separate file under `scripts/` via 
 Embedding the full script body is FORBIDDEN — it breaks syntax highlighting, debugging, standalone execution, and
 the SSOT contract. See [AI Rule Standardization Rules — No-Embedded-Script Mandate](../../../ai-agent-rules/ai-rule-standardization-rules.md).
 
+**Tier Decomposition Mandate**: Before drafting the `SKILL.md` body, walk every step of the user-provided procedure
+and classify each as Tier A (deterministic) or Tier C (judgement) per
+[`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md). Every Tier-A step MUST
+be extracted into a script under `scripts/` and invoked from prose via a one-liner. Prose MUST NOT carry multi-line
+bash recipes, Python heredocs, regex-laden `sed`/`awk` chains, or step-by-step file-mutation walkthroughs — those
+belong in a script. A skill whose prose still embeds deterministic mechanics has skipped the decomposition step and
+fails the Factory's industrial standard.
+
 When the skill ships executable scripts under `scripts/`, every script MUST obey:
 
 1. **Language**: PowerShell (`.ps1`) by default, cross-compatible with Windows PowerShell 5.1+ and PowerShell Core 7+.

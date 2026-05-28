@@ -41,6 +41,15 @@
    content already in scrollback, skip trailing verification dumps, and
    pause-to-consolidate after ~20 tool calls per user message. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.4.1](ai-agent-rules/shell-execution-rules.md).
+5.  **Prefer scripts over prose instructions.** Scripts are more deterministic
+    than rules, skills, or sub-agent prompts. When designing or refactoring a
+    skill/rule/sub-agent, decompose its procedure: every deterministic step
+    (parse, transform, validate, file-mutate) MUST live in an executable
+    script under the skill's `scripts/` directory; prose retains only
+    judgement, branching, and human-gates. Before writing ad-hoc inline
+    Python/Bash for a recurring task, search for an existing script first.
+    See
+    [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md).
 
 ## Skills
 
@@ -106,6 +115,7 @@
 | Gitignore Whitelist Pattern | [`.agents/skills/gitignore-whitelist-pattern/SKILL.md`](.agents/skills/gitignore-whitelist-pattern/SKILL.md) | Generate a deny-all + whitelist `.gitignore` block for directories that should only contain specific file types (e.g., `.7z` archives) and Git configuration files |
 | Harper Linting Suppression | [`.agents/skills/harper-linting-suppression/SKILL.md`](.agents/skills/harper-linting-suppression/SKILL.md) | Protocol for addressing Harper linter false positives |
 | Script Language Tier Port | [`.agents/skills/script-language-tier-port/SKILL.md`](.agents/skills/script-language-tier-port/SKILL.md) | Audit an existing script that picked the wrong language tier (per scripting-language-selection-rules.md) and port it to its canonical tier — covers detection, line-by-line tier accounting, idiomatic translation, byte-parity smoke test, doc updates, and a single atomic refactor commit |
+| Script Over Instruction Decomposition | [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md) | When designing or refactoring a rule, skill, or sub-agent prompt, decompose its procedure into a deterministic script tier and a prose tier — encode every deterministic step as an executable script under `scripts/`, leave only judgement / branching / gates in prose |
 | Separate Content from Formatting Commits | [`.agents/skills/separate-content-from-formatting-commits/SKILL.md`](.agents/skills/separate-content-from-formatting-commits/SKILL.md) | When a file's diff mixes reformatting with semantic changes, build N intermediate states on the original format, commit each atomically, then optionally add a pure `style:` reformat commit last |
 | Is This Command Safe | [`.agents/skills/is-this-command-safe/SKILL.md`](.agents/skills/is-this-command-safe/SKILL.md) | Vet any shell command before execution — four-tier safety classification (SAFE / SAFE-IF-PIPED / HAS-DESTRUCTIVE-FLAGS / MUTATES), destructive-flag inventory, dangerous-pipeline catalogue, and mandated 5-line verdict template |
 | Java Classpath Telemetry Integration | [`.agents/skills/java-classpath-telemetry-integration/SKILL.md`](.agents/skills/java-classpath-telemetry-integration/SKILL.md) | Add a fire-and-forget HTTP telemetry / tool-usage-logging library to a plain Java CLI application packaged as a Jar-in-Jar runnable JAR — `libs/` JAR delivery wired into Eclipse `.classpath` + build script + Jar-in-Jar manifest, classpath `<vendor>.properties` resolution with sysprop/env override layers, classpath-resource `version.properties` SSOT, `rsrc:` → `user.dir` resource-path fallback, log4j-based lifecycle logging, `*.spool` store-and-forward retry drained on next process invocation, and defensive `main(...)` integration with `finally`-block `sendLog()` |

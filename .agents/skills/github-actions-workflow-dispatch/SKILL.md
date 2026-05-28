@@ -1,5 +1,6 @@
 ---
 name: github-actions-workflow-dispatch
+description: Base skill — trigger a GitHub Actions `workflow_dispatch` run via the `gh` CLI, optionally polling until the newly-spawned run reaches completed status. Pure stdlib Python wrapper. Distinct from `github-actions-run-audit` (observation-only) and `github-workflow-creation` (authoring).
 category: GitHub-Automation
 ---
 
@@ -21,6 +22,7 @@ Use this skill — or a higher-level composer of it — whenever the agent must
   proceeding with the next plan step."
 
 **Anti-trigger:** If the agent only wants to **observe** existing runs, use
+[`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) — that
 skill is read-only and safer.
 
 ## 2. Why a separate skill (vs folding into audit)
@@ -90,6 +92,7 @@ S=.agents/skills/github-actions-workflow-dispatch/scripts
 
 | Composer | Uses | Purpose |
 | --- | --- | --- |
+| [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) | `trigger-workflow.py` | "Trigger then audit" combined workflow (e.g., re-run periodic backup, wait, then verify the committed artifact). |
 
 ## 6. Composition by This Skill
 
@@ -113,3 +116,4 @@ This skill composes with:
 - Triggering against `main` / `master` when the user intended a feature
   branch — always confirm `--ref` when in doubt.
 - Re-triggering a workflow that just failed without first auditing WHY it
+  failed — use [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) first.

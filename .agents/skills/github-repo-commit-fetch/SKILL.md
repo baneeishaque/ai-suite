@@ -89,6 +89,7 @@ grep -c "ENGINE=InnoDB" /tmp/backup.sql
 
 | Composer | Uses (this skill's scripts) | Purpose |
 | --- | --- | --- |
+| [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) | `list-commits.py`, `commit-details.py`, `fetch-file-at-ref.py` | Verify that a workflow run actually committed the expected artifact (e.g., periodic mysqldump backup contains today's DDL change). |
 
 When inlined by a composer, scripts MUST be invoked via a relative path
 anchored to the composer's location, per

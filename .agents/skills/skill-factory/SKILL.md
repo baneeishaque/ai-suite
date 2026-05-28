@@ -129,6 +129,18 @@ Scripts are **first-class deliverables** of a skill — not disposable session a
 ### 2.3 Registration
 
 - Update the root `AGENTS.md` skills table to register the new skill with its absolute path and description.
+    Use the shared registration helper instead of hand-editing the table:
+
+    ```bash
+    python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+        --mode worktree \
+        --row "| Skill Name | [\`.agents/skills/<skill-name>/SKILL.md\`](.agents/skills/<skill-name>/SKILL.md) | One-line description |"
+    ```
+
+    `--mode worktree` reads the working-tree `AGENTS.md`, inserts the row at the alphabetically correct position,
+    and writes the result back to the working tree for normal `git add` review. The default `--mode staged`
+    is reserved for the Atomic Commit Construction §2f Interleaving Mandate when `AGENTS.md` already carries
+    unrelated pending hunks.
 - **Alphabetical Order Mandate**: The root `AGENTS.md` skills table MUST remain sorted alphabetically (case-insensitive)
   by the **Skill** column. New entries MUST be inserted at the correct sorted position \u2014 NEVER appended to the end.
   After insertion, the Agent MUST visually verify that the row above and below the new entry maintain the sort order.

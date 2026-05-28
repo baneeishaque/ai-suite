@@ -1,41 +1,57 @@
 #!/usr/bin/env python3
 """
-agents-md-stage-row.py — Alphabetically insert and precisely stage a single
-row into the root AGENTS.md skills table without disturbing any other pending
-changes in the working tree.
+agents-md-stage-row.py — Alphabetically insert a single row into the root
+AGENTS.md skills table, then either stage-only-the-row (atomic-commit mode)
+or write to the working tree (skill-factory registration mode).
 
-Used during §2f (Interleaving Mandate) of the Atomic Commit Construction
-workflow: when AGENTS.md contains mixed hunks (session rows + out-of-scope
-rows), this script stages only the session row alongside the artifact commit —
-no git add -p gymnastics required.
+Modes (--mode):
+---------------
+    staged    (default — original behavior)
+        Source: git show HEAD:AGENTS.md
+        Sink:   git hash-object -w  +  git update-index --cacheinfo
+        Use when: AGENTS.md already has other pending hunks in the
+        working tree and you need to commit ONLY the new row alongside
+        the related artifact commit (§2f Interleaving Mandate of the
+        Atomic Commit Construction workflow). All other working-tree
+        edits to AGENTS.md remain untouched.
 
-Mechanism
----------
-1. Reads the CURRENT HEAD version of AGENTS.md (not the working tree).
-2. Inserts --row at the alphabetically correct position in the skills table.
-3. Writes the result as a new blob via `git hash-object -w`.
-4. Updates the index directly via `git update-index --cacheinfo`.
+    worktree  (new — skill-factory registration)
+        Source: working-tree AGENTS.md
+        Sink:   plain file write (no staging)
+        Use when: AGENTS.md is clean (no other pending hunks) and you
+        simply want the registration row to appear in the working tree
+        for ordinary `git status` review and a normal `git add`. This is
+        the standard path during skill-factory new-skill registration
+        per skill-factory/SKILL.md §2.3.
 
-Result: AGENTS.md is staged with exactly HEAD + one new row. All other
-working-tree changes to AGENTS.md remain unstaged.
+Both modes share the same alphabetical insertion algorithm and the same
+table-row detection heuristic — only the read source and write sink
+differ.
 
 Usage
 -----
-Dry-run (preview position only, no staging):
+Dry-run (preview position, no changes either way):
     python3 agents-md-stage-row.py --row "| My Skill | ..." --dry-run
 
-Stage the row (run from anywhere inside the repo):
+Atomic-commit interleaving (stage HEAD + one row, ignore working tree):
     python3 agents-md-stage-row.py --row "| My Skill | ..."
+    python3 agents-md-stage-row.py --mode staged --row "| My Skill | ..."
 
-With explicit repo path:
-    python3 agents-md-stage-row.py --row "| My Skill | ..." --repo /path/to/repo
+Skill-factory registration (modify working tree, stage later by hand):
+    python3 agents-md-stage-row.py --mode worktree --row "| My Skill | ..."
+
+With explicit repo path (any mode):
+    python3 agents-md-stage-row.py --row "..." --repo /path/to/repo
 """
+
+from __future__ import annotations
 
 import argparse
 import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 
 # ---------------------------------------------------------------------------
@@ -106,18 +122,69 @@ def insert_row_alphabetically(lines: list[str], new_row: str) -> tuple[list[str]
 
 
 # ---------------------------------------------------------------------------
+# Mode implementations
+# ---------------------------------------------------------------------------
+
+def read_head(repo: str) -> list[str]:
+    try:
+        head_content = git("show", "HEAD:AGENTS.md", repo=repo)
+    except subprocess.CalledProcessError as exc:
+        sys.exit(f"ERROR: Could not read HEAD:AGENTS.md — {exc.stderr.strip()}")
+    return [line + "\n" for line in head_content.splitlines()]
+
+
+def read_worktree(repo: str) -> list[str]:
+    path = Path(repo) / "AGENTS.md"
+    if not path.is_file():
+        sys.exit(f"ERROR: Working-tree file not found: {path}")
+    return path.read_text(encoding="utf-8").splitlines(keepends=True)
+
+
+def sink_staged(repo: str, new_lines: list[str]) -> str:
+    """Write a new blob and point the index at it; working tree untouched."""
+    content = "".join(new_lines)
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as tf:
+        tf.write(content)
+        tmp_path = tf.name
+    try:
+        blob_hash = git("hash-object", "-w", tmp_path, repo=repo)
+        git("update-index", "--cacheinfo", f"100644,{blob_hash},AGENTS.md", repo=repo)
+    except subprocess.CalledProcessError as exc:
+        sys.exit(f"ERROR: git operation failed — {exc.stderr.strip()}")
+    finally:
+        os.unlink(tmp_path)
+    return blob_hash
+
+
+def sink_worktree(repo: str, new_lines: list[str]) -> None:
+    """Plain file write to AGENTS.md in the working tree."""
+    path = Path(repo) / "AGENTS.md"
+    path.write_text("".join(new_lines), encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Insert a row into HEAD AGENTS.md and stage the result "
-                    "without touching other working-tree changes."
+        description="Insert a row into the root AGENTS.md skills table either "
+                    "directly into the working tree (--mode worktree, for "
+                    "skill-factory registration) or staged-only against HEAD "
+                    "(--mode staged, the default — for the §2f Interleaving "
+                    "Mandate of the Atomic Commit Construction workflow)."
     )
     parser.add_argument(
         "--row",
         required=True,
         help="Full Markdown table row to insert, e.g. '| Skill Name | path | description |'",
+    )
+    parser.add_argument(
+        "--mode",
+        choices=("staged", "worktree"),
+        default="staged",
+        help="staged (default): read HEAD blob, stage HEAD+row, leave working tree alone. "
+             "worktree: read working tree, write working tree, do not touch the index.",
     )
     parser.add_argument(
         "--repo",
@@ -127,59 +194,48 @@ def main() -> None:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Preview the insertion position without staging anything.",
+        help="Preview the insertion position without changing anything.",
     )
     args = parser.parse_args()
 
-    # Resolve repo root
     repo = args.repo or find_repo_root(os.path.dirname(os.path.abspath(__file__)))
 
-    # Ensure the row ends with a newline
     new_row = args.row if args.row.endswith("\n") else args.row + "\n"
 
-    # Read HEAD version of AGENTS.md
-    try:
-        head_content = git("show", "HEAD:AGENTS.md", repo=repo)
-    except subprocess.CalledProcessError as exc:
-        sys.exit(f"ERROR: Could not read HEAD:AGENTS.md — {exc.stderr.strip()}")
+    if args.mode == "staged":
+        source_lines = read_head(repo)
+        source_label = "HEAD:AGENTS.md"
+    else:
+        source_lines = read_worktree(repo)
+        source_label = "<worktree>/AGENTS.md"
 
-    head_lines = [line + "\n" for line in head_content.splitlines()]
-
-    # Compute insertion
     try:
-        new_lines, idx = insert_row_alphabetically(head_lines, new_row)
+        new_lines, idx = insert_row_alphabetically(source_lines, new_row)
     except ValueError as exc:
         sys.exit(f"ERROR: {exc}")
 
-    # Report position
     prev_key = row_sort_key(new_lines[idx - 1]) if idx > 0 else None
     next_key = row_sort_key(new_lines[idx + 1]) if idx + 1 < len(new_lines) else None
     row_key = row_sort_key(new_row)
+    print(f"Mode: {args.mode}  (source: {source_label})")
     print(f"Position: insert at line {idx + 1}")
     print(f"  prev row: '{prev_key}'")
     print(f"  new  row: '{row_key}'")
     print(f"  next row: '{next_key}'")
 
     if args.dry_run:
-        print("\n[dry-run] No changes staged.")
+        print("\n[dry-run] No changes made.")
         return
 
-    # Write blob and update index
-    content = "".join(new_lines)
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as tf:
-        tf.write(content)
-        tmp_path = tf.name
-
-    try:
-        blob_hash = git("hash-object", "-w", tmp_path, repo=repo)
-        git("update-index", "--cacheinfo", f"100644,{blob_hash},AGENTS.md", repo=repo)
-    except subprocess.CalledProcessError as exc:
-        sys.exit(f"ERROR: git operation failed — {exc.stderr.strip()}")
-    finally:
-        os.unlink(tmp_path)
-
-    print(f"\nStaged: AGENTS.md (blob {blob_hash})")
-    print("Only the new row has been added to the index; all other working-tree changes remain unstaged.")
+    if args.mode == "staged":
+        blob_hash = sink_staged(repo, new_lines)
+        print(f"\nStaged: AGENTS.md (blob {blob_hash})")
+        print("Only the new row has been added to the index; all other "
+              "working-tree changes remain unstaged.")
+    else:
+        sink_worktree(repo, new_lines)
+        print(f"\nWrote: {Path(repo) / 'AGENTS.md'}")
+        print("Working tree updated. Stage normally with: git add AGENTS.md")
 
 
 if __name__ == "__main__":

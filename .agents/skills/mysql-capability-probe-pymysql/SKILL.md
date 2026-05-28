@@ -102,6 +102,42 @@ Exit codes:
 3. Emit a single verdict line: `<CAPABILITY>: True|False  <evidence>`.
 4. Invoke via the same `probe-runner.sh` with `--probe scripts/probe-<capability>.py`.
 
+### 4.5 Probe Catalogue (shipped scripts)
+
+| Script | Purpose | Verdict line(s) | Exit codes |
+| --- | --- | --- | --- |
+| [`scripts/probe-multi-statement.py`](scripts/probe-multi-statement.py) | Probe `CLIENT_MULTI_STATEMENTS` support. | `MULTI_STATEMENT_SUPPORTED: True\|False` | 0 supported / 1 not / 2 config |
+| [`scripts/probe-required-indexes.py`](scripts/probe-required-indexes.py) | Verify that each given `table.column` has an index whose first key part is that column (`SEQ_IN_INDEX=1`). Used as the prerequisite check before relying on single-column index seeks (see [`remote-mysql-roundtrip-minimization` §5.4](../remote-mysql-roundtrip-minimization/SKILL.md)). | `INDEX_PRESENT:` / `INDEX_MISSING:` + summary line | 0 all present / 1 some missing / 2 config |
+| [`scripts/apply-indexes.py`](scripts/apply-indexes.py) | Idempotently `ALTER TABLE … ADD INDEX` for each given `table.column[:idx_name]`. Skips already-indexed columns based on `information_schema.STATISTICS`. Writer-side counterpart of `probe-required-indexes.py`. | `SKIP:` / `EXEC:` / `OK:` / `FAIL:` | 0 all present after run / 1 some FAIL / 2 config |
+| [`scripts/probe-fk-readiness.py`](scripts/probe-fk-readiness.py) | For each proposed FK `child.col=parent.col`: report storage ENGINE (MyISAM blocks FKs), existing FK constraints, column nullability, top-level (NULL) counts, and orphan row counts. Prerequisite check before `ALTER TABLE … ADD FOREIGN KEY` (which fails with `ERROR 1452` when orphans exist). | Sectioned report + terminal `FK_READY: True\|False` | 0 ready / 1 blockers / 2 config |
+
+Each probe / DDL script accepts `--secrets <path>` (KEY=VALUE file, same schema as
+`probe-multi-statement.py`). The index probes additionally take repeatable `--check`,
+`--index`, or `--fk` flags — see each script's `--help`.
+
+Example: pre-flight an FK migration end-to-end —
+
+```bash
+PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
+SEC=~/Lab_Data/configurations-private/<project>/act.secrets
+S=.agents/skills/mysql-capability-probe-pymysql/scripts
+
+# 1. Are the indexes the FK needs already in place?
+"$PY" $S/probe-required-indexes.py --secrets $SEC \
+    --check transactionsv2.from_account_id \
+    --check transactionsv2.to_account_id
+
+# 2. If missing, add them.
+"$PY" $S/apply-indexes.py --secrets $SEC \
+    --index transactionsv2.from_account_id \
+    --index transactionsv2.to_account_id
+
+# 3. Is the FK itself addable (engine, orphans, etc.)?
+"$PY" $S/probe-fk-readiness.py --secrets $SEC \
+    --fk transactionsv2.from_account_id=accounts.account_id \
+    --fk transactionsv2.to_account_id=accounts.account_id
+```
+
 ## 5. Composition
 
 This skill composes with:

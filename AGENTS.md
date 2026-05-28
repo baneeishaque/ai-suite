@@ -7,11 +7,14 @@
    silently hangs when a path is missing. Issue independent shell calls (use
    parallel tool calls for unrelated probes). See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1](ai-agent-rules/shell-execution-rules.md).
-2. **Prefer Bash heredocs over the editor `edit` tool for large writes.**
-   The `edit` tool hangs on large / many-line operations. For whole-file
-   authoring use `cat > file <<'EOF' ... EOF`; for in-place transforms use
-   `python3 - <<'PY' ... PY`. The `edit` tool is reserved for small,
-   uniquely-anchored surgical replacements. See
+2. **Prefer Bash heredocs over the editor `edit` AND `create` tools for large writes.**
+   Both `edit` and `create` hang on large / many-line operations (the
+   `create` tool stresses the IDE renderer the same way `edit` does when
+   `file_text` is large — empirically anything > ~10 KB or > ~100 lines).
+   For whole-file authoring use `cat > file <<'EOF' ... EOF`; for in-place
+   transforms use `python3 - <<'PY' ... PY`. The `edit` tool is reserved
+   for small, uniquely-anchored surgical replacements; the `create` tool
+   is reserved for short new files (< ~10 KB / < ~100 lines). See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.2](ai-agent-rules/shell-execution-rules.md).
 3. **Never nest heredocs inside heredocs.** When using
    `python3 - <<'PY'` whose body contains a Python triple-quoted string,

@@ -22,6 +22,18 @@
    `cat > /tmp/script.py <<'ZZZ_OTHER_ZZZ'` then run the script. Each
    stage carries one heredoc with a body-unique sentinel. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.3](ai-agent-rules/shell-execution-rules.md).
+4. **Bound tool-output size to protect the IDE renderer.** Large outputs
+   streamed into the chat transcript (recursive `grep -r` over many-file
+   trees, `cat` on minified bundles, full dumps of files like
+   `workbench.desktop.main.js`) can freeze the VS Code renderer; the user's
+   only recovery is to force-quit, which reports every in-flight tool call
+   back as `interrupted` and drops live shell sessions. Default behavior:
+   redirect large commands to `/tmp/out.txt` first, then `head` / `grep` /
+   `view` it; prefer the built-in `grep` / `glob` / `view` tools over
+   shell-side recursive scans; narrow scope with `glob` before `grep`; and
+   never combine "produce a large output" with "read a large file" in the
+   same tool-call batch. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.4](ai-agent-rules/shell-execution-rules.md).
 
 ## Skills
 

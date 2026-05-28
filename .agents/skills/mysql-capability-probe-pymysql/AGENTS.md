@@ -16,7 +16,7 @@ via a tiny PyMySQL script before adopting the capability in production code.
 ## Quick Reference
 
 ```bash
-bash .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.sh \
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
     --probe   .agents/skills/mysql-capability-probe-pymysql/scripts/probe-multi-statement.py \
     --secrets ~/Lab_Data/configurations-private/<project>/act.secrets
 ```

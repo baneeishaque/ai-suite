@@ -553,7 +553,7 @@ mise ls
 ### 5.6 Consumers of Layer 5
 
 - [`mysql-capability-probe-pymysql`](../mysql-capability-probe-pymysql/SKILL.md) — its
-  `probe-runner.sh` resolves python via Layer 5 to avoid the cascade when probing from any
+  `probe-runner.py` resolves python via Layer 5 to avoid the cascade when probing from any
   repo other than the python's home project.
 - PHP `php -l` syntax linting outside the PHP-pinned project — resolve the binary directly
   at `~/.local/share/mise/installs/github-adwinying-php/<version>/php`. NOTE: the

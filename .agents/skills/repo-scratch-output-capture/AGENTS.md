@@ -16,7 +16,7 @@ Redirects stdout and stderr of probes, installers, and diagnostic commands to a 
 ## Quick Reference
 
 ```bash
-SCRATCH="$(bash .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.sh)"
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
 my-command > "$SCRATCH/my-command.out" 2> "$SCRATCH/my-command.err"
 echo "Exit: $?  See $SCRATCH/my-command.{out,err}"
 ```

@@ -22,7 +22,7 @@
    `cat > /tmp/script.py <<'ZZZ_OTHER_ZZZ'` then run the script. Each
    stage carries one heredoc with a body-unique sentinel. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.3](ai-agent-rules/shell-execution-rules.md).
-4. **Bound tool-output size to protect the IDE renderer.** Large outputs
+4. **Bound tool-output size AND cumulative scrollback to protect the IDE renderer.** Large outputs
    streamed into the chat transcript (recursive `grep -r` over many-file
    trees, `cat` on minified bundles, full dumps of files like
    `workbench.desktop.main.js`) can freeze the VS Code renderer; the user's
@@ -34,6 +34,13 @@
    never combine "produce a large output" with "read a large file" in the
    same tool-call batch. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.4](ai-agent-rules/shell-execution-rules.md).
+   Single-output size is necessary but not sufficient — long sessions also
+   freeze the renderer from cumulative many-small-outputs pressure, so on
+   long sessions prefer `view_range` over full-file `view`, prefer
+   file-write over stdout for intermediate artifacts, do NOT re-print
+   content already in scrollback, skip trailing verification dumps, and
+   pause-to-consolidate after ~20 tool calls per user message. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.4.1](ai-agent-rules/shell-execution-rules.md).
 
 ## Skills
 

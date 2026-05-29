@@ -157,6 +157,25 @@ The agent MUST ensure the repository is not in a "detached HEAD" state before co
 2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST identify and checkout the appropriate branch (usually the default branch, e.g., `main`) before proceeding.
 3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts.
 
+
+#### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
+
+When the upcoming commit touches files in a repository this session has not
+previously edited — especially when two cloned-locally repos share a name
+prefix or suffix — invoke the
+[`canonical-source-vs-workflow-repo-audit`](../canonical-source-vs-workflow-repo-audit/SKILL.md)
+audit BEFORE the first edit:
+
+```bash
+PY=~/.local/share/mise/installs/python/latest/bin/python
+$PY .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
+```
+
+If the verdict is `workflow` or `mirror`, STOP and locate the canonical
+source repo. If the verdict is `unknown`, ask the user. Skipping this
+audit risks landing the work in a repo whose changes never reach the
+canonical artifact (real-world precedent: Account-Ledger-Server vs
+Account-Ledger-Server-PHP, May 2026).
 ---
 
 ### Step 1 — Deep Change Analysis

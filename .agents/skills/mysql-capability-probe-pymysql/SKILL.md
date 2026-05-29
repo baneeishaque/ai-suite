@@ -175,6 +175,8 @@ This skill composes with:
   broken secrets-file symlinks before the probe runs.
 - [`remote-mysql-roundtrip-minimization`](../remote-mysql-roundtrip-minimization/SKILL.md) —
   the primary CONSUMER of this skill (probes server BEFORE adopting `multi_query`).
+- [`mysql-fk-hardening-workflow`](../mysql-fk-hardening-workflow/SKILL.md) —
+  end-to-end composer that orchestrates these probes through judgement-gated FK rollout (Phase 1 probe → migrate → bracket → ALTER → verify).
 
 ## 6. Prohibited Behaviors
 

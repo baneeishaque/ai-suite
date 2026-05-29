@@ -105,10 +105,30 @@ fails the Factory's industrial standard.
 
 When the skill ships executable scripts under `scripts/`, every script MUST obey:
 
-1. **Language**: PowerShell (`.ps1`) by default, cross-compatible with Windows PowerShell 5.1+ and PowerShell Core 7+.
-   Other languages require an explicit user override or a documented technical justification.
-   **Bash Extension Mandate**: When Bash is selected (under user override or documented justification), the script file MUST use the `.bash` extension — never `.sh` — per [Bash Scripting Rules §Naming](../../../ai-agent-rules/bash-scripting-rules.md) and the [GitHub Actions Workflow Rules](../../../ai-agent-rules/github-actions-workflow-rules.md) standalone-script mandate.
-   **Tier-Violation Remediation**: When a Factory audit on an EXISTING skill discovers a script that picked the wrong language tier per [`scripting-language-selection-rules`](../../../ai-agent-rules/scripting-language-selection-rules.md) (typically a `.bash` / `.sh` wrapping a `python3 - <<PY` heredoc, or a shell script doing JSON / regex work), DELEGATE the port to [`script-language-tier-port`](../script-language-tier-port/SKILL.md) as its own atomic refactor commit — do NOT inline the port mechanics here.
+1. **Language Selection (SSOT-Delegated)**: The script's language MUST be chosen per the four-tier framework in
+   **[Scripting Language Selection Rules](../../../ai-agent-rules/scripting-language-selection-rules.md)** — that
+   document is the SSOT. Do NOT inline the framework here. In one line: **Tier 1 (Python 3.12+) is the default for
+   new scripts**; Tier 2 (PowerShell 7+ / `pwsh`) is reserved for scripts whose body IS shell glue; Tier 3 (C / Go /
+   Rust / Zig) is reserved for measured CPU-bound bottlenecks; Tier 4 (Java / C# / Node / PHP) is reserved for
+   ecosystem-mandated cases. The **older "PowerShell-First" default is RETIRED** for new scripts (see Scripting
+   Language Selection Rules §intro). Selection MUST be made BEFORE drafting the script and MUST be documented in
+   the script's header (`.NOTES` block for `.ps1`, module docstring for `.py`) with a one-line citation of the
+   §3–§5 tier rule that applies. **Tier-1 (Python) craftsmanship details** (byte-safe I/O, `argparse`, `ruff`,
+   `pytest`, PEP 723 / `uv`, mise-equivalence) are SSOT-owned by Scripting Language Selection Rules §2.3.
+   **Tier-2 (PowerShell) craftsmanship details** (comment-based help, `pwsh-preview` → `pwsh` fallback,
+   `Common-Utils.ps1` dot-source, `Write-Message` guard, strict-mode hygiene) — items 2–8 below — remain
+   mandatory whenever Tier 2 is selected; they DO NOT apply to Tier-1 (Python) scripts.
+   **Bash Extension Mandate**: When Bash is selected (a Tier-2 borderline case requiring documented justification —
+   usually because the host lacks `pwsh`), the file MUST use the `.bash` extension — never `.sh` — per
+   [Bash Scripting Rules §Naming](../../../ai-agent-rules/bash-scripting-rules.md) and the
+   [GitHub Actions Workflow Rules](../../../ai-agent-rules/github-actions-workflow-rules.md) standalone-script
+   mandate.
+   **Tier-Violation Remediation**: When a Factory audit on an EXISTING skill discovers a script that picked the
+   wrong language tier per
+   [`scripting-language-selection-rules`](../../../ai-agent-rules/scripting-language-selection-rules.md)
+   (typically a `.bash` / `.sh` wrapping a `python3 - <<PY` heredoc, or a shell script doing JSON / regex work),
+   DELEGATE the port to [`script-language-tier-port`](../script-language-tier-port/SKILL.md) as its own atomic
+   refactor commit — do NOT inline the port mechanics here.
 2. **Documentation Headers**: Comment-based help with `.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`, `.NOTES`
    sections — see the [Script Management Rules](../../../ai-agent-rules/script-management-rules.md).
 3. **Execution**: Documented invocations MUST use `pwsh-preview` (preferred) with `pwsh` as fallback.

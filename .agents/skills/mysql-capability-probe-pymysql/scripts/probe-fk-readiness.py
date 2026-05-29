@@ -14,11 +14,13 @@ This is the prerequisite check before issuing `ALTER TABLE … ADD FOREIGN KEY`,
 because that ALTER fails with ERROR 1452 when orphans exist.
 
 Inputs:
-    --secrets <path>
-    --fk <child_table>.<child_col>=<parent_table>.<parent_col>   (repeatable)
+    --secrets       <path>
+    --fk            <child_table>.<child_col>=<parent_table>.<parent_col>  (repeatable)
+    --list-orphans                                                (optional)
+    --list-limit    N                                             (default: 20)
 
 Output (stdout): structured sections — `=== engines ===`, `=== existing FKs ===`,
-`=== nullability ===`, `=== top-level counts ===`, `=== orphan counts ===`.
+`=== nullability ===`, `=== top-level counts ===`, `=== orphan counts ===`. When `--list-orphans` is set, each FK with orphans > 0 is followed by an indented sample of up to `--list-limit` orphan rows (PK + FK column).
 Terminal line:
     --- FK_READY: True   (engine=InnoDB AND orphans=0 across all FKs)
     --- FK_READY: False  (one or more blockers; see sections above)
@@ -56,6 +58,16 @@ def parse_fk(raw):
     return ct.strip(), cc.strip(), pt.strip(), pc.strip()
 
 
+def discover_pk(cur, db, table):
+    cur.execute(
+        "SELECT COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE "
+        "WHERE TABLE_SCHEMA=%s AND TABLE_NAME=%s AND CONSTRAINT_NAME=%s "
+        "ORDER BY ORDINAL_POSITION",
+        (db, table, 'PRIMARY'),
+    )
+    return [r[0] for r in cur.fetchall()]
+
+
 def main():
     ap = argparse.ArgumentParser(
         description=__doc__,
@@ -66,6 +78,17 @@ def main():
         '--fk', action='append', required=True,
         metavar='CHILD.COL=PARENT.COL',
         help='Repeatable. Declare each proposed FK relationship.',
+    )
+    ap.add_argument(
+        '--list-orphans', action='store_true',
+        help='For each FK with orphan count > 0, also list the first '
+             '--list-limit orphan rows (PK + FK column). Sister to '
+             'probe-orphan-rows.py, but no separate invocation needed.',
+    )
+    ap.add_argument(
+        '--list-limit', type=int, default=20,
+        help='Max orphan rows to list per FK when --list-orphans is set '
+             '(default: 20).',
     )
     args = ap.parse_args()
 
@@ -155,17 +178,31 @@ def main():
 
             print("\n=== orphan counts ===")
             for ct, cc, pt, pc in fks:
-                cur.execute(
-                    f"SELECT COUNT(*) FROM `{ct}` x "
-                    f"WHERE x.`{cc}` IS NOT NULL "
-                    f"  AND NOT EXISTS("
-                    f"    SELECT 1 FROM `{pt}` p WHERE p.`{pc}` = x.`{cc}`)"
+                orphan_where = (
+                    f"x.`{cc}` IS NOT NULL "
+                    f"AND NOT EXISTS("
+                    f"  SELECT 1 FROM `{pt}` p WHERE p.`{pc}` = x.`{cc}`)"
                 )
+                cur.execute(f"SELECT COUNT(*) FROM `{ct}` x WHERE {orphan_where}")
                 n = cur.fetchone()[0]
                 tag = "" if n == 0 else "  <-- BLOCKER (cleanup required)"
                 if n != 0:
                     blockers += 1
                 print(f"  {ct}.{cc} -> {pt}.{pc}: {n} orphan(s){tag}")
+
+                if args.list_orphans and n > 0:
+                    pk = discover_pk(cur, db, ct)
+                    display = list(dict.fromkeys(pk + [cc]))
+                    col_sql = ", ".join(f"`{c}`" for c in display)
+                    cur.execute(
+                        f"SELECT {col_sql} FROM `{ct}` x WHERE {orphan_where} "
+                        f"ORDER BY {col_sql} LIMIT %s",
+                        (args.list_limit,),
+                    )
+                    rows = cur.fetchall()
+                    print(f"      first {len(rows)} orphan row(s): {display}")
+                    for r in rows:
+                        print(f"        {r}")
     finally:
         conn.close()
 

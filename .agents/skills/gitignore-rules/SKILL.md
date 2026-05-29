@@ -313,3 +313,56 @@ The agent is **BLOCKED** from:
 | [`git-cross-repo-cherry-pick`](../git-cross-repo-cherry-pick/SKILL.md) | When the audited `.gitignore` is propagated to other repos via cherry-pick, that skill chains into `git-post-gitignore-untrack` per target repo. |
 | [`gitignore-whitelist-pattern`](../gitignore-whitelist-pattern/SKILL.md) | **Complementary pattern.** When the goal is not to fix a blacklist but to generate a deny-all + whitelist block (track only specific extensions, ignore everything else). |
 | [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) | **Upstream decision.** Use it first to *decide* whether a stray untracked file warrants a shared `.gitignore` rule at all (vs. delete or `.git/info/exclude`); then return here to author the rule correctly. |
+
+---
+
+## Pitfall: Folder-Ignore Hides Future Schema Additions
+
+When ignoring **ephemeral state** inside a folder whose **future schema is
+unknown** (third-party tool spool dirs, IDE per-session storage, generated
+caches with versioned layouts), do **NOT** ignore the parent folder. Ignore
+only the *known-ephemeral leaves* so any new sibling file the tool starts
+emitting later surfaces as untracked in `git status` for explicit review.
+
+### Wrong (over-broad — silent future drift)
+
+```gitignore
+# Hides everything the tool may emit later, including
+# files the user would actually want to version-control.
+some/tool/per-session/*/
+```
+
+### Right (narrow leaves — unknown siblings surface)
+
+```gitignore
+# Ignore only the leaves we have audited as ephemeral.
+# Anything new the tool emits in this folder later will
+# show up as untracked and force a deliberate decision.
+some/tool/per-session/*/state.json
+some/tool/per-session/*/contents/
+```
+
+### Canonical Real-World Case: VS Code Copilot Chat `chatEditingSessions`
+
+`workspaceStorage/<workspace-hash>/chatEditingSessions/<sessionId>/` contains:
+
+| Path | Status | Rationale |
+|---|---|---|
+| `state.json` | **Ignore** | Per-chat-turn undo/redo timeline; rewritten on every turn; canonical edit history already lives in the repo's commit log. |
+| `contents/` | **Ignore** | Content-addressed snapshots of pre/post-edit file text; pure redundant churn vs Git's own blob store. |
+| (future sibling files) | **Do not pre-ignore** | VS Code may add new per-session artifacts later; let them surface for triage. |
+
+### Companion `.gitattributes` Cleanup
+
+When narrowing an ignore rule, also audit `.gitattributes` for any
+`filter=` / `diff=` / textconv lines that targeted the now-ignored leaves —
+they become dead config. Example: removing the `state.json` `jq-pretty`
+filter line once `state.json` is ignored.
+
+### Audit Cue
+
+When asked to ignore "this whole VS Code / IDE / tool state folder", first
+ask: **"What are all the leaf files actually in there, and is the schema
+stable?"** If the schema is unstable or undocumented, default to narrow
+per-leaf ignores plus a comment explaining why the parent folder is
+deliberately *not* ignored.

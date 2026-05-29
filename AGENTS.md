@@ -53,23 +53,30 @@
     Python/Bash for a recurring task, search for an existing script first.
     See
     [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md).
-6. **Resolve filesystem path case BEFORE probing it.** Case-insensitive
-   but case-preserving volumes (macOS HFS+/APFS by default, Windows
-   NTFS by default, many network shares) will *resolve* a path whose
-   casing differs from the on-disk canonical form (e.g.
-   `<WORKSPACE_ROOT>/Foo_Bar/...` when disk has
-   `<WORKSPACE_ROOT>/foo-bar/...`), but the lookup goes through a
-   slow case-folding code path. On volumes with active filewatchers
-   (Spotlight, fsevents, IDE indexers, cloud sync) that stall can be
-   long enough to freeze the IDE renderer waiting on the tool result —
-   the user must force-recover. Before issuing a path probe, derive
-   canonical casing from `ls` of the parent directory, a known-good
-   git artifact (`git -C <KNOWN_PATH> rev-parse --show-toplevel`), an
-   environment variable, or the cwd reported in the environment
-   context — never from memory or capitalization conventions. Cache
-   the canonical casing for the session. Compounds with reminder #1 —
-   never bundle a case-guess probe inside a chained call. See
+6. **Do NOT probe into heavy-filewatcher symlinked trees; address files
+   by exact path.** Walking a directory that fans out into symlinked
+   private-config / cloud-sync / IDE-indexed subtrees (specifically
+   `/Users/dk/Lab_Data/configurations-private/` in this workspace)
+   triggers fsevents / Spotlight / IDE-indexer cascades that freeze
+   the IDE renderer; the user must force-recover, which reports every
+   in-flight tool call as `interrupted`. Read files inside such trees
+   by EXACT absolute path (e.g.
+   `cat /Users/dk/Lab_Data/configurations-private/Account-Ledger-Server/act.secrets`);
+   never `ls`, `find`, or `grep -r` against the tree to discover the
+   path first. Use the built-in `glob` / `grep` / `view` tools for any
+   necessary tree walk. Note: `/Users/dk/Lab_Data/` (private configs)
+   and `/Users/dk/lab-data/` (code repos) are DISTINCT sibling
+   directories — case AND punctuation differ — not the same path
+   reached through case-folding. Case-insensitive volumes (macOS APFS,
+   Windows NTFS) DO add a minor case-folding amplifier when a
+   mis-cased path also targets a filewatcher-heavy tree, so the
+   secondary "derive canonical casing from `ls` of a known-light
+   parent / known-good git artifact / env var / cwd" rule still
+   applies. Compounds with reminder #1 — never bundle a heavy-tree
+   probe inside a chained call. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1.1](ai-agent-rules/shell-execution-rules.md).
+   (Re-attributed May 2026 from the original case-folding diagnosis,
+   which was incomplete.)
 7. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
    `find` / `cat`.** The host runtime exposes first-class code-search
    tools that respect tool-output sizing, scrollback hygiene, and the

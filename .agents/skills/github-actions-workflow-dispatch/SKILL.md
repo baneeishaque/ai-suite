@@ -93,6 +93,7 @@ S=.agents/skills/github-actions-workflow-dispatch/scripts
 | Composer | Uses | Purpose |
 | --- | --- | --- |
 | [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) | `trigger-workflow.py` | "Trigger then audit" combined workflow (e.g., re-run periodic backup, wait, then verify the committed artifact). |
+| [`db-backup-bracketing-protocol`](../db-backup-bracketing-protocol/SKILL.md) | `trigger-workflow.py` (via §Step 1 dispatch+watch) | Pre+post / post-only / none bracket patterns around destructive DB operations, with recovery-anchor logging. |
 
 ## 6. Composition by This Skill
 

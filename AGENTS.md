@@ -54,6 +54,24 @@
     See
     [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md).
 
+6. **Resolve filesystem path case BEFORE probing it.** Case-insensitive
+   but case-preserving volumes (macOS HFS+/APFS by default, Windows
+   NTFS by default, many network shares) will *resolve* a path whose
+   casing differs from the on-disk canonical form (e.g.
+   `<WORKSPACE_ROOT>/Foo_Bar/...` when disk has
+   `<WORKSPACE_ROOT>/foo-bar/...`), but the lookup goes through a
+   slow case-folding code path. On volumes with active filewatchers
+   (Spotlight, fsevents, IDE indexers, cloud sync) that stall can be
+   long enough to freeze the IDE renderer waiting on the tool result —
+   the user must force-recover. Before issuing a path probe, derive
+   canonical casing from `ls` of the parent directory, a known-good
+   git artifact (`git -C <KNOWN_PATH> rev-parse --show-toplevel`), an
+   environment variable, or the cwd reported in the environment
+   context — never from memory or capitalization conventions. Cache
+   the canonical casing for the session. Compounds with reminder #1 —
+   never bundle a case-guess probe inside a chained call. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1.1](ai-agent-rules/shell-execution-rules.md).
+
 ## Skills
 
 | Skill | Path | When to use |

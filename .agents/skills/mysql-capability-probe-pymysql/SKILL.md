@@ -113,6 +113,7 @@ Exit codes:
 | [`scripts/apply-indexes.py`](scripts/apply-indexes.py) | Idempotently `ALTER TABLE … ADD INDEX` for each given `table.column[:idx_name]`. Skips already-indexed columns based on `information_schema.STATISTICS`. Writer-side counterpart of `probe-required-indexes.py`. | `SKIP:` / `EXEC:` / `OK:` / `FAIL:` | 0 all present after run / 1 some FAIL / 2 config |
 | [`scripts/probe-fk-readiness.py`](scripts/probe-fk-readiness.py) | For each proposed FK `child.col=parent.col`: report storage ENGINE (MyISAM blocks FKs), existing FK constraints, column nullability, top-level (NULL) counts, and orphan row counts. Prerequisite check before `ALTER TABLE … ADD FOREIGN KEY` (which fails with `ERROR 1452` when orphans exist). | Sectioned report + terminal `FK_READY: True\|False` | 0 ready / 1 blockers / 2 config |
 | [`scripts/probe-orphan-rows.py`](scripts/probe-orphan-rows.py) | Enumerate the actual orphan ROWS (not just counts) for each proposed FK `child.col=parent.col`. Sister of `probe-fk-readiness.py`: that probe answers "are we ready?"; this one answers "which rows must we fix?". Treats both `IS NULL` and `=0` as no-parent by default (legacy sentinel pattern); `--strict-null` restricts to NULL only. | Per-check section with COUNT and first `--limit` rows + terminal `ORPHAN_TOTAL: <N> across <K> check(s)` | 0 zero orphans / 1 some found (informational) / 2 config |
+| [`scripts/probe-null-rows.py`](scripts/probe-null-rows.py) | Enumerate the actual ROWS whose values in one or more columns are NULL (or the sentinel `0`). Single-sided (no FK join) — used BEFORE a NULL-migration / NOT-NULL ALTER, or before choosing a backfill default. Sister of `probe-orphan-rows.py`. Treats both `IS NULL` and `=0` as no-value by default (legacy sentinel pattern); `--strict-null` restricts to NULL only. | Per-check section with COUNT and first `--limit` rows + terminal `NULL_TOTAL: <N> across <K> check(s)` | 0 zero no-value / 1 some found (informational) / 2 config |
 
 Each probe / DDL script accepts `--secrets <path>` (KEY=VALUE file, same schema as
 `probe-multi-statement.py`). The index probes additionally take repeatable `--check`,
@@ -149,6 +150,15 @@ S=.agents/skills/mysql-capability-probe-pymysql/scripts
 "$PY" $S/probe-orphan-rows.py --secrets $SEC \
     --check transactionsv2.from_account_id=accounts.account_id \
     --check transactionsv2.to_account_id=accounts.account_id \
+    --cols transactionsv2:id,from_account_id,to_account_id,amount,event_date_time \
+    --limit 50
+
+# 5. Before a NULL-migration / NOT-NULL ALTER on a column that currently
+#    permits NULL or carries 0-sentinels, enumerate the affected rows to
+#    decide the backfill default (or whether to delete them outright).
+"$PY" $S/probe-null-rows.py --secrets $SEC \
+    --check transactionsv2.from_account_id \
+    --check transactionsv2.to_account_id \
     --cols transactionsv2:id,from_account_id,to_account_id,amount,event_date_time \
     --limit 50
 ```

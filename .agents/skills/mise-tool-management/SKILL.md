@@ -500,7 +500,7 @@ PIP="$HOME/.local/share/mise/installs/python/$PY_VER/bin/pip"
 "$PIP" install --user pymysql
 ```
 
-**This is NOT the same as invoking from `$PATH`.** The prohibition in §8 against "Invoking
+**This is NOT the same as invoking from `$PATH`.** The prohibition in §10 against "Invoking
 `python` or `pip` from PATH" targets unmanaged system binaries (`/usr/bin/python3` on macOS
 is Apple Xcode 3.9, not your pinned version). The Layer 5 path is an explicit, version-pinned
 mise install — fully consistent with the environment-management mandate.
@@ -620,7 +620,7 @@ When stderr contains a deprecation warning, the agent MUST:
 5. **Ask**: "Migrate `<old>` → `<new>` in `mise.toml`? (yes / no)"
 
 The `mise.toml` MUST NOT be edited without explicit user approval, in keeping
-with the general prohibition in §9.
+with the general prohibition in §10.
 
 ### 6.4 Migration Execution
 
@@ -645,7 +645,7 @@ grep -E "deprecated|will be removed" "$SCRATCH/mise-install-postmigration.err" \
     && echo "STILL DEPRECATED — investigate" \
     || echo "Migration verified clean."
 
-# 4. (Optional) Validate the edited mise.toml per §8.2.
+# 4. (Optional) Validate the edited mise.toml per §9.2.
 taplo check /absolute/path/to/project/mise.toml
 taplo fmt --check /absolute/path/to/project/mise.toml
 ```
@@ -730,11 +730,200 @@ tail -3 "$SCRATCH/mise-install-2.err"
 
 ***
 
-## 7. Full Worked Example — Pylint Setup for `sync-rules.py`
+## 7. Layer 7 — Plugin Installation & Backend Selection Protocol
+
+Mise plugins frequently exist under multiple competing backends
+(`asdf:`, `vfox:`, `github:`, `aqua:`, `ubi:`). The choice is **not
+interchangeable** — different backends ship different binaries, manage
+their own install roots, and have different SSH / HTTPS reachability
+profiles on different networks. This Layer runs **before** Layers 1–6:
+no version pin, no trust prompt, no `mise install` invocation can
+succeed if the underlying plugin is missing or installed under a
+backend that doesn't resolve in the current environment.
+
+### 7.1 Detection
+
+Apply this Layer whenever:
+
+- The user issues `mise install <plugin>` (single-plugin install)
+- The user issues `mise install` in a project folder and it fails with
+  a plugin-resolution error (e.g., `plugin <name> not found`, SSH
+  authentication failure resolving an `asdf:` or `vfox:` URL, or
+  `mise registry` returning multiple candidates)
+- A `mise.toml` references a tool whose plugin is not yet installed
+  locally (`mise plugins --user` does not list it)
+
+### 7.2 Backend Inventory
+
+Query the mise registry for all available backends for the plugin:
+
+```bash
+# Show every registered backend for a given tool name
+mise registry <plugin>
+```
+
+If the output lists more than one entry (e.g., `dart` may show
+`asdf:asdf-community/asdf-dart` and `vfox:version-fox/vfox-dart`), the
+plugin has **multiple backends** and the user MUST choose explicitly —
+never auto-pick the first match.
+
+### 7.3 Presentation to User
+
+Present a numbered table of every backend candidate with its full
+GitHub URL and a brief differentiator:
+
+| # | Backend | Repo | Notes |
+|---|---|---|---|
+| 1 | `asdf:` | `asdf-community/asdf-dart` | Mature, large user base |
+| 2 | `vfox:` | `version-fox/vfox-dart`    | Newer, cross-platform Lua plugin runtime |
+
+Ask the user which to install. Do NOT proceed without an explicit
+choice.
+
+### 7.4 Installation — Full GitHub URL Form
+
+Once the user has chosen a backend, install the plugin using the
+**full HTTPS GitHub URL** of the chosen backend's repository:
+
+```bash
+mise plugins install <plugin> https://github.com/<org>/<repo>.git
+```
+
+**Forbidden form — `vfox:` / `asdf:` URL prefixes:**
+
+```bash
+# ❌ DO NOT USE — these prefixes cause SSH auth failures on networks
+#    that lack a configured GitHub SSH key, even when the user is
+#    fully authenticated for HTTPS clones.
+mise plugins install <plugin> vfox:version-fox/vfox-<plugin>
+mise plugins install <plugin> asdf:asdf-community/asdf-<plugin>
+```
+
+The HTTPS `.git` URL form sidesteps the SSH-key requirement and works
+identically on Gitpod, Cloud Shell, NeverInstall, plain Ubuntu, macOS,
+and Windows.
+
+### 7.5 Triggering the Tool Install
+
+**`mise.toml` precedence — Layer 7 never overrides it.** Layer 7
+activates only when (a) the user issues a bare-plugin
+`mise install <plugin>` outside of `mise.toml` control, or (b) a
+project-folder `mise install` has already failed with a plugin-
+resolution error. While `mise.toml` resolves cleanly, Layer 7 is a
+no-op; the agent MUST NOT pre-emptively prompt for a backend choice
+on plugins that `mise.toml` is silently happy with.
+
+After the plugin lands, invoke the actual tool install. Two cases:
+
+**Single-plugin install (user originally said `mise install <plugin>`):**
+
+```bash
+mise install <plugin>
+```
+
+This installs the latest version known to the freshly-installed
+plugin's backend. From here, hand off to **Layer 2** (§2) for
+version-freshness review and pinning.
+
+**Project-folder install (user originally said `mise install`):**
+
+```bash
+mise install
+```
+
+This re-reads `mise.toml` and installs every pinned tool. If a
+previous `mise install` attempt failed because the wrong-backend
+plugin was installed, first **uninstall** the problematic backend
+plugin before re-trying:
+
+```bash
+mise plugins uninstall <plugin>
+mise plugins install <plugin> https://github.com/<org>/<repo>.git
+mise install
+```
+
+### 7.6 Verification
+
+After any plugin install, verify the registered backend URL:
+
+```bash
+mise plugins --urls --user
+```
+
+The output MUST show the plugin name mapped to the exact HTTPS URL
+chosen in §7.3. If a `vfox:` or `asdf:` prefix appears instead, the
+install bypassed this Layer — uninstall and re-run with the HTTPS
+form before proceeding.
+
+### 7.7 Decision Matrix (Quick Reference)
+
+| User says | mise registry returns | Action |
+|---|---|---|
+| `mise install <plugin>` | 1 backend | Install with HTTPS URL (§7.4), then `mise install <plugin>` (§7.5) |
+| `mise install <plugin>` | ≥ 2 backends | Present table (§7.3), get user choice, then §7.4 + §7.5 |
+| `mise install` in project | succeeds | No-op — Layer 7 does not apply |
+| `mise install` in project | fails with plugin error | Identify failed plugin, check `mise registry <plugin>` for alternatives, if ≥ 2: present table (§7.3) → uninstall (§7.5 second case) → reinstall via HTTPS → retry |
+
+### 7.8 Worked Examples
+
+#### 7.8.1 Scenario A — Bare-plugin install, multi-backend choice
+
+User says: `mise install dart`
+
+```bash
+$ mise registry dart
+asdf:asdf-community/asdf-dart
+vfox:version-fox/vfox-dart
+```
+
+Two backends → Layer 7 applies. Agent prompts (literal phrasing from
+the source rule):
+
+> *"dart has asdf and vfox backends, which do you prefer?"*
+
+User picks `asdf:`. Agent runs:
+
+```bash
+mise plugins install dart https://github.com/asdf-community/asdf-dart.git
+mise install dart
+mise plugins --urls --user | grep dart
+# dart  https://github.com/asdf-community/asdf-dart.git
+```
+
+Layer 7 complete. Hand off to Layer 2 for version pin.
+
+#### 7.8.2 Scenario B — Project-folder install fails, fallback to alternate backend
+
+User runs `mise install` in a project folder pinning `dart`. The
+currently-installed plugin backend (e.g., `asdf:asdf-community/asdf-dart`)
+fails to resolve — network rejects the upstream tarball, the asdf
+shim crashes, or the binary fails to launch post-install. Agent
+checks `mise registry dart`, sees `vfox:` is also available, and
+prompts (literal phrasing from the source rule):
+
+> *"dart installation failed, try vfox backend instead?"*
+
+User confirms. Agent runs:
+
+```bash
+mise plugins uninstall dart
+mise plugins install dart https://github.com/version-fox/vfox-dart.git
+mise install
+mise plugins --urls --user | grep dart
+# dart  https://github.com/version-fox/vfox-dart.git
+```
+
+`mise.toml` is unchanged (Layer 7 swaps the backend, never the
+version pin). Hand off to Layer 2 only if the user now wants to bump
+the version.
+
+***
+
+## 8. Full Worked Example — Pylint Setup for `sync-rules.py`
 
 This section demonstrates all four layers against the real scenario.
 
-### 7.1 Layer 1: Trust Check
+### 8.1 Layer 1: Trust Check
 
 ```bash
 mise ls 2>&1
@@ -757,7 +946,7 @@ mise trust /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/mise.toml
 # → mise trusted /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts
 ```
 
-### 7.2 Layer 2: Python Version Selection
+### 8.2 Layer 2: Python Version Selection
 
 ```bash
 mise ls python --json
@@ -781,7 +970,7 @@ Offer to update? Ask user.
 mise use --path /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 ```
 
-### 7.3 Layer 3: Python Verification
+### 8.3 Layer 3: Python Verification
 
 ```bash
 mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9 -- python --version
@@ -790,7 +979,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 # → pip 24.x
 ```
 
-### 7.4 Layer 4: Pylint Setup
+### 8.4 Layer 4: Pylint Setup
 
 ```bash
 grep -i "^pylint" /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/requirements.txt
@@ -817,7 +1006,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 
 ***
 
-## 8. Post-Edit File Validation Protocol
+## 9. Post-Edit File Validation Protocol
 
 After **any** edit to a project file, the agent MUST validate the file using its
 industrial-standard tool before proceeding. This catches formatting errors (e.g. stray
@@ -827,7 +1016,7 @@ indentation) introduced by automated edits.
 > using the [System-Wide Tool Management Skill](../system-wide-tool-management/SKILL.md)
 > before running these commands.
 
-### 8.1 Validation Commands by File Type
+### 9.1 Validation Commands by File Type
 
 | File | Tool | Syntax Check | Format Check & Fix |
 | :--- | :--- | :--- | :--- |
@@ -854,7 +1043,7 @@ indentation) introduced by automated edits.
 > - Because these are Python tools, they MUST follow Layer 4: add them to
 >   `requirements.txt` and run them via `mise exec`.
 
-### 8.2 `mise.toml` Validation & Formatting (`taplo`)
+### 9.2 `mise.toml` Validation & Formatting (`taplo`)
 
 > **Important distinction:**
 >
@@ -893,7 +1082,7 @@ Common TOML formatting mistakes:
 - Missing blank line separating table sections
 - Inconsistent quote style
 
-### 8.3 `requirements.txt` Validation (`pip`)
+### 9.3 `requirements.txt` Validation (`pip`)
 
 ```bash
 pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
@@ -904,7 +1093,7 @@ pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
 - ❌ Failure: any `ERROR` line — fix the package specifier before proceeding
 - No auto-formatter for `requirements.txt`; fix manually.
 
-### 8.4 Worked Example — Validation After This Session's Edits
+### 9.4 Worked Example — Validation After This Session's Edits
 
 ```bash
 # Step 1 — Syntax check
@@ -932,7 +1121,7 @@ pip install --dry-run -r /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/req
 
 ***
 
-## 9. Prohibited Actions
+## 10. Prohibited Actions
 
 The agent is FORBIDDEN from:
 
@@ -946,7 +1135,7 @@ The agent is FORBIDDEN from:
 - Running `mise use` without a project-scoped config target — always scope to the
   project directory, not globally.
 - **Skipping post-edit file validation** — every edited file MUST be validated with its
-  industrial-standard tool (§8) before proceeding to the next step.
+  industrial-standard tool (§9) before proceeding to the next step.
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the
   user first. The agent MUST present the error (e.g., `invalid-name` for a file name)
   and ask the user how they want to resolve it (e.g., rename the file vs disable the check).

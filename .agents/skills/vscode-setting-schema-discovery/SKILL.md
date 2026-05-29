@@ -192,3 +192,15 @@ skill — see [Traceability](#7-traceability).
   it as a real Insiders setting with `enum: ["off","some","all"]` and a
   special `agentsWindow:{default:"all"}` override. That investigation IS
   this skill.
+
+***
+
+## Related Skills
+
+- [mise-backend-vscode-tool-bridge](../mise-backend-vscode-tool-bridge/SKILL.md) — downstream
+  consumer that maintains a `LANGUAGE_BUILTIN_KEYS` table of per-language built-in interpreter
+  settings. Use this skill to confirm each candidate key is real and to capture its enum /
+  default before adding a new language row to the bridge's table.
+- [vscode-multi-scope-setting-write](../vscode-multi-scope-setting-write/SKILL.md) — pair this
+  schema discovery with the multi-scope writer when you have a confirmed key and need to write
+  it across the workspace-vs-folder cascade.

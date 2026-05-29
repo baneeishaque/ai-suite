@@ -76,3 +76,7 @@ python3 .agents/skills/vscode-settings-promotion/scripts/promote.py \
 - [VS Code Settings Indent Override](../vscode-settings-indent-override/SKILL.md) — apply per-key
   non-standard indentation overrides after promotion (e.g. 6-space level-2 for `files.associations`,
   8-space `approve`/`matchCommandLine` for `chat.tools.terminal.autoApprove`).
+- [VS Code Multi-Scope Setting Write](../vscode-multi-scope-setting-write/SKILL.md) — sibling
+  base primitive for the workspace-file (`.code-workspace`) vs folder (`.vscode/settings.json`)
+  scope cascade. Use when a setting must persist regardless of whether VS Code opens the
+  directory directly or through a workspace file.

@@ -76,7 +76,13 @@
    probe inside a chained call. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1.1](ai-agent-rules/shell-execution-rules.md).
    (Re-attributed May 2026 from the original case-folding diagnosis,
-   which was incomplete.)
+   which was incomplete. Further extended May 2026 after a plain
+   `bash ls .agents/skills/` froze the renderer — confirming the
+   hazard covers ANY directory with wide fan-out under active IDE
+   watchers, not only symlinked private-config trees. The same
+   incident also proved that `edit` / `create` tool calls issued
+   during the post-freeze drain window are themselves reported as
+   `interrupted`; recover via `bash` heredoc writes first.)
 7. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
    `find` / `cat`.** The host runtime exposes first-class code-search
    tools that respect tool-output sizing, scrollback hygiene, and the

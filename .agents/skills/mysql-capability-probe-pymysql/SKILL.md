@@ -112,6 +112,7 @@ Exit codes:
 | [`scripts/apply-engine.py`](scripts/apply-engine.py) | Idempotently `ALTER TABLE … ENGINE=<target>` for each given table. Skips tables already on the target engine. Writer-side counterpart of `probe-server-flavor.py` and a common prerequisite to `probe-fk-readiness.py` (MyISAM blocks FKs). | `SKIP:` / `EXEC:` / `OK:` / `FAIL:` | 0 all on target / 1 some FAIL / 2 config |
 | [`scripts/apply-indexes.py`](scripts/apply-indexes.py) | Idempotently `ALTER TABLE … ADD INDEX` for each given `table.column[:idx_name]`. Skips already-indexed columns based on `information_schema.STATISTICS`. Writer-side counterpart of `probe-required-indexes.py`. | `SKIP:` / `EXEC:` / `OK:` / `FAIL:` | 0 all present after run / 1 some FAIL / 2 config |
 | [`scripts/probe-fk-readiness.py`](scripts/probe-fk-readiness.py) | For each proposed FK `child.col=parent.col`: report storage ENGINE (MyISAM blocks FKs), existing FK constraints, column nullability, top-level (NULL) counts, and orphan row counts. Prerequisite check before `ALTER TABLE … ADD FOREIGN KEY` (which fails with `ERROR 1452` when orphans exist). | Sectioned report + terminal `FK_READY: True\|False` | 0 ready / 1 blockers / 2 config |
+| [`scripts/probe-orphan-rows.py`](scripts/probe-orphan-rows.py) | Enumerate the actual orphan ROWS (not just counts) for each proposed FK `child.col=parent.col`. Sister of `probe-fk-readiness.py`: that probe answers "are we ready?"; this one answers "which rows must we fix?". Treats both `IS NULL` and `=0` as no-parent by default (legacy sentinel pattern); `--strict-null` restricts to NULL only. | Per-check section with COUNT and first `--limit` rows + terminal `ORPHAN_TOTAL: <N> across <K> check(s)` | 0 zero orphans / 1 some found (informational) / 2 config |
 
 Each probe / DDL script accepts `--secrets <path>` (KEY=VALUE file, same schema as
 `probe-multi-statement.py`). The index probes additionally take repeatable `--check`,
@@ -141,6 +142,15 @@ S=.agents/skills/mysql-capability-probe-pymysql/scripts
 "$PY" $S/probe-fk-readiness.py --secrets $SEC \
     --fk transactionsv2.from_account_id=accounts.account_id \
     --fk transactionsv2.to_account_id=accounts.account_id
+
+# 4. If step 3 reported orphans, enumerate them to plan the fix (delete /
+#    repoint / create missing parent) — defaults treat both NULL and 0 as
+#    "no parent claimed".
+"$PY" $S/probe-orphan-rows.py --secrets $SEC \
+    --check transactionsv2.from_account_id=accounts.account_id \
+    --check transactionsv2.to_account_id=accounts.account_id \
+    --cols transactionsv2:id,from_account_id,to_account_id,amount,event_date_time \
+    --limit 50
 ```
 
 ## 5. Composition

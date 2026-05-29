@@ -327,6 +327,8 @@ fail with `Commands out of sync`. The reference example
 | Probe python invocation | [`mise-tool-management`](../mise-tool-management/SKILL.md) §Layer 5 |
 | Secrets file resolution | [`dev-env-private-config-symlink`](../dev-env-private-config-symlink/SKILL.md) |
 | Commit grouping after refactor | [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) |
+- [`php-mysqli-prepared-statement-modernization`](../php-mysqli-prepared-statement-modernization/SKILL.md) —
+  PHP-side counterpart: while this skill minimizes roundtrips at the probe/orchestration layer, the PHP skill minimizes per-endpoint roundtrips by replacing string-interpolated SQL with prepared statements that the server can cache.
 
 ## 7. Prohibited Behaviors
 

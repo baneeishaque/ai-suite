@@ -53,7 +53,6 @@
     Python/Bash for a recurring task, search for an existing script first.
     See
     [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md).
-
 6. **Resolve filesystem path case BEFORE probing it.** Case-insensitive
    but case-preserving volumes (macOS HFS+/APFS by default, Windows
    NTFS by default, many network shares) will *resolve* a path whose
@@ -71,6 +70,26 @@
    the canonical casing for the session. Compounds with reminder #1 —
    never bundle a case-guess probe inside a chained call. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1.1](ai-agent-rules/shell-execution-rules.md).
+7. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
+   `find` / `cat`.** The host runtime exposes first-class code-search
+   tools that respect tool-output sizing, scrollback hygiene, and the
+   §2.3.1 atomization rule. Falling back to `bash grep` (or `rg` inside
+   a chained command) reintroduces every freeze hazard those tools
+   were built to eliminate — most acutely: passing `-r` / `-R` alongside
+   *explicit file paths* is a contradiction that on some ripgrep
+   versions degrades into a recursive walk of the current working
+   directory, which on a large monorepo with active filewatchers can
+   freeze the IDE renderer. Rules:
+   - When searching file contents, use the **`grep` tool** with `paths`
+     pinned to specific files or directories — never `-r` with explicit
+     paths.
+   - When finding files by name, use the **`glob` tool**.
+   - When reading files, use the **`view` tool** with `view_range` for
+     large files.
+   - Fall back to `bash` only when the built-in tool cannot express the
+     query (e.g. piped post-processing the tool does not support).
+   See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1.2](ai-agent-rules/shell-execution-rules.md).
 
 ## Skills
 

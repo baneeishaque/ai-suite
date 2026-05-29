@@ -1139,3 +1139,15 @@ The agent is FORBIDDEN from:
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the
   user first. The agent MUST present the error (e.g., `invalid-name` for a file name)
   and ask the user how they want to resolve it (e.g., rename the file vs disable the check).
+
+***
+
+## 11. Composition by Higher-Level Skills
+
+| Composer | Domain | Pipes into this skill via |
+| :--- | :--- | :--- |
+| [mise-backend-vscode-tool-bridge](../mise-backend-vscode-tool-bridge/SKILL.md) | Non-default-backend installs (`github:`, `ubi:`, `asdf:`, `http:`) whose binary cannot be resolved by `mise which` and therefore cannot be auto-detected by the Mise VS Code extension. | Sibling Layer of §2 (Tool Selection) — uses [mise-non-standard-backend-bin-resolve](../mise-non-standard-backend-bin-resolve/SKILL.md) for resolution, then wires the result into VS Code via [vscode-multi-scope-setting-write](../vscode-multi-scope-setting-write/SKILL.md). |
+
+When `mise which <tool>` fails for a non-default backend install, do NOT
+loop back through Layers 1–7 — delegate directly to the bridge composer
+above; it is the SSOT for that path.

@@ -80,7 +80,9 @@
    `bash ls .agents/skills/` froze the renderer — confirming the
    hazard covers ANY directory with wide fan-out under active IDE
    watchers, not only symlinked private-config trees. The same
-   incident also proved that `edit` / `create` tool calls issued
+   incident — and a follow-up `bash grep -r /Users/dk/lab-data/<repo>`
+   freeze in the same workspace — also proved that `edit` / `create`
+   tool calls issued
    during the post-freeze drain window are themselves reported as
    `interrupted`; recover via `bash` heredoc writes first.)
 7. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /

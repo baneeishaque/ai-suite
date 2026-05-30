@@ -138,6 +138,118 @@ This pairs with the DB-side trigger from
 [`mariadb-check-autoincrement-trigger-fallback`](../mariadb-check-autoincrement-trigger-fallback/SKILL.md)
 for defense-in-depth.
 
+### Step 6 — DELETE-first with diagnostic fallback (FK-protected rows)
+
+When deleting a row protected by `ON DELETE RESTRICT` FKs (e.g. a parent
+account referenced by child accounts and/or transactions), the naive
+preflight pattern (`SELECT EXISTS(blocker_1); SELECT EXISTS(blocker_2);
+… ; DELETE … WHERE not_blocked`) pays for every blocker check on EVERY
+call, including the common happy path where no blockers exist.
+
+Prefer **DELETE-first**: run the DELETE, and produce a diagnostic
+resultset enumerating ALL active blockers only when the engine raises
+`errno 1451` (SQLSTATE `23000`). Crucially, you MUST enumerate blockers
+in the diagnostic path — never just parse the constraint name from the
+1451 message, because the engine stops at the **first** tripped FK and
+reports only that one; you cannot tell from a single failed DELETE
+whether the other FKs would also have blocked it.
+
+Three portability tiers, in order of preference for a MariaDB-only
+deployment:
+
+| Tier | Form | MySQL 5.x/8.x | MariaDB ≥ 10.1 | Round-trips happy / blocked | Schema object | Prepared? |
+|---|---|---|---|---|---|---|
+| **A** | Top-level `BEGIN NOT ATOMIC` + `DECLARE EXIT HANDLER FOR 1451` | ❌ syntax error | ✅ | 1 / 1 | none | no (compound blocks cannot be prepared) |
+| **B** | `CREATE PROCEDURE sp_delete_X` + `CALL sp_delete_X(?)` | ✅ | ✅ | 1 / 1 | yes (1 routine) | yes (`CALL ?`) |
+| **C** | App-side `try { DELETE } catch (1451) { diagnostic SELECT }` | ✅ | ✅ | 1 / **2** | none | yes (both) |
+
+#### Tier A — MariaDB-only, top-level compound block
+
+```sql
+BEGIN NOT ATOMIC
+  DECLARE EXIT HANDLER FOR 1451
+    SELECT 'blocked'   AS outcome,
+           EXISTS(SELECT 1 FROM accounts WHERE parent_account_id=X) AS has_children,
+           EXISTS(SELECT 1 FROM transactionsv2
+                  WHERE from_account_id=X OR to_account_id=X)       AS has_transactions,
+           0 AS affected_rows;
+  DELETE FROM accounts WHERE account_id=X;
+  SELECT CASE WHEN ROW_COUNT()=1 THEN 'deleted' ELSE 'not_found' END AS outcome,
+         0 AS has_children, 0 AS has_transactions,
+         ROW_COUNT() AS affected_rows;
+END
+```
+
+Issued via single `$con->query($block)`; outcome decoded by a PHP
+`switch ($row['outcome'])`. Constraint: compound blocks cannot be
+prepared in MariaDB, so the int param MUST be validated via
+`FILTER_VALIDATE_INT` before interpolation. See
+`Account-Ledger-Server-PHP/http_API/delete_account.php` for the
+canonical implementation.
+
+#### Tier B — MySQL + MariaDB portable, stored procedure
+
+```sql
+CREATE PROCEDURE sp_delete_account(IN p_account_id INT)
+BEGIN
+  DECLARE EXIT HANDLER FOR 1451
+    SELECT 'blocked' AS outcome,
+           EXISTS(SELECT 1 FROM accounts WHERE parent_account_id=p_account_id) AS has_children,
+           EXISTS(SELECT 1 FROM transactionsv2
+                  WHERE from_account_id=p_account_id OR to_account_id=p_account_id) AS has_transactions,
+           0 AS affected_rows;
+  DELETE FROM accounts WHERE account_id=p_account_id;
+  SELECT CASE WHEN ROW_COUNT()=1 THEN 'deleted' ELSE 'not_found' END AS outcome,
+         0 AS has_children, 0 AS has_transactions,
+         ROW_COUNT() AS affected_rows;
+END;
+```
+
+PHP side: `$stmt = $con->prepare("CALL sp_delete_account(?)"); $stmt->bind_param('i', $account_id);`.
+Adds a schema object (one stored routine) plus a `GRANT EXECUTE` for
+the app user; in exchange, the same SQL works on MySQL 5.x/8.x and
+MariaDB without rewrite, and the parameter is bound (no interpolation).
+
+#### Tier C — fully portable, two-round-trip blocked path
+
+```php
+try {
+    $stmt = $con->prepare("DELETE FROM accounts WHERE account_id=?");
+    $stmt->bind_param('i', $account_id);
+    $stmt->execute();
+    // $stmt->affected_rows === 1 => deleted; === 0 => not_found
+} catch (mysqli_sql_exception $e) {
+    if ($e->getCode() === 1451) {
+        // SECOND round-trip: enumerate ALL active blockers
+        $diag = $con->query("SELECT
+            EXISTS(SELECT 1 FROM accounts WHERE parent_account_id=$id) AS has_children,
+            EXISTS(SELECT 1 FROM transactionsv2
+                   WHERE from_account_id=$id OR to_account_id=$id) AS has_transactions");
+        // …
+    } else { throw $e; }
+}
+```
+
+Use when the target deployment may swap between MySQL and MariaDB
+(e.g. Aurora MySQL, RDS MySQL 8.0, PlanetScale, Vitess, TiDB) AND the
+extra RTT on the blocked path is acceptable.
+
+#### Decision rubric
+
+- **MariaDB-locked, prefer least schema surface** → Tier A.
+- **Multi-engine target OR org migration risk** → Tier B (stored
+  procedure migration recipe).
+- **No DDL permission OR no routine support (some hosted DBaaS)** →
+  Tier C.
+
+#### Common anti-pattern to avoid
+
+`DELETE-first; on 1451, parse constraint name from error message` is
+NOT a valid replacement for any tier above. It cannot enumerate
+multiple simultaneous blockers because the engine stops at the
+first-tripped FK; the user is forced into a staggered
+delete-children → retry → delete-transactions → retry cycle.
+
 ## Wire-Compat Failure Modes
 
 | Anti-pattern | Symptom | Fix |

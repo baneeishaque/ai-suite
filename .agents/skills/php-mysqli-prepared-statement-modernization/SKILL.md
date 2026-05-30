@@ -185,7 +185,13 @@ Issued via single `$con->query($block)`; outcome decoded by a PHP
 prepared in MariaDB, so the int param MUST be validated via
 `FILTER_VALIDATE_INT` before interpolation. See
 `Account-Ledger-Server-PHP/http_API/delete_account.php` for the
-canonical implementation.
+canonical implementation, and
+`Account-Ledger-Server-PHP/docs/portability.md` § *Efficiency-
+ceiling deep dives* for the field-tested explainers on **why
+Tier B was not adopted for perf** (stored-routine cache angle),
+**why composite covering indexes on the FK columns do not help**
+(index-merge is already optimal), and **what `mysqli_report`
+polling-vs-exception mode means** for per-endpoint rollout.
 
 #### Tier B — MySQL + MariaDB portable, stored procedure
 

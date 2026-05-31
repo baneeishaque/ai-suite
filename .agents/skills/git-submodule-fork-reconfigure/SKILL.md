@@ -189,3 +189,4 @@ Ensure the parent repository recognizes the fork for future initializations.
 | :--- | :--- | :--- |
 | [`git-submodule-orphan-gitlink-recovery`](../git-submodule-orphan-gitlink-recovery/SKILL.md) | Recovers orphan gitlinks (tree-recorded but absent from `.gitmodules`). | §2 Forking & Remote Preparation + §3 Remote Reconfiguration. |
 | [`git-submodule-uninitialized-handler`](../git-submodule-uninitialized-handler/SKILL.md) | Drives every uninitialized pointer to a fully-initialized state. | §2–§4 forking + remote swap + parent-`.gitmodules` realignment, invoked for Unreachable-but-recoverable pointers. |
+| [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) | Reverts a wrong-URL submodule change in `.gitmodules` and re-syncs the live submodule's `.git/config`. | §3 `git submodule sync` mechanics after Phase 4 drops the wrong-URL commit. |

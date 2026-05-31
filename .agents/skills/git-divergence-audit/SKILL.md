@@ -261,4 +261,4 @@ This skill MUST delegate to it rather than re-implementing patch-id / tree-SHA l
 | [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md) §1 | Supplies the merge-base and per-side commit lists used as `rebase --onto` upstream and as the input for the six-axis equality audit between pre- and post-rebase sandbox tips. |
 | [`git-absorbed-branch-decommission`](../git-absorbed-branch-decommission/SKILL.md) Phase 1–2 | Supplies the ancestor-check (`rev-list --count`) and patch-id-equivalence (`log --cherry-pick`) primitives used to prove a stale branch's content is already absorbed by a live sibling before deletion. |
 | [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) Phase 1 | Supplies the per-branch merge-base discovery used to identify which dependents are still rooted on the OLD tip of a moved base branch. |
-
+| [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) Phase 1 | Detects a submodule in detached HEAD that is behind `origin/<default>` (fingerprint of a wrong-fork URL pointer drift). |

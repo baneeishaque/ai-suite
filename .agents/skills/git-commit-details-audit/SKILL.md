@@ -86,3 +86,34 @@ Every audit report presented to the user MUST follow the **"Why vs. What"** stan
 - [ ] Are all SHAs cross-referenced between repositories (main vs. submodule)?
 - [ ] Does the "Why vs. What" narrative avoid redundant "fluff"?
 - [ ] Is the Markdown output 100% lint-compliant?
+
+## 6. Message-vs-Diff Direction Audit
+
+A commit's narrative (message verbs like "from X to Y", "align with Z", "update to W") can be the **inverse** of what the diff actually did. Reading the message alone leads to dropping the wrong commit or panic-reverting in the wrong direction.
+
+**Trap example** (sanitized — session 2026-05-30):
+
+Commit message:
+> `chore(submodules): align <name> with personal fork — update from URL-A to URL-B`
+
+Actual `.gitmodules` diff:
+
+```diff
+- url = URL-A
++ url = URL-B
+```
+
+Reading the message direction in isolation suggests `URL-A` was the prior canonical and `URL-B` the new (correct) destination. The diff confirms the change *direction* — but the message's narrative ("align with personal fork") can be **inverted** vs the author's later intent (the "personal fork" turned out to be the wrong target).
+
+**Audit recipe**:
+
+1. Read the `-`/`+` lines FIRST. Extract the concrete URL/SHA/identifier on each side.
+2. Read the commit message. For every English noun phrase (e.g., "personal fork", "upstream", "main", "canonical"), mechanically map it to one of the concrete identifiers from step 1.
+3. If the mapping is ambiguous (the message names something that doesn't appear in the diff), STOP and surface to the user before acting.
+4. If the mapping inverts ("update **to** X" but diff shows `+X` on the OLD side), the message is reversed-direction. The commit may still be the right one to drop/revert — but proceed only after confirming the *diff* matches the desired revert.
+
+## 7. Composition by Higher-Level Skills
+
+| Composer | Role |
+|---|---|
+| [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) | Phase 3 — applies §6 (Message-vs-Diff Direction Audit) to the URL-changing commit before authorizing the drop. |

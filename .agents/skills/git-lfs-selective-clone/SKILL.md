@@ -345,6 +345,27 @@ The `.` pathspec means "all submodules are active" and is the safest
 local override. It is written to `.git/config` and persists for
 subsequent `submodule update` calls in this clone only.
 
+#### 3b — Per-path Init Alternative (Subset Only)
+
+When the caller wants only ONE or a few submodules initialized — not the
+entire transitive set — do NOT use the `--recursive` command above. Defer
+to the atomic skill:
+
+- [`git-submodule-selective-init-no-lfs`](../git-submodule-selective-init-no-lfs/SKILL.md)
+  — initializes exactly the named paths AND guarantees no LFS objects are
+  fetched (`GIT_LFS_SKIP_SMUDGE=1` PLUS
+  `-c filter.lfs.smudge= -c filter.lfs.process= -c filter.lfs.required=false`,
+  since the env var alone is insufficient when the submodule's own
+  `.gitattributes` declares LFS filters). Post-state asserts both: no `-`
+  prefix in `git submodule status`, AND `.git/modules/<path>/lfs/objects`
+  empty/absent.
+
+This deferral is the canonical "narrow scope" branch out of Step 3 — the
+full-recursive command above remains correct when ALL submodules are
+wanted.
+
+***
+
 ***
 
 ### Step 4 — Selective LFS Pull (Include / Exclude Globs)
@@ -671,6 +692,15 @@ permanent skip) they want **before** running any selective pull.
   consume the output of this skill's Step 3 verification.
 - [`git-github-auth-fallback`](../git-github-auth-fallback/SKILL.md) —
   if the clone in Step 1 fails with 401/403 before LFS even runs.
+- [`git-submodule-selective-init-no-lfs`](../git-submodule-selective-init-no-lfs/SKILL.md)
+  — atomic per-path, LFS-skipped peer to this skill's full-recursive
+  Step 3. Reach for it when only a SUBSET of submodules is wanted while
+  preserving the LFS-free property; see Step 3b above for the deferral
+  point.
+
+> **No higher-level composer skill currently consumes `git-lfs-selective-clone`
+> directly.** If one is added later, declare it in a new
+> `## Composition by Higher-Level Skills` section here.
 
 ## 9. Related Rules
 

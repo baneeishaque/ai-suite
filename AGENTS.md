@@ -44,6 +44,10 @@
    content already in scrollback, skip trailing verification dumps, and
    pause-to-consolidate after ~20 tool calls per user message. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.4.1](ai-agent-rules/shell-execution-rules.md).
+   The full catalogue of freeze patterns, the eleven-item per-call self-audit
+   checklist, and the post-freeze recovery protocol — collected across
+   reminders §1–§4 above and reified as one skill — are owned by
+   [`.agents/skills/ide-renderer-freeze-prevention/SKILL.md`](.agents/skills/ide-renderer-freeze-prevention/SKILL.md).
 5. **Prefer scripts over prose instructions.** Scripts are more deterministic
     than rules, skills, or sub-agent prompts. When designing or refactoring a
     skill/rule/sub-agent, decompose its procedure: every deterministic step
@@ -178,6 +182,7 @@
 | Gitignore Rules | [`.agents/skills/gitignore-rules/SKILL.md`](.agents/skills/gitignore-rules/SKILL.md) | User asks to audit `.gitignore`, or directory-ignore + negation patterns detected |
 | Gitignore Whitelist Pattern | [`.agents/skills/gitignore-whitelist-pattern/SKILL.md`](.agents/skills/gitignore-whitelist-pattern/SKILL.md) | Generate a deny-all + whitelist `.gitignore` block for directories that should only contain specific file types (e.g., `.7z` archives) and Git configuration files |
 | Harper Linting Suppression | [`.agents/skills/harper-linting-suppression/SKILL.md`](.agents/skills/harper-linting-suppression/SKILL.md) | Protocol for addressing Harper linter false positives |
+| IDE Renderer Freeze Prevention | [`.agents/skills/ide-renderer-freeze-prevention/SKILL.md`](.agents/skills/ide-renderer-freeze-prevention/SKILL.md) | Atomic SSOT for the ten recurring freeze patterns (command-chaining, recursive bash grep, multi-path arguments, oversize heredocs, inverted-match assumption, Edit/Create tool on large ops, parallel-batch cumulative scrollback, cross-turn drain-window carryover, within-turn cumulative scrollback, session-aggregate lifetime ceiling), the eleven-item per-call self-audit checklist, and the four-step post-freeze recovery protocol — owns the discipline that AGENTS.md §1–§4 articulate as reminders |
 | MariaDB CHECK on AUTO_INCREMENT — Trigger Fallback | [`.agents/skills/mariadb-check-autoincrement-trigger-fallback/SKILL.md`](.agents/skills/mariadb-check-autoincrement-trigger-fallback/SKILL.md) | Error 1901 misleading-attribution pitfall + BEFORE INSERT/UPDATE trigger fallback when CHECK cannot reference AUTO_INCREMENT columns |
 | Mise Backend → VS Code Tool Bridge | [`.agents/skills/mise-backend-vscode-tool-bridge/SKILL.md`](.agents/skills/mise-backend-vscode-tool-bridge/SKILL.md) | Composer — wire a tool installed via a non-default mise backend (`github:`, `ubi:`, `asdf:`, `http:`) into the built-in VS Code interpreter settings for the language, across folder `.vscode/settings.json` and workspace `.code-workspace` scopes; feeds `mise-non-standard-backend-bin-resolve` into `vscode-multi-scope-setting-write` |
 | Mise Non-Standard Backend Bin Resolve | [`.agents/skills/mise-non-standard-backend-bin-resolve/SKILL.md`](.agents/skills/mise-non-standard-backend-bin-resolve/SKILL.md) | Base primitive — resolve the absolute on-disk binary path for a tool installed via a non-default mise backend (`github:`, `ubi:`, `asdf:`, `http:`) where `mise which <tool>` and `mise where <tool>@latest` both fail; sibling of `mise-tool-management` Layer 2 |

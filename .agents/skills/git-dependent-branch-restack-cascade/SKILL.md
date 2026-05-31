@@ -482,6 +482,71 @@ git -C $repo checkout <branch>
 git -C $repo reset --hard origin/<branch>
 ```
 
+### 4.7 Dependent rooted on a non-tip commit that was rewritten by the upstream history edit
+
+**Symptom** (preserved verbatim from session 2026-05-30 on `<ORG-USER>/<REPO>`; sanitized via [`redaction-portability`](../redaction-portability/SKILL.md)):
+
+> Branch **A** has commit **X** on top of commit **H**, and **H** is in `master` (NOT the tip).
+> Branch **B** has commit **Y** on top of `master` tip.
+>
+> A naive cascade — `git rebase --onto <new-master> <old-master> <branch>` for every dependent — puts **both** X and Y on top of the new master tip.
+>
+> - For **B**: correct (its old parent WAS the old tip; the new tip is the rewritten equivalent of that old tip).
+> - For **A**: WRONG. X must land on **H'**, the rewritten equivalent of H *inside* the new master, NOT on the new tip. Otherwise X is silently lifted past commits it never lived on top of.
+
+**When this fires**: an upstream operation **rewrote** mid-history (e.g., this skill's caller dropped or split a commit with `git rebase --onto`, OR a `cherry-pick` chain replaced a range), not just appended new tip commits. Dependents whose merge-base with the moved branch was an *interior* commit are at risk; dependents whose merge-base WAS exactly `<old-tip>` are safe under standard §3.
+
+**Diagnosis**:
+
+```powershell
+# Fast check: is the dependent's old parent still reachable from the new tip?
+git merge-base --is-ancestor <H> <new-master>
+# Non-zero exit ⇒ H was rewritten away; you need H'.
+```
+
+**Locating H' (SSOT — use existing primitives, do NOT write a new equivalence script)**:
+
+1. **Fast path — subject grep**. Single-line commit subjects survive most rewrites verbatim:
+
+    ```powershell
+    git log --format='%H %s' <new-master> |
+        Select-String -SimpleMatch '<H-subject>'
+    ```
+
+    Exactly one hit ⇒ that SHA is H'. Multiple or zero hits ⇒ fall through.
+
+2. **Patch-equivalence path — `git cherry`** (already documented in §4.5, which uses it for the chain-break case):
+
+    ```powershell
+    git cherry -v <old-base> <new-master> |
+        Where-Object { $_ -match '^- ' }
+    ```
+
+    `git cherry` lines starting with `-` are commits present on `<new-master>` by patch-id that have an equivalent ancestor in `<old-base>` — among those is H'. Cross-reference by subject or author/date to identify it.
+
+3. **Full audit path — pairwise patch-id walk**: invoke
+   [`git-commit-comparison-audit/scripts/equivalence-check.ps1`](../git-commit-comparison-audit/scripts/equivalence-check.ps1)
+   pairing each old-master commit against new-master commits by patch-id. Owned by `git-commit-comparison-audit` — do not duplicate here.
+
+**Fix**:
+
+```powershell
+git rebase --onto <H'> <H> <branch-A>
+```
+
+Then run the standard Phase 3b parity audit. The pre/post unique-commit patch-id sequence MUST equal — if not, the chosen H' is wrong and you should iterate (often by stepping back to candidate H'+1 or H'-1).
+
+**Force-push gate** (Phase 4): when a dependent required §4.7 treatment (not just §3), its push MUST be authorized **separately** from the batch push, with the diagnosis (chosen H', parity result) presented to the author. This is the same separate-gate rule that §3b applies to DIFFER parity.
+
+**Distinction from §4.2 and §4.5**:
+
+- §4.2 (merge-base earlier than `<old-tip>`): dependent was rooted *further back* than the operation assumed, but H itself is still reachable from `<new-tip>`. Fix uses the dependent's *true* merge-base directly — no equivalent-finding needed.
+- §4.5 (independent-rebase chain break): the chain `A ⊂ B ⊂ C` was rewritten one layer at a time; recovery rebuilds via `git cherry`-driven cherry-pick. §4.7 is upstream-side: ONE rewrite, multiple dependents — one of which lands wrong if cascade is naive.
+
+**Composition by Higher-Level Skills**:
+
+- [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) Phase 6 — invokes this cascade skill and explicitly classifies each dependent as "old-tip-rooted" (§3) vs "mid-history-rooted" (this §4.7) before per-dependent restack.
+
 ***
 
 ## 5. Acceptance Criteria

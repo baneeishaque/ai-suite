@@ -126,3 +126,9 @@ This skill is a base primitive consumed by:
   unclear untracked files (this skill produces intentional captures).
 - Companion: [`gitignore-rules`](../gitignore-rules/SKILL.md) — for authoring the ignore entry
   correctly across nested repos / submodules.
+
+## 8. IDE-Renderer Freeze Hazards — SSOT Pointer
+
+The ten recurring freeze patterns, the eleven-item per-call self-audit checklist, and the post-freeze recovery protocol are owned by [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) (extracted from this skill on 2026-05-31 once it became clear the discipline applied to every bash call session-wide, not just to scratch-capture-adjacent work).
+
+This skill remains the SSOT for **one** of that skill's mitigations: when its self-audit flags a call whose upper output bound is unprovable, redirect the output to `scratch/<purpose>-output.txt` per §3–§4 above. See [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) Pattern 5 and checklist item 5 for the trigger.

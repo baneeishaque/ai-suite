@@ -22,7 +22,7 @@ Modes (--mode):
         simply want the registration row to appear in the working tree
         for ordinary `git status` review and a normal `git add`. This is
         the standard path during skill-factory new-skill registration
-        per skill-factory/SKILL.md §2.3.
+        per skill-factory/SKILL.md §2.4.
 
 Both modes share the same alphabetical insertion algorithm and the same
 table-row detection heuristic — only the read source and write sink

@@ -367,7 +367,7 @@ working-tree changes remain unstaged.
 The script also supports `--mode worktree` for the skill-factory registration
 case (AGENTS.md is clean and you just want the row written to the working tree
 for ordinary `git status` review and `git add`). See
-[`skill-factory/SKILL.md` §2.3](../skill-factory/SKILL.md) for the registration
+[`skill-factory/SKILL.md` §2.4](../skill-factory/SKILL.md) for the registration
 workflow.
 
 Forbidden anti-pattern: "commit all artifacts first, then one final commit

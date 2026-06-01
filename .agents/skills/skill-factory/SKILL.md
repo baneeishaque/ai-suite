@@ -67,6 +67,7 @@ The `SKILL.md` MUST include:
    uses a namespaced Skill ID containing slashes or underscores (e.g., `dgs_ice/foo_bar`), that form is FORBIDDEN
    in `name:` (validator enforces `^[a-z0-9-]+$`) — put the hyphenated single-segment form in `name:` and keep
    the namespaced form in the body under `> **Skill ID:** ...` where it is not lint-validated.
+   The `name:` MUST also satisfy the **Skill-Name Precision Mandate** ([`ai-rule-standardization-rules.md` §Skill Naming](../../../ai-agent-rules/ai-rule-standardization-rules.md)) — every distinguishing constraint of the skill's scope (filetype, transport, mode, exclusion) MUST appear in the name; generic names that omit a qualifying constraint silently collide with future variants and mislead callers. A longer precise name is always preferable to a shorter ambiguous one.
 2. **Environment & Dependencies**: Mandated verification logic (`which`, version checks).
 3. **Operational Logic**: The EXACT steps provided by the user (**Zero Omission**).
 4. **SSOT Compliance**: The skill MUST NOT duplicate technical standards
@@ -103,7 +104,11 @@ bash recipes, Python heredocs, regex-laden `sed`/`awk` chains, or step-by-step f
 belong in a script. A skill whose prose still embeds deterministic mechanics has skipped the decomposition step and
 fails the Factory's industrial standard.
 
-When the skill ships executable scripts under `scripts/`, every script MUST obey:
+When the skill ships executable scripts under `scripts/`, every script MUST obey the **Universal Script Mandates** in §2.2.1.1 (all scripts, all tiers) and, when Tier 2 (PowerShell) is selected, additionally obey the **Tier-2 (PowerShell) Craftsmanship Mandates** in §2.2.1.2.
+
+#### 2.2.1.1 Universal Script Mandates
+
+Apply to every script regardless of language tier.
 
 1. **Language Selection (SSOT-Delegated)**: The script's language MUST be chosen per the four-tier framework in
    **[Scripting Language Selection Rules](../../../ai-agent-rules/scripting-language-selection-rules.md)** — that
@@ -116,34 +121,49 @@ When the skill ships executable scripts under `scripts/`, every script MUST obey
    §3–§5 tier rule that applies. **Tier-1 (Python) craftsmanship details** (byte-safe I/O, `argparse`, `ruff`,
    `pytest`, PEP 723 / `uv`, mise-equivalence) are SSOT-owned by Scripting Language Selection Rules §2.3.
    **Tier-2 (PowerShell) craftsmanship details** (comment-based help, `pwsh-preview` → `pwsh` fallback,
-   `Common-Utils.ps1` dot-source, `Write-Message` guard, strict-mode hygiene) — items 2–8 below — remain
+   `Common-Utils.ps1` dot-source, `Write-Message` guard, strict-mode hygiene) — §2.2.1.2 below — remain
    mandatory whenever Tier 2 is selected; they DO NOT apply to Tier-1 (Python) scripts.
-   **Bash Extension Mandate**: When Bash is selected (a Tier-2 borderline case requiring documented justification —
+2. **Bash Extension Mandate**: When Bash is selected (a Tier-2 borderline case requiring documented justification —
    usually because the host lacks `pwsh`), the file MUST use the `.bash` extension — never `.sh` — per
    [Bash Scripting Rules §Naming](../../../ai-agent-rules/bash-scripting-rules.md) and the
    [GitHub Actions Workflow Rules](../../../ai-agent-rules/github-actions-workflow-rules.md) standalone-script
    mandate.
-   **Tier-Violation Remediation**: When a Factory audit on an EXISTING skill discovers a script that picked the
+3. **Tier-Violation Remediation**: When a Factory audit on an EXISTING skill discovers a script that picked the
    wrong language tier per
    [`scripting-language-selection-rules`](../../../ai-agent-rules/scripting-language-selection-rules.md)
    (typically a `.bash` / `.sh` wrapping a `python3 - <<PY` heredoc, or a shell script doing JSON / regex work),
    DELEGATE the port to [`script-language-tier-port`](../script-language-tier-port/SKILL.md) as its own atomic
    refactor commit — do NOT inline the port mechanics here.
-2. **Documentation Headers**: Comment-based help with `.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`, `.NOTES`
-   sections — see the [Script Management Rules](../../../ai-agent-rules/script-management-rules.md).
-3. **Execution**: Documented invocations MUST use `pwsh-preview` (preferred) with `pwsh` as fallback.
-4. **Common-Utils Dot-Source**: Scripts MUST dot-source `Common-Utils.ps1` from the
-   [`powershell-scripts`](../../../ai-agent-rules/powershell-scripts/) submodule of `ai-agent-rules` for shared
-   helpers (`Write-Message`, etc.) unless an explicit exemption is justified in the script's `.NOTES` block.
-5. **Portable Anchored Paths**: All sibling-artifact lookups (the dot-source above, base-skill scripts under the
-   Layered Composition Mandate, config files) MUST be resolved through paths anchored on the script's own location
-   via `Split-Path -Parent $MyInvocation.MyCommand.Path` + `Join-Path` — NEVER `$PWD`-relative or hard-coded.
-6. **Write-Message Safeguard**: Every `Write-Message` call MUST be guarded with
-   `if (-not [string]::IsNullOrWhiteSpace($Message)) { ... }`.
-7. **Recursive Submodule Bootstrap**: Any documentation that instructs the user to clone or initialize the
+4. **Plan-Time Tier Declaration**: Any planning artifact (per
+   [`ai-agent-planning-rules`](../../../ai-agent-rules/ai-agent-planning-rules.md))
+   that proposes NEW scripts MUST surface, in the plan body, a per-script
+   table listing (a) the Tier-1 (Python) evaluation, (b) the chosen tier,
+   (c) the `scripting-language-selection-rules` §3–§5 citation, and (d) —
+   if the chosen tier is NOT Tier-1 — the explicit deviation reason. This
+   surfaces wrong-tier picks at plan-review time, where they cost a plan
+   revision, instead of post-implementation, where they cost a
+   [`script-language-tier-port`](../script-language-tier-port/SKILL.md)
+   refactor commit.
+5. **Recursive Submodule Bootstrap**: Any documentation that instructs the user to clone or initialize the
    `powershell-scripts` submodule (or any other submodule) MUST use the recursive form
    (`git submodule update --init --recursive <path>` or `git clone --recurse-submodules <url>`).
-8. **Strict Mode Hygiene**: Scripts SHOULD declare `Set-StrictMode -Version Latest` and `$ErrorActionPreference = 'Stop'`.
+
+#### 2.2.1.2 Tier-2 (PowerShell) Craftsmanship Mandates
+
+Apply **only when the script's selected tier is Tier 2 (PowerShell)**. Tier-1 (Python) scripts are exempt — Python craftsmanship is SSOT-owned by [Scripting Language Selection Rules §2.3](../../../ai-agent-rules/scripting-language-selection-rules.md).
+
+1. **Documentation Headers**: Comment-based help with `.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`, `.NOTES`
+   sections — see the [Script Management Rules](../../../ai-agent-rules/script-management-rules.md).
+2. **Execution**: Documented invocations MUST use `pwsh-preview` (preferred) with `pwsh` as fallback.
+3. **Common-Utils Dot-Source**: Scripts MUST dot-source `Common-Utils.ps1` from the
+   [`powershell-scripts`](../../../ai-agent-rules/powershell-scripts/) submodule of `ai-agent-rules` for shared
+   helpers (`Write-Message`, etc.) unless an explicit exemption is justified in the script's `.NOTES` block.
+4. **Portable Anchored Paths**: All sibling-artifact lookups (the dot-source above, base-skill scripts under the
+   Layered Composition Mandate, config files) MUST be resolved through paths anchored on the script's own location
+   via `Split-Path -Parent $MyInvocation.MyCommand.Path` + `Join-Path` — NEVER `$PWD`-relative or hard-coded.
+5. **Write-Message Safeguard**: Every `Write-Message` call MUST be guarded with
+   `if (-not [string]::IsNullOrWhiteSpace($Message)) { ... }`.
+6. **Strict Mode Hygiene**: Scripts SHOULD declare `Set-StrictMode -Version Latest` and `$ErrorActionPreference = 'Stop'`.
    When reading `$LASTEXITCODE` after invoking another script, guard with
    `Test-Path Variable:LASTEXITCODE` to avoid strict-mode failures on first invocation.
 
@@ -165,7 +185,62 @@ Scripts are **first-class deliverables** of a skill — not disposable session a
    deferred to a follow-up commit. An uncommitted script that exists only in the working tree is NOT part of the
    skill.
 
-### 2.3 Registration
+### 2.3 AGENTS.md (Companion Bridge) Composition
+
+Every skill folder MUST contain an `AGENTS.md` file alongside `SKILL.md`. The file is a **passive bridge** that exposes the skill to *non-skill-aware* agent runtimes — clients that auto-load `AGENTS.md` by filename convention (e.g., Codex CLI, some Cursor profiles, some Continue.dev configurations) but do not parse `agentskills.io` YAML frontmatter or the `.agents/skills/<name>/SKILL.md` directory contract. The bridge ensures those agents discover the skill exists and know to read `SKILL.md` for the operational details, instead of silently missing the skill.
+
+#### 2.3.1 Disambiguation — Per-Skill Bridge vs. Root Registry
+
+Two distinct files share the filename `AGENTS.md`:
+
+| File | Path | Role | Maintained by |
+|---|---|---|---|
+| **Root registry** | `<repo-root>/AGENTS.md` | Index of all skills + Permanent Operating Reminders | §2.4 Registration (root-table row inserted via `agents-md-stage-row.py`) |
+| **Per-skill bridge** | `.agents/skills/<skill>/AGENTS.md` | Companion bridge for one skill | THIS subsection (§2.3) |
+
+They are NOT the same artifact and MUST NOT be conflated. The per-skill bridge does not list other skills; the root registry does not duplicate per-skill operational content. A failure to distinguish them has been observed where an author put per-skill bridge content into the root registry (or vice versa).
+
+#### 2.3.2 Required Sections (Template)
+
+The per-skill `AGENTS.md` MUST contain the following sections in this order:
+
+1. **`# <Skill Display Name> — Companion Bridge`** (level-1 heading; the literal suffix ` — Companion Bridge` lets reviewers grep for bridges across the tree).
+2. **`## Purpose`** (1–3 sentences). State that this file is the bridge for non-skill-aware runtimes and that the operational SSOT lives in [`SKILL.md`](SKILL.md).
+3. **`## When This Skill Applies`** (1 short paragraph or 3–5 bullets). Plain-language trigger conditions, paraphrased from `SKILL.md`'s `## Description` and `## When to Apply` sections — NOT copy-pasted.
+4. **`## Operational Procedure`** (1 sentence + the link). A single sentence directing the agent to `SKILL.md` for the procedure: *"Read [`SKILL.md`](SKILL.md) for the full operational procedure, including all mandates, scripts, and verification steps. Do NOT execute any step without first loading `SKILL.md` — this bridge is intentionally non-actionable."*
+5. **`## Cross-References`** (optional bullet list). Relative links to closely-related skills and rule files. Use §5.6 (Cross-Reference Link Discipline) — proper relative markdown links, not bare code spans.
+
+#### 2.3.3 Frontmatter Prohibition
+
+The per-skill `AGENTS.md` MUST NOT carry YAML frontmatter (no leading triple-dash block). Frontmatter is the discriminator that distinguishes `SKILL.md` (skill-aware runtime metadata) from the bridge file. Adding frontmatter to `AGENTS.md` causes some runtimes to mis-classify it as a second skill registration and emit duplicate-name lint errors.
+
+#### 2.3.4 Forbidden Content
+
+The per-skill `AGENTS.md` MUST NOT contain:
+
+1. **Embedded scripts** (covered by §2.2.1 No-Embedded-Script Mandate — applies to ALL markdown in the skill, including the bridge).
+2. **Duplicated rule content** from `SKILL.md` or from `ai-agent-rules/*.md`. The bridge paraphrases trigger conditions; operational mandates are not restated.
+3. **Step-by-step procedures**. Any reader looking for the procedure MUST be sent to `SKILL.md`. The bridge is intentionally non-actionable so divergence between the two files is impossible.
+4. **Long verbatim quotes** from `SKILL.md`. If the bridge starts copying paragraphs from `SKILL.md`, the bridge has overstepped its role and will drift on the next `SKILL.md` edit.
+
+#### 2.3.5 Size Guidance
+
+A correctly-scoped per-skill `AGENTS.md` is typically **40–120 lines** (Purpose + When + Operational pointer + Cross-References). Sub-40 lines suggests missing sections (e.g., no When-This-Applies); over-120 lines suggests content duplication that should be deleted and replaced with a pointer to `SKILL.md`. The size is a smell test, not a hard cap.
+
+#### 2.3.6 Audience Clarification
+
+The bridge serves **two audiences**:
+
+1. **Non-skill-aware agent runtimes** that auto-load `AGENTS.md` by filename convention. The bridge ensures these runtimes discover the skill and know to load `SKILL.md` for operational details.
+2. **Human reviewers** browsing the skill folder who haven't yet opened `SKILL.md`. The bridge gives them a one-minute orientation before they commit to reading the full SSOT.
+
+It is NOT for skill-aware runtimes — those load `SKILL.md` directly via the `agentskills.io` discovery contract and ignore the bridge.
+
+#### 2.3.7 Audit Step
+
+A bridge audit row is added to §3 Post-Drafting Checklist verifying that `<skill>/AGENTS.md` exists, has no frontmatter, contains the five required sections from §2.3.2, and is within the 40–120 line size guidance from §2.3.5. A skill with no bridge file is INCOMPLETE and MUST NOT be marked done.
+
+### 2.4 Registration
 
 - Update the root `AGENTS.md` skills table to register the new skill with its absolute path and description.
     Use the shared registration helper instead of hand-editing the table:
@@ -240,6 +315,7 @@ Every skill generated via the Factory MUST automatically undergo the final verif
   (e.g., `markdownlint-cli2 --fix <path>` then `markdownlint-cli2 <path>`); using `npx markdownlint-cli2` is
   **FORBIDDEN** per
   **[Markdown Generation Rules §5](../../../ai-agent-rules/markdown-generation-rules.md#5-validation-rules-markdownlint-cli2)**.
+- **Bridge Audit**: Confirm `<skill-dir>/AGENTS.md` exists, carries NO YAML frontmatter (no leading `---` block), contains the five required sections from §2.3.2 (`# <Skill> — Companion Bridge` / `## Purpose` / `## When This Skill Applies` / `## Operational Procedure` / `## Cross-References`), and is within the 40–120 line size guidance from §2.3.5. A skill with no bridge file is INCOMPLETE.
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows
   immediately above and below to verify the sort order holds.
@@ -261,3 +337,308 @@ Every skill generated via the Factory MUST automatically undergo the final verif
        `powershell-scripts` submodule appears in the skill's Environment & Dependencies section.
     4. **Path Portability**: Run the script from at least two different working directories (e.g., the repo root and
        `/tmp`) to prove the `$MyInvocation`-anchored relative paths still resolve.
+
+## 4. Bash-Authoring Hygiene During Skill Creation
+
+Skill authoring itself frequently mutates many files via bash. The same patterns that freeze the VS Code renderer during normal agent work also freeze it during skill-authoring sessions. Before any bash invocation a Factory author MUST satisfy:
+
+1. **One command per call.** No `;` / `&&` chaining unless required by a pipe.
+2. **One path argument per call.** Iterate at the agent level, not in shell.
+3. **No bash `grep -r` / `find` for searches.** Use the in-process `grep` / `glob` tools with `head_limit`.
+4. **Heredoc body ≤ ~50 lines.** Split into multiple `cat >> file <<EOF` appends; for surgical insertions use Python `pathlib.Path.read_text() / write_text()` instead of `sed -i`.
+5. **Bound every call's output.** Redirect unknowns to `scratch/` per [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md).
+
+The ten recurring freeze patterns, the eleven-item per-call self-audit checklist, and the post-freeze recovery protocol are owned by [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) — Factory authors enforce its §5 checklist on every bash call made during skill creation but do not re-document the patterns locally (SSOT).
+
+
+## 5. Skill-Doc Editing Discipline
+
+Eight independent invariants govern in-place edits to existing skill docs (`SKILL.md`, `AGENTS.md`) so that one author's mutation does not leave broken references, duplicated sections, misplaced subsections, off-topic bloat, broken cross-reference links, too-narrow top-level headings, formatting drift, or numbering gaps for the next author to clean up.
+
+### 5.1 Post-Rename Cross-Reference Sweep
+
+Whenever a skill-authoring task renames anything that other artifacts may reference:
+
+- A heading anchor or section number (e.g., `§3c` → `§3b`)
+- A skill folder or skill identifier (e.g., `git-submodule-selective-init` → `git-submodule-selective-init-no-lfs`)
+- A file path, symbol name, or canonical placeholder
+
+…the renamer MUST, **before reporting the task done**, sweep the entire affected tree for the OLD form and update every inbound hit in the same operation. The mechanics are Tier-A (per [`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md)) and are owned by the dedicated script — INVOKE the script, do NOT re-derive the sweep ad-hoc:
+
+```bash
+# 1. Dry-run preview (exit 1 if hits found, 0 if clean)
+.agents/skills/skill-factory/scripts/post-rename-sweep.py --old "<OLD>" --new "<NEW>"
+
+# 2. Review the per-file hit listing; if all hits are legitimate inbound refs:
+.agents/skills/skill-factory/scripts/post-rename-sweep.py --old "<OLD>" --new "<NEW>" --apply
+
+# 3. Verify zero residual hits (exit 0 == clean):
+.agents/skills/skill-factory/scripts/post-rename-sweep.py --old "<OLD>" --new "<NEW>"
+```
+
+The script auto-discovers repo root, applies safe default scopes (skill `.md`, skill `scripts/`, `ai-agent-rules/`, root `AGENTS.md`, `memories/repo/`), uses LITERAL string replacement only (no regex — per §5.1 a rename is always a literal-form change), and skips `.git/`, `node_modules/`, `__pycache__/`, `.venv/` unconditionally. Custom scope can be passed via repeatable `--scope <GLOB>`. The script is the SSOT for the sweep mechanics — do NOT fall back to bash `grep -r` (violates [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) §3 Pattern 2) or to inline Python re-implementation (violates [`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md) Consumer Discipline).
+
+A rename is a refactor; every inbound reference is part of the refactor's scope. Stopping at the renamed file is an incomplete refactor and the user has to catch it.
+
+**Insertion-induced renumbering counts.** "Rename" here includes any change that shifts the section's identifier, even when the heading TEXT is untouched. Specifically:
+
+1. **Insertion before**: adding a new `## N.` before an existing section bumps that section (and all successors) to `## (N+1).`. The displaced section has been renumbered — every inbound `§N` reference (whether self-referential within the same skill or cross-skill) becomes dangling and MUST be updated in the same edit.
+2. **Deletion before**: removing a `## N.` shifts successors down by one. Same sweep obligation.
+3. **Promotion / demotion**: moving `### N.M` up to `## (N+1).` or vice versa changes the citation form (`§N.M` ↔ `§(N+1)`). Same sweep obligation.
+
+These no-text-change renumbers are the most-missed class because the diff looks small ("just inserted a new section, nothing else changed"). The cross-reference impact is identical to a text-rename. Apply §5.4 verification (`grep -n '^## \|^### ' <file>`) AND the inbound-sweep above on every numbered insertion / deletion / promotion.
+
+**Self-referential references count too.** A `§N` citation inside the same skill that points to a now-renumbered sibling section is just as dangling as a cross-skill `§N`. Include the same file in the sweep target list — do not assume "the heading's just two screens above, I'd have noticed."
+
+**Historical example**: in [`git-submodule-dead-upstream-audit`](../git-submodule-dead-upstream-audit/SKILL.md), an inbound reference *"The `curl` invocations in §2 follow…"* in §1 became dangling because the curl-introducing section is actually §3 (Upstream Reachability Probe) and §4 (Fork / Mirror Discovery) — not §2 (Pre-Audit Discovery, which uses only `git`). Whether the slip originated from an early-draft renumber or a typo, §5.4's verification step (numbering audit) combined with this §5.1 inbound-sweep would have caught it before the doc shipped.
+
+### 5.2 Cross-Reference Append Discipline
+
+When adding an inbound back-link section (e.g., `## Composition by Higher-Level Skills`) to a target skill:
+
+1. First check whether the target already has that section (`grep -n "<section heading>" target/SKILL.md`).
+2. If it does → append a **row to the existing table / bullet to the existing list**.
+3. If it does NOT → create the section.
+
+Never create a second heading of the same name. The skill-factory's "one section per topic" invariant must be preserved.
+
+(Persisted as `permanent_discipline.post-rename-cross-reference-sweep`.)
+
+### 5.2.1 Composition-Table Membership & Description Discipline
+
+The `## Composition by Higher-Level Skills` table on a base skill is NOT a catalog of "skills that mention this one" — it is the **inbound composition graph**. Three failure modes have been observed when authors append rows carelessly:
+
+1. **Unrelated skills listed**: a skill that neither composes nor consumes the base is added because its topic sounded adjacent. PROHIBITED — the table loses signal and downstream readers compose the wrong primitive.
+2. **Merely related skills listed**: a sibling skill that shares a topic but does NOT invoke / depend on / extend the base is added. PROHIBITED in this table — such skills belong in the base's `## Related Skills` section instead. The Composition table is reserved for true composers (callers that pipe through the base's public contract) and consumers (skills that hard-depend on the base's output shape).
+3. **Generic / non-contextual descriptions**: a true composer is listed but its description is a paraphrase of the composer's own one-liner ("does X with Y"). PROHIBITED — the description MUST state HOW the composer uses the base: which base section/script it invokes, what it pipes in, what it gets out, and (if applicable) at which stage of its own workflow.
+
+**Acceptance criteria** for any new row in `## Composition by Higher-Level Skills`:
+
+- [ ] The candidate skill ACTUALLY invokes the base skill (via script shell-out, explicit `§N` reference, or hard dependency on the base's output contract). If it merely shares a topic → move to `## Related Skills` instead.
+- [ ] The description names the **specific composition mechanism** — which section/script of the base is invoked, with what input, producing what output, at what stage of the composer's flow.
+- [ ] The description is NOT a copy of the composer's own description; it is written from the BASE skill's perspective ("Composer X feeds inputs A into §N of this skill; consumes output B at its Step M").
+
+**Verification**: before declaring a Composition table edit done, open each newly-added row's composer and confirm a literal reference to the base skill exists (script include, `§N` citation, or relative link to the base SKILL.md). If no such reference exists, the row is misplaced — move it to `## Related Skills` or delete it.
+
+(Persisted as `permanent_discipline.composition-table-membership-and-description-discipline`.)
+
+### 5.2.2 Composition Rationale Section Discipline
+
+The `## Composition Rationale` section sits in the skill's front-matter zone (before `## 1.`) and answers a question the reader has on first arrival: **"why does this skill exist as a separate atomic unit, and how does it fit into the larger graph of skills?"** It is NOT a duplicate of `## Description` (which states what the skill does) and NOT a duplicate of `## Related Skills` (a flat list of adjacents). It is the **justification for atomicity + the upstream/downstream wiring statement**.
+
+#### Purpose by skill role
+
+- **Base skill** (owns a generic primitive consumed by others): Composition Rationale explains why the primitive was extracted as its own skill (typically: "multiple composers reuse it; inlining would split the SSOT") and names the known composer(s) that depend on its public contract. It MUST link to each composer.
+- **Composer skill** (calls one or more base skills via their public CLI / section contracts): Composition Rationale names every base skill it composes, the EXACT mechanism of composition (which script / section / CLI flag), and the domain-specific value the composer adds on top of the bases. It MUST link to each base.
+- **Standalone skill** (neither base nor composer): a one-paragraph statement of why the procedure is atomic and self-contained. Short. No table.
+
+#### How a composer's Composition Rationale differs from a base's
+
+| Aspect | Base skill | Composer skill |
+|---|---|---|
+| Direction of wiring | Downstream (lists who depends on me) | Upstream (lists what I depend on) |
+| Mandatory link targets | Every known composer | Every base skill composed |
+| Typical mechanism phrasing | "Composers shell out to `scripts/<base>.sh` and consume its stdout JSON contract" | "Pipes `<input-discovery-output>` into `<base>/scripts/<x>` via `$(dirname "$0")/../../<base>/scripts/<x>`" |
+| What it justifies | Why the primitive was extracted (SSOT) | Why the composer adds value beyond the base (domain knowledge, multi-base orchestration) |
+| Failure mode if missing | Composers re-implement the primitive (inline-duplication) | Base is invoked redundantly or the wrong base is chosen |
+
+#### Quick decision rule (which section does a cross-skill link belong in?)
+
+```
+Is the OTHER skill INVOKED by this skill (script call / CLI / hard contract dep)?
+├── YES → ## Composition Rationale (and the base lists me back under ## Composition by Higher-Level Skills)
+└── NO  → Is it topic-adjacent (same domain area but no invocation)?
+          ├── YES → ## Related Skills (one-line bullet, no mechanism prose)
+          └── NO  → Do NOT link it. Topic vagueness is not a reason to cross-link.
+```
+
+#### Example: a composer's Composition Rationale (maximum-detail template)
+
+For a hypothetical `git-submodule-selective-init-no-lfs` skill that composes two bases — `git-submodule-selective-init` (the generic selective-init primitive) and `git-lfs-skip-smudge-env` (sets `GIT_LFS_SKIP_SMUDGE=1` in a scoped subshell) — the Composition Rationale would read:
+
+```markdown
+## Composition Rationale
+
+This skill is a composer: it does NOT re-implement selective submodule init logic, nor does it re-implement the LFS skip-smudge environment manipulation. It orchestrates two atomic base skills:
+
+1. **[`git-lfs-skip-smudge-env`](../git-lfs-skip-smudge-env/SKILL.md)** — invoked FIRST. The composer sources its `scripts/enter-skip-smudge.sh` via `source "$(dirname "$0")/../../git-lfs-skip-smudge-env/scripts/enter-skip-smudge.sh"` to export `GIT_LFS_SKIP_SMUDGE=1` for the current shell. This ensures any subsequent `git submodule update` invocation will fetch submodule trees without triggering LFS smudge filters (saves bandwidth + disk on repos with multi-GB LFS objects the caller does not need).
+2. **[`git-submodule-selective-init`](../git-submodule-selective-init/SKILL.md)** — invoked SECOND. The composer shells out to its `scripts/init-selected-submodules.sh <path-glob>...` passing the user-supplied submodule path globs. The base script's stdout (one initialized submodule path per line) is consumed by this composer to confirm the selection matched and to surface progress.
+
+The composer's domain-specific value-add over either base alone: a single CLI surface that guarantees the LFS-skip environment is active BEFORE the submodule update runs (ordering is critical — setting the env after the update is a no-op). Inlining either base would duplicate logic that other composers (`git-submodule-selective-init-shallow`, `git-lfs-mirror-skip-blobs`) also consume.
+
+Bidirectional discoverability: both bases list this composer in their respective `## Composition by Higher-Level Skills` tables.
+```
+
+And the corresponding base-side entry (on `git-submodule-selective-init/SKILL.md`):
+
+```markdown
+## Composition by Higher-Level Skills
+
+| Composer | Composition Mechanism |
+|---|---|
+| [`git-submodule-selective-init-no-lfs`](../git-submodule-selective-init-no-lfs/SKILL.md) | Calls `scripts/init-selected-submodules.sh <glob>...` AFTER sourcing `git-lfs-skip-smudge-env`'s env-setter; consumes the one-path-per-line stdout to surface progress to the user. |
+| [`git-submodule-selective-init-shallow`](../git-submodule-selective-init-shallow/SKILL.md) | Calls `scripts/init-selected-submodules.sh <glob>...` with `GIT_SUBMODULE_DEPTH=1` pre-exported; relies on the base's exit code only (does not parse stdout). |
+```
+
+Note how each composer-table row names the EXACT script invoked, the input contract, the output contract consumed, and any ordering / env constraints. Generic descriptions like "uses selective init for the no-LFS variant" are FORBIDDEN per §5.2.1.
+
+(Persisted as `permanent_discipline.composition-rationale-section-discipline`.)
+
+### 5.3 Subsection Insertion Position
+
+When adding a new numbered subsection (e.g., `### 4.7`, `#### 3b`) to an existing skill, insert it at the **correct logical position by section number** — between the existing predecessor and successor — **never append at file end**.
+
+The default `cat >> file <<EOF` heredoc pattern is fast but appends at end-of-file; for mid-file insertions use Python `pathlib.Path.read_text() / write_text()` with a string-anchor replacement instead:
+
+```python
+import pathlib
+p = pathlib.Path("path/to/SKILL.md")
+s = p.read_text(encoding="utf-8")
+target = "\n***\n\n## 5. Next Section"   # the successor
+new_block = "\n### 4.7 New Subsection\n\nBody…\n\n***\n"
+p.write_text(s.replace(target, new_block + "\n## 5. Next Section", 1), encoding="utf-8")
+```
+
+**Verification step** (mandatory before declaring the insert done):
+
+```bash
+grep -n '^##\|^### [0-9]' path/to/SKILL.md
+```
+
+Read the output and confirm that within each parent section the numbering is **monotone** (4.1, 4.2, …, 4.7, then ## 5.). A subsection that appears after the parent's terminator (`## 5.`, `## 6.`) is misplaced — relocate it.
+
+(Persisted as `permanent_discipline.insert-subsection-at-logical-position`.)
+
+### 5.4 Numbered-Section Scheme Consistency
+
+When the target document uses a numbered section scheme (`## 1.`, `## 2.`, `## 3.`, …), any new section MUST follow the scheme:
+
+- Number it as the next sequential top-level (`## N.`) — or
+- Demote it to a sub-section of an existing parent (`### N.M`).
+
+NEVER append an unnumbered `## Heading` into a numbered document. Equally: if inserting **between** existing numbered sections, **renumber all successors** in the same edit.
+
+**Front-matter exemption.** Sections that appear BEFORE `## 1.` (typically `## Description`, `## Composition Rationale`, `## Related Skills`, `## Source Rules`) are exempt — those follow the repo's pre-Step-1 convention.
+
+**Verification step** (mandatory before declaring the insert done):
+
+```bash
+grep -n '^##\|^### ' path/to/SKILL.md
+```
+
+Read the output and confirm:
+
+1. Numbering is **monotone** across all `## N.` headings.
+2. Every `### N.M` lives between its parent `## N.` and the next `## (N+1).`.
+3. No unnumbered `## Heading` appears after `## 1.`.
+
+(Persisted as `permanent_discipline.numbered-section-scheme-consistency`.)
+
+### 5.5 Section-Home Discipline (Don't Bloat Tangential Skills)
+
+Before adding a section of more than ~10 lines to an existing skill doc, the author MUST first answer: **"Is this section's topic within this skill's declared scope (Description + Composition Rationale)?"**
+
+Three failure modes have been observed when authors append sections carelessly:
+
+1. **Topic-mismatch bloat**: a large body of guidance is dropped into a skill whose scope it does not belong to, merely because the *task* that surfaced the guidance happened to touch that skill (e.g., adding a multi-paragraph "Bash-Authoring Hygiene" section to [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) just because the author was *using* scratch redirection while authoring bash). PROHIBITED — readers of the host skill encounter off-topic content, and the true SSOT skill never gets the addition.
+2. **Duplicate-SSOT drift**: the guidance is added to skill A even though skill B already owns it. PROHIBITED — future edits diverge between the two copies.
+3. **No-SSOT-yet sprawl**: the guidance is genuinely new and has no owning skill, so the author parks it in the nearest neighbour. PROHIBITED — create a new dedicated skill (via the Factory's normal flow) or extend the most-related EXISTING owner; do not park.
+
+**Acceptance criteria** before adding a section larger than ~10 lines to an existing skill:
+
+- [ ] The section's topic is explicitly named in the host skill's `## Description` OR `## Composition Rationale`. If not → STOP, find/create the correct owner.
+- [ ] No other skill already owns the topic (verify with the `grep` tool on a 2–3 word topic phrase across `.agents/skills/**/SKILL.md`). If another skill owns it → add there; in the host, leave at most a one-line delegation pointer with relative link to the SSOT.
+- [ ] If genuinely new and no owner exists → invoke the Factory's new-skill flow (`## 1. When to Apply`) rather than parking.
+
+**Thin-pointer template** for the host skill when delegating: a single sentence of the form *"For <topic>, see [<owner-skill>](../<owner-skill>/SKILL.md) — that skill is the SSOT."* A one-line pointer is the maximum permitted footprint of a tangential topic on a host skill.
+
+**Historical example**: an earlier authoring session embedded a multi-paragraph Bash-Authoring Hygiene section into [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) because the author was using scratch redirection while writing the bash. The correct home was this skill's §4 (which delegates the freeze catalogue to [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) as the SSOT). The section was later relocated and only the SSOT pointer remained in scratch.
+
+(Persisted as `permanent_discipline.section-home-discipline`.)
+
+### 5.6 Cross-Reference Link Discipline
+
+Every **first-mention** (within a given section / subsection) of any of the following inside a skill doc MUST be rendered as a proper relative markdown link, not as a bare backtick code span:
+
+- A sibling skill folder → `[`<skill-name>`](../<skill-name>/SKILL.md)`
+- A rule doc → `[`<rule-name>.md`](../../../ai-agent-rules/<rule-name>.md)` (path depth adjusts to the host file's location)
+- A memory file → `[`<memory>.md`](../../../memories/repo/<memory>.md)`
+- Any other in-repo path the reader may want to navigate to
+
+Subsequent re-mentions within the same section/subsection MAY use a bare backtick code span (`` `name` ``) for readability — but the FIRST mention sets the navigability anchor for that section.
+
+**Rationale**: a skill doc is read as a hypertext, not a manuscript. A bare `` `repo-scratch-output-capture` `` looks identical to a linked one in the source but is dead text in the rendered view — readers cannot navigate to the referenced skill and authors of inbound links lose discoverability of their target.
+
+**Forbidden patterns** (must be fixed when found):
+
+1. A skill name mentioned in prose as a bare code span when the host skill is not itself the named skill.
+2. A relative path written as `\`../foo/SKILL.md\`` (code span containing a path) without being wrapped as a link.
+3. A `§N` citation that names a foreign skill without linking to that skill's SKILL.md.
+
+**Verification step** (mandatory before declaring a skill-doc edit done):
+
+```bash
+grep -nE '`[a-z][a-z0-9_./-]+`' path/to/SKILL.md
+```
+
+Read every hit and ask: is the backticked token a skill folder, rule doc, memory file, or repo path? If YES and the same line does NOT contain the surrounding `[…](…)` link syntax → convert to a proper relative link. Acceptable bare-code-span backticked tokens: shell commands, code identifiers (function/variable/class names), file extensions, CLI flags, sentinel strings.
+
+(Persisted as `permanent_discipline.cross-reference-link-discipline`.)
+
+### 5.7 Heading Scope Discipline (Choose a Parent That Hosts Siblings)
+
+Before naming a new top-level section (`## N. <Heading>`) in a skill doc, the author MUST ask: *"Is this a single atomic concern, or is it one of multiple related concerns that share a theme?"*
+
+If **multiple related concerns** are foreseeable → choose a parent heading whose scope is **broad enough to host current and future siblings**, and place the immediate concern as a `### N.1` subsection under it. Do NOT promote the first specific concern to top-level — doing so forces later authors to either (a) cram unrelated concerns under a too-narrow heading, or (b) renumber the whole document when a sibling arrives.
+
+**Decision test** (apply before writing the heading):
+
+1. Can you imagine writing one or more sibling `### N.M` sections on the same theme within the next 1–3 authoring sessions? → **YES** → the parent (theme) is the correct top-level; the concern is `### N.1`.
+2. Is this section genuinely atomic and stands alone with no foreseeable siblings on the same theme? → **YES** → a specific top-level is fine.
+3. If unsure → prefer the broader parent. A parent with only one subsection is cheap to maintain; a misplaced top-level is expensive to restructure later (every cross-reference to `§N` breaks under renumbering).
+
+**Forbidden patterns**:
+
+1. **Premature specificity**: making `## N. <Specific Concern>` when 2+ sibling concerns on the same theme are visible at authoring time.
+2. **Retroactive umbrella-stuffing**: when a sibling concern arises later, cramming it under a too-narrow existing top-level instead of restructuring to the correct parent. PROHIBITED — restructure to the correct parent and renumber inbound references per §5.1.
+
+**Historical example**: §5 was originally planned as `## N. Post-Rename Cross-Reference Sweep`. The author noticed that "post-rename sweep" is one of several skill-doc-editing concerns (also: cross-reference append, composition-table membership, subsection insertion, numbered-section consistency, section-home discipline, cross-reference link discipline, heading scope itself). The correct shape was `## 5. Skill-Doc Editing Discipline` with `### 5.1 Post-Rename Cross-Reference Sweep` as one of N subsections — which is what 5.1 through 5.7 now reflects.
+
+(Persisted as `permanent_discipline.heading-scope-discipline`.)
+
+### 5.8 Style-Consistency Discipline (Match the Surrounding Document)
+
+Before adding or editing any block in an existing skill doc, the author MUST sample the surrounding 20–50 lines AND the document's overall conventions, and ensure the new content matches the dominant local pattern across **all** of the following axes:
+
+| Axis | Examples of variants to choose between |
+|---|---|
+| List marker | `-` vs `*` vs `1.` (numbered) |
+| List indentation depth | 2-space vs 4-space continuation |
+| Blank lines around headings | 0, 1, or 2 blank lines above/below `## ` / `### ` |
+| Blank lines between list items | none vs one (compact vs loose lists) |
+| Blank lines around fenced code | always one above + one below vs flush |
+| Bold / italic markers | `**bold**` vs `__bold__`; `*italic*` vs `_italic_` |
+| Code-span vs link for skill/file names | governed by §5.6 (Cross-Reference Link Discipline) |
+| Horizontal-rule pattern | `***` vs `---` vs none; frequency between sections |
+| Step / mandate prefix | `1.`, `**1.**`, `### N.M`, `**Mandate Name**:` |
+| Table header alignment | `:---` vs `---` vs `---:` |
+| Heading capitalization | Title Case vs Sentence case |
+
+**Mandates**:
+
+1. **Sample before write.** Read at least the immediate predecessor + successor sibling sections of the insertion point. Match their dominant style. If conflicting styles already coexist locally, match the nearest sibling at the same nesting depth.
+2. **Do not introduce a second marker style.** If the document uses `-` for bullets throughout, do NOT introduce a `*` bullet block. If parent sections use `**Mandate Name**:` prefix, do NOT introduce a bare numbered list inside a new sibling sub-section.
+3. **Preserve indentation depth.** If continuation lines under a list item use 4 spaces in the surrounding document, the new content's continuation lines MUST also use 4 spaces — not 2.
+4. **Preserve blank-line spacing.** Count blank lines above/below the nearest sibling heading and reproduce the same count for the new heading.
+
+**Verification step** (mandatory before declaring the edit done):
+
+```bash
+git --no-pager diff -U0 path/to/SKILL.md | head -200
+```
+
+Visually scan the diff for style drift vs surrounding lines: do the inserted bullets use the same marker as the file's existing bullets? Same indentation? Same blank-line padding around headings? If any axis drifts → fix in the same edit, not later.
+
+**Historical example**: an insertion of "Script Authoring Mandates" subsections into `skill-factory/SKILL.md` introduced styling that diverged from the surrounding numbered-mandate format (mixed marker styles, inconsistent blank-line padding around headings, and `**Mandate Name**:` prefix used in some siblings but bare numbered list in others). The content was correct; the formatting drift forced a follow-up cleanup edit. The fix would have been free if the §5.8 verification step had been run on the original edit.
+
+(Persisted as `permanent_discipline.style-consistency-discipline`.)

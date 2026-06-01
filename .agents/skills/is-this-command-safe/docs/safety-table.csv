@@ -44,6 +44,7 @@ mkdir,MUTATES,,n/a,"Creates directories. Always mutates filesystem. Use -p for i
 Out-String,SAFE,,n/a,PowerShell formatter — converts pipeline objects to string. Read-only.
 Pop-Location,SAFE,,n/a,PowerShell directory-stack pop. No filesystem mutation.
 Push-Location,SAFE,,n/a,PowerShell directory-stack push. No filesystem mutation.
+pwd,SAFE,,n/a,Prints the current working directory. Shell builtin (also /bin/pwd). Read-only. Optional flags -L (logical) / -P (physical) do not mutate. No path arguments accepted.
 python,SAFE-WITH-QUALIFICATION,,python <trusted-script> --help,"Windows / launcher-installed alias for python3. Same classification: SAFE for read-only scripts, MUTATES for write scripts. See python3 row and cheatsheet python3 section — all rules apply identically. Never auto-approve a generic python .* catch-all."
 python3,SAFE-WITH-QUALIFICATION,,python3 <trusted-script> --help,"SAFE when running known read-only scripts (--help flags, audit/find/coverage scripts). MUTATES when running scripts that write files (edit-entry.py, fix-indents.py, etc.). Always classify by the script being invoked, not the interpreter alone."
 sed,SAFE-WITH-QUALIFICATION,-i; -i '',sed -n 'N,Mp' <file>,"Stream editor. SAFE in print-only forms (sed -n 'N,Mp' file; sed 's/x/y/' to stdout). MUTATES with -i (in-place edit). Always classify by the flag set, never auto-approve generic sed .*."

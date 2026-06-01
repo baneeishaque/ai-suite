@@ -50,6 +50,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `mdls` | ✅ | — | n/a |
 | `mkdir` | ❌ | always mutates | `ls -d <path>` to check existence first |
 | `python3` | ⚠️ | depends on script invoked | hardcode trusted script path in regex |
+| `pwd` | ✅ | — | n/a |
 | `sed` | ⚠️ | `-i` (in-place edit) | print-only: `sed -n 'N,Mp' <file>` |
 | `sort` | 🟡 | `-o <file>` (writes sorted output, may clobber) | `sort <file>` alone (stdout) |
 | `tail` | ✅ | — | n/a |
@@ -352,6 +353,13 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Verdict**: ✅ SAFE — Lists open files, sockets, and PIDs. Read-only.
 - **Note**: `lsof` may require `sudo` to see processes owned by other users; `sudo` itself does
   not change the safety tier of `lsof`.
+
+### `pwd`
+
+- **Verdict**: ✅ SAFE — Prints the current working directory. Shell builtin (also `/bin/pwd`). Read-only; no filesystem mutation.
+- **Flags**: `-L` (logical, default — honors `$PWD` / symlinks) and `-P` (physical — resolves symlinks). Neither mutates state.
+- **Arguments**: `pwd` accepts no path arguments.
+- **Suggested regex**: `/^pwd( -[LP])?$/` (no arg slot beyond the optional flag).
 
 ***
 

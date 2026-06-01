@@ -48,15 +48,26 @@
    checklist, and the post-freeze recovery protocol — collected across
    reminders §1–§4 above and reified as one skill — are owned by
    [`.agents/skills/ide-renderer-freeze-prevention/SKILL.md`](.agents/skills/ide-renderer-freeze-prevention/SKILL.md).
-5. **Prefer scripts over prose instructions.** Scripts are more deterministic
-    than rules, skills, or sub-agent prompts. When designing or refactoring a
-    skill/rule/sub-agent, decompose its procedure: every deterministic step
-    (parse, transform, validate, file-mutate) MUST live in an executable
-    script under the skill's `scripts/` directory; prose retains only
-    judgement, branching, and human-gates. Before writing ad-hoc inline
-    Python/Bash for a recurring task, search for an existing script first.
+5. **Prefer scripts over prose instructions — both when authoring AND when
+    consuming a skill.** Scripts are more deterministic than rules, skills,
+    or sub-agent prompts.
+    *Authoring side*: when designing or refactoring a skill/rule/sub-agent,
+    decompose its procedure — every deterministic step (parse, transform,
+    validate, file-mutate) MUST live in an executable script under the
+    skill's `scripts/` directory; prose retains only judgement, branching,
+    and human-gates.
+    *Consumer side* (fires on EVERY skill invocation): before executing any
+    deterministic step described in a skill's prose, FIRST list that skill's
+    `scripts/` directory (`ls <skill-dir>/scripts/` or the in-process `glob`
+    tool) and invoke the matching script — do NOT re-derive the logic
+    ad-hoc from the prose. Re-typing a multi-step recipe inline when the
+    skill ships a script for it is a violation even when the inline output
+    is correct, because it bypasses the script's idempotency checks,
+    env-var validation, and SSOT updates. Fall through to manual recipe
+    only if no script matches the step.
     See
-    [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md).
+    [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md)
+    `## Consumer Discipline — Always Invoke, Never Re-derive`.
 6. **Do NOT probe into heavy-filewatcher symlinked trees; address files
    by exact path.** Walking a directory that fans out into symlinked
    private-config / cloud-sync / IDE-indexed subtrees (specifically

@@ -191,6 +191,53 @@ to invocation + fallback-for-audit.
 | Removing the manual fallback entirely | Bootstrap and audit need it; preserve as labelled fallback. |
 | Bulk "convert everything" sweep | High churn, low context. Refactor opportunistically per session. |
 
+
+## Consumer Discipline — Always Invoke, Never Re-derive
+
+The script-first decomposition has TWO sides, and both MUST be honoured for the discipline to deliver determinism:
+
+1. **Authoring side** (covered by `## Mandatory Categories`, `## Step-by-Step Procedure`, and `## Anti-Patterns to Reject` above): extract every Tier-A step into an executable script under `scripts/`.
+2. **Consumer side** (this section): when an agent later EXECUTES a skill, it MUST invoke the existing script — not re-derive the Tier-A logic ad-hoc from the surrounding prose.
+
+Re-derivation defeats the purpose of authoring the script. The prose around a script call is Tier-B/C only (judgement, branching, human-gates); the Tier-A mechanics live in `scripts/<x>` and are kept correct THERE.
+
+### Consumer Pre-Flight (Mandatory)
+
+Before executing any deterministic step described in a skill's prose, the consumer agent MUST:
+
+1. **List the skill's scripts directory**:
+
+    ```bash
+    ls <skill-dir>/scripts/ 2>/dev/null
+    ```
+
+    (Use the in-process `glob` tool with `pattern: "scripts/**"` and `paths: "<skill-dir>"` as a §3 Pattern 2-safe alternative to bash `find`.)
+
+2. **Match the prose step to a script.** Scan filenames + the top docstring/header of each candidate. If the skill's prose says *"register the skill in `agentskills.io/library.json`"*, look for `scripts/register-skill.*`, `scripts/agent-registration.*`, etc.
+
+3. **Invoke the script**, not the prose. Use the documented contract (env vars, positional args, flags). Read the script's `--help` if its CLI surface is non-obvious. The agent's tool transcript MUST contain at least one literal invocation of the script for any Tier-A step that has one.
+
+4. **Fall through to manual recipe only if NO script exists.** If `scripts/` is empty or no script matches the step, the prose recipe is the authoritative fallback (Tier B / C). Do NOT skip the pre-flight just because manual recipes are familiar.
+
+### Forbidden Consumer Patterns
+
+| Anti-pattern | Why bad |
+|---|---|
+| Re-typing a multi-step bash recipe inline when `scripts/<x>.sh` encodes the same recipe | Drift between consumer invocations and the script's evolving canonical form; the script's edge-case handling is bypassed. |
+| Re-typing a Python loop / parser inline when `scripts/<x>.py` already does it | Same drift risk; parsing edge cases (encoding, BOM, line-ending) the script handles get reintroduced as bugs. |
+| Reading the prose for "the algorithm" when a script encodes it | Prose around a Tier-A step is intentionally not the algorithm — it's the rationale + Tier-B branching. The algorithm is the script. |
+| Skipping the `ls scripts/` pre-flight because the agent "remembers from a previous session that there's no script" | Skills evolve; scripts get added between sessions. Always probe fresh. |
+
+### Verification
+
+When reporting a skill execution done, the agent's tool transcript MUST show at least one invocation of each Tier-A step's owning script (or an explicit note that no script exists for that step and the manual fallback was used). If the transcript shows only inline bash/Python re-deriving the logic, the §3 (Mandatory Categories) contract has been violated at consumer time even if the authoring side was correct.
+
+### Historical Example — Skill-Factory Agent Registration
+
+The [`skill-factory`](../skill-factory/SKILL.md) skill ships dedicated registration scripts under `scripts/` for the agent-registration step (adding the new skill to the agent's discoverable index). An earlier consumer session executed the registration step by re-typing the registration commands inline from the prose rather than invoking the script — even though the prose explicitly pointed at the script. The output was correct but bypassed the script's idempotency check, env-var validation, and SSOT updates. The fix was free if the pre-flight (`ls .agents/skills/skill-factory/scripts/`) had been run before executing the step.
+
+(Persisted as `permanent_discipline.consumer-always-invoke-never-rederive`.)
+
 ## Worked Example — MCP Consumer Symlink Deployment
 
 The

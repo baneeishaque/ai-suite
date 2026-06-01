@@ -56,19 +56,22 @@ Invoke this skill when:
 The target file (`vscode-insiders-configuration/visual-studio-code-user-settings/settings.json`)
 is written by VS Code itself and managed by the
 [`vscode-user-settings-symlink`](../vscode-user-settings-symlink/SKILL.md) skill. The canonical
-indentation convention for this file is:
+indentation convention for this file is **plain 4-space-per-level JSON throughout** — no
+per-key overrides.
 
 | Depth | Spaces | Content |
 | :--- | :--- | :--- |
-| 1 | 2  | Top-level keys (`"chat.tools.terminal.autoApprove": { ... }`) |
-| 2 | 4  | Per-entry regex keys inside the `autoApprove` object |
-| 2 | 6  | Values inside `files.associations` (override — §5.1 of indent-override skill) |
-| 3 | 8  | `approve` / `matchCommandLine` sub-keys (override — §5.2 of indent-override skill) |
+| 1 | 4  | Top-level keys (`"chat.tools.terminal.autoApprove": { ... }`) |
+| 2 | 8  | Per-entry regex keys inside the `autoApprove` object; values inside `files.associations` |
+| 3 | 12 | `approve` / `matchCommandLine` sub-keys |
 
-The 2-space convention comes from `promote.py` (default `indent=2`). The per-key overrides
-are **deliberate** — applied once via
-[`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md) to improve
-readability of dense nested blocks.
+This is exactly `json.dumps(data, indent=4, ensure_ascii=False)`.
+
+> **History (May 2026 onward):** earlier revisions of this contract used a 2-space base with
+> deliberate +2 / +4 overrides on `files.associations` values and `approve` /
+> `matchCommandLine` sub-keys, applied via
+> [`vscode-settings-indent-override`](../vscode-settings-indent-override/SKILL.md). That
+> override layer is **retired**. The flat 4-space form supersedes it.
 
 **After any edit that rewrites the file**, run the canonical one-shot fix:
 
@@ -77,15 +80,16 @@ python3 .agents/skills/vscode-terminal-autoapprove-audit/scripts/fix-indents.py 
   --settings <path/to/settings.json>
 ```
 
-This script applies both overrides atomically (approve/matchCommandLine → 8sp;
-files.associations values → 6sp) and validates JSON before writing.
+This script loads the JSON and rewrites it with `indent=4` (validating along the way). It is
+a no-op when the file is already canonical.
 
 Use `--dry-run` to preview changes without writing.
 
 > **Script indent behaviour:**
-> - `edit-entry.py` writes `indent=2` → run `fix-indents.py` afterwards (Step 2 only needed)
-> - `audit-autoapprove.py` uses raw regex surgery (no json.dump) — but its drop pattern is
->   calibrated to 4-space and **breaks after the file is reformatted to 2-space**. Prefer
+> - `edit-entry.py` writes `indent=2` → run `fix-indents.py` afterwards to renormalize.
+> - `audit-autoapprove.py` uses raw regex surgery (no json.dump); its drop pattern was
+>   calibrated to the legacy 4-space autoApprove-key form, which coincidentally matches the
+>   new flat 4-space convention at depth 1 but NOT at depth 2 (now 8sp). Prefer
 >   `edit-entry.py --delete` or `--delete-grep` for all single-entry drops.
 
 ***

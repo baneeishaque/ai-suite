@@ -25,7 +25,7 @@ Before execution, the agent MUST verify each tool. Missing tools MUST be install
 
 - **git**: Submodule introspection.
     - Check: `which git && git --version`
-- **curl**: Upstream reachability and authenticated GitHub API queries. The `curl` invocations in §2 follow the
+- **curl**: Upstream reachability and authenticated GitHub API queries. The `curl` invocations in §3 and §4 follow the
   same canonical pattern documented in [GitHub REST API Fallback](../github-rest-api-fallback/SKILL.md) §2.4
   (mandatory `User-Agent` header, `-fsSL` flags, PAT via `$GITHUB_TOKEN` env var) — that skill is the SSOT for
   GitHub REST invocations and SHOULD be consulted when adapting any call here.
@@ -229,7 +229,49 @@ The agent MUST present the verdict to the user using this exact structure (markd
 
 ***
 
-## 8. Related Skills
+## 8. Upstream History Rewrite (Force-Push Recovery Mode)
+
+A different failure mode from a dead URL: the remote responds, the URL is valid, but the pinned SHA is **not reachable** from any current branch on the remote — the upstream did a `push --force` that rewrote history out from under the pin.
+
+**Trigger fingerprint**:
+
+**Necessary signals (all three MUST hold):**
+
+1. The remote is reachable (`git ls-remote <url>` succeeds).
+2. `git -C <submodule> fetch origin` succeeds.
+3. `git -C <submodule> merge-base --is-ancestor <pinned-sha> origin/<default>` returns **non-zero** — pinned SHA is not in the new default-branch history.
+
+When all three hold, you are looking at a force-rewrite (or a deleted-branch case), not a dead URL.
+
+**Confidence amplifier (optional, raises probability when present):**
+
+4. The remote shows a sibling branch named `origin/old-<default>`, `origin/<default>-old`, `origin/<default>-backup`, `origin/<default>-bak`, or a date-stamped variant — the upstream's own backup of the pre-rewrite tip. The upstream may or may not have kept such a backup; when it IS present, the force-rewrite hypothesis is near-certain AND the orphaned commits are likely recoverable (see [`git-submodule-missing-revision-recovery`](../git-submodule-missing-revision-recovery/SKILL.md)). Absence does NOT rule out a force-rewrite — it just means the upstream rewrote without preserving the old tip, and recovery from your own local clone or a third-party fork becomes the only path.
+
+    **Probe command for signal 4** — run from inside the submodule working tree (or via `git -C <submodule>`):
+
+    ```bash
+    PAGER=cat git ls-remote origin \
+        'refs/heads/*old*' \
+        'refs/heads/*backup*' \
+        'refs/heads/*bak*'
+    ```
+
+    - **One or more refs printed** ⇒ a backup branch is present; record each `<sha>  refs/heads/<name>` pair and feed it into the §8.1 remediation matrix.
+    - **No output** ⇒ no backup branch matching the common naming patterns; treat signal 4 as **absent** (the necessary signals 1–3 alone still establish force-rewrite).
+    - **Note**: The globs are case-sensitive against remote ref names. If the upstream uses unusual casing (e.g., `BACKUP`, `OLD`) or a non-English term, broaden the patterns or fall back to plain `PAGER=cat git ls-remote origin` and grep visually.
+
+**Diagnostic only — remediation is out of scope for this skill version.**
+
+The user has multiple options (fork-and-retarget, bump pin, cherry-pick orphaned commits, etc.) and the choice depends on whether your repo's orphaned commits carry unique work. Surface the diagnosis to the author and stop.
+
+**Related skills for downstream remediation when the author decides**:
+
+- [`git-submodule-fork-reconfigure`](../git-submodule-fork-reconfigure/SKILL.md) — if the choice is fork-and-retarget.
+- [`git-submodule-missing-revision-recovery`](../git-submodule-missing-revision-recovery/SKILL.md) — if the choice is to recover the orphaned SHA from a backup branch.
+
+***
+
+## 9. Related Skills
 
 - **Removal Engine** (post-verdict): [`git-submodule-removal`](../git-submodule-removal/SKILL.md)
 - **Re-point Engine** (post-verdict): [`git-submodule-fork-reconfigure`](../git-submodule-fork-reconfigure/SKILL.md)
@@ -238,7 +280,7 @@ The agent MUST present the verdict to the user using this exact structure (markd
 - **Tool Bootstrap**: [`system-wide-tool-management`](../system-wide-tool-management/SKILL.md)
 - **Parent Rules**: [`ai-agent-rules/git-submodule-rules.md`](../../../ai-agent-rules/git-submodule-rules.md)
 
-## Composition by Higher-Level Skills
+### 9.1 Composition by Higher-Level Skills
 
 | Composer | Role | Reuses From This Skill |
 | :--- | :--- | :--- |
@@ -247,7 +289,7 @@ The agent MUST present the verdict to the user using this exact structure (markd
 
 ***
 
-## 9. Traceability
+## 10. Traceability
 
 - **Generated via**: [`skill-factory`](../skill-factory/SKILL.md)
 - **Origin Conversation**: Audit of the dead `sammcgrail/seb` submodule in `lab-data/ai-suite` (`9 May 2026`).

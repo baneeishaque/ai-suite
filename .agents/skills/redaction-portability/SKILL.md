@@ -225,6 +225,7 @@ treatment differs per tier.
 | Vendor product codename (internal) | unreleased project names, NDA codenames | `<product-codename>` |
 | Customer / client name | external customer names | `<customer>` |
 | License key / dongle ID | opaque license strings | `<license-key>` |
+| **Public-but-not-universal identifier** — a real GitHub owner / repo / submodule / branch / SHA that *is* publicly visible but is **specific to one user's workflow trace**, not the skill's general subject matter | `baneeishaque/ai-suite`, submodule `ai-agent-rules`, branch `master`, `<sha>` in a Source Recipe / case study / example | `<ORG-USER>/<REPO>`, `<SUBMODULE>`, `<DEFAULT-BRANCH>`, `<SHA-...>` (see §2) |
 
 ### Tier C — Public / Universal (keep verbatim)
 
@@ -244,6 +245,54 @@ These are universally true; redacting them harms reproducibility:
 The rule of thumb: **if a competent reader on a different machine /
 different organization would benefit from the literal string, keep it.
 Otherwise, redact.**
+
+### Tier B Rationale — Redaction Is for Portability, Not Secrecy
+
+A frequent objection: *"Both the repo and the submodule are public on
+GitHub — anyone can `git clone` them. Why redact the names?"*
+
+Redaction in Tier B is **not** a confidentiality control. The repo names,
+owner handles, submodule names, branch names, and SHAs may all be world-
+readable on GitHub. They are redacted for two **portability** reasons:
+
+1. **A skill is a reusable recipe, not a trip report.** When §6 (Source
+   Recipe) reads *"Clone `<ORG-USER>/<REPO>`, init submodule `<SUBMODULE>`,
+   observe `<SHA-URL-SWAP>` …"*, a different author with
+   `acme-corp/their-monorepo` containing a `vendor-libs` submodule can
+   map every placeholder to their situation in one pass. With literal
+   names baked in (`baneeishaque/ai-suite` + `ai-agent-rules`), every
+   reader must mentally translate before they can apply the skill — and
+   readers who don't notice the literal-vs-template distinction will
+   wrongly conclude the skill only applies to that specific repo.
+
+2. **Skills get copied / forked across repositories.** The whole point of
+   a shared skill library (public `ai-agents`, org-private
+   `<corp>_ai_agents`) is that a useful skill migrates outward. A literal
+   `baneeishaque/ai-suite` in a skill that ends up cloned into another
+   user's repo reads as confusing noise — *"why is this skill talking
+   about a repo I've never heard of?"* — and obscures the skill's
+   actual subject matter.
+
+**Where the literals legitimately live** (and MUST NOT be scrubbed from):
+
+- **Session checkpoints** (`~/.copilot/session-state/<id>/checkpoints/*.md`,
+  `plan.md`, `scratch/*`) — private to the author's machine; full literal
+  trace is needed to resume the original work.
+- **Git commit messages and PR descriptions** on the actual workflow —
+  these naturally carry real SHAs, branch names, and ticket IDs because
+  they ARE the trip report.
+- **Bug reports / support tickets** that reference the literal occurrence.
+
+The skill file itself stays portable; the literal trace lives in the
+private workspace artifacts that document *this one application* of the
+skill.
+
+**Test the redaction.** Before declaring a skill done, read its §6 (or
+any case-study section) and ask: *"Could a developer at a different
+organization, working on a different repo with a different submodule,
+follow this recipe step-by-step by substituting their own values for the
+placeholders?"* If any literal name forces the reader to think *"this
+recipe is really about that other repo, not mine"* — redact it.
 
 ---
 
@@ -547,6 +596,23 @@ Get-ChildItem 'C:\Users\<user>\.m2\repository'   # ❌ leaky
 ```
 
 Likewise `~` in POSIX shells.
+
+### 7.5 Pedagogical Carve-Out — Examples That Teach Redaction
+
+A skill (or rationale subsection) whose **subject IS the redaction rule itself** MAY quote literal Tier B values, provided two conditions hold:
+
+1. The literal exists to **teach the reader what to redact** — i.e., it appears as the "before" side of a before/after comparison, inside an example table, or as the concrete instance the surrounding prose is reasoning about. Using a placeholder would be circular ("we replace `<ORG-USER>` with `<ORG-USER>`") and would defeat the explanatory purpose.
+2. The surrounding prose **marks the literal as an example-to-be-redacted** — typically via "e.g.", an example column in a table, a `❌ leaky` annotation, or framing such as *"Forbidden in a public-scope file: `<corp>`"*.
+
+Examples of the carve-out applied in this very skill:
+
+- §1 Tier B table: `C:\Users\<user>\…`, `/home/<user>/…` shown literally in the **"Examples"** column.
+- §1 Tier B Rationale: `baneeishaque/ai-suite` and `ai-agent-rules` quoted inside a *"Why these would be redacted"* discussion.
+- §7.4 above: `'C:\Users\<user>\.m2\repository'  # ❌ leaky` shown to teach the contrast with `$env:USERPROFILE`.
+
+**Boundary**: the carve-out covers **didactic** literals. It does NOT cover Source Recipe sections, case-study walkthroughs, traceability entries, or commit citations — those are operational content, not teaching content, and MUST use placeholders per §1–§5.
+
+**Self-test before invoking the carve-out**: *"If I replaced this literal with `<PLACEHOLDER>`, would the surrounding sentence still make its teaching point?"* If yes → use the placeholder; the carve-out does NOT apply. If no (the sentence becomes circular or vacuous) → the carve-out applies and the literal stays.
 
 ---
 

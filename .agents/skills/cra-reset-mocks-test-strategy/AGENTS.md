@@ -21,5 +21,7 @@ actionable.
 
 ## Cross-References
 
+- [`mrt-component-test-strategy`](../mrt-component-test-strategy/SKILL.md) — MRT-specific composer that depends on this
+base skill's patterns
 - [`skill-factory`](../skill-factory/SKILL.md) — Protocol used to create this skill
 - [`python-script-generation`](../python-script-generation/SKILL.md) — Script language selection guidance

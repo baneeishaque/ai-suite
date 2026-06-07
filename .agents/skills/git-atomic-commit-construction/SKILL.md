@@ -546,6 +546,36 @@ string joins often fail to register). Preferred workaround:
   works, then use `git checkout -- <file>` to discard whatever noise
   remains unstaged.
 
+#### 3g — Post-Edit Indent Verification & Repair
+
+Markdown edits can silently shift continuation-line indent on unrelated
+lines near the edit site (common when tools re-emit fenced blocks or
+when an edit operation touches adjacent lines). A `git diff` that shows
+the correct content at the wrong indent is incomplete — staging it
+propagates whitespace drift into the commit.
+
+**Discovery:** read the current file, split into lines, print `repr` for
+each line, and inspect only the **unmodified surrounding siblings** to
+find the correct continuation indent. Example:
+
+```python
+import pathlib
+path = pathlib.Path(".agents/skills/foo/SKILL.md")
+for i, line in enumerate(path.read_text().splitlines(), start=1):
+    print(f"{i:4d}: {line!r}")
+```
+
+**Repair:** once the correct indent is known (see the unmodified siblings),
+write only the drifted lines back with the correct leading spaces using
+`pathlib.Path.write_text()`. Do **not** re-open the whole file in an
+editor — that risks re-introducing drift.
+
+**Acceptance criterion:** re-run the `repr` scan; every line in the
+affected region must agree on the same continuation indent before
+`git add` is run.
+
+See also: Common Pitfalls — `Indent drift after markdown edit silently staged`.
+
 #### 3g — IDE Artifact Bulk Discard
 
 IDE tooling (VS Code Java Language Server, Eclipse, IntelliJ) often
@@ -1177,3 +1207,4 @@ The agent is **BLOCKED** from:
 | IDE auto-modified 50+ `.project` / `.classpath` files with boilerplate | Present suspected noise to user with sample diff and proposed discard command; never auto-discard — project may intentionally track IDE metadata |
 | Bulk-deleted `.settings/` directory and a tracked file disappeared | Use `git ls-files .settings/` to identify tracked files first; remove only specific untracked files, never the whole directory |
 | Assumed Maven nature/builder in `.project` came from `vscjava.vscode-maven` | The `.project` modifications come from **JDT Language Server** (embedded m2e), not the Maven UI extension; attribute correctly when presenting to user |
+| Indent drift after markdown edit silently staged | Discover correct indent via `pathlib.Path.read_text().splitlines()` `repr` scan of unmodified siblings; repair with a targeted Python `write_text`; re-verify before `git add` — do not stage drifted whitespace. See `§3g`. |

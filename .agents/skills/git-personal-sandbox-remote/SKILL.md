@@ -86,6 +86,7 @@ without re-implementing them:
 | [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md) §3c | This skill owns sandbox creation, dual-remote setup, and push hygiene; the decommission composer adds the **rebuild-on-merge-base** fallback when the sandbox already contains the parallel branch's history from an earlier broad `--all` push. |
 | [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md) | This skill owns the dual-remote contract; the restack composer keeps the sandbox stacked on top of a moving team branch via `rebase --onto` and a six-axis equality audit before the gated `--force-with-lease` push. |
 | [`git-personal-content-extraction`](../git-personal-content-extraction/SKILL.md) | **Prerequisite** for the extraction composer: the `personal` remote and `personal/sandbox` branch created by THIS skill are where the extracted personal commits are slot-inserted (at their original chronological position) at the end of each purification round. |
+| [`git-personal-team-branch-workflow`](../git-personal-team-branch-workflow/SKILL.md) | **Prerequisite** for the proactive session-discipline composer — this skill owns the dual-remote setup (`personal` remote + `personal/<purpose>` branch) and guardrails that the team-branch-workflow skill assumes are already in place before the session workflow begins. |
 
 ---
 

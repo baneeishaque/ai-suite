@@ -268,6 +268,12 @@ The diagnostic script exit code is:
 
 ***
 
+## Composition by Higher-Level Skills
+
+| Composer | Composition Mechanism |
+| --- | --- |
+| [`mrt-component-test-strategy`](../mrt-component-test-strategy/SKILL.md) | Calls §2 (Solution Patterns) for all mock survival patterns in `jest.mock` factories for `material-react-table` and related modules. The composer's domain-specific value-add is MRT-specific mock boilerplate and options capture. |
+
 ## Related Skills
 
 - [`skill-factory`](../skill-factory/SKILL.md) — Protocol for creating new skills (this skill was created by it)

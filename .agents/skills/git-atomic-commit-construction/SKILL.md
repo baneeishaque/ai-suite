@@ -403,6 +403,21 @@ Three viable techniques, in order of preference:
        --exclude "../Y/SKILL.md"
    ```
 
+   When the deferred row belongs to a larger block (section header + table +
+   trailing blank), append **`--blank-context 1`** to also strip the contiguous
+   blank line after each match so no orphaned section header remains in the
+   staged blob:
+
+   ```bash
+   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+       --file .agents/skills/cra-reset-mocks-test-strategy/SKILL.md \
+       --exclude "## Composition" \
+       --exclude "Composition Mechanism" \
+       --exclude "mrt-component-test-strategy" \
+       --exclude "--- | ---" \
+       --blank-context 1
+   ```
+
 2. **Temporary edit + restore** (when the script is unavailable): edit the file to
    remove the deferred row, `git add` it, commit B, then re-insert the row in the
    working tree for commit C. Higher risk of forgetting the restore step; use only

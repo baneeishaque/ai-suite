@@ -19,9 +19,12 @@ Mechanism
 ---------
 1. Reads the CURRENT WORKING-TREE version of `<file>`.
 2. Removes every line whose content matches any --exclude pattern.
-3. Writes the result as a new blob via `git hash-object -w`.
-4. Updates the index entry for `<file>` via `git update-index --cacheinfo`.
-5. Working tree is never modified.
+3. Optionally expands each match forward to include up to N contiguous blank
+   lines immediately after it (--blank-context N), so entire markdown blocks
+   (section header + table + surrounding blanks) can be deferred as a unit.
+4. Writes the result as a new blob via `git hash-object -w`.
+5. Updates the index entry for `<file>` via `git update-index --cacheinfo`.
+6. Working tree is never modified.
 
 Result: `<file>` is staged with the deferred lines removed. All other
 working-tree changes to `<file>` are staged as-is. The deferred lines
@@ -112,6 +115,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Show matched lines; do not stage.")
     parser.add_argument("--allow-empty-match", action="store_true",
                         help="Do not error if zero lines matched.")
+    parser.add_argument("--blank-context", type=int, default=0, metavar="N",
+                        help="Also exclude up to N contiguous blank lines immediately before/after each matched line (default: 0).")
     args = parser.parse_args()
 
     if not args.exclude and not args.exclude_regex:
@@ -136,12 +141,27 @@ def main():
 
     regexes = [re.compile(p) for p in args.exclude_regex]
     substrings = list(args.exclude)
+    blank_context = int(getattr(args, "blank_context", 0) or 0)
+
+    matched_indices = []
+    for idx, line in enumerate(lines):
+        hit = any(s in line for s in substrings) or any(rx.search(line) for rx in regexes)
+        if hit:
+            matched_indices.append(idx)
+
+    if matched_indices and blank_context:
+        expanded = set(matched_indices)
+        for i in list(matched_indices):
+            for d in range(1, blank_context + 1):
+                after = i + d
+                if after < len(lines) and lines[after] == "":
+                    expanded.add(after)
+        matched_indices = sorted(expanded)
 
     kept = []
     removed = []
     for idx, line in enumerate(lines, start=1):
-        hit = any(s in line for s in substrings) or any(rx.search(line) for rx in regexes)
-        if hit:
+        if idx - 1 in matched_indices:
             removed.append((idx, line))
         else:
             kept.append(line)

@@ -308,13 +308,16 @@ Every skill generated via the Factory MUST automatically undergo the final verif
   (e.g., redacting `Apache Commons`, `Eclipse`, `Maven Central`) are both audit failures per Redaction §10.
 - **Contextual Hosting**: Documentation (logs, artifacts) MUST reside in the component's `docs/` folder.
 - **Fidelity Check**: Verify that no technical details from the source conversation were summarized or lost.
-- **Markdown Audit**: Run the **Markdown Generation** protocol to ensure 100% lint compliance. The agent MUST re-read
+- **Markdown Audit**: Run the **[Markdown Generation](../markdown-generation/SKILL.md)**
+  protocol to ensure 100% lint compliance. The agent MUST re-read
   every generated/edited markdown file and fix any stray tool-output tags (`</content>`, `<parameter ...>`), duplicated
   lines, broken or multi-line links, unclosed fences, and embedded absolute paths BEFORE presenting the artifact.
   Linting MUST be performed by invoking the **`markdownlint-cli2`** binary directly
   (e.g., `markdownlint-cli2 --fix <path>` then `markdownlint-cli2 <path>`); using `npx markdownlint-cli2` is
   **FORBIDDEN** per
   **[Markdown Generation Rules §5](../../../ai-agent-rules/markdown-generation-rules.md#5-validation-rules-markdownlint-cli2)**.
+  Recommended fix-script execution order is documented in
+  **[Markdown Generation §3.1](../markdown-generation/SKILL.md#31-execution-order)**.
 - **Bridge Audit**: Confirm `<skill-dir>/AGENTS.md` exists, carries NO YAML frontmatter (no leading `---` block), contains the five required sections from §2.3.2 (`# <Skill> — Companion Bridge` / `## Purpose` / `## When This Skill Applies` / `## Operational Procedure` / `## Cross-References`), and is within the 40–120 line size guidance from §2.3.5. A skill with no bridge file is INCOMPLETE.
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows

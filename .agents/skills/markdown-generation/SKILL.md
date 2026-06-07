@@ -167,6 +167,14 @@ re-introducing lint errors:
 6. `fix-list-style.py`
 7. `fix-heading-spacing.py`
 
+> **Indent drift after editing / lint-fix.** After running the §3.1 pipeline,
+> verify that continuation-line indent in edited regions matches the original
+> file's siblings. `markdownlint-cli2 --fix` and companion scripts can leave
+> whitespace drift on adjacent lines. If drift is found, repair it with a
+> targeted `pathlib` edit and re-run the `markdownlint-cli2` audit before
+> staging. The canonical protocol is in
+> [`git-atomic-commit-construction §3g`](../../git-atomic-commit-construction/SKILL.md#3g).
+
 ### 3.2 Known `markdownlint-cli2 --fix` Caveats
 
 **`markdownlint-cli2 --fix` corrupts bare closing fences.** When it encounters

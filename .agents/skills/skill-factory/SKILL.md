@@ -537,6 +537,15 @@ Read the output and confirm:
 
 (Persisted as `permanent_discipline.numbered-section-scheme-consistency`.)
 
+**Indent-continuity check (pointer).** Every skill-doc edit that inserts
+or rewrites list items, code-fence contents, or table rows MUST verify
+that the new content's continuation-line indent exactly matches unmodified
+sibling lines. Use `pathlib.Path.read_text().splitlines()` + `repr` to
+discover the correct indent, then `pathlib.Path.write_text()` to repair.
+Accept only after re-verifying that surrounding and added lines agree.
+The full protocol is in
+[`git-atomic-commit-construction §3g`](../git-atomic-commit-construction/SKILL.md#3g).
+
 ### 5.5 Section-Home Discipline (Don't Bloat Tangential Skills)
 
 Before adding a section of more than ~10 lines to an existing skill doc, the author MUST first answer: **"Is this section's topic within this skill's declared scope (Description + Composition Rationale)?"**

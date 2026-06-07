@@ -92,7 +92,35 @@ Before finalizing ANY markdown file, the agent MUST:
 
 ***
 
-## 3. Related Rules
+## 3. Companion Scripts
+
+This skill ships two helper scripts under
+[`scripts/`](scripts/) for one-shot lint fixes:
+
+- [`fix-table-separators.py`](scripts/fix-table-separators.py) — scans for
+  compact table separators (`|---|---|`) and rewrites them with proper spacing
+  (`| --- | --- |`) to satisfy MD060. Use `--check` for dry-run.
+- [`wrap-long-lines.py`](scripts/wrap-long-lines.py) — wraps prose lines
+  exceeding the configured `--max` width (default 120) while preserving code
+  blocks, tables, YAML frontmatter, and list structure. Use `--check` for
+  dry-run.
+
+Both scripts operate in-place on a list of file arguments.
+
+```bash
+python3 scripts/fix-table-separators.py --check path/to/file.md
+python3 scripts/fix-table-separators.py path/to/file.md
+
+python3 scripts/wrap-long-lines.py --max 120 --check path/to/file.md
+python3 scripts/wrap-long-lines.py --max 120 path/to/file.md
+```
+
+These are convenience tools for the `## 2. Verification Workflow` step 3
+(auto-fix) — they target patterns `markdownlint-cli2 --fix` does not resolve.
+
+***
+
+## 4. Related Rules
 
 - **SSOT**: [markdown-generation-rules.md](../../../ai-agent-rules/markdown-generation-rules.md)
 - **Formatting Protocol**: [ai-rule-standardization-rules.md](../../../ai-agent-rules/ai-rule-standardization-rules.md)

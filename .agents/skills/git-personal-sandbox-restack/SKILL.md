@@ -79,6 +79,13 @@ or divergence discovery — those are the owners' jobs.
   tip BEFORE slot-inserting the extracted personal commits at their original
   chronological position.
 
+## Composition by Higher-Level Skills
+
+| Composer Skill | Role of this skill in the pipeline |
+| --- | --- |
+| [`git-personal-content-extraction`](../git-personal-content-extraction/SKILL.md) | This skill is consumed in §Phase 6 to restack the long-lived `personal/sandbox` branch onto each round's purified team tip BEFORE slot-inserting the extracted personal commits at their original chronological position. |
+| [`git-personal-team-branch-workflow`](../git-personal-team-branch-workflow/SKILL.md) | This skill is consumed in §3.2 (the incremental restack cycle) — the session-workflow composer triggers `git rebase --onto <team-branch> <merge-base> <personal-branch>` after each team commit, and delegates deep verification (§3 six-axis audit) to this skill when the quick post-restack check fails. |
+
 ## Source Rules
 
 | Rule File | Scope Incorporated |

@@ -169,6 +169,10 @@ def main():
                         help="Diff the index (staged changes) instead of the working tree.")
     parser.add_argument("--check", action="store_true",
                         help="Dry-run: show matched hunks and run git apply --check; don't stage.")
+    parser.add_argument("--diff-context", type=int, default=3, metavar="LINES",
+                        help="Number of context lines in diff (default: 3). Lower values (1-2) help "
+                             "isolate target hunks from nearby formatting noise that would otherwise "
+                             "merge into the same hunk.")
     parser.add_argument("--repo", default=".", help="Path inside the target repo (default: cwd).")
     args = parser.parse_args()
 
@@ -191,7 +195,10 @@ def main():
     substrings = list(args.match)
 
     # Build git diff command
-    diff_cmd = ["git", "-C", str(repo), "diff", "--no-color", "--"]
+    diff_cmd = ["git", "-C", str(repo), "diff", "--no-color"]
+    if args.diff_context != 3:
+        diff_cmd.append(f"-U{args.diff_context}")
+    diff_cmd.append("--")
     if args.cached:
         diff_cmd.insert(3, "--cached")
     diff_cmd.append(rel)

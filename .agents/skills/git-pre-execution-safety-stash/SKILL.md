@@ -169,6 +169,94 @@ is partial. Recovery options, in order of preference:
 In all cases the stash entry MUST remain on the stack — never `pop`
 during recovery.
 
+#### 1g — Stash-Apply Conflict Recovery via Selective File Extraction
+
+When `git stash apply` fails because a live editor (VS Code, Copilot,
+Eclipse, IntelliJ) rewrote files between the `push` and `apply` commands,
+the standard recovery options in 1f (close editor → retry apply, move
+offending directory) may not work — the editor instantly regenerates the
+conflicting files. Do NOT retry `git stash apply`; each retry reproduces
+the same conflicts. Instead, extract files **selectively** from the intact
+stash entry as each commit in the planned sequence is executed.
+
+**Prerequisite**: You MUST have an approved Arranged Commits Preview (from
+[`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
+§3 — the Verbose Display) that lists every planned commit and the files
+it needs. Without this plan, selective extraction has no target.
+
+**Procedure — repeat for each planned commit in sequence:**
+
+1. **Identify needed files**. From the Arranged Commits Preview, list the
+   exact file paths the current commit requires.
+
+2. **Compare each file against the stash**. For every file the commit needs:
+   - **If tracked** (exists in HEAD): `git diff stash@{0} -- <file>` shows
+     whether the stash holds a different version. An empty output means the
+     working tree already matches the stash; skip extraction.
+   - **If untracked** (new file not yet in HEAD): `git ls-tree stash@{0}^3`
+     lists untracked files captured by the `-u` flag. Check if `<path>`
+     appears in that listing.
+
+3. **Extract the desired stash version**:
+   - **Tracked files**: `git checkout stash@{0} -- <file>`
+   - **Untracked files**: `git show stash@{0}^3:<path> > <path>`
+     (The `^3` suffix addresses the untracked-tree parent of a stash —
+     `stash@{0}^3` is the tree object that `git stash push -u` captured.)
+
+4. **Verify extraction**:
+
+   ```bash
+   git diff <file>
+   # MUST show the stashed content now present in the working tree
+   # (no diff means the working tree already matched stash)
+   ```
+
+5. **Stage and commit** per the approved plan using normal atomic-commit
+   construction procedures (`git add <file>`, `git commit -m "..."`).
+
+6. **Repeat** for the next planned commit.
+
+**Example** — commit 1 needs `src/foo.ts` and `src/bar.ts`:
+
+```bash
+# Compare tracked files against stash
+git diff stash@{0} -- src/foo.ts       # shows stash has changes
+git diff stash@{0} -- src/bar.ts       # empty — working tree matches
+
+# Extract foo.ts from stash
+git checkout stash@{0} -- src/foo.ts
+
+# Verify extraction
+git diff src/foo.ts                    # no diff = correct
+
+# Stage and commit per plan
+git add src/foo.ts src/bar.ts
+git commit -m "feat(foo): implement core logic"
+```
+
+**Safety guarantees**:
+
+- The stash entry (`stash@{0}`) is NEVER modified by `git checkout
+  stash@{0} -- <file>` or `git show stash@{0}^3:<path>` — these are
+  read-only operations against the stash object. The stash remains
+  intact for end-of-session Phase 3 verification.
+- Files whose working-tree version was intentionally preferred over
+  the stash version (e.g., because the live editor's changes are
+  desired) are simply skipped in step 2 — no extraction, no conflict.
+- After all planned commits land, proceed to **Phase 3**
+  (Verify-and-Release) as normal. The stash is retained for the full
+  verification cycle; it MUST NOT be dropped without user authorization
+  per Phase 3d.
+
+**When NOT to use this procedure**:
+
+- The stash apply succeeded (even partially). Use Phase 1e/1f instead.
+- You do not have an Arranged Commits Preview identifying per-commit
+  files. Without a plan, you cannot know which files belong to which
+  commit — abort and re-plan first.
+- The stash itself is corrupted or missing (`git stash list` shows no
+  `safety:` entry). A fresh Phase 1 capture is required.
+
 ---
 
 ### Phase 2 — Hold (during the commit sequence)
@@ -312,6 +400,7 @@ authorization.
 |---|---|
 | `git stash push -u` returned `No local changes to save` | Sequence has nothing to snapshot — verify the §3.3 mandate even applies (≥ 2 commits AND non-empty working tree). Skip this skill if both conditions don't hold. |
 | `git stash apply` fails with `CONFLICT` after a successful push | Working tree advanced between push and apply (rare — typically a parallel `git pull`). Resolve conflicts manually, then re-verify 1e. Never `git checkout .` here — it discards the conflict markers. |
+| `git stash apply` fails because a live editor (VS Code, Copilot, Eclipse, IntelliJ) rewrote files and `git checkout .` / close-editor did not resolve the conflict | Do NOT retry apply. Switch to **Phase 1g** — Selective File Extraction from Stash — to extract per-commit files from `stash@{0}` individually, working through the approved commit plan one commit at a time. The stash remains intact for end-of-session verification. |
 | Stash list now shows multiple `safety:` entries | A prior sequence's verification was skipped. Inspect each via `git stash show -u stash@{N}` and verify-then-drop oldest-first using Phase 3 against each. |
 | Phase 3c shows persistent delta on files matching `*.bak` / `*.full.bak` | Hunk-stage backup sidecars per §4.3 were not cleaned up — delete the sidecars, re-run 3b. |
 | End-of-session verification skipped (agent terminated mid-sequence) | The safety stash remains valid for the recovery window. Resume with Phase 2b verification, then proceed with the remaining commits OR Phase 3 directly if the sequence completed externally. |

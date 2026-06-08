@@ -466,6 +466,11 @@ Release) to [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash
   pre-existing stashes via [`git-stash-triage`](../git-stash-triage/SKILL.md),
   push with `git stash push -u -m "safety: ..."`, immediately
   `git stash apply` (NEVER `pop`), verify parity.
+  > **If `git stash apply` fails** due to live editor conflicts (VS Code,
+  > Copilot, Eclipse, IntelliJ rewriting files between push and apply),
+  > do NOT retry — follow the [Selective File Extraction from Stash
+  > (Phase 1g)](../git-pre-execution-safety-stash/SKILL.md#1g--stash-apply-conflict-recovery-via-selective-file-extraction)
+  > recovery path in `git-pre-execution-safety-stash`.
 - **Phase 2 — Hold** across the sequence: never drop, pop, or clear the
   `safety:` entry mid-sequence; re-verify presence at batch boundaries.
 - **Phase 3 — Verify-and-Release** after the final commit: `git stash

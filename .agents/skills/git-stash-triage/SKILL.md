@@ -10,6 +10,22 @@ category: Git & Repository Management
 > **Version:** 1.0.0
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
+## Composition Rationale
+
+This skill is a composer: it does NOT re-implement the logic for obtaining a stash’s parent commit; instead, it consumes
+the [`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md) base skill to obtain the commit hash and subject
+line that was HEAD when each stash was created.
+
+1. **[`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md)** — invoked for each stash reference discovered in
+Phase 0. The skill calls `scripts/get-stash-parent.ps1 -StashRef <ref>` to obtain the parent commit hash and subject
+line, which are then displayed in the verdict table to aid disposition decisions.
+
+The composer's domain‑specific value‑add over using the base skill alone: it integrates the origin‑commit data into the
+stash‑triage workflow, allowing the user to see *where* a stash came from when deciding whether to drop, apply, or split
+it.
+
+Bidirectional discoverability: the base skill lists this composer in its `## Composition by Higher-Level Skills` table.
+
 ## Description
 
 You discover one or more pre-existing entries in `git stash list` — created in
@@ -68,6 +84,10 @@ git -C <repo-path> stash list
 git -C <repo-path> show-ref | Select-String stash       # confirms refs/stash
 git -C <repo-path> reflog stash                         # full history including dropped-but-not-pruned
 ```
+
+For each stash reference returned by `git stash list`, the skill invokes the [`git-stash-parent-commit`](../git-stash-
+parent-commit/SKILL.md) base skill to obtain the commit hash and subject line that was HEAD when the stash was created.
+This information is stored for later display in the verdict table.
 
 If `git stash list` returns no output AND `show-ref | Select-String stash`
 also returns no output, there are no stashes — exit the skill.
@@ -138,9 +158,9 @@ For each stash, classify its content into one of four buckets:
 Present the classification to the user as a verdict table:
 
 ```text
-stash@{0}  Bucket C  46 files +17,155  PDE build artifacts + 2 launch tweaks
-stash@{1}  Bucket A  3 files +12       Already-committed README changes
-stash@{2}  Bucket B  5 files +130      WIP on SWIT-12345 feature/foo
+stash@{0}  Bucket C  <hash> <subject>  46 files +17,155  PDE build artifacts + 2 launch tweaks
+stash@{1}  Bucket A  <hash> <subject>  3 files +12       Already-committed README changes
+stash@{2}  Bucket B  <hash> <subject>  5 files +130      WIP on SWIT-12345 feature/foo
 ```
 
 For each row, propose the default disposition and request the user's

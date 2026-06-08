@@ -22,11 +22,13 @@ The agent MUST:
 ### 1.1 Reference Format Analysis
 
 The properly formatted work log file uses this structure:
+
 ```
 DD/MM/YYYY DayName HH:MM:SS HH:MM:SS "Activity Description"
 ```
 
 Key characteristics:
+
 - Date format: `DD/MM/YYYY DayName` (e.g., `02/01/2026 Friday`)
 - Time range: `StartTime EndTime` (e.g., `15:08:00 15:09:30`)
 - Activity in double quotes: `"Activity Description"`
@@ -55,17 +57,18 @@ The agent MUST apply these transformations:
 ### 2.3 Content Transformations
 
 1. **Braces to Quotes**: Convert `{...}` to `"..."`
-2. ** Caller Format**: Convert `Voice Call to Shemeem` → `Voice Call (Shemeem)`
-3. **Caller Format**: Convert `Phone Call by Aishwarya` → `Phone Call (Aishwarya)`
-4. **Caller Format**: Convert `Team Call to Razik` → `Team Call (Razik)`
-5. **Caller Format**: Convert `Team Meet by Amit` → `Team Meet (Amit)`
-6. **Caller Format**: Convert `Call with Dileena` → `Call (Dileena)`
-7. **Remove By/To Prefixes**: Remove `by ` and `to ` prefixes in descriptions
+2. **Caller Format**: Convert `Voice Call to <colleague>` → `Voice Call (<colleague>)`
+3. **Caller Format**: Convert `Phone Call by <colleague>` → `Phone Call (<colleague>)`
+4. **Caller Format**: Convert `Team Call to <colleague>` → `Team Call (<colleague>)`
+5. **Caller Format**: Convert `Team Meet by <colleague>` → `Team Meet (<colleague>)`
+6. **Caller Format**: Convert `Call with <colleague>` → `Call (<colleague>)`
+7. **Remove By/To Prefixes**: Remove `by` and `to` prefixes in descriptions
 8. **Fix Incomplete Times**: Convert `XX:XX:XX` to valid time range (e.g., `22:01:00 23:59:59`)
 
 ### 2.4 Rough Note Processing
 
 For rough notes that span multiple lines or contain numbered items:
+
 1. Break into individual time entries
 2. Estimate time ranges where information is implicit
 3. Consolidate multi-item descriptions into separate entries
@@ -91,6 +94,7 @@ For rough notes that span multiple lines or contain numbered items:
 ## 4. Verification
 
 The agent MUST verify:
+
 1. All date entries have day of week
 2. All entries are in `"..."` format
 3. No header lines remain
@@ -102,13 +106,20 @@ The agent MUST verify:
 ## 5. Environment & Dependencies
 
 No external tools required. This skill uses:
+
 - File system access (Read/Write tools)
 - Date calculation for day of week determination
 
 ***
 
-## 6. Related Conversations & Traceability
+## 6. Related Skills
 
-This skill was created from the work log processing workflow in `/Users/dk/lab-data/oleovista-acers/scripts/work-log/sample-data/`.
+| Skill | Relationship |
+|-------|-------------|
+| [`time-entry-markdown-presentation`](../time-entry-markdown-presentation/SKILL.md) | Downstream presentation layer — pipes the formatted TXT entries through this skill for markdown table rendering with duration calculation and summary rows. |
 
-Refer to the source conversation for operational context and examples.
+***
+
+## 7. Related Conversations & Traceability
+
+This skill was created from a work log processing workflow demonstrated in an earlier session. Refer to the source conversation for operational context and examples.

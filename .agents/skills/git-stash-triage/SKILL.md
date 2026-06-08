@@ -65,7 +65,7 @@ Do NOT apply when:
 ## Prerequisites
 
 | Requirement | Minimum |
-|---|---|
+| --- | --- |
 | VCS | Git 2.x+ |
 | Shell | PowerShell 5.1+ or POSIX shell |
 | Disposition authority | User authorization required for every destructive step (drop) |
@@ -136,7 +136,7 @@ the terminal.
 For each stash, classify its content into one of four buckets:
 
 | Bucket | Content fingerprint | Default disposition |
-|---|---|---|
+| --- | --- | --- |
 | **A — Obsolete/duplicate** | Changes are already merged, already on disk, or superseded by newer commits | DROP (after user confirms) |
 | **B — Active feature WIP** | Source-code changes belonging to a known feature branch / Jira ticket | APPLY to that feature branch + atomic commit |
 | **C — Personal sandbox** | IDE artifacts, machine-specific configs, build outputs, runtime-location tweaks — not for team origin | APPLY to personal-sandbox branch (delegate to [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)) |
@@ -304,7 +304,7 @@ This skill consumes — never duplicates — the following authoritative rules:
 ## Anti-Patterns
 
 | Anti-pattern | Why it's wrong | Correct alternative |
-|---|---|---|
+| --- | --- | --- |
 | `git stash show -p stash@{0}` in agent terminal without `--no-pager` | Hangs VS Code (pager blocks on TTY) | Phase 1 dump-to-file pattern |
 | `git stash pop` followed by attempt to commit | If commit fails after pop, stash is gone | `apply` + verify + `drop` (Phase 4b) |
 | Auto-drop "obviously obsolete" stash without user confirmation | Stash content is unrecoverable after drop | Phase 3 user gate |

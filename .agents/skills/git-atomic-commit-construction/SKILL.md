@@ -581,7 +581,7 @@ affected region must agree on the same continuation indent before
 
 See also: Common Pitfalls — `Indent drift after markdown edit silently staged`.
 
-#### 3g — IDE Artifact Bulk Discard
+#### 3h — IDE Artifact Bulk Discard
 
 IDE tooling (VS Code Java Language Server, Eclipse, IntelliJ) often
 auto-modifies project metadata files across **many** sub-projects at
@@ -769,6 +769,81 @@ stash captures the pre-execution working tree once; the sidecar
 cleanup happens per `add -p` invocation inside that window.
 
 See [Atomic Commit Construction Rules §4.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#43-hunk-stage-backup-cleanup-sidecar-discipline).
+
+#### 3i — Selective Hunk Extraction via Diff Patching
+
+When `git add -p` hunk boundaries don't align with the logical boundary
+(common in Markdown table rows, contiguous prose sections, or adjacent
+list items), and the complementary `stage-file-excluding-lines.py` (§2f.1)
+is the wrong tool because you want to stage ONLY the matching content
+(rather than exclude it), use the `stage-hunk-from-diff.py` script:
+
+This script reads the file's diff, parses it into hunks, keeps only
+hunks whose content matches one or more `--match` / `--match-regex`
+patterns, and stages them via `git apply --cached`. Non-matching hunks
+remain unstaged; the working tree is never modified.
+
+```bash
+# Dry-run: preview matched hunks without staging
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+    --file .agents/skills/foo/SKILL.md \
+    --match "blockquote" \
+    --check
+
+# Stage only hunks containing a specific substring:
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+    --file .agents/skills/foo/SKILL.md \
+    --match "Phase 1g"
+
+# Stage hunks matching ANY of multiple patterns:
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+    --file .agents/skills/foo/SKILL.md \
+    --match "stash-apply" \
+    --match "live editor"
+
+# Stage hunks from a regex pattern:
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+    --file .agents/skills/foo/SKILL.md \
+    --match-regex "Phase\s+1[g-h]"
+
+# Stage hunks from the staged diff (--cached) instead of the working tree:
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+    --file .agents/skills/foo/SKILL.md \
+    --match "submodule" \
+    --cached
+```
+
+**How it works:**
+
+1. Runs `git diff [--cached] -- <file>` to capture the full patch.
+2. Parses the unified diff into a header (before the first `@@`) and a
+   list of hunks (each `@@ ... @@` block with its context and changes).
+3. For each hunk, checks whether ANY of the `--match` substrings or
+   `--match-regex` patterns appear anywhere in the hunk text (context
+   lines, old lines, AND new lines).
+4. Reconstructs a filtered patch from the header + matching hunks only.
+5. Runs `git apply --cached` with the filtered patch to stage exactly
+   those hunks into the index. Non-matching hunks remain unstaged.
+
+**Complementary primitives:**
+
+| Script | Action | Used in |
+|---|---|---|
+| `stage-hunk-from-diff.py` | Stage ONLY matching hunks | §3i (this section) |
+| `stage-file-excluding-lines.py` | Stage file MINUS matching lines | §2f.1 |
+| `agents-md-stage-row.py` | Stage exactly one AGENTS.md row | §2f |
+| `git add -p` | Interactive hunk-by-hunk staging | §3a–§3f |
+
+**Edge cases:**
+
+- **Zero hunks matched:** exits with error. Use `--check` to preview.
+- **File has no diff:** exits with error (nothing to extract).
+- **Filtered patch wouldn't apply:** `--check` reveals the issue.
+  Common causes: the index has drifted from HEAD (e.g., some changes
+  already staged for this file). Use `--cached` to target staged
+  changes, or commit/reset the existing staged content first.
+
+**See also:** `stage-hunk-from-diff.py --help` for full argument docs.
 
 ---
 

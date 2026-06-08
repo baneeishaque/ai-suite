@@ -52,6 +52,7 @@ For complex multi-branch rebasing, see the
 ## When to Apply
 
 Apply this skill when:
+
 - A user asks to "commit changes," "arrange commits," or "stage and commit"
 - `git status` shows staged, unstaged, or untracked modifications
 - Multiple unrelated changes exist in the working tree and need separation
@@ -61,6 +62,7 @@ Apply this skill when:
   executes it upon user "yes" — no separate user request needed**
 
 Do NOT apply when:
+
 - The user asks to refine or split **existing** commits — use
   [`git_history_refinement`](../git-history-refinement/SKILL.md) instead
 - The user asks to rebase branches — use
@@ -125,17 +127,20 @@ git -C /repo1 add file.txt
 ```
 
 **When `cd` alone is insufficient:**
+
 - In tools/environments where `cd` doesn't persist state across invocations
 - When working with multiple repositories in sequence
 - For clarity in tool-generated scripts and audit trails
 
 **Legacy pattern (avoid):**
+
 ```powershell
 # ❌ May not reliably persist across invocations
 cd /path/to/repo; git status
 ```
 
 **Preferred pattern:**
+
 ```powershell
 # ✅ Reliable and explicit
 git -C /path/to/repo status
@@ -157,7 +162,6 @@ The agent MUST ensure the repository is not in a "detached HEAD" state before co
 2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST identify and checkout the appropriate branch (usually the default branch, e.g., `main`) before proceeding.
 3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts.
 
-
 #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
 
 When the upcoming commit touches files in a repository this session has not
@@ -175,7 +179,7 @@ If the verdict is `workflow` or `mirror`, STOP and locate the canonical
 source repo. If the verdict is `unknown`, ask the user. Skipping this
 audit risks landing the work in a repo whose changes never reach the
 canonical artifact (real-world precedent: Account-Ledger-Server vs
-Account-Ledger-Server-PHP, May 2026).
+Account-Ledger-Server-PHP, May 2026)
 ---
 
 ### Step 1 — Deep Change Analysis
@@ -547,6 +551,7 @@ follow this workflow:
 **PowerShell caveat:** Piping input to `git add -p` is unreliable in
 PowerShell (standard pipe methods like `echo`, `Write-Output`, and
 string joins often fail to register). Preferred workaround:
+
 - Accept the functional hunks manually or in a sequence where piping
   works, then use `git checkout -- <file>` to discard whatever noise
   remains unstaged.
@@ -639,6 +644,7 @@ untracked files.
 
 When the JDT Language Server detects a `pom.xml`, it automatically
 imports the project as Maven-managed and injects:
+
 - `org.eclipse.m2e.core.maven2Builder` into `.project` `<buildSpec>`
 - `org.eclipse.m2e.core.maven2Nature` into `.project` `<natures>`
 - `.settings/org.eclipse.m2e.core.prefs` (untracked)
@@ -712,12 +718,15 @@ changes to IDE metadata files — the project may rely on them.
      noise files individually.
 
 3. **Post-discard verification:**
+
    ```powershell
    git status --short
    git diff --stat HEAD
    ```
+
    If any tracked file appears as deleted (accidentally removed),
    restore it immediately:
+
    ```powershell
    git checkout -- <accidentally-deleted-file>
    ```
@@ -929,8 +938,8 @@ parent repository.
 - **Determine coupling**: Are any parent changes **directly related** to the
   submodule commit (e.g., implementing the rule just added, updating CI to use
   the new submodule feature, docs that reference the new behavior)?
-  - **Yes** → Group with the submodule SHA sync in a **single unified commit**.
-  - **No** → Keep parent sync minimal (SHA-only), commit related changes
+    - **Yes** → Group with the submodule SHA sync in a **single unified commit**.
+    - **No** → Keep parent sync minimal (SHA-only), commit related changes
     separately afterward.
 
 #### 7c — Arranged Commit Preview
@@ -1002,6 +1011,7 @@ next action. Chaining suppresses this verification window.
 #### 9b — Recovery
 
 If a mistake is made during staging:
+
 - **Unstage:** `git reset <file>`
 - **Selective discard:** `git checkout -p`
 - **WARNING:** Never use `git reset --hard` for synchronization.
@@ -1071,9 +1081,11 @@ Get-ChildItem ".git/rebase-merge"       # Empty = corrupted state
 1. **Verify staged changes are intact** — run `PAGER=cat git diff --cached` to
    confirm your staged work is preserved.
 2. **Remove the corrupted directory:**
+
    ```powershell
    Remove-Item ".git/rebase-merge" -Recurse -Force
    ```
+
 3. **Verify clean state** — run `PAGER=cat git status` to confirm the rebase
    state indicator is gone.
 4. **Commit directly** — since the rebase state is cleared, use a

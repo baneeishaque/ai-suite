@@ -994,6 +994,10 @@ Every commit message MUST meet these quality requirements:
 #### 9a — Step-by-Step Execution
 
 Execute commits one-by-one according to the approved arrangement.
+**Chaining commands (e.g., `git add . && git commit`) is FORBIDDEN.**
+Each command MUST be issued as a separate step so the user can inspect
+intermediate state (`git status`, diff, preview) before authorizing the
+next action. Chaining suppresses this verification window.
 
 #### 9b — Recovery
 
@@ -1254,6 +1258,8 @@ The agent is **BLOCKED** from:
 - **Editing generated files directly** — Update the source logic instead
 - **Using generic commit messages** — Every message must be specific and
   non-repetitive
+- **Command chaining (`&&`)** — Chaining `git add . && git commit && git push`
+  (or any variant) suppresses per-step verification and is FORBIDDEN
 - **Batching hunk responses** — Each hunk must be evaluated individually
 - **Skipping empty commits without user confirmation** — During rebase
   operations

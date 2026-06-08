@@ -85,9 +85,13 @@ Before finalizing ANY markdown file, the agent MUST:
 2. **Sync Check**: Ensure `.vscode/settings.json` contains `"markdownlint.configFile": ".markdownlint.jsonc"` to
    synchronize the IDE extension with the project's Industrial standard.
 3. **Auto-Fix**: Run `markdownlint-cli2 --fix <file_path>` from the project root.
-4. **Audit Check**: Run `markdownlint-cli2 <file_path>`.
-5. **Manual Correction**: Fix any remaining semantic or structural errors (e.g., heading increments).
-6. **Fidelity Verification**: Ensure the "Fidelity Mandate" (no loss of user technical specifics) is upheld during
+4. **Dry-Run Companion Scripts**: Before applying any companion script from §3,
+   MUST run with `--check` first to preview changes, review the proposed diffs,
+   then re-run without `--check` to apply. Dry-run before apply is MANDATORY
+   for every companion script.
+5. **Audit Check**: Run `markdownlint-cli2 <file_path>`.
+6. **Manual Correction**: Fix any remaining semantic or structural errors (e.g., heading increments).
+7. **Fidelity Verification**: Ensure the "Fidelity Mandate" (no loss of user technical specifics) is upheld during
    formatting.
 
 ***

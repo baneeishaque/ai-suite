@@ -189,6 +189,139 @@ resolve the link's target relative path against the public repo root — if the 
 escapes the public repo (`../../../../some-other-repo/...`), the link is illegal
 regardless of redaction of its display text.
 
+### 0.2 Submodule→Parent URL References — The Standalone-Clone Gap
+
+The §0.1 carve-out says that parent↔registered-submodule relative paths are
+ALLOWED because they are intra-distribution-unit. This is correct for the
+primary clone recipe (`git clone --recurse-submodules <parent-url>`).
+
+However, there is a gap: when a file INSIDE a registered submodule references
+a file in the parent, a relative path (`../../../<parent>/<path>`) works in the
+`--recurse-submodules` clone but is BROKEN when someone clones the submodule
+standalone. The §0.1 carve-out explicitly acknowledges this limitation.
+
+The author has three options for such a reference, each with different
+portability and stability characteristics:
+
+| Option | Example (concrete) | Standalone clone | Stable over time |
+|---|---|---|---|
+| **A — Relative path** | `../../../../ai-agent-rules/../foo.md` | ❌ Broken | ✅ (tracks HEAD of parent) |
+| **B — SHA-pinned URL** | `https://github.com/<OWNER>/<REPO>/blob/<SHA>/<path>#<anchor>` | ✅ Resolves | ✅ (pinned to specific content) |
+| **C — Branch-pinned URL** | `https://github.com/<OWNER>/<REPO>/blob/main/<path>#<anchor>` | ✅ Resolves | ❌ (content shifts under the link) |
+
+**Recommendation:** use Option A (relative path) when the reference is
+pedagogical or administrative and the standalone-clone experience is not a
+concern. Use Option B (SHA-pinned URL) when the reference is operational —
+a reader who clones only the submodule MUST be able to follow the link —
+AND the parent repo's hosting location is stable and public (or
+org-private with predictable access). **Never use Option C** — a
+branch-pinned URL silently becomes stale or misleading when the target
+file is modified on that branch.
+
+**Redaction treatment for SHA-pinned URLs in public-scope files:**
+
+A SHA-pinned URL contains three Tier-B elements (repo owner, repo name,
+commit SHA) plus one Tier-C element (`github.com`). In a **public-scope**
+skill artifact, all Tier-B elements MUST be redacted to placeholders:
+
+```markdown
+<!-- Forbidden in a public-scope skill: -->
+See [Phase 1g](https://github.com/baneeishaque/ai-suite/blob/a405f52/.agents/skills/...)
+
+<!-- Allowed — Tier-B elements replaced: -->
+See Phase 1g in the parent repo
+(`<PARENT-REPO-OWNER>/<PARENT-REPO>` at
+`<PARENT-FILE-PATH>` commit `<SHA>`).
+```
+
+In an **operational** file (a real commit message, a real submodule
+`rules.md` that ships with a real repo), the literal URL is appropriate
+because the file IS the actual workflow artifact — it is not a portable
+recipe. The skill teaches the pattern; the concrete usage carries the
+real values.
+
+**Detection heuristic for branch-pinned URLs.**
+
+Before adding a URL-based cross-reference from a submodule artifact to a
+parent, audit for branch-pinned (unstable) URLs:
+
+```bash
+# Search for /blob/main/ or /blob/master/ in staged files
+git diff --cached | grep -E '/blob/(main|master)/'
+```
+
+Any match MUST be replaced with a SHA-pinned URL. To obtain the current
+SHA of the parent's default branch:
+
+```bash
+git -C <parent-repo> rev-parse HEAD
+```
+
+### 0.3 Commit Messages as Committed Artifacts
+
+Commit messages are committed artifacts. They pass through the same
+standalone-clone test as any file under `.agents/skills/` or
+`ai-agent-rules/`. This is especially consequential for **submodule
+commit messages** — a submodule has its own clone URL, and someone
+cloning only the submodule reads its log without the parent repo.
+
+**Three allowed patterns** for referencing parent-repo content in a
+submodule commit message, in order of preference:
+
+1. **SHA-pinned GitHub URL** — best when the reference targets a
+   specific document or heading. Resolves in any clone, points to
+   immutable content.
+
+   ```
+   docs(rules): cross-reference stash-apply failure fallback with resolvable URLs
+
+   - Link to selective file extraction recovery path via GitHub URL that
+     resolves in standalone clone
+   - Link to redaction-portability skill for the URL decision framework
+     used here
+   ```
+
+2. **Full repo-name + descriptive path** — when a URL is impractical
+   (e.g., the message references a whole skill, not a specific line).
+   Acts as a navigation hint the reader can search for:
+
+   ```
+   feat(skill): add Phase 1g selective file extraction from stash
+
+   Backport the selective-file-extraction recovery path from the
+   `baneeishaque/ai-suite` parent repo's
+   `git-pre-execution-safety-stash` skill.
+   ```
+
+3. **Generic prose** — when the reference is conceptual and the
+   specific location is not load-bearing:
+
+   ```
+   docs(rules): add blockquote for interactive hunk staging safety
+
+   References the stash-apply failure fallback documented in the parent
+   repo's safety-stash skill for handling live editor conflicts.
+   ```
+
+**Forbidden in a submodule commit message:**
+
+- Parent-repo jargon (internal section labels, heading titles, local
+  acronyms that only make sense inside the Distribution Unit).
+- Relative paths to parent files.
+- Branch-pinned URLs (`/blob/main/...`).
+
+**The principle:** a submodule commit message must be self-contained.
+A reader who clones only the submodule must be able to understand the
+message. If the message references parent content it cannot explain
+itself, the reference must be a navigable URL (pattern 1) or a
+descriptive enough search hint (pattern 2) that the reader can locate
+the source independently.
+
+**Don't redefine SSOT.** When a commit message describes the rationale
+for a cross-reference that the `redaction-portability` skill already
+covers, reference the skill by name — do not restate the decision
+framework inline.
+
 ---
 
 ## 1. The Three Sensitivity Tiers
@@ -350,7 +483,19 @@ with **different** values, suffix with letters: `<consumer-plugin-A>`,
 `<consumer-plugin-B>`. When the count exceeds the alphabet, switch to
 numeric: `<consumer-plugin-1>`, `<consumer-plugin-N>`.
 
-### 2.5 The general rule of placeholder formation
+### 2.5 Publication-scope placeholders (for URL references)
+
+| Placeholder | Meaning |
+|---|---|
+| `<PARENT-REPO-OWNER>` | GitHub owner / org of the parent repo in a parent↔submodule Distribution Unit |
+| `<PARENT-REPO>` | Parent repo name in a parent↔submodule Distribution Unit |
+| `<SHA>` | A Git commit SHA (full 40-char or abbreviated). Prefer the full SHA in pinned references. |
+| `<SUB-SHA>` | A submodule pointer SHA (the SHA recorded in the parent's tree for the submodule commit) |
+| `<SHA-URL-SWAP>` | Meta-placeholder for a section that teaches the reader to replace a placeholder SHA with the real one |
+| `<PARENT-FILE-PATH>` | Path within the parent repo, relative to its root |
+| `<SUBMODULE-MOUNT>` | Mount path of a registered submodule relative to the parent root |
+
+### 2.6 The general rule of placeholder formation
 
 `<lower-case-hyphenated-noun>` — angle-bracketed, lower-case,
 hyphen-separated. This visually signals "placeholder, replace with
@@ -781,3 +926,5 @@ never in this SSOT.
 |---|---|---|
 | v1 | (initial) | Path relativization + basic name redaction (Tiers A/B not separated) |
 | v2 | 2026-05-10 | Introduced three-tier model, canonical placeholder vocabulary, network/organization protocol, file-naming hygiene, encoding sanity-check, quick-reference recipe, prohibited behaviors, broken-link carve-out (§3.3) |
+| v2.1 | 2026-06-09 | Added §0.2 (SHA-pinned URL pattern for submodule→parent in standalone-clone gap), §2.5 (publication-scope placeholders), branch-pinned URL detection heuristic, three-option comparison table |
+| v2.2 | 2026-06-09 | Added §0.3 (commit messages as committed artifacts — three allowed reference patterns for submodule messages, forbidden parent-repo jargon), updated version table |

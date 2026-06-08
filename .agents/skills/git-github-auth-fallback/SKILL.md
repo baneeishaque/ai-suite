@@ -40,6 +40,20 @@ Identify the credential helper in use:
 If the helper is empty AND the agent is running inside a VS Code task (no TTY), the agent MUST stop and surface
 the situation to the user — auth fixes for `manager-core` / `osxkeychain` REQUIRE an interactive UI.
 
+Check whether path-based credential isolation is already enabled:
+
+```bash
+git config --global --get credential.useHttpPath
+# Expected: "true" for multi-account setups, empty otherwise.
+```
+
+- **`credential.useHttpPath true`** — Git stores credentials keyed by the full remote URL
+  (`https://github.com/owner/repo.git`) instead of by hostname alone. **Required** on macOS when
+  two GitHub accounts (personal + company) share the same machine via HTTPS without SSH.
+  The macOS `osxkeychain` helper has a known limitation where it may serve the same cached
+  credential for all `github.com` paths regardless of this setting — see §3.6 Path F for
+  the flush-and-verify workflow and §3.7 Path G for the `.netrc` fallback.
+
 ***
 
 ## 2. Diagnosis (MUST run before any fix)
@@ -84,6 +98,31 @@ ssh -T git@github.com -v 2>&1 | head -40
 
 The verbose output includes `Hi <username>! You've successfully authenticated...` if a key is found, or
 `Permission denied (publickey)` if not.
+
+### 2.3 Check credential isolation config (multi-account macOS / Linux)
+
+For HTTPS remotes with multiple GitHub accounts on the same host, verify that Git will
+keep credentials separate per repo path:
+
+```bash
+git config --global --get credential.useHttpPath
+# If empty or "false", Git serves the first credential found for github.com
+# to ALL repos — the root cause of cross-account 403 errors.
+```
+
+On macOS, also probe which identities are currently stored in the keychain for `github.com`:
+
+```bash
+# List every stored github.com credential (username is returned for each entry):
+git credential-osxkeychain get <<EOF | grep -E '^(username|password)='
+protocol=https
+host=github.com
+EOF
+```
+
+If multiple entries exist with different usernames, the keychain already has mixed
+identities — a flush-and-re-auth cycle is needed (see §3.1 Path A for the generic flush,
+§3.6 Path F for the `useHttpPath` workflow).
 
 ***
 
@@ -314,6 +353,110 @@ The response object's `login` field is the GitHub username the PAT belongs to. I
 account that owns / has write access to the target repo, the PAT is wrong — go back to step 1 of the chosen
 path. For full REST patterns, defer to [GitHub REST API Fallback](../github-rest-api-fallback/SKILL.md).
 
+### 3.6 Path F — macOS `credential.useHttpPath` for multi-account HTTPS (RECOMMENDED for macOS)
+
+Use when: macOS, two or more GitHub accounts (personal + company), HTTPS remotes, no SSH,
+and the user wants a clean credential-per-repo setup without embedding tokens in URLs or
+switching to SSH.
+
+> [!CAUTION]
+> This path is partly interactive — the initial push after the flush opens a dialog or
+> browser prompt to re-authenticate. The agent MUST surface the commands and wait for
+> confirmation.
+
+```bash
+# 1. Enable path-keyed credential isolation
+git config --global credential.useHttpPath true
+
+# 2. Flush ALL stored credentials for github.com from the macOS keychain.
+#    Without this step, the old (wrong-identity) credential is served for every path.
+git credential-osxkeychain erase <<EOF
+protocol=https
+host=github.com
+EOF
+
+# 3. Push to the company repo — macOS prompts for fresh credentials.
+#    Enter the COMPANY GitHub username and PAT (password field).
+git -C <repo> push <remote> <branch>
+
+# 4. On success, subsequent pushes to personal repos prompt separately
+#    because the full URL path differs (credential.useHttpPath).
+```
+
+**How it works:** `credential.useHttpPath true` tells Git to key stored credentials by
+the full remote URL (`https://github.com/org/repo.git`) instead of just the hostname
+(`github.com`). After flushing the old hostname-keyed entry, each repo path gets its
+own credential entry in the keychain — personal and company accounts never collide.
+
+#### 3.6.1 Verification — per-path credential isolation
+
+```bash
+# Probe what credential the helper would serve for the company repo:
+git credential-osxkeychain get <<EOF
+protocol=https
+host=github.com
+path=org/company-repo.git
+EOF
+# Returns the company username
+
+# Probe for a personal repo:
+git credential-osxkeychain get <<EOF
+protocol=https
+host=github.com
+path=personal/repo.git
+EOF
+# Returns the personal username (different)
+```
+
+#### 3.6.2 Recovery — if the old identity keeps being served
+
+If `osxkeychain` ignores `useHttpPath` (a known macOS limitation documented in
+[git-credential-osxkeychain](https://github.com/git/git/blob/master/Documentation/git-credential-osxkeychain.txt)),
+fall through to §3.7.
+
+### 3.7 Path G — `.netrc` fallback when `osxkeychain` ignores `useHttpPath`
+
+Use when: Path F was attempted but the macOS `osxkeychain` helper still returns the
+wrong identity — the helper does not honour `credential.useHttpPath` on some macOS
+versions. Switch the company repo to a repo-level `netrc` helper, bypassing the
+keychain for that repo only:
+
+```bash
+# 1. Create ~/.netrc with strictly restricted permissions
+touch ~/.netrc
+chmod 600 ~/.netrc
+```
+
+Add the company credentials (replace placeholders):
+
+```text
+machine github.com
+login <company-github-username>
+password <company-pat>
+```
+
+```bash
+# 2. Configure the company repo to use netrc instead of osxkeychain
+git config --local credential.helper 'netrc -f ~/.netrc'
+
+# 3. Push — netrc serves the company credentials; osxkeychain still serves personal repos
+git -C <repo> push <remote> <branch>
+```
+
+> [!CAUTION]
+> `.netrc` stores credentials in **plaintext**. The `chmod 600` restriction is mandatory.
+> Do NOT use this path on shared or CI machines. Prefer Path F for all normal macOS
+> workstations.
+
+#### 3.7.1 Reverting to keychain
+
+Once the keychain limitation is resolved (macOS update, credential helper change,
+or the user prefers keychain-based auth), remove the repo-level override:
+
+```bash
+git config --local --unset credential.helper
+```
+
 ***
 
 ## 4. Decision Matrix
@@ -325,6 +468,8 @@ path. For full REST patterns, defer to [GitHub REST API Fallback](../github-rest
 | User already has SSH keys, hates browser prompts | C (SSH remote) | No credentials in HTTPS layer at all. |
 | User wants `gh`-managed flow for `pr create`, `issue`, etc. anyway | D (`gh auth login`) | Single helper for both git push and GitHub API. |
 | Uncertain whether the PAT has the right scope | E first, then B or A | Cheap pre-flight check before mutating remote URL. |
+| macOS + two GitHub accounts (personal + company) + HTTPS, no SSH | F (`useHttpPath`) | Keys credentials per repo path; cleanest non-SSH option. |
+| macOS + `useHttpPath` still serves wrong identity after flush | G (`.netrc` fallback) | Bypass osxkeychain for the company repo only. |
 
 ***
 
@@ -383,3 +528,8 @@ git -C <repo> status -sb
   account that owns the fork. The resolution required identifying the cached identity, then switching to a
   fork-based remote (per [Git Submodule Fork Reconfigure](../git-submodule-fork-reconfigure/SKILL.md)) under
   the correct account.
+- June 2026 — macOS HTTPS multi-account auth: `git push` to company repo returned 403 because macOS Keychain
+  cached the personal GitHub identity while the company repo URL was correct. Resolution: set
+  `credential.useHttpPath true`, flushed all `github.com` entries from the keychain, then pushed. Per-repo-path
+  isolation (enabled by `useHttpPath`) kept personal and company credentials separate. Documented as §3.6
+  Path F and §3.7 Path G.

@@ -963,6 +963,11 @@ PAGER=cat git stash drop
 > Inventory → Inspect → Authorize → Act protocol and recovery window. For triage of pre-existing stashes whose
 > origin is unclear (Bucket A/B/C/D classification, hang-free inspection, apply-not-pop), use
 > [`git-stash-triage`](../git-stash-triage/SKILL.md).
+>
+> **Stash provenance note:** Before applying or popping a stash, consider checking its origin commit to understand
+> what state it was created from. Use the [`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md) base skill:
+> `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}` outputs the commit hash and subject
+> that was HEAD when the stash was created.
 
 #### 9g — Corrupted Rebase State Recovery
 

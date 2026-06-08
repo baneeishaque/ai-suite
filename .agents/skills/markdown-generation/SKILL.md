@@ -177,7 +177,7 @@ re-introducing lint errors:
 > whitespace drift on adjacent lines. If drift is found, repair it with a
 > targeted `pathlib` edit and re-run the `markdownlint-cli2` audit before
 > staging. The canonical protocol is in
-> [`git-atomic-commit-construction §3g`](../../git-atomic-commit-construction/SKILL.md#3g).
+> [`git-atomic-commit-construction §3g`](../git-atomic-commit-construction/SKILL.md#3g--post-edit-indent-verification--repair).
 
 ### 3.2 Known `markdownlint-cli2 --fix` Caveats
 

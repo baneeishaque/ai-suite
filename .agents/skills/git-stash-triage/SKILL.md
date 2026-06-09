@@ -35,7 +35,9 @@ You need a disciplined protocol to:
 1. **Inspect** stash contents without hanging the terminal (the pager trap).
 2. **Classify** each stash by content into one of four disposition buckets.
 3. **Decide** the correct disposition with the user (no auto-destruction).
-4. **Execute** the disposition safely (apply-not-pop until verified).
+4. **Execute** the disposition safely — apply-not-pop for whole-stash
+   execution (§4b/§4c), or per-file granular triage (§4d) when the user
+   requests fine-grained control or `git stash apply` fails.
 5. **Drop** only after the disposition is materialized and verified.
 
 This skill is the read-then-decide complement to
@@ -175,6 +177,17 @@ explicit `go` / `start` / numbered choice. NEVER auto-execute drops.
 
 ### Phase 4 — Execute Disposition
 
+Choose the execution path based on the disposition decided in Phase 3:
+
+- **§4a (Bucket A)**: Drop the stash (after supersession verification).
+- **§4b (Bucket B/C)**: Apply all, then commit.
+- **§4c (Bucket D)**: Apply all, hunk-stage, multiple commits.
+- **§4d (Selective File Restoration)**: Walk through each changed file
+  individually — analyze, present findings, get user decision per file.
+  Use when `git stash apply` failed, the user requests per-file
+  granularity, or the stash contains mixed file types needing individual
+  per-type treatment.
+
 #### 4a — Bucket A (Drop)
 
 > **Stronger pre-drop verification (recommended for safety stashes)**:
@@ -269,6 +282,124 @@ git -C $repo stash drop 'stash@{N}'
 Each commit MUST follow
 [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md).
 
+#### 4d — Selective File Restoration (Per-File Triage)
+
+Use this subsection instead of §4a–§4c when:
+- `git stash apply` failed (divergent editor — see
+  [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md)
+  §1g for the safety-stash path; this subsection covers ALL stashes).
+- The user explicitly requests per-file granularity.
+- The stash contains mixed file types requiring individual treatment
+  per file type (user config vs auto-generated IDE state vs binary cache).
+
+**Core principle — analysis-first, action-on-command**: For each changed
+file, the agent analyzes (stash vs HEAD; or stash vs on-disk when the HEAD
+version is gitignored), presents findings, recommends an action, and
+**waits for the user to decide**. No action is pre-determined for any
+file type.
+
+---
+
+**Step 1 — List changed files**
+
+```bash
+git -C <repo> diff stash@{N} HEAD --name-status
+```
+
+This lists every file that differs between the stash and HEAD, prefixed with
+`A` (Added), `M` (Modified), or `D` (Deleted). `A` files do not exist in HEAD
+— they must be located in the stash's index tree (`stash@{N}^2`) or untracked
+tree (`stash@{N}^3`).
+
+---
+
+**Step 2 — Per-file analysis loop**
+
+For each file in the `--name-status` output:
+
+1. **Determine the reference versions**:
+   - **If file exists in HEAD (M)**: compare `git diff stash@{N} HEAD -- <file>`.
+   - **If file exists only in stash (A)**: determine source tree:
+     - Check stash^2 (index): `git ls-tree stash@{N}^2 | grep <path>`
+     - Check stash^3 (untracked): `git ls-tree stash@{N}^3 | grep <path>`
+   - **If HEAD version is gitignored**: compare stash version vs on-disk file
+     (`diff <(git show stash@{N}:<path>) <path>`) — the HEAD commit does not
+     track it, but the file lives in the working tree.
+
+2. **Classify the file type** and apply the appropriate analysis pattern:
+
+   | File type | Analysis pattern | Typical recommendation |
+   |---|---|---|
+   | `settings.json` (VS Code user settings) | Compare keys line-by-line: stash-only keys, HEAD-only keys, common-modified keys | Merge stash-only keys into HEAD (user decides) |
+   | `extensions.json` (VS Code auto-generated) | Verify HEAD version is current; skip if auto-regenerated | Skip — auto-generated IDE state |
+   | `state.vscdb` (SQLite binary — VS Code state) | Delegate to [`vscode-state-vscdb-merge`](../vscode-state-vscdb-merge/SKILL.md) `--json` for key-level comparison. Present stash-only/HEAD-only/common-modified key counts | Merge stash-only keys if stash has unique keys (user authorizes) |
+   | `claude/*.json`, `claude/.last-cleanup` (Claude config) | Compare content; check if stash has newer/updated values | Restore from stash if newer |
+   | `claude/projects/*.jsonl` (gitignored, on-disk) | Compare on-disk hash vs stash hash (`git hash-object <file>` vs `git rev-parse stash@{N}:<path>`) | No action needed if hashes match; user decides if they differ |
+   | `.gitignore`, `.gitattributes` | Show diff | User decides |
+   | Other text files | Show diff | User decides |
+   | Other binary files (non-SQLite) | Show only stat (size, hash) | User decides |
+
+3. **Present findings**:
+   - Diff output (or key-level comparison for state.vscdb)
+   - Source (stash@{N} tracked / stash@{N}^2 index / stash@{N}^3 untracked)
+   - File type category with implications
+   - Recommended action
+
+4. **Wait for user decision**. Options:
+   - **restore**: overwrite working tree with stash version (`git checkout
+     stash@{N} -- <file>` for tracked, `git show stash@{N}^3:<path> > <path>`
+     for untracked).
+   - **skip**: keep HEAD/disk version, ignore stash version.
+   - **merge**: for structured files (settings.json, state.vscdb) — merge
+     stash-only content into HEAD/disk version.
+   - **defer**: skip for now, handle later.
+
+5. **Proceed to the next file** only after the user decides.
+
+---
+
+**Step 3 — "Not in HEAD" rule presentation**
+
+Files that exist only in the stash (`A` in `--name-status`, or present in
+stash^2/stash^3 but absent from HEAD and the working tree) are presented
+with a strong recommendation to restore — the user chose to snapshot them;
+the snapshot should be honored unless explicitly skipped. The final decision
+is always the user's.
+
+---
+
+**Step 4 — Restoring Added files from stash trees**
+
+When the user chooses **restore** for an `A` file:
+
+- **If the file was staged** at stash time (found in stash^2):
+  ```bash
+  git checkout stash@{N} -- <path>
+  ```
+- **If the file was untracked** at stash time (found in stash^3):
+  ```bash
+  git show stash@{N}^3:<path> > <path>
+  ```
+
+The stash^2 (index) and stash^3 (untracked) trees are read-only — these
+commands never modify the stash entry.
+
+---
+
+**Step 5 — Verification**
+
+After all files are processed:
+
+```bash
+git -C <repo> status --short
+git -C <repo> diff --stat
+```
+
+Confirm the working tree matches the expected state. Present a summary to the
+user listing which files were restored/skipped/merged/deferred.
+
+---
+
 ### Phase 5 — Clean Up Inspection Artifacts
 
 ```powershell
@@ -298,6 +429,12 @@ This skill consumes — never duplicates — the following authoritative rules:
   global "agent MUST NEVER `git push` automatically" rule from
   [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
   applies — explicit user `start` required.
+- **VS Code state.vscdb analysis** — when Phase 4d encounters `state.vscdb`
+  files, analysis MUST use
+  [`vscode-state-vscdb-merge`](../vscode-state-vscdb-merge/SKILL.md)'s
+  `scripts/analyze-state-vscdb.py` for key-level comparison, never a raw
+  binary diff. The `--merge` flag MUST NOT be invoked without explicit user
+  authorization after the analysis report is presented.
 
 ---
 
@@ -311,6 +448,8 @@ This skill consumes — never duplicates — the following authoritative rules:
 | `Out-File -Encoding utf8` for commit message | Writes UTF-8 BOM → subject shows `∩╗┐` glyph | `[IO.File]::WriteAllText` with `UTF8Encoding($false)` |
 | Double-quoted here-string (`@"..."@`) for commit message body | PowerShell expands `$var` / `${var}` mid-message | Single-quoted (`@'...'@`) here-string |
 | `git stash show -p stash@{0} -- '*.launch'` | `stash show -p` does NOT accept pathspec — fails with "Too many revisions" | Use `git diff 'stash@{N}^' 'stash@{N}' -- '*.launch'` instead |
+| Prescribing a fixed per-file action during selective restoration (e.g., "settings.json → always merge") without presenting analysis first | File-specific action without user review bypasses the per-file triage gate | Always analyze stash vs HEAD (or stash vs on-disk), present findings, recommend action, then let user decide — even for well-known file types |
+| Showing raw `git diff` for state.vscdb binary files during per-file triage | Binary diff is noise; no meaningful key-level differences visible | Delegate to `vscode-state-vscdb-merge` script with `--json` for per-key comparison |
 
 ---
 

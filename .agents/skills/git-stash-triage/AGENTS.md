@@ -24,3 +24,5 @@ Do NOT execute any step without first loading `SKILL.md` — this bridge is inte
 each stash
 - [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) — for commit construction
 - [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) — for Bucket C dispositions
+- [`vscode-state-vscdb-merge`](../vscode-state-vscdb-merge/SKILL.md) — base skill used in Phase 4d for key-level
+analysis of state.vscdb files during per-file triage

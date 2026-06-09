@@ -256,6 +256,11 @@ git commit -m "feat(foo): implement core logic"
   commit — abort and re-plan first.
 - The stash itself is corrupted or missing (`git stash list` shows no
   `safety:` entry). A fresh Phase 1 capture is required.
+- The stash is **not a safety stash** (no `safety:` prefix) — it is a
+  stale or pre-existing stash. Delegate to
+  [`git-stash-triage`](../git-stash-triage/SKILL.md) §4d (Selective File
+  Restoration — Per-File Triage) instead, which covers the general
+  per-file extraction protocol for any stash.
 
 ---
 
@@ -390,7 +395,7 @@ authorization.
 
 | Skill | Relationship |
 |---|---|
-| [`git-stash-triage`](../git-stash-triage/SKILL.md) | **Prerequisite when stash list is non-empty at Phase 1a.** Classifies pre-existing stash entries so the `safety:` push lands at a known position on the stack. |
+| [`git-stash-triage`](../git-stash-triage/SKILL.md) | **Prerequisite when stash list is non-empty at Phase 1a.** Classifies pre-existing stash entries so the `safety:` push lands at a known position on the stack. Also provides §4d (Selective File Restoration — Per-File Triage) for stale stashes where Phase 1g does not apply. |
 | [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) | When Phase 3a residue includes unexpected untracked files (e.g., hunk-stage backup sidecars per §4.3), classifies them before deciding whether to drop the safety stash. |
 | [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) | Optional Phase 3c.1 per-file blob-equality audit between the safety stash (including its `^3` untracked tree) and HEAD — upgrades the `apply` no-op check from delta-level to byte-level supersession proof. |
 
@@ -401,6 +406,7 @@ authorization.
 | `git stash push -u` returned `No local changes to save` | Sequence has nothing to snapshot — verify the §3.3 mandate even applies (≥ 2 commits AND non-empty working tree). Skip this skill if both conditions don't hold. |
 | `git stash apply` fails with `CONFLICT` after a successful push | Working tree advanced between push and apply (rare — typically a parallel `git pull`). Resolve conflicts manually, then re-verify 1e. Never `git checkout .` here — it discards the conflict markers. |
 | `git stash apply` fails because a live editor (VS Code, Copilot, Eclipse, IntelliJ) rewrote files and `git checkout .` / close-editor did not resolve the conflict | Do NOT retry apply. Switch to **Phase 1g** — Selective File Extraction from Stash — to extract per-commit files from `stash@{0}` individually, working through the approved commit plan one commit at a time. The stash remains intact for end-of-session verification. |
+| Stale stash (not a `safety:` stash) with divergent apply that Phase 1g does not cover (no planned commit sequence) | Delegate to [`git-stash-triage`](../git-stash-triage/SKILL.md) §4d (Selective File Restoration — Per-File Triage) for general per-file extraction without a pre-planned commit sequence. |
 | Stash list now shows multiple `safety:` entries | A prior sequence's verification was skipped. Inspect each via `git stash show -u stash@{N}` and verify-then-drop oldest-first using Phase 3 against each. |
 | Phase 3c shows persistent delta on files matching `*.bak` / `*.full.bak` | Hunk-stage backup sidecars per §4.3 were not cleaned up — delete the sidecars, re-run 3b. |
 | End-of-session verification skipped (agent terminated mid-sequence) | The safety stash remains valid for the recovery window. Resume with Phase 2b verification, then proceed with the remaining commits OR Phase 3 directly if the sequence completed externally. |

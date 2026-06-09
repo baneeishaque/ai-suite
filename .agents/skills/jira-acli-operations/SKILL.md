@@ -791,6 +791,8 @@ acli jira workitem transition \
 [`../git-atomic-commit-construction/SKILL.md`](../git-atomic-commit-construction/SKILL.md) |
 | GitHub PR creation | GitHub Workflow Creation |
 [`../github-workflow-creation/SKILL.md`](../github-workflow-creation/SKILL.md) |
+| Jira hierarchy reports | Jira Work Item Hierarchy Report |
+[`../jira-workitem-hierarchy-report/SKILL.md`](../jira-workitem-hierarchy-report/SKILL.md) |
 | Markdown linting | Markdown Generation Skill |
 [`../markdown-generation/SKILL.md`](../markdown-generation/SKILL.md) |
 | Skill metadata structure | Skill Factory Skill |

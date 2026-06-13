@@ -20,9 +20,16 @@ def time_to_minutes(t):
 def format_duration(minutes):
     h = int(minutes // 60)
     m = int(minutes % 60)
+    s = round((minutes - int(minutes)) * 60)
     if h > 0:
+        if s:
+            return f"{h}h {m:02d}m {s}s"
         return f"{h}h {m:02d}m"
-    return f"{m}m"
+    if m > 0:
+        if s:
+            return f"{m}m {s}s"
+        return f"{m}m"
+    return f"{s}s"
 
 
 def calc_duration(start, end):

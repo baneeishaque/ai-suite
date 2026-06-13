@@ -745,6 +745,7 @@ acli jira dashboard search --limit 10 --json --paginate
    If `gh` is installed but `gh auth status` fails, defer to
    [Git / GitHub Auth Fallback](../git-github-auth-fallback/SKILL.md) §3.4 before retrying.
 6. **Comment** the PR URL on the Jira ticket:
+
    ```bash
    acli jira workitem comment create \
      --jql "key = AES-941" \

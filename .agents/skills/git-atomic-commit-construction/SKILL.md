@@ -264,6 +264,53 @@ analyzed as an afterthought:
 
 ---
 
+### 1g — Redaction Pre-Check (Sensitive Content Audit)
+
+Before any staging or logical grouping, audit all **new/untracked** and
+**modified** files for content that must be redacted per the
+[redaction-portability](../redaction-portability/SKILL.md) skill — especially
+prose-heavy files like skill `SKILL.md`, rule docs, and conversation logs.
+
+**Scan for:**
+
+1. **Organization-specific Jira ticket IDs** (e.g., `PROJ-1234`) — replace with
+   `<TICKET-ID>` or `<TICKET-ID-PROJ>`.
+2. **Internal repository URLs** (e.g., `github.com/<org>/<repo>`) — replace
+   `<org>/<repo>` with `<ORG>/<REPO>`.
+3. **Cross-repo relative links** — `../` chains that escape the current repo's
+   root into a sibling directory (no `.gitmodules` registration). Run the
+   [detect-cross-repo-links.py](../redaction-portability/scripts/detect-cross-repo-links.py)
+   script from the redaction-portability skill.
+4. **Literal organization names, internal codenames, hostnames, and usernames**
+   in prose — replace with canonical placeholders (`<corp>`, `<author>`, etc.).
+5. **Project-specific skill names / paths** in base-published skills (e.g., a
+   composer row in a base skill referencing a project-specific skill in a
+   different repo).
+
+**When to run this audit:**
+
+- **Immediately after Step 1f** (Complete Inventory) — you have the full file
+  list, and no work has been wasted on grouping or staging content that will
+  need post-hoc redaction.
+- **Any time a new file is added** to the working tree mid-session (e.g.,
+  skill-factory generation, conversation export).
+
+**Remediation workflow:**
+
+1. Read each flagged file, identify the violating strings.
+2. Apply canonical placeholders per
+   [redaction-portability §2](../redaction-portability/SKILL.md#2-canonical-placeholder-vocabulary).
+3. If the violation is a cross-repo link: either delete the link entirely or
+   replace with a name-only reference (see redaction-portability repair rules).
+4. Re-run the audit to confirm zero remaining violations.
+5. Only then proceed to Step 2 (Logical Grouping).
+
+The redaction-portability skill **MUST** be cited as a dependency in any commit
+that touches skill or rule files, so downstream tooling knows to invoke the
+same audit.
+
+---
+
 ### Step 2 — Logical Grouping (Arrangement)
 
 Arrange detected changes into a proposed sequence of commits.

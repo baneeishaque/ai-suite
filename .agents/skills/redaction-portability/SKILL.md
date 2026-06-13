@@ -876,6 +876,18 @@ content from §1's redaction targets.
   link target won't exist in the public consumer's clone, and the
   link text itself leaks the existence and name of the private
   artifact.
+- **DO NOT** include a composer-table row (or "Related Skills" list
+  item) in a base/published skill that references a skill in a different
+  repository — even by name only, if the name reveals the other repo's
+  contents. The composer table is part of the published artifact;
+  cross-repo references fail the Standalone-Clone Test (§0.1 Q2) and
+  leak repo topology (§0.1 Q3). **Example of forbidden pattern:** a
+  public base skill listing `<project-specific-composer>` (a
+  project-specific composer in a separate private repo) in its composer
+  table — the row has no valid relative path and reveals the private
+  repo's structure. **Repair:** omit the row from the base skill; let
+  the project-specific skill's own `AGENTS.md` or composer section
+  include the reference instead.
 - **DO NOT** name an organization (`<corp>`, customer
   name) in prose in a public-scope file. Use "a corporate
   workstation" / "your organization" / `<corp>` instead.

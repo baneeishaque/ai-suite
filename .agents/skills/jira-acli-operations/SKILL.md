@@ -288,6 +288,12 @@ acli jira workitem delete --from-file "issues.txt" --yes
 
 ### 2.2.11 Comments
 
+> **Note on inlineCard (rich link) format**: The `acli` CLI produces only
+> plain-text comments. To create Jira comments with **inlineCard** rendering
+> (embedded PR cards via `[url|url|smart-link]` wiki markup), use the
+> [`jira-inlinecard-comment`](../jira-inlinecard-comment/SKILL.md) base skill
+> instead — it calls the Jira REST API v2 directly.
+
 #### Create Comment
 
 ```bash

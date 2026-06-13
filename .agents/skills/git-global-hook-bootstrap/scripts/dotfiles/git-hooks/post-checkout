@@ -1,0 +1,18 @@
+#!/bin/bash
+# Global post-checkout hook
+# Fires on every checkout and clone (implicit checkout).
+# Discovers and execs repo-level bootstrap scripts.
+#
+# Any repository can self-wire by placing an executable
+# scripts/setup-hooks.bash at its root.
+#
+# Tier: 2 (Bash) — shell glue; must work in git hook context.
+# See scripting-language-selection-rules.md section 3.4.
+
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null) || exit 0
+
+if [ -x "$REPO_ROOT/scripts/setup-hooks.bash" ]; then
+  exec bash "$REPO_ROOT/scripts/setup-hooks.bash"
+fi
+
+exit 0

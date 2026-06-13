@@ -911,10 +911,18 @@ functional commits.
 #### 4a — Formatting & Stylistic Consolidation
 
 **Target:** Purely aesthetic changes — indentation, whitespace,
-Markdown header-level corrections.
+Markdown header-level corrections, single blank line adjustments.
 
 **Rule:** If multiple files require these adjustments, club them into a
 single dedicated commit. Commit type: `style`.
+
+**Trivial hunks:** A single blank-line insertion or removal (e.g.,
+missing blank line before a code block in a skill doc) is a
+formatting-only change. Use `git add -p` to isolate that hunk from any
+functional changes in the same file, then commit it separately as a
+`style:` commit. See
+[`separate-content-from-formatting-commits`](../separate-content-from-formatting-commits/SKILL.md)
+for complex cases (pervasive reformatting mixed with content changes).
 
 #### 4b — Structural Refactor Isolation
 

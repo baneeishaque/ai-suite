@@ -33,6 +33,8 @@ Use this skill when debugging a Material React Table (MRT) page where a built-in
 
 ## Environment & Dependencies
 
+- **@playwright/test ^1.60.0**: Required for Step 6 E2E test verification.
+  Verify with `npx playwright --version`. Install with `npx playwright install chromium`.
 - **playwright-cli**: Required for Step 5 verification. Verify with `playwright-cli --version`.
   If not available, install globally: `npm install -g @playwright/cli@latest`, or use
   `npx --no-install playwright-cli` for a local invocation.

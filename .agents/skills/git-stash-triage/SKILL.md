@@ -91,6 +91,16 @@ For each stash reference returned by `git stash list`, the skill invokes the [`g
 parent-commit/SKILL.md) base skill to obtain the commit hash and subject line that was HEAD when the stash was created.
 This information is stored for later display in the verdict table.
 
+Additionally, capture the stash's own creation timestamp for chronological
+analysis in Phase 2:
+
+```bash
+git log -1 --format=%ai stash@{N}
+```
+
+Store the timestamp alongside the parent-commit data for later display and
+timeline comparison against related commit timestamps.
+
 If `git stash list` returns no output AND `show-ref | Select-String stash`
 also returns no output, there are no stashes — exit the skill.
 
@@ -154,6 +164,58 @@ For each stash, classify its content into one of four buckets:
 - Both → Bucket D.
 - Empty stash, or stash whose diff is now a no-op against current HEAD
   (`git diff <stash> HEAD` is empty) → Bucket A.
+
+#### Fast Supersession Check via Blob Hash Comparison
+
+For faster Bucket A confirmation without full patch inspection, compare
+blob hashes between the stash and HEAD on a per-file basis:
+
+```bash
+for f in $(git -C <repo> diff stash@{N} HEAD --name-only); do
+  hash_stash=$(git -C <repo> rev-parse stash@{N}:"$f" 2>/dev/null)
+  hash_head=$(git -C <repo> rev-parse HEAD:"$f" 2>/dev/null)
+  if [ "$hash_stash" = "$hash_head" ]; then
+    echo "$f  IDENTICAL"
+  elif [ -z "$hash_stash" ]; then
+    echo "$f  not in stash"
+  elif [ -z "$hash_head" ]; then
+    echo "$f  not in HEAD"
+  else
+    echo "$f  DIFFERENT"
+  fi
+done
+```
+
+- **All files IDENTICAL** → proven Bucket A. The stash contains zero unique
+  content.
+- **Some files DIFFERENT** → the differing files need deeper analysis.
+  Determine whether the differences represent content that was deliberately
+  refined (superseded → Bucket A) or content that was lost (salvageable →
+  consider §4d selective restoration).
+
+**Chronological timeline analysis** — when blobs differ, compare the stash
+creation timestamp (captured in Phase 0) against the timestamps of commits
+that touched the same files:
+
+```bash
+git -C <repo> log -1 --format="%ai %s" stash@{N}    # stash creation time
+git -C <repo> log -1 --format="%ai %s" -- <file>     # last commit touching file
+```
+
+Scenarios:
+
+| Timeline pattern | Likely classification | Rationale |
+| --- | --- | --- |
+| Stash created BEFORE a commit that modified the same file | Bucket A (superseded draft) | The stash captured working-copy draft content that was intentionally refined and committed later. The stash blob differs because the commit distilled the draft into a cleaner form — the stash was a transient shelf, not lost work. |
+| Stash created AFTER the last commit touching the file, and blob differs | Potentially Bucket B/D (salvageable) | The stash content represents work-in-progress that was started but never committed. If the file tracks source code, prompt the user to apply. |
+| Stash created BEFORE the commit, but stash content is MORE detailed than commit (added lines absent in HEAD) | Assess per file — see §4d for extraction | The stash may contain draft annotations, debug code, or long-form documentation that the commit intentionally trimmed. Present the stash version to the user for selective extraction. |
+
+This comparison is a lightweight alternative to the full
+[`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) audit in §4a.
+Use the full audit when you need a formal proven-superseded verdict
+(especially for safety stashes created by
+[`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md)).
+Use the blob-hash shortcut for quick triage of many stashes.
 
 ### Phase 3 — Decide (User Authorization Gate)
 

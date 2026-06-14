@@ -1342,6 +1342,12 @@ The agent is **BLOCKED** from:
   — The foundational primitive for all high-fidelity extraction.
 - **[Git History Refinement](../git-history-refinement/SKILL.md)**
   — For splitting or refining non-atomic existing commits.
+- **[Claude Config Change Gate](../claude-config-change-gate/SKILL.md)**
+  — Pre-flight check: before any commit workflow against a repo with
+  auto-timestamped claude config files, run this gate first. If it
+  BLOCKS, only trivial timestamp changes exist and the commit SHOULD
+  be cancelled. If it PASSES or the repo has no claude config files,
+  the atomic commit workflow proceeds normally.
 
 ## Common Pitfalls
 

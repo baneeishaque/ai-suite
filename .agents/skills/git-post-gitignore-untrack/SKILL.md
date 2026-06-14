@@ -159,10 +159,14 @@ repository**, because tracked-noise residue is repo-local.
 - Composes naturally with [`git-cross-repo-cherry-pick`](../git-cross-repo-cherry-pick/SKILL.md) §3
   (multi-target audit) — that skill surfaces the residue; this skill resolves it.
 - Distinct from [`noise-removal-via-commit-edit`](../noise-removal-via-commit-edit/SKILL.md), which
-  removes IDE artifacts (`.project`, `.classpath`, `.settings/`) from **historical** commits via
-  interactive rebase. This skill handles **OS noise on `HEAD`** triggered by a freshly added
-  `.gitignore`.
-- Commit message format: [Git Commit Message Rules](../../../ai-agent-rules/git-commit-message-rules.md).
+   removes IDE artifacts (`.project`, `.classpath`, `.settings/`) from **historical** commits via
+   interactive rebase. This skill handles **OS noise on `HEAD`** triggered by a freshly added
+   `.gitignore`.
+ - **[Claude Config Change Gate](../claude-config-change-gate/SKILL.md)**
+   — Successor workflow: after `git rm --cached` + `.gitignore` for
+   auto-timestamped claude files, set up the change-detection gate to
+   prevent accidental commits of trivial timestamp-only changes.
+ - Commit message format: [Git Commit Message Rules](../../../ai-agent-rules/git-commit-message-rules.md).
 - When the `.gitignore` uses a deny-all + whitelist pattern, see
   [`gitignore-whitelist-pattern`](../gitignore-whitelist-pattern/SKILL.md) for the generation
   protocol.

@@ -347,6 +347,7 @@ Each commit MUST follow
 #### 4d — Selective File Restoration (Per-File Triage)
 
 Use this subsection instead of §4a–§4c when:
+
 - `git stash apply` failed (divergent editor — see
   [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md)
   §1g for the safety-stash path; this subsection covers ALL stashes).
@@ -362,7 +363,7 @@ file type.
 
 ---
 
-**Step 1 — List changed files**
+##### Step 1 — List changed files
 
 ```bash
 git -C <repo> diff stash@{N} HEAD --name-status
@@ -375,7 +376,7 @@ tree (`stash@{N}^3`).
 
 ---
 
-**Step 2 — Per-file analysis loop**
+##### Step 2 — Per-file analysis loop
 
 For each file in the `--name-status` output:
 
@@ -390,8 +391,8 @@ For each file in the `--name-status` output:
 
 2. **Classify the file type** and apply the appropriate analysis pattern:
 
-   | File type | Analysis pattern | Typical recommendation |
-   |---|---|---|
+    | File type | Analysis pattern | Typical recommendation |
+    | --- | --- | --- |
    | `settings.json` (VS Code user settings) | Compare keys line-by-line: stash-only keys, HEAD-only keys, common-modified keys | Merge stash-only keys into HEAD (user decides) |
    | `extensions.json` (VS Code auto-generated) | Verify HEAD version is current; skip if auto-regenerated | Skip — auto-generated IDE state |
    | `state.vscdb` (SQLite binary — VS Code state) | Delegate to [`vscode-state-vscdb-merge`](../vscode-state-vscdb-merge/SKILL.md) `--json` for key-level comparison. Present stash-only/HEAD-only/common-modified key counts | Merge stash-only keys if stash has unique keys (user authorizes) |
@@ -420,7 +421,7 @@ For each file in the `--name-status` output:
 
 ---
 
-**Step 3 — "Not in HEAD" rule presentation**
+##### Step 3 — "Not in HEAD" rule presentation**
 
 Files that exist only in the stash (`A` in `--name-status`, or present in
 stash^2/stash^3 but absent from HEAD and the working tree) are presented
@@ -430,15 +431,18 @@ is always the user's.
 
 ---
 
-**Step 4 — Restoring Added files from stash trees**
+##### Step 4 — Restoring Added files from stash trees
 
 When the user chooses **restore** for an `A` file:
 
 - **If the file was staged** at stash time (found in stash^2):
+
   ```bash
   git checkout stash@{N} -- <path>
   ```
+
 - **If the file was untracked** at stash time (found in stash^3):
+
   ```bash
   git show stash@{N}^3:<path> > <path>
   ```
@@ -482,7 +486,7 @@ automatically cleaned up by Phase 5.
 
 ---
 
-**Step 5 — Verification**
+##### Step 5 — Verification
 
 After all files are processed:
 

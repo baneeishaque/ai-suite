@@ -446,6 +446,40 @@ When the user chooses **restore** for an `A` file:
 The stash^2 (index) and stash^3 (untracked) trees are read-only — these
 commands never modify the stash entry.
 
+#### Non-Destructive Extraction to a New File Path
+
+When the user wants to examine, compare, or archive stash content without
+overwriting the working tree's HEAD version, extract the stash file to a
+**new** path instead:
+
+```bash
+git -C <repo> show stash@{N}:<path> > <path_stash_vN.ext>
+```
+
+Use a naming convention that makes the origin clear and avoids confusion
+with the tracked file — for example, append `_stash_v{N}` before the
+extension (e.g., `SKILL_stash_v3.md` alongside `SKILL.md`).
+
+**When to offer this option:**
+
+- The stash draft contains useful reference material (code examples,
+  documentation snippets, test patterns) that was trimmed or replaced in
+  the committed version — the user may want to keep both.
+- The user explicitly asks to save stash content without applying it.
+- `git stash apply` fails on the file (divergent edits), but the user
+  wants to copy specific sections manually.
+
+**After extraction**, verify the file exists and note it in `git status`:
+
+```bash
+ls -la <path_stash_vN.ext>
+git -C <repo> status --short
+```
+
+The extracted file is now an untracked working-tree artifact. The user
+MUST decide its fate (commit, `.gitignore`, or delete) — it is NOT
+automatically cleaned up by Phase 5.
+
 ---
 
 **Step 5 — Verification**

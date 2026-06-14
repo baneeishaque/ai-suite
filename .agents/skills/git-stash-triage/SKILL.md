@@ -559,6 +559,13 @@ This skill consumes — never duplicates — the following authoritative rules:
   skill — surfaced the hang-prevention, apply-not-pop, BOM-free,
   expansion-safe, and `stash show -p` pathspec-limitation rules captured
   here.
+- A subsequent session triaged 4 stashes (all Bucket A — safety snapshots
+  whose content was already committed or superseded). One stash contained
+  ~100 lines of Playwright E2E test code that had been drafted but replaced
+  in the commit with a cross-reference. The content was extracted to a new
+  file (`SKILL_stash_v3.md`) before dropping the stash — surfaced the need
+  for blob-hash supersession check (§2.2), chronological timeline analysis
+  (§2.2), and non-destructive extraction to a new file path (§4d).
 
 ---
 

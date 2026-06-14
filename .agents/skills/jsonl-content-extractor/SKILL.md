@@ -23,6 +23,7 @@ and produces two JSON arrays: matched items and unmatched items.
 
 Composers that would invoke this skill:
 
+- [`claude-session-exporter`](../claude-session-exporter/SKILL.md) — exports Claude/MCP session
   files by extracting `message.content[]` blocks with type filtering
 
 The primitive was extracted because multiple future composers (exporters for Copilot sessions,
@@ -142,6 +143,7 @@ Returns two lists of result dicts matching the JSON output schema.
 ## 5. Ownership & Evolution
 
 - **Primitive maintainer**: This skill. The key-path navigation logic should remain generic.
+- **Composer maintainer**: [`claude-session-exporter`](../claude-session-exporter/SKILL.md)
   and any future JSONL-format-specific composers.
 - **Breaking changes**: Any change to the output schema or CLI flags must be mirrored in all
   known composers (listed in §1).

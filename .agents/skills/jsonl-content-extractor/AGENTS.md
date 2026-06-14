@@ -19,5 +19,6 @@ loading `SKILL.md` — this bridge is intentionally non-actionable.
 
 ## Cross-References
 
+- [`claude-session-exporter`](../claude-session-exporter/SKILL.md) — composer skill that uses
   this base primitive for Claude session export
 - [`skill-factory`](../skill-factory/SKILL.md) — §2.0 Layering Decision, §2.2 SKILL.md Composition, §3 Post-Drafting Checklist

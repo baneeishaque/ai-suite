@@ -199,6 +199,8 @@ and optional pre-processing (e.g. filler generation), then pipe their file list 
 
 | Composer Skill | Composition Mechanism |
 | :--- | :--- |
+| [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) | Generates a filler transition segment and inserts it between discontinuous webm recording chunks, then pipes the combined file list into this base skill for lossless concat. |
+
 New composers (e.g. security-camera segment assembly, podcast episode join, screen-recording gap fill) MUST reuse this
 base script rather than reinventing compatibility verification and concat invocation. Composer scripts MUST resolve this
 base script via a relative path anchored to their own location (`os.path.dirname(os.path.abspath(__file__))`) so the

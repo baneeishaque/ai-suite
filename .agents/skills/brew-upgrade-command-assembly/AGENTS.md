@@ -11,6 +11,7 @@ from package lists. Domain-agnostic — no awareness of outdated-leaves
 discovery, priority ordering, or type resolution.
 
 Most commonly invoked by
+[brew-upgrade-workflow](../brew-upgrade-workflow/SKILL.md)
 to produce the final executable command string.
 
 - **Primary Entry Point**: [.agents/skills/brew-upgrade-command-assembly/SKILL.md](./SKILL.md)

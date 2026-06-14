@@ -18,6 +18,7 @@ mechanical assembly of:
 - Correct omission of `--cask`/`--formula` on `brew cleanup` (positional only)
 
 The composer layer
+([`brew-upgrade-workflow`](../brew-upgrade-workflow/SKILL.md))
 owns the brew-specific discovery logic (identifying outdated leaves vs
 dependencies, resolving formula vs cask types, applying priority
 ordering) and invokes this primitive to produce the final command.
@@ -34,6 +35,8 @@ Composers that invoke this skill:
 
 | Composer | Role |
 | :--- | :--- |
+| [`brew-upgrade-workflow`](../brew-upgrade-workflow/SKILL.md) | Discovers outdated leaves via `brew outdated --greedy` and `brew leaves --installed-on-request`, resolves formula vs cask types, applies default priority ordering, and pipes the sorted package lists into this base assembler. |
+
 The primitive was extracted because multiple future workflows (e.g.,
 selective cask upgrades, cache-pruning before fetch, dependency-aware
 batching) could reuse the same command-assembly logic without

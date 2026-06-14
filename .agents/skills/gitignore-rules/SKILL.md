@@ -309,6 +309,7 @@ The agent is **BLOCKED** from:
 
 | Skill | Role |
 |---|---|
+| [`claude-config-change-gate`](../claude-config-change-gate/SKILL.md) | **Complementary** — `.gitignore` only blocks untracked files from being tracked; the change gate also blocks commits when tracked auto-timestamped files changed only their timestamps. Pair both for full protection. |
 | [`git-post-gitignore-untrack`](../git-post-gitignore-untrack/SKILL.md) | **Post-processor.** When this skill (or any commit) adds/expands a `.gitignore` and previously tracked files now match the new rules, run `git-post-gitignore-untrack` to `git rm --cached` them and fold the cleanup into the originating commit. |
 | [`git-cross-repo-cherry-pick`](../git-cross-repo-cherry-pick/SKILL.md) | When the audited `.gitignore` is propagated to other repos via cherry-pick, that skill chains into `git-post-gitignore-untrack` per target repo. |
 | [`gitignore-whitelist-pattern`](../gitignore-whitelist-pattern/SKILL.md) | **Complementary pattern.** When the goal is not to fix a blacklist but to generate a deny-all + whitelist block (track only specific extensions, ignore everything else). |

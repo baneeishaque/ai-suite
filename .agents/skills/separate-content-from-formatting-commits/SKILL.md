@@ -178,6 +178,111 @@ git status
 git diff HEAD
 ```
 
+### Manual Approach (Restore-and-Reapply)
+
+When the automated script pipeline is disproportionate or the edits are
+hand-crafted semantic changes to a skill/rule/doc file (not tool-driven
+reformatting), use the manual restore-and-reapply workflow instead.
+
+**Use this variant when:**
+
+- Changes are authored by hand (new sections, paragraphs, protocol steps)
+  rather than produced by a formatter or linter fix.
+- Each change deserves independent review (skill docs, rule files,
+  configuration narratives).
+- The user requests "maximum atomic commits" with per-change visibility.
+- The file has 3–8 logical changes — the overhead of writing an `edits.json`
+  manifest exceeds the benefit.
+
+**Do NOT use when:**
+
+- The diff is large (10+ changes) — the script pipeline is faster and less
+  error-prone.
+- The formatting change is pervasive (e.g., indent style, key sort) and
+  applies to a structured file (JSON, YAML, TOML) — use the script pipeline.
+- `git add -p` can cleanly isolate content hunks — use `add -p` directly.
+
+#### Step 1 — Catalog the Diff
+
+Read the full diff and classify each hunk as either **content** (semantic
+meaning changes) or **formatting** (whitespace, heading level, table style,
+blank line insertion):
+
+```bash
+git diff <file-path>
+```
+
+Create a mental or written ordered list of content changes (top to bottom
+in the file), then a separate list of formatting changes.
+
+#### Step 2 — Restore to Clean Baseline
+
+```bash
+git checkout -- <file-path>
+git diff HEAD -- <file-path>   # verify: must be empty
+```
+
+This discards the dirty working-tree state. All content changes will be
+re-applied from scratch — the original diff is your change list.
+
+#### Step 3 — Apply Content Changes One by One
+
+For each content change in the catalog (top-to-bottom order):
+
+1. Apply the change using a text-editor tool or script.
+2. Stage and commit:
+
+   ```bash
+   git add <file-path>
+   git commit -m "feat(<scope>): <description of this one change>"
+   ```
+
+3. Verify the commit:
+
+   ```bash
+   git log -1 --oneline
+   git diff HEAD~1 HEAD --stat
+   ```
+
+Continue until all content changes are committed. Track progress against
+your catalog to avoid missing or duplicating a change.
+
+#### Step 4 — Apply Formatting Changes
+
+After all content commits are landed, apply the formatting-only changes:
+
+1. Apply each formatting fix (heading demotion, table separator style,
+   blank line insertion, etc.).
+2. Stage and commit:
+
+   ```bash
+   git add <file-path>
+   git commit -m "refactor(<scope>): fix formatting — heading levels, table layout, blank lines"
+   ```
+
+The formatting commit MUST always be last — never interleave formatting
+between content commits, as that breaks `git blame` traceability.
+
+#### Step 5 — Verify
+
+```bash
+git status                       # must be clean
+git log --oneline -5             # review commit chain
+git diff HEAD                    # must be empty (matches clean tree)
+```
+
+The final commit history should show N content commits followed by 0 or 1
+formatting commit — never mixed.
+
+**Live-session example** (this skill's companion `git-stash-triage` skill,
+2026-06-15): a single SKILL.md had accumulated 4 content additions (Phase 0
+timestamp capture, Phase 2 blob-hash supersession check + timeline analysis,
+§4d non-destructive extraction, traceability update) interleaved with
+formatting drift (heading levels, table separator style, blank lines before
+code blocks). The restore-and-reapply workflow produced 4 content commits
+(`feat:`, `feat:`, `docs:`) and 1 final formatting commit (`refactor:`).
+No mixed-content commit reached the log.
+
 ## JSON Round-Trip Variant
 
 Use [`scripts/build-states-json-roundtrip.py`](scripts/build-states-json-roundtrip.py)
@@ -224,6 +329,8 @@ python3 /path/to/skills/separate-content-from-formatting-commits/scripts/build-s
 - [`json-block-indent-override`](../json-block-indent-override/SKILL.md) — re-indents a specific JSON key block
   (useful as a post-content-commits formatting step for JSON files).
 - [`json-deep-sort`](../json-deep-sort/SKILL.md) — sorts JSON keys alphabetically (complementary reformatter).
+- [`skill-factory`](../skill-factory/SKILL.md) — governs skill-doc editing discipline (§5); the manual
+  approach is the recommended technique when enriching existing skill files.
 
 ## Traceability
 
@@ -243,3 +350,12 @@ commits `421a63e` → `718c8b3`.
 The lesson — **always inspect the baseline's actual byte-level format
 before choosing a script variant** — is encoded in Step 1 (Capture the
 Baseline) and the script-selection table above.
+
+- A subsequent session enriched `git-stash-triage/SKILL.md` with 4 content
+  additions (Phase 0 timestamp capture, Phase 2 blob-hash supersession check,
+  timeline analysis, §4d non-destructive extraction, traceability update)
+  while the file also carried formatting drift (heading level fixes, table
+  separator style, blank lines before code blocks from `markdownlint-cli2
+  --fix`). The manual restore-and-reapply workflow produced 4 content commits
+  followed by 1 formatting-only commit — demonstrating the manual approach
+  documented in this skill.

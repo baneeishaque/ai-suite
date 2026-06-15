@@ -17,6 +17,9 @@ Activate this skill whenever:
   key sorting, trailing newlines) mixed with real semantic changes.
 - The user asks to "commit each change separately" but `git add -p` is
   unreliable because the format changes are pervasive.
+- Hand-crafted changes to a skill/rule/doc file need per-change atomic
+  commits — use the **Manual Approach** (`SKILL.md` §Manual Approach)
+  instead of the script pipeline.
 
 ## Quick-Start
 

@@ -72,6 +72,25 @@ Do NOT apply when:
 | Shell | PowerShell 5.1+ or POSIX shell |
 | Disposition authority | User authorization required for every destructive step (drop) |
 
+## Environment & Dependencies
+
+| Requirement | Notes |
+| --- | --- |
+| `bash` | Required by `scripts/blob-hash-check.bash` — verify with `which bash` |
+| Git 2.x+ | All operations require a valid Git repository |
+
+Verify the blob-hash script is present:
+
+```bash
+ls -la .agents/skills/git-stash-triage/scripts/blob-hash-check.bash
+```
+
+## Script Inventory
+
+| Script | Language | When to use |
+| --- | --- | --- |
+| [`scripts/blob-hash-check.bash`](scripts/blob-hash-check.bash) | Bash | Compare per-file blob hashes between a stash and HEAD (or any ref) for fast supersession triage. Default. |
+
 ---
 
 ## Operational Logic
@@ -167,31 +186,30 @@ For each stash, classify its content into one of four buckets:
 
 #### Fast Supersession Check via Blob Hash Comparison
 
-For faster Bucket A confirmation without full patch inspection, compare
-blob hashes between the stash and HEAD on a per-file basis:
+For faster Bucket A confirmation without full patch inspection, use the
+[`scripts/blob-hash-check.bash`](scripts/blob-hash-check.bash) script to
+compare blob hashes between the stash and HEAD on a per-file basis:
 
 ```bash
-for f in $(git -C <repo> diff stash@{N} HEAD --name-only); do
-  hash_stash=$(git -C <repo> rev-parse stash@{N}:"$f" 2>/dev/null)
-  hash_head=$(git -C <repo> rev-parse HEAD:"$f" 2>/dev/null)
-  if [ "$hash_stash" = "$hash_head" ]; then
-    echo "$f  IDENTICAL"
-  elif [ -z "$hash_stash" ]; then
-    echo "$f  not in stash"
-  elif [ -z "$hash_head" ]; then
-    echo "$f  not in HEAD"
-  else
-    echo "$f  DIFFERENT"
-  fi
-done
+.agents/skills/git-stash-triage/scripts/blob-hash-check.bash \
+  --repo <path> --stash-n <N> [--ref-b HEAD]
 ```
 
+The script emits one line per differing file:
+
+| Line pattern | Meaning |
+| --- | --- |
+| `IDENTICAL      <path>` | Blob hash matches HEAD — no unique stash content |
+| `DIFFERENT      <path>` | Blob hash differs — needs deeper analysis |
+| `not in stash   <path>` | File exists in HEAD but not in the stash |
+| `not in HEAD    <path>` | File exists in stash but not in HEAD (untracked at stash time) |
+
 - **All files IDENTICAL** → proven Bucket A. The stash contains zero unique
-  content.
-- **Some files DIFFERENT** → the differing files need deeper analysis.
-  Determine whether the differences represent content that was deliberately
-  refined (superseded → Bucket A) or content that was lost (salvageable →
-  consider §4d selective restoration).
+  content. Exit code 0.
+- **Any file DIFFERENT** → the differing files need deeper analysis. Exit
+  code 1. Determine whether the differences represent content that was
+  deliberately refined (superseded → Bucket A) or content that was lost
+  (salvageable → consider §4d selective restoration).
 
 **Chronological timeline analysis** — when blobs differ, compare the stash
 creation timestamp (captured in Phase 0) against the timestamps of commits

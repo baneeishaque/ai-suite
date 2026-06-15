@@ -35,7 +35,7 @@ for the specific case of format-mixed file diffs.
 ## Prerequisites
 
 | Requirement | Minimum |
-|---|---|
+| --- | --- |
 | Python | 3.7+ (stdlib only — `json`, `pathlib`, `argparse`) |
 | Git | 2.x+ |
 | Working knowledge | The caller must identify the ordered semantic changes manually |
@@ -64,7 +64,7 @@ textual substitutions.
 ## Script Inventory
 
 | Script | Approach | When to use |
-|---|---|---|
+| --- | --- | --- |
 | [`scripts/build-states-textual.py`](scripts/build-states-textual.py) | Plain-text substring replace | **Default.** Preserves original format byte-for-byte. Content commits land on the old format; the optional final commit reformats. |
 | [`scripts/build-states-json-roundtrip.py`](scripts/build-states-json-roundtrip.py) | JSON parse → mutate → re-serialize | Use only when the user wants the reformat baked into the FIRST commit (all states carry the new format). |
 
@@ -119,7 +119,7 @@ EOF
 Edit kinds:
 
 | Kind | Behaviour |
-|---|---|
+| --- | --- |
 | `replace` | Replace ALL occurrences. Asserts at least one found. |
 | `replace_unique` | Assert old appears EXACTLY once, then replace. Prevents accidental multi-site edits. |
 | `append_before_suffix` | Insert text immediately before the file's trailing suffix (e.g., closing braces). |

@@ -215,7 +215,11 @@ Before executing any deterministic step described in a skill's prose, the consum
 
 2. **Match the prose step to a script.** Scan filenames + the top docstring/header of each candidate. If the skill's prose says *"register the skill in `agentskills.io/library.json`"*, look for `scripts/register-skill.*`, `scripts/agent-registration.*`, etc.
 
-3. **Invoke the script**, not the prose. Use the documented contract (env vars, positional args, flags). Read the script's `--help` if its CLI surface is non-obvious. The agent's tool transcript MUST contain at least one literal invocation of the script for any Tier-A step that has one.
+3. **Read the script's header, then invoke.** Before constructing the invocation, read the script's header/docstring (first 10–20 lines of the file) to understand its CLI contract — flags, positional args, env vars. Scripts document their usage at the top; this is more reliable than probing `--help` (which some scripts redirect through a pager or omit entirely). Only if the header is unclear or absent should you fall back to probing `--help` or `--usage`. The agent's transcript MUST show evidence of understanding the usage (either a header read or a `--help` call) before the real invocation for any script the agent has not read this session.
+
+    **Scope pre-flight by script type.**
+    - **Base/independent skill scripts**: SKILL.md documents the exact invocation. Trust the doc; read the script header only if the documented contract is ambiguous.
+    - **Composer dependency scripts**: The dependency skill may evolve independently. Before invoking a dependency script you haven't read this session, read its header to catch any contract changes.
 
 4. **Fall through to manual recipe only if NO script exists.** If `scripts/` is empty or no script matches the step, the prose recipe is the authoritative fallback (Tier B / C). Do NOT skip the pre-flight just because manual recipes are familiar.
 

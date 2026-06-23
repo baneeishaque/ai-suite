@@ -1133,6 +1133,77 @@ Get-ChildItem ".git/rebase-merge"       # Empty = corrupted state
    normal `PAGER=cat git commit` with the planned message instead of
    `PAGER=cat git rebase --continue`.
 
+#### 9h — Pre-Existing Staged Content Handling
+
+Before staging files for a new commit, check whether the index already
+contains staged changes from a prior operation (previous commit,
+interrupted workflow, or manual staging):
+
+```bash
+git diff --cached --stat
+```
+
+If the output is **non-empty**, pre-existing staged content exists. The
+agent MUST:
+
+1. **Present** the pre-existing staged content to the user with a warning.
+2. **Unstage** it if it does not belong to the current commit:
+   ```bash
+   git reset HEAD -- .
+   ```
+3. **Re-verify** with `git diff --cached` that the index is now clean.
+4. **Stage only the files intended** for the current atomic commit.
+
+This prevents accidental inclusion of stale staged content. The `git reset
+HEAD -- .` command only unstages files — it does NOT discard working-tree
+changes.
+
+#### 9i — Commit Message Delivery (Safe Pattern)
+
+Delegated to the
+[`git-commit-message-delivery`](../git-commit-message-delivery/SKILL.md)
+base skill. Apply the **heredoc → `-F`** pattern (§1.2) for all multi-line
+or special-character commit messages:
+
+```bash
+cat > /tmp/commit_msg <<'EOF'
+<type>(<scope>): <title>
+
+<body>
+EOF
+
+git commit -F /tmp/commit_msg
+rm -f /tmp/commit_msg
+```
+
+Do NOT use `git commit -m '...'` when the message is multi-line or contains
+shell-special characters (`'`, `$`, `` ` ``). See the base skill for the
+complete pattern reference and selection criteria.
+
+#### 9j — Post-Commit Verification
+
+After each commit executes, verify its file set using `--name-only`, not
+`--stat`:
+
+```bash
+git show --name-only HEAD
+```
+
+`git show --stat` truncates long file paths with `.../`, which causes `grep`
+(or `Select-String`) to miss matches. `--name-only` outputs every path in
+full, one per line, and is safe for programmatic matching.
+
+Verify three things:
+
+1. **File set is correct** — the committed files match what was staged.
+2. **Count matches** — the number of committed files equals the expected
+   number.
+3. **No unintended files** — no sidecar files (`.orig`, `.bak`, `.rej`) or
+   IDE artifacts leaked into the commit.
+
+If the file set is wrong, diagnose via `git diff HEAD~1..HEAD` and correct
+before the next commit.
+
 ---
 
 ### Step 11 — Logic-Documentation Compass

@@ -175,10 +175,16 @@ to determine the correct Conventional Commits type, scope, AND to
 author a content-faithful body:
 
 ```bash
-git show --stat <sha>
+git show --name-only <sha>           # file set (no path truncation)
 git show <sha>                       # full unified diff
 git show <sha> -- <changed-files>    # per-file deep dive
 ```
+
+Use `--name-only` (not `--stat`) for the initial file list to avoid
+path truncation. See
+[`git-commit-message-delivery` §2](../git-commit-message-delivery/SKILL.md#2-verification-pattern)
+for the rationale. `--stat` may be used for human-readable line-count
+summary only.
 
 Classify type and scope via the heuristic table below (range-specific
 pattern recognition), then author the body per the **delegated SSOT**
@@ -406,8 +412,9 @@ git log --oneline <start>~1..HEAD | wc -l
 ```
 
 The count MUST equal the original range size. Spot-check 3
-random commits with `git show --stat` to confirm the new message
-is applied and the file changes are intact.
+random commits — use `git show --name-only <sha>` for reliable
+file-set verification (no path truncation), and
+`git show <sha>` for full diff inspection.
 
 #### 4a — Conventional Commits Lint
 
@@ -501,7 +508,7 @@ failing to match — inspect the snapshots before re-attempting.
 | Category | Convention |
 |---|---|
 | Range enumeration | `git log --reverse --oneline <start>~1..<end>` |
-| Diff classification | `git show --stat <sha>` + heuristic table |
+| Diff classification | `git show --name-only <sha>` (no path truncation) + heuristic table |
 | Batch reword execution | Single `git rebase -i` with `GIT_SEQUENCE_EDITOR` + `GIT_EDITOR` scripts |
 | Conventional Commits compliance | Lint regex in §4a |
 | Backup, force-push, cleanup | **Delegated** to [`git-commit-edit`](../git-commit-edit/SKILL.md) |

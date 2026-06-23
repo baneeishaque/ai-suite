@@ -115,6 +115,7 @@ Each category requires a different fix:
 | Flag | Purpose |
 |---|---|
 | `--skills-dir PATH` | Scan a different skills root (default: `.agents/skills`) |
+| `--skill-names NAME [NAME ...]` | Only report issues for skills matching the given names |
 | `--json` | Output as JSON for programmatic consumption |
 
 ## Output format (JSON)
@@ -146,8 +147,6 @@ Exit code: `0` if no issues, `1` if issues found.
 
 ## Related Skills
 
-- [`skill-factory`](../skill-factory/SKILL.md) — consumer of this audit in
-  its Post-Drafting Checklist (§3 Composition Audit).
 - [`script-template-extraction`](../script-template-extraction/SKILL.md) —
   companion base skill for template extraction; run this audit after extraction
   to verify the skill graph is clean.

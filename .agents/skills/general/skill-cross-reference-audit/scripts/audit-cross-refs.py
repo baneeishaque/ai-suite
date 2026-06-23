@@ -190,6 +190,11 @@ def main() -> int:
         action="store_true",
         help="Output as JSON instead of human-readable report",
     )
+    parser.add_argument(
+        "--skill-names",
+        nargs="+",
+        help="Only report issues for skills matching these names",
+    )
     args = parser.parse_args()
 
     skills_dir = Path(args.skills_dir).resolve()
@@ -201,13 +206,33 @@ def main() -> int:
 
     issues = audit_skills(skills_dir)
 
+    if args.skill_names:
+        skill_set = set(args.skill_names)
+        filtered = {}
+        for category, items in issues.items():
+            matched = [
+                item for item in items if item.get("skill") in skill_set
+            ]
+            if matched:
+                filtered[category] = matched
+        issues = filtered
+
     if args.json:
         json.dump(issues, sys.stdout, indent=2)
     else:
         all_skills = find_skill_dirs(skills_dir)
         total = sum(len(v) for v in issues.values())
-        print(f"Audited: {len(all_skills)} skills in {skills_dir}")
-        print(f"Issues found: {total}")
+        total_all = sum(
+            len(v) for v in audit_skills(skills_dir).values()
+        )
+        if args.skill_names:
+            print(
+                f"Audited: {len(all_skills)} skills in {skills_dir}"
+                f" (filtered to {', '.join(args.skill_names)})"
+            )
+        else:
+            print(f"Audited: {len(all_skills)} skills in {skills_dir}")
+        print(f"Issues found: {total}{' (unfiltered: ' + str(total_all) + ')' if args.skill_names else ''}")
         print()
 
         for category, items in issues.items():

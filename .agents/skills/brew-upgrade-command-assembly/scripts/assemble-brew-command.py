@@ -10,9 +10,10 @@ import argparse
 import sys
 
 
-def _add_pkg(parts: list[str], pkg: str, type_flag: str) -> None:
-    parts.append(f"brew upgrade --verbose --{type_flag} {pkg}")
-    parts.append(f"brew cleanup --verbose {pkg}")
+def _add_pkg(parts: list[str], pkg: str, type_flag: str, yes: bool = False) -> None:
+    prefix = "yes | " if yes else ""
+    parts.append(f"{prefix}brew upgrade --verbose --{type_flag} {pkg}")
+    parts.append(f"{prefix}brew cleanup --verbose {pkg}")
 
 
 def assemble_command(
@@ -20,6 +21,7 @@ def assemble_command(
     cask_names: list[str],
     fetch_only: list[str],
     first: list[str] | None = None,
+    yes: bool = False,
 ) -> str:
     """Assemble a single-line brew upgrade command chain.
 
@@ -30,6 +32,10 @@ def assemble_command(
         brew upgrade --verbose --cask <c1> && brew cleanup --verbose <c1> &&
         brew cleanup --prune=all --verbose &&
         brew fetch --cask --verbose <fetch1> && ...
+
+    When --yes is set, every brew subcommand is prefixed with `yes | ` to
+    auto-confirm any interactive prompts (symlink changes, keg-only
+    conflicts, stale version removal).
     """
     first = first or []
     first_set = set(first)
@@ -42,20 +48,24 @@ def assemble_command(
     remaining_cask = [p for p in cask_names if p not in first_set]
 
     for pkg in first_formula:
-        _add_pkg(parts, pkg, "formula")
+        _add_pkg(parts, pkg, "formula", yes)
     for pkg in first_cask:
-        _add_pkg(parts, pkg, "cask")
+        _add_pkg(parts, pkg, "cask", yes)
 
     for pkg in remaining_formula:
-        _add_pkg(parts, pkg, "formula")
+        _add_pkg(parts, pkg, "formula", yes)
 
     for pkg in remaining_cask:
-        _add_pkg(parts, pkg, "cask")
+        _add_pkg(parts, pkg, "cask", yes)
 
-    parts.append("brew cleanup --prune=all --verbose")
+    if yes:
+        parts.append("yes | brew cleanup --prune=all --verbose")
+    else:
+        parts.append("brew cleanup --prune=all --verbose")
 
     for pkg in fetch_only:
-        parts.append(f"brew fetch --cask --verbose {pkg}")
+        prefix = "yes | " if yes else ""
+        parts.append(f"{prefix}brew fetch --cask --verbose {pkg}")
 
     return " && ".join(parts)
 
@@ -124,6 +134,11 @@ def main() -> int:
         help="Comma-separated packages to place first in the chain regardless of formula/cask type",
     )
     parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Prefix every brew subcommand with 'yes | ' to auto-confirm interactive prompts",
+    )
+    parser.add_argument(
         "--stdin",
         action="store_true",
         help="Read newline-separated package entries from stdin "
@@ -144,7 +159,9 @@ def main() -> int:
         print("Error: no packages specified", file=sys.stderr)
         return 1
 
-    result = assemble_command(formula_names, cask_names, fetch_only, first=first_list)
+    result = assemble_command(
+        formula_names, cask_names, fetch_only, first=first_list, yes=args.yes
+    )
     print(result)
     return 0
 

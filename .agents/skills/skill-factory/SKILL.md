@@ -55,6 +55,8 @@ Reference exemplar: [vscode-search-exclude-glob](../vscode-search-exclude-glob/S
   location (`SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"` then `BASE="$SCRIPT_DIR/../../<base-skill>/scripts/..."`),
   so invocation works regardless of the caller's `cwd`. The composer MUST verify the base script exists and exit
   non-zero with a clear error if it is missing.
+- **`scripts/` SANITY CHECK**: Only create `scripts/` when the skill ships executable scripts. A skill with no
+  scripts (pure documentation + conventions) MUST NOT have a `scripts/` directory.
 
 ### 2.2 SKILL.md Composition
 

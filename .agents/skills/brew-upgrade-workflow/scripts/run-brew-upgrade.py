@@ -12,6 +12,7 @@ See SKILL.md for the full CLI contract.
 import argparse
 import csv
 import io
+import json
 import os
 import subprocess
 import sys
@@ -88,17 +89,31 @@ def resolve_type(
 ) -> str:
     """Resolve a package as 'formula' or 'cask'.
 
-    Checks installed lists first, then falls back to 'brew info'.
+    Checks installed lists first, then falls back to 'brew info' for
+    authoritative resolution when the name is unknown (e.g., formula
+    aliases like sdl2-compat vs sdl2).
     """
     if pkg in formulae and pkg not in casks:
         return "formula"
     if pkg in casks and pkg not in formulae:
         return "cask"
-    # Ambiguous or unknown — query brew info
     if pkg in casks and pkg in formulae:
-        # Both lists contain it — probably a cask with same name as a formula
         return "cask"
-    return "cask"
+    try:
+        result = run_brew(["info", "--json=v2", pkg], debug=debug)
+        data = json.loads(result)
+        if isinstance(data, list) and data:
+            entry = data[0]
+            if "token" in entry:
+                casks.add(pkg)
+                return "cask"
+    except subprocess.CalledProcessError:
+        print(
+            f"[warn] brew info failed for '{pkg}', defaulting to formula",
+            file=sys.stderr,
+        )
+    formulae.add(pkg)
+    return "formula"
 
 
 def apply_priority(
@@ -144,6 +159,7 @@ def assemble_command(
     cask_names: list[str],
     fetch_only: list[str],
     first: list[str] | None = None,
+    yes: bool = False,
     assembler_path: str = ASSEMBLER_SCRIPT,
 ) -> str:
     """Invoke the base primitive and return the assembled command."""
@@ -156,6 +172,8 @@ def assemble_command(
     ]
     if first:
         cmd += ["--first", ",".join(first)]
+    if yes:
+        cmd += ["--yes"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
@@ -209,6 +227,11 @@ def main() -> int:
         "--debug",
         action="store_true",
         help="Print intermediate discovery state to stderr",
+    )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Auto-confirm all brew interactive prompts (prefixes each subcommand with 'yes | ')",
     )
 
     args = parser.parse_args()
@@ -271,8 +294,16 @@ def main() -> int:
                 file=sys.stderr,
             )
         else:
-            # Unknown — include as cask default
-            filtered.add(pkg)
+            # Unknown — resolve type via brew info, then apply leaf rule
+            pkg_type = resolve_type(pkg, casks, formulae, debug=args.debug)
+            if pkg_type == "formula":
+                print(
+                    f"[warn] Skipping '{pkg}' — dependency formula (not a leaf). "
+                    f"Use --only to force-include.",
+                    file=sys.stderr,
+                )
+            else:
+                filtered.add(pkg)
 
     if args.debug:
         print(f"[debug] After leaf filter ({len(filtered)}): {sorted(filtered)}", file=sys.stderr)
@@ -306,6 +337,7 @@ def main() -> int:
             cask_names=resolved_casks,
             fetch_only=fetch_only_list,
             first=first_list,
+            yes=args.yes,
         )
     except subprocess.CalledProcessError:
         return 2

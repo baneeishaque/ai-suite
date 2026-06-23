@@ -10,29 +10,47 @@ import argparse
 import sys
 
 
+def _add_pkg(parts: list[str], pkg: str, type_flag: str) -> None:
+    parts.append(f"brew upgrade --verbose --{type_flag} {pkg}")
+    parts.append(f"brew cleanup --verbose {pkg}")
+
+
 def assemble_command(
     formula_names: list[str],
     cask_names: list[str],
     fetch_only: list[str],
+    first: list[str] | None = None,
 ) -> str:
     """Assemble a single-line brew upgrade command chain.
 
     The output follows this structure:
       export HOMEBREW_DOWNLOAD_CONCURRENCY=1;
+        <first packages (type-resolved)>
         brew upgrade --verbose --formula <f1> && brew cleanup --verbose <f1> &&
         brew upgrade --verbose --cask <c1> && brew cleanup --verbose <c1> &&
         brew cleanup --prune=all --verbose &&
         brew fetch --cask --verbose <fetch1> && ...
     """
+    first = first or []
+    first_set = set(first)
     parts = ["export HOMEBREW_DOWNLOAD_CONCURRENCY=1;"]
 
-    for pkg in formula_names:
-        parts.append(f"brew upgrade --verbose --formula {pkg}")
-        parts.append(f"brew cleanup --verbose {pkg}")
+    # First-priority packages go first regardless of type
+    first_formula = [p for p in first if p in formula_names]
+    first_cask = [p for p in first if p in cask_names]
+    remaining_formula = [p for p in formula_names if p not in first_set]
+    remaining_cask = [p for p in cask_names if p not in first_set]
 
-    for pkg in cask_names:
-        parts.append(f"brew upgrade --verbose --cask {pkg}")
-        parts.append(f"brew cleanup --verbose {pkg}")
+    for pkg in first_formula:
+        _add_pkg(parts, pkg, "formula")
+    for pkg in first_cask:
+        _add_pkg(parts, pkg, "cask")
+
+    for pkg in remaining_formula:
+        _add_pkg(parts, pkg, "formula")
+
+    for pkg in remaining_cask:
+        _add_pkg(parts, pkg, "cask")
 
     parts.append("brew cleanup --prune=all --verbose")
 
@@ -100,6 +118,12 @@ def main() -> int:
         help="Comma-separated casks to download only (appended after --prune=all)",
     )
     parser.add_argument(
+        "--first",
+        type=str,
+        default="",
+        help="Comma-separated packages to place first in the chain regardless of formula/cask type",
+    )
+    parser.add_argument(
         "--stdin",
         action="store_true",
         help="Read newline-separated package entries from stdin "
@@ -114,12 +138,13 @@ def main() -> int:
         formula_names = [p.strip() for p in args.formula_names.split(",") if p.strip()]
         cask_names = [p.strip() for p in args.cask_names.split(",") if p.strip()]
         fetch_only = [p.strip() for p in args.fetch_only.split(",") if p.strip()]
+        first_list = [p.strip() for p in args.first.split(",") if p.strip()]
 
     if not formula_names and not cask_names and not fetch_only:
         print("Error: no packages specified", file=sys.stderr)
         return 1
 
-    result = assemble_command(formula_names, cask_names, fetch_only)
+    result = assemble_command(formula_names, cask_names, fetch_only, first=first_list)
     print(result)
     return 0
 

@@ -283,6 +283,12 @@ See the upstream commit (`ai-suite-2` `c190f39`) and downstream sync
   invokes this skill during Phase 4 to push deterministic recipes out
   of the blended prose and into scripts.
 
+## Related Skills
+
+- [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md) — automated audit for skill graph issues (duplicates, missing bridges, missing frontmatter)
+- [`script-template-extraction`](../script-template-extraction/SKILL.md) — companion base skill for template extraction; run `skill-cross-reference-audit` after extraction to verify the skill graph is clean
+- [`skill-factory`](../skill-factory/SKILL.md) — consumes this skill during §2.2.1 Tier Decomposition Mandate for every newly drafted skill
+
 ## Traceability
 
 Formalized after a session in which a configurations repository's MCP

@@ -73,12 +73,6 @@ or divergence discovery — those are the owners' jobs.
   branch (e.g., the personal sandbox AND a diagnostics branch AND a feature
   stack) is stacked on a base that just moved. The cascade skill re-uses
   this skill's six-axis parity audit per dependent.
-- [`git-personal-content-extraction`](../git-personal-content-extraction/SKILL.md)
-  — higher-level composer that consumes this skill in its Phase 6 to restack
-  the long-lived `personal/sandbox` branch onto each round's purified team
-  tip BEFORE slot-inserting the extracted personal commits at their original
-  chronological position.
-
 ## Composition by Higher-Level Skills
 
 | Composer Skill | Role of this skill in the pipeline |

@@ -70,36 +70,35 @@ Per the [Layered Composition Mandate](../../../ai-agent-rules/ai-rule-standardiz
 ### 5.2 Base-script composition (full audit pipeline)
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-THIS=.agents/skills/github-actions-run-audit/scripts
-FETCH=.agents/skills/github-repo-commit-fetch/scripts
-DISPATCH=.agents/skills/github-actions-workflow-dispatch/scripts
+DISPATCH_DIR=.agents/skills/github-actions-workflow-dispatch/scripts
+SCRIPTS_DIR=.agents/skills/github-actions-run-audit/scripts
+FETCH_DIR=.agents/skills/github-repo-commit-fetch/scripts
 
 REPO=owner/workflow-owning-repo
 WF=database-backup.yml
 
 # Step 1 — (optional) trigger the workflow now and wait for completion.
-"$PY" $DISPATCH/trigger-workflow.py --repo $REPO --workflow "$WF" --wait 300
+python3 "$DISPATCH_DIR"/trigger-workflow.py --repo $REPO --workflow "$WF" --wait 300
 
 # Step 2 — audit the latest run's status.
-"$PY" $THIS/audit-run.py --repo $REPO --workflow "$WF" --limit 1
+python3 "$SCRIPTS_DIR"/audit-run.py --repo $REPO --workflow "$WF" --limit 1
 
 # Step 3 — confirm the workflow committed a fresh artifact.
-"$PY" $FETCH/list-commits.py --repo $REPO --limit 1
+python3 "$FETCH_DIR"/list-commits.py --repo $REPO --limit 1
 
 # Step 4 — inspect what file that commit touched.
-SHA=$("$PY" $FETCH/list-commits.py --repo $REPO --limit 1 \
-      | python -c 'import json,sys;print(json.load(sys.stdin)[0]["short"])')
-"$PY" $FETCH/commit-details.py --repo $REPO --sha $SHA --files-only
+SHA=$(python3 "$FETCH_DIR"/list-commits.py --repo $REPO --limit 1 \
+      | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["short"])')
+python3 "$FETCH_DIR"/commit-details.py --repo $REPO --sha $SHA --files-only
 
 # Step 5 — fetch the committed artifact and verify it contains expected content.
-"$PY" $FETCH/fetch-file-at-ref.py --repo $REPO --ref $SHA \
+python3 "$FETCH_DIR"/fetch-file-at-ref.py --repo $REPO --ref $SHA \
     --path db_backups/foo.sql --out /tmp/backup.sql
 grep -c "ENGINE=InnoDB" /tmp/backup.sql
 
 # (Alternative to step 5: if the workflow uploads artifacts instead of committing,
 #  download them via:)
-# "$PY" $THIS/download-artifacts.py --repo $REPO --run-id $RUN_ID --dir /tmp/artifacts/
+# python3 "$SCRIPTS_DIR"/download-artifacts.py --repo $REPO --run-id $RUN_ID --dir /tmp/artifacts/
 ```
 
 ### 5.3 Composition Rationale

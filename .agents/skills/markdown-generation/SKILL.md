@@ -85,6 +85,8 @@ Before finalizing ANY markdown file, the agent MUST:
 2. **Sync Check**: Ensure `.vscode/settings.json` contains `"markdownlint.configFile": ".markdownlint.jsonc"` to
    synchronize the IDE extension with the project's Industrial standard.
 3. **Auto-Fix**: Run `markdownlint-cli2 --fix <file_path>` from the project root.
+   Use paths **relative** to the project root — absolute paths can cause the
+   tool to silently find 0 files (`Linting: 0 file(s)`) and do nothing.
 4. **Dry-Run Companion Scripts**: Before applying any companion script from §3,
    MUST run with `--check` first to preview changes, review the proposed diffs,
    then re-run without `--check` to apply. Dry-run before apply is MANDATORY
@@ -174,10 +176,9 @@ re-introducing lint errors:
 > **Indent drift after editing / lint-fix.** After running the §3.1 pipeline,
 > verify that continuation-line indent in edited regions matches the original
 > file's siblings. `markdownlint-cli2 --fix` and companion scripts can leave
-> whitespace drift on adjacent lines. If drift is found, repair it with a
-> targeted `pathlib` edit and re-run the `markdownlint-cli2` audit before
-> staging. The canonical protocol is in
-> [`git-atomic-commit-construction §3g`](../git-atomic-commit-construction/SKILL.md#3g--post-edit-indent-verification--repair).
+> whitespace drift on adjacent lines. Delegate detection and repair to the
+> [`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
+> base skill, then re-run the `markdownlint-cli2` audit before staging.
 
 ### 3.2 Known `markdownlint-cli2 --fix` Caveats
 

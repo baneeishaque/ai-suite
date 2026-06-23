@@ -3,8 +3,11 @@ awk,SAFE-WITH-QUALIFICATION,system(...); | sh; getline … | "cmd"; -f <script>,
 brew leaves,SAFE,,n/a,Lists explicitly installed (leaf) formulae. Read-only. --installed-on-request narrows to user-requested installs.
 brew list,SAFE,,n/a,Lists installed formulae and/or casks. Read-only. --cask and --formula narrow scope.
 brew outdated,SAFE,,n/a,Lists outdated formulae/casks. Read-only. --greedy widens scope to auto-update casks.
+command,SAFE,,command -v <executable>,"Bash builtin. SAFE with -v (locate executable, like which). MUTATES if used as command <builtin-or-binary> <args> (executes without shell function lookup bypass). Only -v form should be auto-approved."
+
 cat,SAFE-WITH-QUALIFICATION,,cat <file>,"SAFE when reading files. MUTATES when used with > redirect (cat > <file>). EXCEPTION: cat > /tmp/<name> << EOF is auto-approved ONLY as a hardcoded chained pattern where the EXACT second command is: python3 .../command-autoapprove-onboarding/scripts/batch-coverage-check.py --commands /tmp/<same-name> --ssot .../safety-table.csv --settings ""...settings.json"". No other consumer qualifies."
 cd,SAFE,,n/a,Changes the shell working directory. No filesystem mutation. Builtin.
+cut,SAFE,,n/a,"Removes columns/fields from each line of input. Read-only (prints to stdout). Common flags: -d (delimiter), -f (fields). No write capability."
 diff,SAFE,,n/a,Compares files line-by-line. Output only; no files modified.
 echo,SAFE,,n/a,Prints arguments to stdout. No mutation. Builtin.
 find,SAFE-IF-PIPED,-delete; -exec rm; -exec mv; -exec sed -i,find … -print,Safe alone. Upgrade to MUTATES if any destructive flag is present.
@@ -41,16 +44,23 @@ mdfind,SAFE-IF-PIPED,,mdfind … alone,macOS Spotlight search. Safe alone; pipel
 mdls,SAFE,,n/a,Lists macOS metadata attributes of a file. Read-only.
 Measure-Object,SAFE,,n/a,PowerShell pipeline aggregator (count/sum/avg/min/max/lines/words/chars). Read-only.
 mkdir,MUTATES,,n/a,"Creates directories. Always mutates filesystem. Use -p for idempotent form, still MUTATES."
+npm root,SAFE,,n/a,Prints the local node_modules root path. Read-only. --global prints global root instead.
+npm search,SAFE,,n/a,Searches npm registry for matching package names. Network read-only. --json for machine-readable output.
+npm view,SAFE,,n/a,Shows package metadata from registry (version/dependencies/description). Read-only network query.
 Out-String,SAFE,,n/a,PowerShell formatter — converts pipeline objects to string. Read-only.
 Pop-Location,SAFE,,n/a,PowerShell directory-stack pop. No filesystem mutation.
 Push-Location,SAFE,,n/a,PowerShell directory-stack push. No filesystem mutation.
 pwd,SAFE,,n/a,Prints the current working directory. Shell builtin (also /bin/pwd). Read-only. Optional flags -L (logical) / -P (physical) do not mutate. No path arguments accepted.
 python,SAFE-WITH-QUALIFICATION,,python <trusted-script> --help,"Windows / launcher-installed alias for python3. Same classification: SAFE for read-only scripts, MUTATES for write scripts. See python3 row and cheatsheet python3 section — all rules apply identically. Never auto-approve a generic python .* catch-all."
 python3,SAFE-WITH-QUALIFICATION,,python3 <trusted-script> --help,"SAFE when running known read-only scripts (--help flags, audit/find/coverage scripts). MUTATES when running scripts that write files (edit-entry.py, fix-indents.py, etc.). Always classify by the script being invoked, not the interpreter alone."
+python3 -m py_compile,SAFE,,python3 -m py_compile <script>.py,Compiles a Python source file to bytecode (.pyc written to __pycache__/). Never modifies source. Read-only with respect to user source files.
+pg_restore --list,SAFE,,pg_restore --list <dump-file>,Lists the contents of a PostgreSQL dump file without restoring. Read-only metadata inspection. --list is the only safe flag; bare pg_restore (without --list) performs actual restore.
 sed,SAFE-WITH-QUALIFICATION,-i; -i '',sed -n 'N,Mp' <file>,"Stream editor. SAFE in print-only forms (sed -n 'N,Mp' file; sed 's/x/y/' to stdout). MUTATES with -i (in-place edit). Always classify by the flag set, never auto-approve generic sed .*."
 Select-Object,SAFE,,n/a,PowerShell pipeline projection/limit. Read-only.
 Select-String,SAFE,,n/a,PowerShell grep-equivalent. Read-only; pattern matching on files/streams.
 Sort-Object,SAFE,,n/a,PowerShell sorter. Read-only.
+sed -n,SAFE,,sed -n 'N,Mp' <file>,"Print-only sed: suppressed default output, explicit p command sends lines to stdout. Does not accept -i; any command after -n that involves mutation (w, s/// with -i) is blocked by opencode's sed -n * pattern (requires leading -n)."
+
 sort,SAFE-IF-PIPED,-o <file>,sort <file>,"Lexicographic sorter. Read-only by default. MUTATES with -o <file> (writes sorted output to <file>, may clobber)."
 Split-Path,SAFE,,n/a,PowerShell path-component splitter. Pure string op; no filesystem access.
 tail,SAFE,,n/a,Prints last N lines of a file. Read-only.
@@ -60,4 +70,5 @@ which,SAFE,,n/a,Locates an executable in PATH. Read-only.
 xargs,SAFE-IF-PIPED,xargs rm; xargs sed -i; xargs sh; xargs cp; xargs mv,xargs (grep|head|tail|wc|cat) <args>,"Argument-list builder. INHERITS destructiveness of downstream command. Auto-approve ONLY narrow read-only downstream forms: xargs grep, xargs head, xargs tail, xargs wc, xargs cat. NEVER auto-approve generic xargs <cmd>."
 Write-Host,SAFE,,n/a,PowerShell console writer. Output only.
 du,SAFE,,,"Read-only disk usage reporter. No write capability. Common flags: -s (summary) -h (human-readable). Safe with multiple path args."
+ffprobe,SAFE,,n/a,"Multimedia stream analyzer (FFmpeg project). Reads media files and prints container/stream metadata to stdout. No write capability. Read-only."
 readlink,SAFE,,n/a,"Resolves symlink target. Read-only; output to stdout only. Safe with or without -f."

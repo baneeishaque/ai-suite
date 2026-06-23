@@ -25,6 +25,7 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 | `cat` | ⚠️ | `cat > <file>` (overwrites); ONLY safe exception: hardcoded `cat > /tmp/cmds-parity.txt << EOF` → `batch-coverage-check.py` chain | read-only: `cat <file>`; or pipe-sink `<safe-cmd> \| cat` (read-only pass-through, pager-equivalent) |
 | `cd` | ✅ | — | n/a |
 | `echo` | ✅ | — | n/a |
+| `ffprobe` | ✅ | — | n/a |
 | `diff` | ✅ | — | n/a |
 | `find` | 🟡 | `-delete` · `-exec rm` · `-exec mv` · `-exec sed -i` | `find … -print` first |
 | `git branch -a` | ✅ | — | n/a |
@@ -97,6 +98,20 @@ find /path -name "*.log" -delete
 
 - **Verdict**: ✅ SAFE
 - **What it does**: Lists macOS extended metadata attributes (kMDItem*) of a file. Read-only.
+
+### `ffprobe`
+
+- **Verdict**: ✅ SAFE
+- **What it does**: Multimedia stream analyzer (FFmpeg project). Reads media files and prints
+  container format, codec info, resolution, bitrate, duration, metadata, and stream details to
+  stdout. Supports JSON, XML, CSV, and plain-text output formats via `-print_format` / `-of`.
+- **Notable flags**: `-show_format`, `-show_streams`, `-show_entries`, `-select_streams`,
+  `-print_format json`, `-v quiet` — all read-only information extraction flags.
+- **Contrast**: `ffmpeg` (the transcoder) is a separate binary with MUTATES capability and is
+  NOT covered by this row.
+- **Pipeline caution**: `ffprobe` output piped to a destructive downstream (`xargs rm`,
+  `xargs sed -i`) inherits the same mutating risk as any `SAFE-IF-PIPED` binary — evaluate
+  the full pipeline, not just ffprobe alone.
 
 ***
 

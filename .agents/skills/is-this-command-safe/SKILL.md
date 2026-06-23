@@ -164,7 +164,14 @@ vetting thread (23 commands over 36 days — see §12):
 - **Diffing**: `diff`, `git diff`
 - **Git read-only inspection**: `git status`, `git log`, `git ls-tree`, `git branch -a`,
   `git branch -vv`, `git merge-base`, `git check-ignore`, `git show`
-- **System/process inspection**: `lsof`
+- **System/process inspection**: `lsof`, `command -v`
+- **Media metadata**: `ffprobe`
+- **Python verification**: `python3 -m py_compile`
+- **NPM read-only**: `npm root`, `npm search`, `npm view`
+- **DB read-only**: `pg_restore --list`
+- **Line-oriented extraction**: `cut`, `sed -n`
+- **Brew inventory**: `brew list`, `brew outdated`, `brew leaves`
+- **Directory navigation**: `cd`, `readlink`, `du`
 - **Linters**: `markdownlint-cli2`
 - **Filesystem mutation (explicit, for contrast)**: `mkdir`
 - **Non-CLI tokens**: `agy` — Google Antigravity IDE-embedded agent, not a shell binary;
@@ -220,7 +227,18 @@ The agent is **BLOCKED** from:
   `docs/conversations/`.
 - Anticipated future composers: `agent-execution-pre-flight-check`,
   `vscode-task-allowlist-generator` (see §1).
-- [`command-autoapprove-onboarding`](../command-autoapprove-onboarding/SKILL.md) — Orchestrator that consumes this skill's verdicts and SSOT files to onboard commands into VS Code autoApprove.
+- [`command-autoapprove-onboarding`](../command-autoapprove-onboarding/SKILL.md) —
+  Orchestrator that consumes this skill's verdicts and SSOT files to onboard
+  commands into VS Code autoApprove.
+
+***
+
+## Composition by Higher-Level Skills
+
+| Composer | Composition Mechanism |
+|---|---|
+| [`opencode-permission-config`](../opencode-permission-config/SKILL.md) | Reads `docs/safety-table.csv` (safety classifications) to derive `opencode.json` bash permission patterns. Consumes SAFE / SAFE-WITH-QUALIFICATION / MUTATES verdicts from §3 (Four-Tier system) and applies opencode-specific pattern-design logic (bare vs. wildcard, git safe-forms-only, git -C multi-repo, SAFE-IF-PIPED tradeoffs). Does NOT re-implement classification — delegates every verdict to this skill's safety table. See its §6 Pattern Design Decisions for the mapping rules. |
+| [`command-autoapprove-onboarding`](../command-autoapprove-onboarding/SKILL.md) | Consumes `docs/safety-table.csv` and `docs/cheatsheet.md` to vet and onboard shell commands into VS Code `chat.tools.terminal.autoApprove`. Applies `is-this-command-safe`'s classification tiers (SAFE / SAFE-IF-PIPED / HAS-DESTRUCTIVE-FLAGS / MUTATES) for every binary and pipeline segment. Extends the safety-table with new entries when encountering unknown binaries during audit. |
 
 ***
 

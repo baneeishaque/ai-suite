@@ -52,9 +52,17 @@ ALL shell logic MUST be extracted to separate `.bash` files under
 `.github/workflows/scripts/`. Inline `run:` blocks are BLOCKED except for
 single-line commands like `npm ci`.
 
+This complements the broader **Template Extraction Mandate**
+([`skill-factory` §2.2.1.1.6](../skill-factory/SKILL.md#2211-universal-script-mandates)):
+just as shell logic must not be inlined in workflow files, file-content strings
+(YAML, markdown, config) must not be inlined in scripts — use `.template` files
+instead. The [`script-template-extraction`](../script-template-extraction/SKILL.md)
+skill automates remediation of existing scripts that violate this rule.
+
 ### 2.2 Script Design
 
 Each script MUST:
+
 - Accept parameters via command-line arguments or environment variables
 - NOT hardcode values like usernames, hosts, or paths
 - Use `$GITHUB_ACTOR` for user context (built-in environment variable)
@@ -161,6 +169,7 @@ treat ESLint warnings as fatal errors. For existing codebases with warnings:
 ```
 
 **When to use:**
+
 - `CI: "false"` — Codebase has existing warnings that shouldn't block deployment
 - Omit or `CI: "true"` — Fresh projects where zero warnings are enforced
 
@@ -288,7 +297,166 @@ runs-on: ubuntu-24.04
 
 ***
 
+## 11. Metadata Sync Workflows
+
+### 11.1 Description Sync
+
+Sync the repository description from a source of truth (e.g., `README.md` first line or `package.json`):
+
+```yaml
+name: Sync Repository Description
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync-description:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync Description
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DESCRIPTION=$(head -1 README.md | sed 's/^# //')
+          gh repo edit "${{ github.repository }}" --description "$DESCRIPTION"
+```
+
+### 11.2 Topics Sync
+
+Sync repository topics from a `.github/topics.txt` file (one topic per line):
+
+```yaml
+name: Sync Repository Topics
+on:
+  push:
+    branches: [main]
+    paths: ['.github/topics.txt']
+  workflow_dispatch:
+
+jobs:
+  sync-topics:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync Topics
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TOPICS=$(paste -sd, .github/topics.txt)
+          gh repo edit "${{ github.repository }}" --add-topic "$TOPICS"
+```
+
+### 11.3 Combined Metadata Sync
+
+For repositories that want both description and topics in a single workflow:
+
+```yaml
+name: Sync Repository Metadata
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sync Description
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DESCRIPTION=$(head -1 README.md | sed 's/^# //')
+          gh repo edit "${{ github.repository }}" --description "$DESCRIPTION"
+      - name: Sync Topics
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ -f .github/topics.txt ]; then
+            TOPICS=$(paste -sd, .github/topics.txt)
+            gh repo edit "${{ github.repository }}" --add-topic "$TOPICS"
+          fi
+```
+
+***
+
+## 12. PR Labeler Workflow
+
+### 12.1 Labeler Configuration
+
+Create `.github/labeler-config.yml` to define label rules based on changed paths:
+
+```yaml
+frontend:
+  - changed-files:
+      - any: ["src/frontend/**", "src/ui/**"]
+
+backend:
+  - changed-files:
+      - any: ["src/backend/**", "src/api/**"]
+
+documentation:
+  - changed-files:
+      - any: ["docs/**", "*.md"]
+
+dependencies:
+  - changed-files:
+      - any: ["package.json", "requirements.txt", "go.mod"]
+
+ci:
+  - changed-files:
+      - any: [".github/workflows/**", ".github/actions/**"]
+```
+
+### 12.2 Labeler Workflow
+
+```yaml
+name: PR Labeler
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  label:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler-config.yml
+```
+
+### 12.3 Label Naming Convention
+
+| Label | Prefix | Example |
+|-------|--------|---------|
+| Type | `type/` | `type/bug`, `type/feature` |
+| Scope | `scope/` | `scope/frontend`, `scope/backend` |
+| Priority | `priority/` | `priority/high`, `priority/low` |
+| Status | `status/` | `status/needs-review`, `status/wip` |
+
+***
+
 ## See Also
 
-- [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) — observation-side counterpart. After authoring or modifying a workflow here, use that skill to verify it actually runs, succeeds, and (when applicable) produces / commits the expected artifact.
-- [`github-actions-workflow-dispatch`](../github-actions-workflow-dispatch/SKILL.md) — trigger primitive. Required when the authored workflow includes `on: workflow_dispatch:` and the agent needs to fire it programmatically.
+- [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) —
+  observation-side counterpart. After authoring or modifying a workflow here,
+  use that skill to verify it actually runs, succeeds, and (when applicable)
+  produces / commits the expected artifact.
+- [`github-actions-workflow-dispatch`](../github-actions-workflow-dispatch/SKILL.md) —
+  trigger primitive. Required when the authored workflow includes
+  `on: workflow_dispatch:` and the agent needs to fire it programmatically.
+- [`github-ci-lint`](../github-ci-lint/SKILL.md) — C2 composer. Generates CI
+  lint workflows (markdown + Python) that complement the patterns here.
+- [`github-sync`](../github-sync/SKILL.md) — C3 composer. Generates metadata
+  sync workflows for description/topics extracted from README.
+- [`github-pr-labeler`](../github-pr-labeler/SKILL.md) — B9. Provides
+  `pr-labeler.yml` + `labeler-config.yml` for automated PR labeling.
+- [`github-workflows`](../github-workflows/SKILL.md) — C4 composer. Generates
+  all GitHub Actions workflows (lint, PR labeler, sync) in one invocation.
+- [`script-template-extraction`](../script-template-extraction/SKILL.md) —
+  automation for the Template Extraction Mandate referenced in §2.1.

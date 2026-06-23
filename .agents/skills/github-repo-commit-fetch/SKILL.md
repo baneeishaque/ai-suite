@@ -49,8 +49,7 @@ Interpreter sourced via `mise` per workspace convention (see [`mise-tool-managem
 ### 4.1 Common invocation pattern
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-S=.agents/skills/github-repo-commit-fetch/scripts
+SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 ```
 
 ### 4.2 Primitive scripts (catalogue)
@@ -68,19 +67,18 @@ diagnostics to stderr — safe to pipe.
 ### 4.3 End-to-end example: did the latest scheduled backup include my schema change?
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-S=.agents/skills/github-repo-commit-fetch/scripts
+SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 REPO=owner/backup-repo
 
 # 1. Find the most recent backup commit.
-SHA=$("$PY" $S/list-commits.py --repo $REPO --limit 1 | python -c 'import json,sys;print(json.load(sys.stdin)[0]["short"])')
+SHA=$(python3 "$SCRIPTS_DIR"/list-commits.py --repo $REPO --limit 1 | python3 -c 'import json,sys;print(json.load(sys.stdin)[0]["short"])')
 
 # 2. What file did that commit touch?
-"$PY" $S/commit-details.py --repo $REPO --sha $SHA --files-only
+python3 "$SCRIPTS_DIR"/commit-details.py --repo $REPO --sha $SHA --files-only
 # -> db_backups/foo.sql
 
 # 3. Download the file at that exact ref and verify a string is present.
-"$PY" $S/fetch-file-at-ref.py --repo $REPO --ref $SHA \
+python3 "$SCRIPTS_DIR"/fetch-file-at-ref.py --repo $REPO --ref $SHA \
     --path db_backups/foo.sql --out /tmp/backup.sql
 grep -c "ENGINE=InnoDB" /tmp/backup.sql
 ```

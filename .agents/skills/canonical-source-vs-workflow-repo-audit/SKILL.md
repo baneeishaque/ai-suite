@@ -1,3 +1,9 @@
+---
+name: canonical-source-vs-workflow-repo-audit
+description: Audits a repository to classify it as canonical-source or workflow-backup before allowing source code edits.
+category: Git-Operations
+---
+
 # Canonical-Source vs Workflow-Repo Pre-Edit Audit Skill
 
 > **Skill ID:** `canonical-source-vs-workflow-repo-audit`
@@ -44,8 +50,7 @@ Do NOT apply when:
 ### Step 1 — Run the audit
 
 ```bash
-PY=~/.local/share/mise/installs/python/latest/bin/python
-$PY .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file/or/dir
+python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file/or/dir
 ```
 
 Output:

@@ -14,6 +14,8 @@ Use this skill when:
 - Setting up deployment pipelines
 - Configuring access control for workflows
 - Optimizing checkout/build/deploy steps
+- Setting up metadata sync workflows (description / topics)
+- Configuring PR labeler with path-based rules
 
 ## Key Standards
 

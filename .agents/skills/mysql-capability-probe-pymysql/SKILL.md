@@ -122,32 +122,31 @@ Each probe / DDL script accepts `--secrets <path>` (KEY=VALUE file, same schema 
 Example: pre-flight an FK migration end-to-end —
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-SEC=~/Lab_Data/configurations-private/<project>/act.secrets
-S=.agents/skills/mysql-capability-probe-pymysql/scripts
+SCRIPTS_DIR=.agents/skills/mysql-capability-probe-pymysql/scripts
+SECRETS=~/Lab_Data/configurations-private/<project>/act.secrets
 
 # 0. Know what server flavor / version / default engine we are aiming DDL at.
-"$PY" $S/probe-server-flavor.py --secrets $SEC --table transactionsv2
+python3 "$SCRIPTS_DIR"/probe-server-flavor.py --secrets "$SECRETS" --table transactionsv2
 
 # 1. Are the indexes the FK needs already in place?
-"$PY" $S/probe-required-indexes.py --secrets $SEC \
+python3 "$SCRIPTS_DIR"/probe-required-indexes.py --secrets "$SECRETS" \
     --check transactionsv2.from_account_id \
     --check transactionsv2.to_account_id
 
 # 2. If missing, add them.
-"$PY" $S/apply-indexes.py --secrets $SEC \
+python3 "$SCRIPTS_DIR"/apply-indexes.py --secrets "$SECRETS" \
     --index transactionsv2.from_account_id \
     --index transactionsv2.to_account_id
 
 # 3. Is the FK itself addable (engine, orphans, etc.)?
-"$PY" $S/probe-fk-readiness.py --secrets $SEC \
+python3 "$SCRIPTS_DIR"/probe-fk-readiness.py --secrets "$SECRETS" \
     --fk transactionsv2.from_account_id=accounts.account_id \
     --fk transactionsv2.to_account_id=accounts.account_id
 
 # 4. If step 3 reported orphans, enumerate them to plan the fix (delete /
 #    repoint / create missing parent) — defaults treat both NULL and 0 as
 #    "no parent claimed".
-"$PY" $S/probe-orphan-rows.py --secrets $SEC \
+python3 "$SCRIPTS_DIR"/probe-orphan-rows.py --secrets "$SECRETS" \
     --check transactionsv2.from_account_id=accounts.account_id \
     --check transactionsv2.to_account_id=accounts.account_id \
     --cols transactionsv2:id,from_account_id,to_account_id,amount,event_date_time \
@@ -156,7 +155,7 @@ S=.agents/skills/mysql-capability-probe-pymysql/scripts
 # 5. Before a NULL-migration / NOT-NULL ALTER on a column that currently
 #    permits NULL or carries 0-sentinels, enumerate the affected rows to
 #    decide the backfill default (or whether to delete them outright).
-"$PY" $S/probe-null-rows.py --secrets $SEC \
+python3 "$SCRIPTS_DIR"/probe-null-rows.py --secrets "$SECRETS" \
     --check transactionsv2.from_account_id \
     --check transactionsv2.to_account_id \
     --cols transactionsv2:id,from_account_id,to_account_id,amount,event_date_time \

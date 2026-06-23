@@ -75,10 +75,6 @@ without re-implementing them:
   — sibling skill for when a **fork** IS desired (e.g., upstream contribution).
 - [`gitignore-rules`](../gitignore-rules/SKILL.md) — alternative for files that
   do not need version control at all.
-- [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md)
-  — higher-level composer that consumes this skill as the personal-destination
-  layer when fanning out a parallel branch's commits across multiple destinations.
-
 ## Composition by Higher-Level Skills
 
 | Composer Skill | Role of this skill in the pipeline |

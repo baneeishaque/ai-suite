@@ -1,3 +1,9 @@
+---
+name: table-persistence-implementation
+description: Implements or migrates MRT table view persistence into a generic useViewPersistence architecture on any Material React Table page.
+category: General-Development
+---
+
 # Table Persistence Implementation
 
 ## When to use

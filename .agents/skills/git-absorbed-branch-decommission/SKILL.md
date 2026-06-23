@@ -60,15 +60,8 @@ computation, or rebase mechanics — those are the owners' jobs.
   that DO NOT have equivalents on `<live>` and must be distributed across
   canonical + opt-in + personal-sandbox destinations. Use **this skill**
   when every `<stale>` commit is already absorbed by `<live>`.
-- [`git-branch-promotion`](../git-branch-promotion/SKILL.md) — the
-  **inverse** sibling. Promotion **moves** `<refined>` onto `<canonical>`;
-  this skill **deletes** `<stale>` after proving `<live>` already has
-  everything.
 - [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md)
   — run AFTER this skill if `<stale>` had any dependents.
-- [`git-divergence-audit`](../git-divergence-audit/SKILL.md) — the
-  primitive read-only audit; use directly when classification is the goal
-  and no deletion is intended.
 
 ## Source Rules
 

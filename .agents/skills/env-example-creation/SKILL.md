@@ -104,5 +104,5 @@ Check:
 
 - [`redaction-portability`](../redaction-portability/SKILL.md) — The three-tier
   classification model and canonical placeholder vocabulary this skill depends on
-- (org-private companion) `staging-env-fetch` — Fetch `.env` from a staging server;
-  use this skill to sanitize the fetched file into a `.env.example`
+- [`staging-env-fetch`](../database/staging-env-fetch/SKILL.md) — Fetch `.env` from a
+  staging server via MCP; use this skill to sanitize the fetched file into a `.env.example`

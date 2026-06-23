@@ -431,13 +431,6 @@ delete-then-recreate cleanup:
 
 ## Related Skills
 
-- [`git-commit-edit`](../git-commit-edit/SKILL.md) — the base for the
-  drop mechanics. Use directly when the deleted blob is identical to
-  the recreated blob (no divergence).
-- [`near-duplicate-file-comparison`](../near-duplicate-file-comparison/SKILL.md)
-  — supplies the section-by-section rubric for Step 1c.
-- [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md)
-  — supplies the post-rebase six-axis audit reused in Step 7.
 - [`git-history-refinement`](../git-history-refinement/SKILL.md) —
   the broader sibling for full history reconstruction; use this
   skill when the scope is a single divergent-recreation drop.

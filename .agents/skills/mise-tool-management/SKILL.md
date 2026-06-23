@@ -349,6 +349,59 @@ mise exec --cd /absolute/path/to/project python@<version> -- python -m ensurepip
 
 Both verification commands MUST succeed before proceeding to Layer 4.
 
+### 3.3 Runtime Tool Resolution
+
+When a script needs to invoke a mise-managed tool at runtime, use the
+decision tree below.  Applies to any tool: Python, Node, Ruby, PHP, etc.
+
+```
+Q: Does `<tool>` on PATH give an acceptable version?
+├── YES → Use `<tool>` directly (fastest, no cascade risk)
+└── NO  → Q: Is there a mise.toml that pins this tool?
+         ├── YES → Q: Does `mise exec` trigger unwanted cascade?
+         │   ├── NO  → `mise exec --cd /project -- <tool> <args>`
+         │   └── YES → Direct installation path:
+         │              `~/.local/share/mise/installs/<tool>/<version>/bin/<tool>`
+         └── NO  → Install via `mise install <tool>@<version>`
+```
+
+**PATH resolution** — Works if the system or a mise shim puts a satisfactory
+version on PATH.  Fastest approach, no risk of triggering cascade
+installation of unrelated tools from `mise.toml`.
+
+**`mise exec`** — Guarantees the correct tool version but can trigger
+installation of *every* missing tool listed in `mise.toml` (the "cascade
+risk").  Safe for single-tool configs; risky when `mise.toml` pins many
+tools (e.g. Flutter + PHP + Java).
+
+**Direct path** — Bypasses mise entirely by invoking the binary directly
+from `~/.local/share/mise/installs/`.  Use when `mise exec` would trigger
+cascade or when the mise environment is broken.  The version MUST be
+pre-installed.
+
+**`mise install`** — Last resort when no acceptable version exists anywhere.
+Installs the specific version and makes it available for direct-path use.
+
+Concrete examples:
+
+```bash
+# Python — direct PATH (preferred)
+python3 script.py
+
+# Node — mise exec (single-tool config safe)
+mise exec --cd /project -- node script.js
+
+# Ruby — direct path (bypass cascade risk)
+~/.local/share/mise/installs/ruby/3.3.0/bin/ruby script.rb
+
+# Install missing PHP
+mise install php@8.3
+```
+
+For the companion **documentation convention** (skill docs MUST use simplified
+forms like `python3`, never fragile path commands in examples), see
+[skill-factory mandate #7](../skill-factory/SKILL.md#2211-universal-script-mandates).
+
 ***
 
 ## 4. Layer 4 — Mise Python Package Setup Protocol
@@ -492,12 +545,8 @@ ls "$HOME/.local/share/mise/installs/<tool>" | sort -V | tail -1
 Then invoke directly — no shim, no trust walk, no cascade:
 
 ```bash
-PY_VER="$(ls "$HOME/.local/share/mise/installs/python" | sort -V | tail -1)"
-PY="$HOME/.local/share/mise/installs/python/$PY_VER/bin/python"
-PIP="$HOME/.local/share/mise/installs/python/$PY_VER/bin/pip"
-
-"$PY" --version
-"$PIP" install --user pymysql
+python3 --version
+python3 -m pip install --user pymysql
 ```
 
 **This is NOT the same as invoking from `$PATH`.** The prohibition in §10 against "Invoking

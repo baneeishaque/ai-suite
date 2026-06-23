@@ -476,17 +476,6 @@ canonical fast pattern.
   parallel branch exists alongside the canonical and gets DELETED
   after fanning content out. This skill ASSUMES no parallel branch —
   one mixed team branch gets purified in place and is kept alive.
-- [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md)
-  — reused for Phase 6a sandbox restack + six-axis audit.
-- [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md)
-  — reused for Phase 7a dependent cascade.
-- [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)
-  — PREREQUISITE. The personal remote and sandbox branch must exist
-  before this skill is invoked.
-- [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md)
-  — optional follow-up round when post-extraction sandbox cleanup
-  reveals a delete-then-recreate divergence (e.g., a "Final Changes"
-  deletion followed by a stale re-add).
 - [`git-history-refinement`](../git-history-refinement/SKILL.md) —
   the generic sibling. Use this skill when the scope is specifically
   team/personal split with chronological sandbox preservation; use

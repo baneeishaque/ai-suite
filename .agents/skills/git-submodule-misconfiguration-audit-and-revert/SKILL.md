@@ -1,3 +1,9 @@
+---
+name: git-submodule-misconfiguration-audit-and-revert
+description: Orchestrates end-to-end remediation of an incorrectly configured submodule URL in .gitmodules.
+category: Git-Operations
+---
+
 # Git Submodule Misconfiguration Audit & Revert Skill (v1)
 
 > **Skill ID:** `git-submodule-misconfiguration-audit-and-revert`
@@ -31,7 +37,6 @@ Composer per `skill-factory/SKILL.md` §2.0. Reuses, never reimplements:
 ## Related Skills
 
 - [`git-submodule-dead-upstream-audit`](../git-submodule-dead-upstream-audit/SKILL.md) — diagnoses a different failure (dead URL or force-rewritten upstream); this skill assumes the configured URL is *wrong*, not *dead*.
-- [`git-submodule-fork-reconfigure`](../git-submodule-fork-reconfigure/SKILL.md) — applies when the wrong URL was *intentional* and the fix is to formally re-target; this skill applies when the wrong URL was an accidental change to be reverted.
 
 ## Source Rules
 

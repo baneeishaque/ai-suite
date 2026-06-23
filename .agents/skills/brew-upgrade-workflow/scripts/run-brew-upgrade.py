@@ -27,7 +27,7 @@ DEFAULT_PRIORITY = [
 
 SKILL_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSEMBLER_SCRIPT = os.path.join(
-    SKILL_DIR, "..", "brew-upgrade-command-assembly", "scripts", "assemble-brew-command.py",
+    SKILL_DIR, "..", "..", "brew-upgrade-command-assembly", "scripts", "assemble-brew-command.py",
 )
 
 
@@ -143,6 +143,7 @@ def assemble_command(
     formula_names: list[str],
     cask_names: list[str],
     fetch_only: list[str],
+    first: list[str] | None = None,
     assembler_path: str = ASSEMBLER_SCRIPT,
 ) -> str:
     """Invoke the base primitive and return the assembled command."""
@@ -153,6 +154,8 @@ def assemble_command(
         "--cask-names", ",".join(cask_names),
         "--fetch-only", ",".join(fetch_only),
     ]
+    if first:
+        cmd += ["--first", ",".join(first)]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
@@ -190,6 +193,13 @@ def main() -> int:
         help="Comma-separated — order these packages first (default priority applied to rest)",
     )
     parser.add_argument(
+        "--first",
+        type=str,
+        default="",
+        help="Comma-separated — place these packages first in the chain regardless of type "
+        "(defaults to first entry of --priority)",
+    )
+    parser.add_argument(
         "--outfile",
         type=str,
         default="",
@@ -207,6 +217,7 @@ def main() -> int:
     exclude_list = [p.strip() for p in args.exclude.split(",") if p.strip()]
     fetch_only_list = [p.strip() for p in args.fetch_only.split(",") if p.strip()]
     priority_list = [p.strip() for p in args.priority.split(",") if p.strip()]
+    first_list = [p.strip() for p in args.first.split(",") if p.strip()] or priority_list[:1]
 
     # Step 1: Discover outdated packages
     if args.debug:
@@ -271,9 +282,12 @@ def main() -> int:
         return 1
 
     # Step 6: Resolve formula vs cask for each package
+    fetch_set = set(fetch_only_list)
     resolved_formulae: list[str] = []
     resolved_casks: list[str] = []
     for pkg in apply_priority(filtered, priority_list, debug=args.debug):
+        if pkg in fetch_set:
+            continue
         pkg_type = resolve_type(pkg, casks, formulae, debug=args.debug)
         if pkg_type == "formula":
             resolved_formulae.append(pkg)
@@ -291,6 +305,7 @@ def main() -> int:
             formula_names=resolved_formulae,
             cask_names=resolved_casks,
             fetch_only=fetch_only_list,
+            first=first_list,
         )
     except subprocess.CalledProcessError:
         return 2

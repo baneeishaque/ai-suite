@@ -1,3 +1,9 @@
+---
+name: git-submodule-selective-init-no-lfs
+description: Provides coupled guarantees for initializing Git submodules selectively while excluding LFS.
+category: Git-Operations
+---
+
 # Git Submodule Selective Init (No-LFS) Skill (v1)
 
 > **Skill ID:** `git-submodule-selective-init-no-lfs`
@@ -26,7 +32,6 @@ Atomic primitive owning the (per-path + no-LFS) coupling. Composed by:
 
 ## Related Skills
 
-- [`git-lfs-selective-clone`](../git-lfs-selective-clone/SKILL.md) — handles the LFS skip at **clone time** (and inits ALL submodules with `--recursive`); this skill is its per-path, init-time successor that preserves the LFS-free property.
 - [`git-submodule-uninitialized-handler`](../git-submodule-uninitialized-handler/SKILL.md) — the recursive-sweep remediation half of an audit/handler pair: consumes an audit report and drives every uninitialized pointer in the tree to a terminal state (Initialized / Recovered-via-Fork / Removed). Reach for it when you want a full-tree sweep off an audit; reach for **this** skill when you have a specific user-named subset to initialize directly.
 - [`git-submodule-uninitialized-audit`](../git-submodule-uninitialized-audit/SKILL.md) — the audit half that produces the report the handler above consumes; not a peer of this skill, but worth knowing as the precursor of the alternative path.
 

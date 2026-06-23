@@ -176,7 +176,6 @@ bash scripts/githooks/lib.bash pre-commit
 | --- | --- |
 | [`git-global-hook-bootstrap`](../git-global-hook-bootstrap/SKILL.md) | Upstream — the global `post-checkout` hook triggers `setup-repo-hooks.bash` on every checkout. |
 | [`git-alias-preflight`](../git-alias-preflight/SKILL.md) | Companion — registers the `git status` alias that invokes `lib.bash status` in the same dispatch pattern. |
-| [`git-operation-blocking-hooks`](../git-operation-blocking-hooks/SKILL.md) | Composer — integrates all three into one blocking gate. |
 
 ## Verification
 

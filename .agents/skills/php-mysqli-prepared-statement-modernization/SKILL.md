@@ -1,3 +1,9 @@
+---
+name: php-mysqli-prepared-statement-modernization
+description: Modernizes legacy PHP mysqli endpoints from string-interpolated SQL to prepared statements with bind_param.
+category: PHP-Tools
+---
+
 # PHP mysqli Prepared-Statement Modernization Skill
 
 > **Skill ID:** `php-mysqli-prepared-statement-modernization`

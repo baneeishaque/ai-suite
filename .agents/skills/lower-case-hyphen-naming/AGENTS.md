@@ -1,18 +1,19 @@
----
-name: Lower Case Hyphen Naming Convention
-description: Passive context bridge for enforcing lowercase kebab-case naming with industry-standard exemptions.
-category: Naming & Conventions
----
+# Lower Case Hyphen Naming — Companion Bridge
 
-# Lower Case Hyphen Naming Convention (Ref)
+## Purpose
 
-This bridge provides passive context for the `lower-case-hyphen-naming` skill, which enforces lowercase kebab-case
-(hyphen-based) naming for all project files, directories, and identifiers — with documented industry-standard
-exemptions (e.g., `README.md`, `Dockerfile`, language-mandated names).
+This file is the bridge for non-skill-aware agent runtimes. The operational SSOT lives in [`SKILL.md`](SKILL.md).
 
-It should be invoked whenever the user asks to enforce hyphen naming, or when files/dirs with spaces or
-underscores are detected and need normalization.
+## When This Skill Applies
 
-- **Primary Entry Point**: [.agents/skills/lower-case-hyphen-naming/SKILL.md](./SKILL.md)
-- **Sibling Convention**: [`lower-case-underscore-naming`](../lower-case-underscore-naming/SKILL.md) — snake_case
-  enforcement for projects choosing the underscore convention.
+You need to enforce lowercase kebab-case naming for files, directories, or identifiers — or you detect files/directories with spaces, underscores, or mixed casing. Also applies when renaming files before upload workflows (e.g., YouTube upload) for consistent naming.
+
+## Operational Procedure
+
+Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the blast-radius trace, rename execution, and cross-reference update steps. Do NOT execute any step without first loading `SKILL.md` — this bridge is intentionally non-actionable.
+
+## Cross-References
+
+- [`SKILL.md`](SKILL.md) — the SSOT
+- [`lower-case-underscore-naming`](../lower-case-underscore-naming/SKILL.md) — sibling skill for snake_case convention
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — optional consumer that may invoke kebab-case rename before upload

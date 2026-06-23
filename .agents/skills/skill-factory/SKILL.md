@@ -147,6 +147,25 @@ Apply to every script regardless of language tier.
 5. **Recursive Submodule Bootstrap**: Any documentation that instructs the user to clone or initialize the
    `powershell-scripts` submodule (or any other submodule) MUST use the recursive form
    (`git submodule update --init --recursive <path>` or `git clone --recurse-submodules <url>`).
+6. **Template Extraction Mandate** (companion to No-Embedded-Script Mandate): When a script writes
+   file content (YAML, markdown, .gitignore, config stanzas, etc.), that content MUST be kept in a
+   separate `.template` file under `scripts/` and read at runtime via a path anchored on the script's
+   own location (`Path(__file__).parent / "<name>.template"` in Python;
+   `Join-Path (Split-Path -Parent $MyInvocation.MyCommand.Path) "<name>.template"` in PowerShell).
+   Embedding file-content strings in scripts is FORBIDDEN because it: (a) breaks syntax highlighting
+   and linting of the template format, (b) duplicates SSOT — the truth lives both in the string
+   literal and the generated file, (c) prevents editors from applying format-specific tooling,
+   (d) makes content changes require touching the script file.  For automated remediation of existing
+   scripts that violate this mandate, use
+   [`script-template-extraction`](../script-template-extraction/SKILL.md).
+7. **Documentation Invocation Convention** — Skill docs MUST use simplified
+   invocation forms (`python3`, `node`, `ruby`, `php`, `pwsh`). Never embed
+   fragile path-resolution commands like
+   `PY=~/.local/share/mise/installs/python/$(ls … | sort … | tail -1)/bin/python`
+   in documentation code blocks. The companion runtime resolution logic is
+   documented in
+   [`mise-tool-management §3.3`](../mise-tool-management/SKILL.md#33-runtime-tool-resolution).
+   Use `scripts/verify-doc-invocations.py` to audit for violations.
 
 #### 2.2.1.2 Tier-2 (PowerShell) Craftsmanship Mandates
 
@@ -204,7 +223,7 @@ They are NOT the same artifact and MUST NOT be conflated. The per-skill bridge d
 
 The per-skill `AGENTS.md` MUST contain the following sections in this order:
 
-1. **`# <Skill Display Name> — Companion Bridge`** (level-1 heading; the literal suffix ` — Companion Bridge` lets reviewers grep for bridges across the tree).
+1. **`# <Skill Display Name> — Companion Bridge`** (level-1 heading; the literal suffix `— Companion Bridge` lets reviewers grep for bridges across the tree).
 2. **`## Purpose`** (1–3 sentences). State that this file is the bridge for non-skill-aware runtimes and that the operational SSOT lives in [`SKILL.md`](SKILL.md).
 3. **`## When This Skill Applies`** (1 short paragraph or 3–5 bullets). Plain-language trigger conditions, paraphrased from `SKILL.md`'s `## Description` and `## When to Apply` sections — NOT copy-pasted.
 4. **`## Operational Procedure`** (1 sentence + the link). A single sentence directing the agent to `SKILL.md` for the procedure: *"Read [`SKILL.md`](SKILL.md) for the full operational procedure, including all mandates, scripts, and verification steps. Do NOT execute any step without first loading `SKILL.md` — this bridge is intentionally non-actionable."*
@@ -322,6 +341,13 @@ Every skill generated via the Factory MUST automatically undergo the final verif
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows
   immediately above and below to verify the sort order holds.
+- **Organization Audit**: Confirm the new skill's placement obeys the domain taxonomy in
+  [`skill-library-domain-grouping` §1](../general/skill-library-domain-grouping/SKILL.md#1-domain-taxonomy).
+  The parent folder MUST have ≤10 items; if the addition would exceed the threshold, the agent
+  MUST propose a sub-grouping before adding.
+- **Invocation Audit**: Run `scripts/verify-doc-invocations.py` to confirm no fragile invocation
+  patterns are present in any `**/SKILL.md` file (mandate #7). The script MUST exit 0 before
+  the skill is considered complete.
 - **Composition Audit** (when layering applies):
     1. **No Inlining**: Confirm the composer script does NOT reimplement the base primitive — it MUST shell out to
        the base script.
@@ -330,6 +356,16 @@ Every skill generated via the Factory MUST automatically undergo the final verif
     3. **Bidirectional Discoverability**: Confirm the base skill lists the new composer in its
        `## Composition by Higher-Level Skills` table, and the composer links back to the base in its
        `## Composition Rationale` and `## Related Skills` sections.
+    4. **Cross-Reference Integrity**: Run the
+       [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md)
+       base script to detect: (a) skill names duplicated in both Composition and
+       Related Skills sections, (b) missing AGENTS.md, (c) missing YAML frontmatter,
+       (d) empty Related Skills sections, (e) missing Related Skills in skills that
+       have Composition sections. Resolve all reported issues before declaring the
+       skill complete.
+       ```bash
+       python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py
+       ```
 - **Script Authoring Audit** (when scripts are shipped):
     1. **Cross-Version Smoke Test**: Execute the script with `pwsh-preview` (and, where feasible, `pwsh`) on a real
        input and confirm exit code 0 on the success path and exit code 1 with a `Write-Message`-rendered diagnostic on
@@ -352,7 +388,6 @@ Skill authoring itself frequently mutates many files via bash. The same patterns
 5. **Bound every call's output.** Redirect unknowns to `scratch/` per [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md).
 
 The ten recurring freeze patterns, the eleven-item per-call self-audit checklist, and the post-freeze recovery protocol are owned by [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) — Factory authors enforce its §5 checklist on every bash call made during skill creation but do not re-document the patterns locally (SSOT).
-
 
 ## 5. Skill-Doc Editing Discipline
 
@@ -540,11 +575,10 @@ Read the output and confirm:
 **Indent-continuity check (pointer).** Every skill-doc edit that inserts
 or rewrites list items, code-fence contents, or table rows MUST verify
 that the new content's continuation-line indent exactly matches unmodified
-sibling lines. Use `pathlib.Path.read_text().splitlines()` + `repr` to
-discover the correct indent, then `pathlib.Path.write_text()` to repair.
-Accept only after re-verifying that surrounding and added lines agree.
-The full protocol is in
-[`git-atomic-commit-construction §3g`](../git-atomic-commit-construction/SKILL.md#3g).
+sibling lines. Delegate detection and repair to the
+[`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
+base skill. Accept only after re-verifying that surrounding and added lines
+agree.
 
 ### 5.5 Section-Home Discipline (Don't Bloat Tangential Skills)
 
@@ -626,7 +660,7 @@ Before adding or editing any block in an existing skill doc, the author MUST sam
 |---|---|
 | List marker | `-` vs `*` vs `1.` (numbered) |
 | List indentation depth | 2-space vs 4-space continuation |
-| Blank lines around headings | 0, 1, or 2 blank lines above/below `## ` / `### ` |
+| Blank lines around headings | 0, 1, or 2 blank lines above/below `##` / `###` |
 | Blank lines between list items | none vs one (compact vs loose lists) |
 | Blank lines around fenced code | always one above + one below vs flush |
 | Bold / italic markers | `**bold**` vs `__bold__`; `*italic*` vs `_italic_` |
@@ -643,6 +677,10 @@ Before adding or editing any block in an existing skill doc, the author MUST sam
 3. **Preserve indentation depth.** If continuation lines under a list item use 4 spaces in the surrounding document, the new content's continuation lines MUST also use 4 spaces — not 2.
 4. **Preserve blank-line spacing.** Count blank lines above/below the nearest sibling heading and reproduce the same count for the new heading.
 
+For automated detection and repair of continuation-line indent drift, use
+the [`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
+base skill.
+
 **Verification step** (mandatory before declaring the edit done):
 
 ```bash
@@ -654,3 +692,17 @@ Visually scan the diff for style drift vs surrounding lines: do the inserted bul
 **Historical example**: an insertion of "Script Authoring Mandates" subsections into `skill-factory/SKILL.md` introduced styling that diverged from the surrounding numbered-mandate format (mixed marker styles, inconsistent blank-line padding around headings, and `**Mandate Name**:` prefix used in some siblings but bare numbered list in others). The content was correct; the formatting drift forced a follow-up cleanup edit. The fix would have been free if the §5.8 verification step had been run on the original edit.
 
 (Persisted as `permanent_discipline.style-consistency-discipline`.)
+
+***
+
+## Related Skills
+
+- [`human-scanable-organization`](../general/human-scanable-organization/SKILL.md) — the 8±2
+  human-scanability principle and grouping methodology that determines when and how to
+  sub-group a skill folder.
+- [`skill-library-domain-grouping`](../general/skill-library-domain-grouping/SKILL.md) — the
+  project-specific domain taxonomy that governs where every new skill belongs. The
+  Post-Drafting Checklist (§3) enforces compliance.
+- [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md) — automated
+  audit consumed by §3 Composition Audit step; run after any skill modification to verify
+  cross-reference integrity, missing bridges, and missing frontmatter.

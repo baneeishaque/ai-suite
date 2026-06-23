@@ -171,8 +171,7 @@ prefix or suffix — invoke the
 audit BEFORE the first edit:
 
 ```bash
-PY=~/.local/share/mise/installs/python/latest/bin/python
-$PY .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
+python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
 ```
 
 If the verdict is `workflow` or `mirror`, STOP and locate the canonical
@@ -611,25 +610,12 @@ when an edit operation touches adjacent lines). A `git diff` that shows
 the correct content at the wrong indent is incomplete — staging it
 propagates whitespace drift into the commit.
 
-**Discovery:** read the current file, split into lines, print `repr` for
-each line, and inspect only the **unmodified surrounding siblings** to
-find the correct continuation indent. Example:
+Delegate detection and repair to the
+[`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
+base skill.
 
-```python
-import pathlib
-path = pathlib.Path(".agents/skills/foo/SKILL.md")
-for i, line in enumerate(path.read_text().splitlines(), start=1):
-    print(f"{i:4d}: {line!r}")
-```
-
-**Repair:** once the correct indent is known (see the unmodified siblings),
-write only the drifted lines back with the correct leading spaces using
-`pathlib.Path.write_text()`. Do **not** re-open the whole file in an
-editor — that risks re-introducing drift.
-
-**Acceptance criterion:** re-run the `repr` scan; every line in the
-affected region must agree on the same continuation indent before
-`git add` is run.
+**Acceptance criterion:** run `detect-list-indent-drift.py` on the affected
+file(s); the script MUST exit 0 before `git add` is run.
 
 See also: Common Pitfalls — `Indent drift after markdown edit silently staged`.
 

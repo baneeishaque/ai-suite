@@ -22,17 +22,16 @@ The agent MUST activate the **GitHub Actions Workflow Dispatch** skill when ANY 
 ## Quick Reference
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-S=.agents/skills/github-actions-workflow-dispatch/scripts
+SCRIPTS_DIR=.agents/skills/github-actions-workflow-dispatch/scripts
 
 # Fire and forget
-"$PY" $S/trigger-workflow.py --repo owner/name --workflow my.yml
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/name --workflow my.yml
 
 # Trigger and wait up to 5 minutes
-"$PY" $S/trigger-workflow.py --repo owner/name --workflow my.yml --wait 300
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/name --workflow my.yml --wait 300
 
 # With inputs and custom ref
-"$PY" $S/trigger-workflow.py --repo owner/name --workflow deploy.yml \
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/name --workflow deploy.yml \
     --ref release/v2 --field environment=prod --wait 600
 ```
 

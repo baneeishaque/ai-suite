@@ -4,7 +4,7 @@ description: Generic primitive for assembling Homebrew upgrade/cleanup command c
 category: Package-Management
 ---
 
-# Brew Upgrade Command Assembly Skill (v1) — Base Primitive
+# Brew Upgrade Command Assembly Skill (v2) — Base Primitive
 
 Atomic, domain-agnostic primitive that assembles a Homebrew upgrade
 command chain from provided package lists. The primitive handles the
@@ -16,6 +16,7 @@ mechanical assembly of:
 - Fetch-only mode for specified packages (placed after final `--prune=all`)
 - Final `brew cleanup --prune=all --verbose` step
 - Correct omission of `--cask`/`--formula` on `brew cleanup` (positional only)
+- `--first` flag: place specific packages first in the chain regardless of formula/cask type
 
 The composer layer
 ([`brew-upgrade-workflow`](../brew-upgrade-workflow/SKILL.md))
@@ -56,7 +57,8 @@ Located at [`scripts/assemble-brew-command.py`](./scripts/assemble-brew-command.
 python3 assemble-brew-command.py \
   [--formula-names "pkg1,pkg2"] \
   [--cask-names "pkg1,pkg2"] \
-  [--fetch-only "pkg1,pkg2"]
+  [--fetch-only "pkg1,pkg2"] \
+  [--first "pkg1,pkg2"]
 ```
 
 | Flag | Required | Meaning |
@@ -64,12 +66,14 @@ python3 assemble-brew-command.py \
 | `--formula-names` | ❌ | Comma-separated formula names to upgrade+cleanup |
 | `--cask-names` | ❌ | Comma-separated cask names to upgrade+cleanup |
 | `--fetch-only` | ❌ | Comma-separated cask names to fetch-only (appended after `--prune=all`) |
+| `--first` | ❌ | Comma-separated packages to place first in the chain regardless of formula/cask type |
 
 At least one of `--formula-names`, `--cask-names`, or `--fetch-only` must be non-empty.
 
 ### Output Semantics
 
 - Always starts with `export HOMEBREW_DOWNLOAD_CONCURRENCY=1;`
+- `--first` packages are placed first in the chain (formulae first, then casks within that group)
 - Each package gets a `brew upgrade --verbose --cask/--formula <pkg> && brew cleanup --verbose <pkg>` pair
 - The chain is terminated by `brew cleanup --prune=all --verbose`
 - `brew fetch --cask --verbose <pkg>` entries are appended AFTER the final cleanup
@@ -95,10 +99,11 @@ stdin with type prefixes:
 echo -e "formula:git\ncask:google-chrome\ncask:onedrive" | python3 assemble-brew-command.py --stdin
 ```
 
-A `fetch:` prefix moves the entry into fetch-only position:
+A `fetch:` prefix moves the entry into fetch-only position.
+A `first:` prefix places the entry first in the chain regardless of type:
 
 ```bash
-echo -e "formula:git\nfetch:antigravity" | python3 assemble-brew-command.py --stdin
+echo -e "formula:git\nfirst:google-chrome\nfetch:antigravity" | python3 assemble-brew-command.py --stdin
 ```
 
 ***
@@ -108,7 +113,7 @@ echo -e "formula:git\nfetch:antigravity" | python3 assemble-brew-command.py --st
 The raw string this primitive produces follows this structure (one logical line after `&&` joining):
 
 ```text
-export HOMEBREW_DOWNLOAD_CONCURRENCY=1; brew upgrade --verbose --formula <f1> && brew cleanup --verbose <f1> && brew upgrade --verbose --cask <c1> && brew cleanup --verbose <c1> && brew cleanup --prune=all --verbose && brew fetch --cask --verbose <fetch1>
+export HOMEBREW_DOWNLOAD_CONCURRENCY=1; brew upgrade --verbose --cask <first-cask> && brew cleanup --verbose <first-cask> && brew upgrade --verbose --formula <f1> && brew cleanup --verbose <f1> && brew upgrade --verbose --cask <c1> && brew cleanup --verbose <c1> && brew cleanup --prune=all --verbose && brew fetch --cask --verbose <fetch1>
 ```
 
 Key constraints enforced:
@@ -116,6 +121,7 @@ Key constraints enforced:
 1. `brew cleanup` NEVER receives `--cask` or `--formula` flags (positional args only)
 2. `brew fetch` always comes AFTER `brew cleanup --prune=all`
 3. Every `brew` subcommand includes `--verbose`
+4. `--first` packages are placed before all formulae and casks, in type groups (first-formulae then first-casks)
 
 ***
 
@@ -150,6 +156,17 @@ python3 .agents/skills/brew-upgrade-command-assembly/scripts/assemble-brew-comma
   --fetch-only "antigravity,fork"
 ```
 
+Assemble with a first-priority package (placed before all others):
+
+```bash
+python3 .agents/skills/brew-upgrade-command-assembly/scripts/assemble-brew-command.py \
+  --formula-names "gh,jq" \
+  --cask-names "google-chrome,onedrive" \
+  --first "claude-code@latest"
+```
+
+The output places `claude-code@latest` first in the chain, before `gh`, `jq`, and the rest.
+
 ***
 
 ## 6. Traceability
@@ -158,3 +175,15 @@ python3 .agents/skills/brew-upgrade-command-assembly/scripts/assemble-brew-comma
 - **Industrialized via**: `rule-to-skill-industrialization` protocol
 - **Constraint source**: `brew-rules.md` §3.5 (fetch-after-cleanup
   ordering), §3.6 (export prefix), §1.3 (no --cask/--formula on cleanup)
+
+## 7. Changelog
+
+### v2 (2026-06-23)
+
+- **`--first` flag added**: Packages listed via `--first` are placed first in the command
+  chain, before all formulae and casks. Internally refactored `_add_pkg()` helper extracted
+  for DRY.
+- **Stdin mode extended**: `first:<name>` prefix now supported alongside `formula:`, `cask:`,
+  `fetch:`.
+- **Consumed by**: [`brew-upgrade-workflow` v2](../brew-upgrade-workflow/SKILL.md) which
+  passes `--first` from its own `--first` / `--priority` flags.

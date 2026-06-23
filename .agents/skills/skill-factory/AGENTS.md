@@ -7,3 +7,4 @@ Refer to [SKILL.md](./SKILL.md) for the active operational protocol for generati
 - **Fidelity Scan**: Mandatory identification of all user specifics before drafting.
 - **Zero Omission**: Technical workflows and dependencies MUST NOT be summarized or removed.
 - **Redaction Integration**: Automatically apply the **Redaction & Portability** skill to all factory-generated output.
+- **Invocation Convention** (mandate #7): Skill docs MUST use simplified invocation forms; run `scripts/verify-doc-invocations.py` as a post-creation audit step.

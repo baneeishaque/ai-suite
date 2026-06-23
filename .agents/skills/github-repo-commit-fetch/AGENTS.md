@@ -23,12 +23,11 @@ The agent MUST activate the **GitHub Repo Commit Fetch** skill when ANY of the f
 ## Quick Reference
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-S=.agents/skills/github-repo-commit-fetch/scripts
+SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 
-"$PY" $S/list-commits.py     --repo owner/name --limit 5
-"$PY" $S/commit-details.py   --repo owner/name --sha <SHA> --files-only
-"$PY" $S/fetch-file-at-ref.py --repo owner/name --ref <SHA> --path <PATH> --out <LOCAL>
+python3 "$SCRIPTS_DIR"/list-commits.py     --repo owner/name --limit 5
+python3 "$SCRIPTS_DIR"/commit-details.py   --repo owner/name --sha <SHA> --files-only
+python3 "$SCRIPTS_DIR"/fetch-file-at-ref.py --repo owner/name --ref <SHA> --path <PATH> --out <LOCAL>
 ```
 
 > [!NOTE]

@@ -4,7 +4,7 @@ description: Composer skill for Homebrew upgrade workflows — discovers outdate
 category: Package-Management
 ---
 
-# Brew Upgrade Workflow Skill (v1) — Composer
+# Brew Upgrade Workflow Skill (v2) — Composer
 
 Domain-specific composition layer that drives the Homebrew sequential upgrade workflow defined in `brew-rules.md`. It handles:
 
@@ -70,8 +70,17 @@ python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
   [--only "pkg1,pkg2"] \
   [--exclude "pkg1,pkg2"] \
   [--fetch-only "pkg1,pkg2"] \
-  [--priority "pkg1,pkg2"]
+  [--priority "pkg1,pkg2"] \
+  [--first "pkg1,pkg2"]
 ```
+
+**`--first` vs `--priority`**: `--priority` controls ordering within
+the formula list and cask list separately (all formulae first, then all
+casks). `--first` places the listed packages first in the ENTIRE chain
+regardless of type — a first-priority cask will appear before any
+formulae. If `--first` is not specified, it defaults to the first entry
+of `--priority` (if any), so `--priority "claude-code@latest"` also
+makes claude-code@latest appear first overall.
 
 ### 2.3 Present to User
 
@@ -99,6 +108,7 @@ python3 run-brew-upgrade.py \
   [--exclude "pkg1,pkg2"] \
   [--fetch-only "pkg1,pkg2"] \
   [--priority "pkg1,pkg2"] \
+  [--first "pkg1,pkg2"] \
   [--outfile PATH] \
   [--debug]
 ```
@@ -107,8 +117,9 @@ python3 run-brew-upgrade.py \
 | :--- | :---: | :--- |
 | `--only` | ❌ | Comma-separated — only upgrade these packages (others are excluded) |
 | `--exclude` | ❌ | Comma-separated — skip these packages |
-| `--fetch-only` | ❌ | Comma-separated — download these casks without installing |
+| `--fetch-only` | ❌ | Comma-separated — download these casks without installing (excluded from upgrade chain) |
 | `--priority` | ❌ | Comma-separated — order these packages first (others follow default priority) |
+| `--first` | ❌ | Comma-separated — place these packages first in the chain regardless of type (defaults to first entry of --priority) |
 | `--outfile` | ❌ | Write the final command to a file instead of stdout |
 | `--debug` | ❌ | Print intermediate discovery state (outdated list, leaves, type resolution) |
 
@@ -137,6 +148,7 @@ python3 run-brew-upgrade.py \
 | Package not installed | Skipped with a warning on stderr |
 | Unknown package type | Treated as cask (default); warning on stderr |
 | All packages excluded | Exit code 1; message "All packages excluded" |
+| Fetch-only packages also outdated | Excluded from the upgrade chain; only `brew fetch` is emitted |
 
 ***
 
@@ -146,9 +158,10 @@ The Python script requires:
 
 - `python3` (stdlib only — no pip dependencies)
 - Homebrew (`brew`) installed and on `PATH`
-- The base primitive script at `scripts/assemble-brew-command.py` on
-  the Python path (resolved relative to this skill's `scripts/`
-  directory)
+- The base primitive script at
+  `../../brew-upgrade-command-assembly/scripts/assemble-brew-command.py`
+  (resolved via `os.path.dirname(os.path.abspath(__file__))` from the
+  orchestrator's `scripts/` directory)
 
 ***
 
@@ -185,6 +198,24 @@ python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
   --fetch-only "antigravity,fork"
 ```
 
+Upgrade all, with a specific package first overall (ahead of all
+formulae and casks), and fetch-only for stable chrome + vscode:
+
+```bash
+python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
+  --priority "claude-code@latest" \
+  --fetch-only "google-chrome,visual-studio-code@insiders"
+```
+
+Use explicit `--first` to override the default (which takes the first
+entry of `--priority`):
+
+```bash
+python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
+  --priority "google-chrome,claude-code@latest" \
+  --first "claude-code@latest"
+```
+
 ***
 
 ## 8. Traceability
@@ -195,3 +226,20 @@ python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
 - **Brew SSOT**: `ai-agent-rules/brew-rules.md` remains the
   authoritative reference for brew operations not covered by these
   skills
+
+## 9. Changelog
+
+### v2 (2026-06-23)
+
+- **`--first` flag added**: Packages listed via `--first` are placed first in the entire
+  command chain regardless of formula/cask type. Defaults to first entry of `--priority`
+  when not specified.
+- **Fetch-only exclusion fix**: Packages in `--fetch-only` are now correctly excluded from
+  the upgrade chain (previously they appeared in both the upgrade section and the fetch
+  section).
+- **Path resolution bug fix**: Corrected the assembler script path from
+  `SKILL_DIR/../brew-upgrade-command-assembly/...` to
+  `SKILL_DIR/../../brew-upgrade-command-assembly/...` (missing `..` level).
+- **Base primitive updated**: `assemble-brew-command.py` gained `--first` CLI flag and
+  `_add_pkg()` helper. See
+  [brew-upgrade-command-assembly Changelog](../brew-upgrade-command-assembly/SKILL.md).

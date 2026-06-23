@@ -1,3 +1,9 @@
+---
+name: mariadb-check-autoincrement-trigger-fallback
+description: Documents the MariaDB error 1901 pitfall and ships a BEFORE INSERT and BEFORE UPDATE trigger fallback for CHECK constraints on AUTO_INCREMENT columns.
+category: Database
+---
+
 # MariaDB CHECK on AUTO_INCREMENT — Trigger Fallback Skill
 
 > **Skill ID:** `mariadb-check-autoincrement-trigger-fallback`
@@ -97,8 +103,7 @@ You MUST author both.
 Use [`scripts/install-no-self-fk-trigger.py`](scripts/install-no-self-fk-trigger.py):
 
 ```bash
-PY=~/.local/share/mise/installs/python/latest/bin/python
-$PY .agents/skills/mariadb-check-autoincrement-trigger-fallback/scripts/install-no-self-fk-trigger.py \
+python3 .agents/skills/mariadb-check-autoincrement-trigger-fallback/scripts/install-no-self-fk-trigger.py \
     --secrets /path/to/db.secrets \
     --table accounts \
     --pk-col account_id \

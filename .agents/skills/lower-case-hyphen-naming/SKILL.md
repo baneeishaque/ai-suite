@@ -329,3 +329,10 @@ The agent is **BLOCKED** from:
 | `.gitignore` negation patterns (`!`) missed | Read `.gitignore` carefully — `!dir/*.zip` means those zips ARE tracked even though `dir/*` is ignored |
 | `git mv` failed on empty directory | Empty dirs aren't tracked by Git — use `Rename-Item` (PowerShell) or `mv` (Bash) instead |
 | Only listed violations, not all tracked files | Present a **complete inventory** of ALL tracked files with their status — users need full visibility |
+
+---
+
+## Related Skills
+
+- [YouTube Video Upload](../youtube-video-upload/SKILL.md) — downstream composer that may use kebab-case file naming
+  for uploaded videos; cross-referenced so the file-norming pipeline is discoverable from upload context.

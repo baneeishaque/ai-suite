@@ -31,17 +31,16 @@ The agent MUST activate the **GitHub Actions Run Audit** skill when ANY of the f
 ## Quick Reference
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-THIS=.agents/skills/github-actions-run-audit/scripts
+SCRIPTS_DIR=.agents/skills/github-actions-run-audit/scripts
 
 # Latest 5 runs + the very latest run's full detail
-"$PY" $THIS/audit-run.py --repo owner/name --workflow my.yml
+python3 "$SCRIPTS_DIR"/audit-run.py --repo owner/name --workflow my.yml
 
 # Inspect one specific run
-"$PY" $THIS/audit-run.py --repo owner/name --run-id 123456789
+python3 "$SCRIPTS_DIR"/audit-run.py --repo owner/name --run-id 123456789
 
 # Download all artifacts from one run
-"$PY" $THIS/download-artifacts.py --repo owner/name --run-id 123456789 --dir ./artifacts/
+python3 "$SCRIPTS_DIR"/download-artifacts.py --repo owner/name --run-id 123456789 --dir ./artifacts/
 ```
 
 For full audit pipeline (trigger → audit → verify committed artifact), see

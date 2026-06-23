@@ -57,17 +57,16 @@ each primitive owns its own SSOT.
 ### 4.2 Invocation patterns
 
 ```bash
-PY=~/.local/share/mise/installs/python/$(ls ~/.local/share/mise/installs/python | sort -V | tail -1)/bin/python
-S=.agents/skills/github-actions-workflow-dispatch/scripts
+SCRIPTS_DIR=.agents/skills/github-actions-workflow-dispatch/scripts
 
 # Fire-and-forget
-"$PY" $S/trigger-workflow.py --repo owner/repo --workflow my-workflow.yml
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/repo --workflow my-workflow.yml
 
 # Trigger and wait up to 5 minutes; non-zero exit on timeout
-"$PY" $S/trigger-workflow.py --repo owner/repo --workflow my-workflow.yml --wait 300
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/repo --workflow my-workflow.yml --wait 300
 
 # With inputs and a non-default ref
-"$PY" $S/trigger-workflow.py --repo owner/repo --workflow deploy.yml \
+python3 "$SCRIPTS_DIR"/trigger-workflow.py --repo owner/repo --workflow deploy.yml \
     --ref release/v2 --field environment=prod --field debug=false --wait 600
 ```
 

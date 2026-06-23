@@ -217,6 +217,10 @@ This skill itself delegates to:
 
 ## 6. Related Skills
 
+- [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md) —
+  automated audit for skill graph issues (duplicates, missing bridges, missing frontmatter)
+- [`script-template-extraction`](../script-template-extraction/SKILL.md) —
+  companion base skill for template extraction; run cross-reference audit after extraction
 - [`vscode-setting-schema-discovery`](../vscode-setting-schema-discovery/SKILL.md) —
   the reference port (`resolve-vscode-setting.bash` →
   `resolve-vscode-setting.py`) that motivated authoring this skill.

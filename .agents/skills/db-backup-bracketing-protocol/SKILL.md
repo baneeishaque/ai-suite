@@ -1,3 +1,9 @@
+---
+name: db-backup-bracketing-protocol
+description: Defines when and how to dispatch a database backup GitHub Actions workflow as a safety bracket around destructive production operations.
+category: Database
+---
+
 # Database Backup Bracketing Protocol Skill
 
 > **Skill ID:** `db-backup-bracketing-protocol`
@@ -54,8 +60,7 @@ gh -R <owner>/<repo> run watch "$RUN_ID"
 Or delegate to the dispatch skill's helper:
 
 ```bash
-PY=~/.local/share/mise/installs/python/latest/bin/python
-$PY .agents/skills/github-actions-workflow-dispatch/scripts/dispatch-and-wait.py \
+python3 .agents/skills/github-actions-workflow-dispatch/scripts/dispatch-and-wait.py \
     --repo <owner>/<repo> --workflow database-backup.yml --wait
 ```
 

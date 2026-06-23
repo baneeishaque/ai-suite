@@ -38,6 +38,18 @@ All scripts MUST follow a predictable, industrialized structure:
 - **Scope Statement**: A brief paragraph in the docstring defining *why* the script exists.
 - **Docstrings**: MUST use triple-double quotes `"""..."""` and follow Googley style.
 
+### 2.2 Interpreter Invocation
+
+Scripts MUST use `#!/usr/bin/env python3` shebang (see §2 above).  For runtime
+resolution — which interpreter to invoke when `python3` on PATH is
+unavailable, outdated, or blocked by mise cascade — see
+[`mise-tool-management §3.3`](../mise-tool-management/SKILL.md#33-runtime-tool-resolution).
+
+For **documentation** of invocation commands in skill files, the simplified
+`python3` form MUST be used; do NOT embed fragile path-resolution commands
+like `PY=~/.local/share/mise/installs/python/$(ls …)/bin/python` in docs.
+See [skill-factory mandate #7](../skill-factory/SKILL.md#2211-universal-script-mandates).
+
 ***
 
 ## 3. Type Safety & Defensive Programming

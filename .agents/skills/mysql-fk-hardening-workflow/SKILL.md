@@ -1,3 +1,9 @@
+---
+name: mysql-fk-hardening-workflow
+description: End-to-end orchestrator for adding a foreign-key constraint to an existing MySQL or MariaDB column on a production table.
+category: Database
+---
+
 # MySQL Foreign-Key Hardening Workflow Skill
 
 > **Skill ID:** `mysql-fk-hardening-workflow`
@@ -57,20 +63,19 @@ Do NOT apply when:
 ### Phase 1 — Probe
 
 ```bash
-PY=~/.local/share/mise/installs/python/latest/bin/python
-S=/path/to/db.secrets
+SECRETS=/path/to/db.secrets
 
 # Engine
-$PY .agents/skills/mysql-capability-probe-pymysql/scripts/probe-server-flavor.py --secrets $S
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-server-flavor.py --secrets "$SECRETS"
 # Orphans against intended parent
-$PY .agents/skills/mysql-capability-probe-pymysql/scripts/probe-orphan-rows.py \
-    --secrets $S --check 'child.fk_col->parent.pk_col' --list-orphans
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-orphan-rows.py \
+    --secrets "$SECRETS" --check 'child.fk_col->parent.pk_col' --list-orphans
 # Sentinel-0 enumeration
-$PY .agents/skills/mysql-capability-probe-pymysql/scripts/probe-null-rows.py \
-    --secrets $S --check 'child.fk_col'
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-null-rows.py \
+    --secrets "$SECRETS" --check 'child.fk_col'
 # FK readiness (orphans + index + engine in one shot)
-$PY .agents/skills/mysql-capability-probe-pymysql/scripts/probe-fk-readiness.py \
-    --secrets $S --fk 'child.fk_col->parent.pk_col'
+python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-fk-readiness.py \
+    --secrets "$SECRETS" --fk 'child.fk_col->parent.pk_col'
 ```
 
 ### Phase 2 — Decision Gates
@@ -113,16 +118,16 @@ when they do (re-keying), CASCADE prevents orphans.
 
 ```bash
 # Dry run — proves intent, ALWAYS rolls back
-$PY .agents/skills/mysql-fk-hardening-workflow/scripts/dry-run-update.py \
-    --secrets $S \
+python3 .agents/skills/mysql-fk-hardening-workflow/scripts/dry-run-update.py \
+    --secrets "$SECRETS" \
     --update "UPDATE child SET fk_col = NULL WHERE fk_col = 0" \
     --verify "SELECT id FROM child WHERE fk_col = 0" \
     --expect-rows 72
 # Outputs: ... --- DRY_RUN_SHA: a1b2c3d4e5f60718 ---
 
 # User authorizes -> commit
-$PY .agents/skills/mysql-fk-hardening-workflow/scripts/commit-update.py \
-    --secrets $S \
+python3 .agents/skills/mysql-fk-hardening-workflow/scripts/commit-update.py \
+    --secrets "$SECRETS" \
     --update "UPDATE child SET fk_col = NULL WHERE fk_col = 0" \
     --verify "SELECT id FROM child WHERE fk_col = 0" \
     --require-dry-run-sha a1b2c3d4e5f60718

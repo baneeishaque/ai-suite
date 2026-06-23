@@ -71,10 +71,6 @@ sandbox provisioning, or push authorization — those are the owners' jobs.
   fixes into a `_via_rollback` branch). It deletes safely without
   fan-out. Use THIS skill when at least one unique commit needs to be
   preserved.
-- [`git-branch-promotion`](../git-branch-promotion/SKILL.md) — the inverse
-  use-case (1-to-1 promotion of a refined branch onto canonical). Use that
-  skill when the parallel branch's content is **uniformly** functional and
-  belongs entirely on the canonical branch.
 - [`git-rebase-standardization`](../git-rebase-standardization/SKILL.md) —
   when the parallel branch's commits need re-ordering, not classification.
 - [`git-personal-content-extraction`](../git-personal-content-extraction/SKILL.md)

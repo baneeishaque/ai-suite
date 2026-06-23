@@ -59,11 +59,6 @@ or parity-audit logic — those are the owners' jobs.
 
 ## Related Skills
 
-- [`git-personal-sandbox-restack`](../git-personal-sandbox-restack/SKILL.md)
-  — the single-dependent ancestor of this skill, specialized to personal
-  sandboxes with the modify-vs-delete (DU) conflict recipe. Invoke this
-  cascade skill when there is **more than one** dependent or when at least
-  one dependent is **not** a personal sandbox.
 - [`git-parallel-branch-decommission`](../git-parallel-branch-decommission/SKILL.md)
   — the most common upstream caller. Its Phase 4.5 hands off to this skill
   to restack any branch that was rooted on the canonical's pre-decommission tip.

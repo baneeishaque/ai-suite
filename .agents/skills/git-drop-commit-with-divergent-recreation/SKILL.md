@@ -101,7 +101,7 @@ applies.
 
 ```powershell
 # What files does <A> touch?
-git show --stat <A>
+git show --name-only <A>
 
 # Which later commits touch the same files?
 git log --oneline <A>..HEAD -- <path-to-X>

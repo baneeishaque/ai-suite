@@ -120,9 +120,15 @@ Read the file in full and extract the constraints:
 #### 0b — Inspect the Target Commit
 
 ```bash
-git show --stat <sha>
+git show --name-only <sha>
 git show <sha> -- <changed-files>
 ```
+
+Use `--name-only` (not `--stat`) for the initial file list to avoid path
+truncation. See
+[`git-commit-message-delivery` §2](../git-commit-message-delivery/SKILL.md#2-verification-pattern)
+for the rationale. `--stat` may be used for human-readable line-count
+summary but never for programmatic path matching.
 
 Determine:
 
@@ -267,8 +273,13 @@ with these specializations:
 ### Step 2 — Verification
 
 ```bash
-git show --stat HEAD~<N> | head -20  # the reworded commit
+git show --name-only HEAD~<N>  # verify file set (no path truncation)
+git show --stat HEAD~<N> | head -20  # human-readable line-count summary
 ```
+
+> **Path truncation note:** `--stat` truncates long paths with `.../`, making
+> `grep` unreliable. Use `--name-only` for programmatic path matching. See
+> [`git-commit-message-delivery` §2](../git-commit-message-delivery/SKILL.md#2-verification-pattern).
 
 Confirm:
 
@@ -299,7 +310,7 @@ and [Step 8](../git-commit-edit/SKILL.md) of the base skill.
 | Category | Convention |
 |---|---|
 | Rules-file discovery | `find . -iname "*commit*message*rule*"` |
-| Diff classification | `git show --stat <sha>` + heuristic mapping to `<type>(<scope>)` |
+| Diff classification | `git show --name-only <sha>` (no path truncation) + heuristic mapping to `<type>(<scope>)` |
 | Message authoring | Inline per the project's rules; bodies MANDATORY by default per §0c, with the 3-condition Self-Documenting Titles opt-out |
 | Reword execution | **Delegated** to [`git-commit-edit`](../git-commit-edit/SKILL.md) (`reword` action via `GIT_SEQUENCE_EDITOR` + `GIT_EDITOR`) |
 | Backup, push, cleanup | **Delegated** to [`git-commit-edit`](../git-commit-edit/SKILL.md) |

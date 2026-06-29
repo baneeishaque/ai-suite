@@ -11,7 +11,7 @@ category: Tool-Configuration
 This skill is a **base skill**: it owns the generic primitive of how OpenCode persists
 provider API keys across restarts and why a provider must be declared in
 `opencode.json` to auto-register on startup. Multiple domain-specific composer skills
-consume this primitive to fix
+(such as `opencode-google-gemini-config`) consume this primitive to fix
 provider-specific credential-retention bugs without re-documenting the underlying
 OpenCode provider-architecture mechanics.
 
@@ -148,6 +148,10 @@ After configuring a provider in `opencode.json`:
 
 ## Related Skills
 
+- [`opencode-google-gemini-config`](../opencode-google-gemini-config/SKILL.md) —
+  Composer skill: Google AI Studio / Gemini-specific credential setup and
+  the explicit config-block fix for the restart-retention bug. Consumes
+  this base skill's auth.json + startup-registration knowledge.
 - [`opencode-permission-config`](../opencode-permission-config/SKILL.md) —
   OpenCode permission system configuration (complementary OpenCode config
   domain, different subsection of `opencode.json`).
@@ -157,4 +161,8 @@ After configuring a provider in `opencode.json`:
 - [OpenCode Docs — Providers](https://opencode.ai/docs/providers/)
 - [OpenCode JSON Schema](https://opencode.ai/config.json)
 
+## Composition by Higher-Level Skills
 
+| Composer | Composition Mechanism |
+|---|---|
+| [`opencode-google-gemini-config`](../opencode-google-gemini-config/SKILL.md) | Consumes this base skill's §2 (Startup Provider Registration) and §3 (Config Declaration Requirement) to diagnose and fix the Gemini key-disappearance-after-restart bug. The composer adds Google-specific credential setup steps and the concrete `"google": {}` config stanza. |

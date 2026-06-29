@@ -23,6 +23,9 @@ first loading `SKILL.md` — this bridge is intentionally non-actionable.
 
 ## Cross-References
 
+- [`opencode-google-gemini-config`](../opencode-google-gemini-config/SKILL.md) —
+  Composer skill for Google AI Studio / Gemini-specific setup. Consumes this
+  base skill's SSOT.
 - [`opencode-permission-config`](../opencode-permission-config/SKILL.md) —
   OpenCode permission configuration (complementary domain).
 - [OpenCode Docs — Providers](https://opencode.ai/docs/providers/) — Official

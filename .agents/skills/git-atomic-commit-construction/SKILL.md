@@ -995,7 +995,7 @@ both the submodule SHA delta and any grouped parent-side changes in the message 
 
 #### 7d — Execution Prompt
 
-```
+```text
 The parent repository needs a submodule SHA update. Execute sync?
 ```
 

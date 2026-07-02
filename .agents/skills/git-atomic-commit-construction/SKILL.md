@@ -159,7 +159,9 @@ chmod +x gradlew      # Gradle wrapper example
 The agent MUST ensure the repository is not in a "detached HEAD" state before committing.
 
 1. **Check Current Branch**: Run `git branch --show-current`.
-2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST identify and checkout the appropriate branch (usually the default branch, e.g., `main`) before proceeding.
+2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST
+   identify and checkout the appropriate branch (usually the default branch,
+   e.g., `main`) before proceeding.
 3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts.
 
 #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
@@ -179,6 +181,7 @@ source repo. If the verdict is `unknown`, ask the user. Skipping this
 audit risks landing the work in a repo whose changes never reach the
 canonical artifact (real-world precedent: Account-Ledger-Server vs
 Account-Ledger-Server-PHP, May 2026)
+
 ---
 
 ### Step 1 — Deep Change Analysis
@@ -953,7 +956,9 @@ When managing submodules, the main repository's history must remain descriptive 
 - **Synchronized Commits**: Every functional update in a submodule requiring a
   pointer update in the main repo MUST be coupled with its relevant main-repo
   configuration changes (e.g., CI scripts or IDE settings).
-- **Orchestration**: Delegate metadata extraction to the **[Git Submodule Commit Details](../git-submodule-commit-details/SKILL.md)** skill to ensure zero-omission fidelity.
+- **Orchestration**: Delegate metadata extraction to the
+  **[Git Submodule Commit Details](../git-submodule-commit-details/SKILL.md)**
+  skill to ensure zero-omission fidelity.
 - **Commit Message Generation**: All submodule sync commits MUST follow the
   strict formatting, chronological ordering, and metadata requirements defined in
   **[Submodule Sync Commits](../../../ai-agent-rules/git-commit-message-rules.md#5-submodule-sync-commits-parent-repository)**.
@@ -1148,9 +1153,11 @@ agent MUST:
 
 1. **Present** the pre-existing staged content to the user with a warning.
 2. **Unstage** it if it does not belong to the current commit:
+
    ```bash
    git reset HEAD -- .
    ```
+
 3. **Re-verify** with `git diff --cached` that the index is now clean.
 4. **Stage only the files intended** for the current atomic commit.
 

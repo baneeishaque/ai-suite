@@ -338,7 +338,36 @@ fixes in consumer files MUST be consolidated into a single commit.
 
 Present the proposed "Arranged Commits" using a structured format with
 **maximum detail**. For files with mixed concerns requiring hunk-based
-staging, the preview **MUST** include the specific git hunks:
+staging, the preview **MUST** include the specific git hunks.
+
+**Mandates for writing the preview:**
+
+1. **`@@` Header Verification** — Before writing any `@@ -N,M +N,M @@` line,
+   run `git diff --unified=3 -- <file>` and copy the exact range header from
+   the actual output. Never estimate or compute from memory — wrong headers
+   make the preview useless for verification.
+
+2. **Fence Collision Handling** — When a diff hunk contains lines that are
+   themselves triple-backtick fenced code blocks (` ```text`, ` ```bash`,
+   and their closing ` ``` `), wrap the diff in **`~~~diff`** / **`~~~`**
+   instead of ` ```diff ` / ` ``` `. Backtick fences inside a backtick-fenced
+   block terminate the outer block prematurely, breaking the markdown preview.
+   The tilde fence (`~~~`) is only closed by another `~~~`, so inner backtick
+   blocks survive as literal content.
+
+3. **No Content Truncation** — All hunks MUST be shown in full. Lines of
+   context MUST NOT be replaced with `...` or any other truncation marker.
+   If the combined diff is too large for one conversation message, split the
+   preview across batches ($2g) and present one batch at a time.
+
+4. **Preview Artifact** — Write the full preview to
+   `scratch/commit-preview.md` (use
+   [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
+   to ensure `scratch/` exists and is gitignored). The user can then refer to
+   specific line numbers when giving feedback. Present the summary in the
+   conversation as well.
+
+Template:
 
 ````markdown
 ## Arranged Commits Preview
@@ -354,7 +383,8 @@ staging, the preview **MUST** include the specific git hunks:
   ```
 - **Hunks/Preview**:
   ```diff
-  [Show actual hunks for this commit using git diff]
+  [Show actual hunks for this commit — use ~~~diff/~~~ if hunks contain ```
+  ]
   ```
 
 ### Commit 2: [type](scope): [title]
@@ -369,6 +399,21 @@ staging, the preview **MUST** include the specific git hunks:
 Please say "start" to begin the sequential execution of these atomic
 commits.
 ````
+
+#### 2d.1 — Iterative Preview Fixup
+
+After presenting the commit preview, the user may give feedback by line
+number (e.g., "check line 98 — still broken"). Feedbacks typically
+point to one of these issues in the preview:
+
+- Wrong `@@` header (fix by verifying against actual `git diff`)
+- Truncated content with `...` (restore full hunk)
+- Nested fenced code blocks breaking markdown (switch to `~~~diff`/`~~~`)
+- Missing context lines around changes (include the default 3-line context)
+
+Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
+Loop until the user confirms the preview is correct. Do NOT begin execution
+until the user says "start".
 
 #### 2e — Commit Authorization
 
@@ -1412,6 +1457,9 @@ The agent is **BLOCKED** from:
   BLOCKS, only trivial timestamp changes exist and the commit SHOULD
   be cancelled. If it PASSES or the repo has no claude config files,
   the atomic commit workflow proceeds normally.
+- **[Repo Scratch Output Capture](../repo-scratch-output-capture/SKILL.md)**
+  — For writing the commit preview artifact to `scratch/commit-preview.md`
+  (§2d mandate 4) with the `ensure-scratch-gitignored.py` helper.
 
 ## Common Pitfalls
 
@@ -1436,3 +1484,6 @@ The agent is **BLOCKED** from:
 | Bulk-deleted `.settings/` directory and a tracked file disappeared | Use `git ls-files .settings/` to identify tracked files first; remove only specific untracked files, never the whole directory |
 | Assumed Maven nature/builder in `.project` came from `vscjava.vscode-maven` | The `.project` modifications come from **JDT Language Server** (embedded m2e), not the Maven UI extension; attribute correctly when presenting to user |
 | Indent drift after markdown edit silently staged | Discover correct indent via `pathlib.Path.read_text().splitlines()` `repr` scan of unmodified siblings; repair with a targeted Python `write_text`; re-verify before `git add` — do not stage drifted whitespace. See `§3g`. |
+| Commit preview shows wrong `@@` line numbers | Verify every `@@` header against actual `git diff --unified=3 -- <file>` before writing the preview — never estimate from memory |
+| Markdown preview breaks when diff contains fenced code blocks | Wrap the diff in `~~~diff`/`~~~` instead of ` ```diff `/` ``` ` — backtick fences inside a backtick-fenced block terminate the outer block prematurely |
+| Commit preview lines refer to wrong line numbers after edits | Re-run `git diff` to get fresh `@@` headers after any working-tree change and re-write the preview |

@@ -95,7 +95,13 @@ The symlink MUST NOT contain `/User` at the end of the target path.
 
 ***
 
-## 4. Traceability
+## 4. Related Skills
+
+- [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md)
+  — Base skill for migrating tool configuration directories into a companion
+  repo. This skill is a concrete example of that pattern for VS Code Insiders.
+
+## 5. Traceability
 
 - Created: 2026-04-24
 - Context: Relocation of VS Code Insiders User settings for portability across machines

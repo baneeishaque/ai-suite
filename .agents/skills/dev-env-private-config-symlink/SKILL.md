@@ -222,7 +222,11 @@ the operational steps (clone / pull / symlink / verify) are tightly
 sequenced. The `audit-symlinks.py` script is a self-contained utility
 not used by other skills.
 
-## 11. Traceability
+## 11. Related Skills
+
+- [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md) — Base skill for migrating entire tool configuration directories (XDG) into a companion repo with symlinks. This skill focuses on individual app-level config files (.env, JSON); the base skill generalises directory-level migration for tool configs.
+
+## 12. Traceability
 
 This skill was extracted from a session that:
 

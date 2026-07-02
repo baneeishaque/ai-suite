@@ -935,6 +935,61 @@ python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-di
 
 **See also:** `stage-hunk-from-diff.py --help` for full argument docs.
 
+#### 3i.1 — Adjacent-Lines Isolation (git add -p Split Failure Fallback)
+
+When `git add -p` presents a single hunk with multiple adjacent
+added or deleted lines and `s` (split) returns "Sorry, cannot split
+this hunk," the lines are too close (no intervening context line) for
+Git's hunk-split algorithm. `stage-hunk-from-diff.py` (§3i) stages
+the ENTIRE hunk when ANY line matches your filter — it cannot isolate
+individual adjacent lines within a hunk.
+
+**Preferred fallback:** `stage-file-excluding-lines.py` (§2f.1) stages
+the file with the unwanted line(s) EXCLUDED, leaving the working tree
+untouched. The excluded line stays on disk and is picked up cleanly by
+`git add <file>` in the next commit.
+
+**Example — two adjacent additions, each needs its own commit:**
+
+```bash
+# Commit 1: stage the file minus the second addition
+python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+    --file <file> \
+    --exclude "<content-of-second-line>"
+
+git commit …   # only the first line change is committed
+
+# Commit 2: HEAD now has the first line; working tree still has both.
+# git add sees only the second line as a delta from HEAD:
+git add <file>
+git commit …   # only the second line change is committed
+```
+
+**How it works** (re-stated for this use case, SSOT is §2f.1):
+
+1. Reads the CURRENT working-tree version of `<file>`.
+2. Removes every line matching `--exclude`.
+3. Writes the result as a new blob via `git hash-object -w`.
+4. Updates the index entry via `git update-index --cacheinfo`.
+5. Working tree is never modified — the excluded line persists on disk.
+
+**Why prefer this over manual editing (Intermediate State Synthesis,
+§13):**
+
+- Zero working-tree mutation — no risk of forgetting the restore step.
+- The index blob is computed from the exact working-tree content
+  (minus matched lines) — no accidental whitespace drift from a
+  manual copy.
+- Audit trail: the script logs the excluded line content + blob SHA
+  to stderr.
+
+**When manual editing is still appropriate (fallback to §13):**
+
+- The script is unavailable (no `.agents/` tree, or Python not on PATH).
+- Lines to exclude span multiple non-adjacent positions (one
+  `--exclude` call handles one line; for scattered exclusions, manual
+  may be faster).
+
 ---
 
 ### Step 4 — Formatting & Structural Partitioning
@@ -1329,9 +1384,32 @@ git grep -r "old-name.md" . --exclude-dir=.git --exclude=README.md
 
 When a file contains interleaved changes or massive structural reorders
 (50+ lines moved) mixed with functional fixes, hunk-based staging may
-become unreliable.
+become unreliable. This also applies when `git add -p` hunk splitting
+fails on **adjacent added or deleted lines** that must go into separate
+commits — see §3i.1 for the scripted fallback.
 
-**The Synthesis Strategy:**
+#### Preferred: Scripted Fallback (no working-tree mutation)
+
+When `git add -p` split fails and the unwanted content is isolated to
+single lines, prefer `stage-file-excluding-lines.py` over manual
+editing:
+
+1. **Isolate with script:** Run
+   `stage-file-excluding-lines.py --file <f> --exclude "<unwanted-line>"`
+   to stage only the desired line(s) via a cacheinfo blob (§3i.1).
+   Working tree is untouched — zero risk of forgetting a restore step.
+2. **Commit:** Commit the staged intermediate version.
+3. **Iterate:** `git add <f>` picks up the remaining lines as unstaged
+   deltas from the new HEAD. Repeat for the next commit.
+
+See [§3i.1](#3i1--adjacent-lines-isolation-git-add--p-split-failure-fallback)
+for the full procedure, invocation examples, and the decision of when
+to fall back to manual editing.
+
+#### Fallback: Manual De-construction (The Synthesis Strategy)
+
+When the scripted fallback is unavailable (no `.agents/` tree, Python
+not on PATH), or unwanted content spans multiple non-adjacent positions:
 
 1. **De-construct:** Manually edit the file (or use selective
    undo/revert) to match the current atomic goal BEFORE staging.
@@ -1469,6 +1547,7 @@ The agent is **BLOCKED** from:
 | `.gitignore` negation patterns missed | Read `.gitignore` carefully — `!dir/*.zip` means those zips ARE tracked |
 | `.gitignore` references to renamed directories not updated | `.gitignore` is a critical blast-radius target — update patterns or tracked files become untracked |
 | `git mv` failed on empty directory | Empty dirs aren't tracked by Git — use `Rename-Item` or `mv` instead |
+| `git add -p` split rejected on adjacent added/deleted lines | Use `stage-file-excluding-lines.py --exclude "<unwanted-line>"` (§3i.1) to stage only the desired line(s); commit; then `git add` the remaining lines as the next commit's delta. Prefer this over manual file editing. |
 | Noise from unrelated hunks leaked into functional commit | Use `git add -p` and verify with `git diff --cached` after staging |
 | Formatting fix discovered during feature work | Stage and commit separately via hunk-based staging |
 | Committed half a logical change across two commits | If file A depends on file B's change, they MUST be in the same commit |

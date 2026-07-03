@@ -70,6 +70,7 @@ ls -la "/Users/dk/Library/Application Support/Code - Insiders/User"
 ### 2.3 Symlink Validation
 
 The symlink output MUST show:
+
 ```
 lrwxr-xr-x@ ... -> /Users/dk/Lab_Data/configurations-private/vscode-insiders-configuration/visual-studio-code-user-settings
 ```

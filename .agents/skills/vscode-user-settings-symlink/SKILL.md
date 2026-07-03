@@ -100,6 +100,7 @@ The symlink MUST NOT contain `/User` at the end of the target path.
 - [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md)
   — Base skill for migrating tool configuration directories into a companion
   repo. This skill is a concrete example of that pattern for VS Code Insiders.
+- [`opencode-config-preserve`](../opencode-config-preserve/SKILL.md) — Analogous config preservation for OpenCode CLI/IDE.
 
 ## 5. Traceability
 

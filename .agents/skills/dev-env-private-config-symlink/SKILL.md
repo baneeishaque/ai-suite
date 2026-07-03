@@ -1,6 +1,6 @@
 ---
 name: dev-env-private-config-symlink
-description: Industrial protocol for symlinking developer-private configuration files (.env, JSON, HTTP-client envs) from a sibling configurations-private repository into an application's working directory across multiple environments (Gitpod, Google Cloud Shell, NeverInstall, Ubuntu, macOS, Windows), with broken-target detection, case-mismatch diagnosis, and per-consumer audit.
+description: Industrial protocol for symlinking developer-private configuration files (.env, JSON, HTTP-client envs) from a sibling <private-repo> repository into an application's working directory across multiple environments (Gitpod, Google Cloud Shell, NeverInstall, Ubuntu, macOS, Windows), with broken-target detection, case-mismatch diagnosis, and per-consumer audit.
 category: Developer-Environment
 ---
 
@@ -8,8 +8,8 @@ category: Developer-Environment
 
 This skill captures the cross-environment pattern of holding developer-private
 configuration (`.env`, runtime JSON, HTTP-client environments, etc.) in a
-single private companion repository (typically named `configurations-private`)
-and projecting it into an application's working tree via **symbolic links**.
+single private companion repository (`<private-repo>`) and projecting it into
+an application's working tree via **symbolic links**.
 
 The protocol covers:
 
@@ -30,7 +30,7 @@ The protocol covers:
 | Token | Meaning |
 |---|---|
 | `<app-repo>` | The application repository receiving the symlinks (e.g., a Kotlin CLI, Flutter desktop app, Android client). |
-| `<private-repo>` | The git repository holding developer-private configs. Conventionally named `configurations-private`. |
+| `<private-repo>` | The git repository holding developer-private configs. |
 | `<private-root>` | The absolute path to `<private-repo>` on the current host (varies by environment — see §2). |
 | `<app-subdir>` | A subfolder inside `<private-repo>` scoping configs to one application (e.g., `AccountLedger`). |
 | `<consumer>` | Any source file (Kotlin / Java / Dart / JS / Python / etc.) that reads one of the linked configs. |
@@ -42,12 +42,12 @@ reference for new environments:
 
 | Environment | `<private-root>` | Exemplar |
 |---|---|---|
-| Gitpod | `/workspace/configurations-private` | [scripts/exemplars/symlink-gitpod.bash](scripts/exemplars/symlink-gitpod.bash) |
-| Google Cloud Shell | `~/cloudshell_open/configurations-private` | [scripts/exemplars/symlink-google-cloud-shell.bash](scripts/exemplars/symlink-google-cloud-shell.bash) |
-| NeverInstall | `../configurations-private` (sibling of `<app-repo>`) | [scripts/exemplars/symlink-neverinstall.bash](scripts/exemplars/symlink-neverinstall.bash) |
-| Ubuntu (local) | `$HOME/configurations-private` | [scripts/exemplars/symlink-ubuntu.bash](scripts/exemplars/symlink-ubuntu.bash) |
-| macOS (local) | `~/Lab_Data/configurations-private` (case-sensitive on the literal path) | (see §3 — case-mismatch caution) |
-| Windows | `C:\Lab_Data\configurations-private` | [scripts/exemplars/symlink-windows.ps1](scripts/exemplars/symlink-windows.ps1) |
+| Gitpod | `/workspace/<private-repo>` | [scripts/exemplars/symlink-gitpod.bash](scripts/exemplars/symlink-gitpod.bash) |
+| Google Cloud Shell | `~/cloudshell_open/<private-repo>` | [scripts/exemplars/symlink-google-cloud-shell.bash](scripts/exemplars/symlink-google-cloud-shell.bash) |
+| NeverInstall | `../<private-repo>` (sibling of `<app-repo>`) | [scripts/exemplars/symlink-neverinstall.bash](scripts/exemplars/symlink-neverinstall.bash) |
+| Ubuntu (local) | `$HOME/<private-repo>` | [scripts/exemplars/symlink-ubuntu.bash](scripts/exemplars/symlink-ubuntu.bash) |
+| macOS (local) | `~/Lab_Data/<private-repo>` (case-sensitive on the literal path) | (see §3 — case-mismatch caution) |
+| Windows | `C:\Lab_Data\<private-repo>` | [scripts/exemplars/symlink-windows.ps1](scripts/exemplars/symlink-windows.ps1) |
 
 New environments MUST add a row above and a matching exemplar script.
 
@@ -75,7 +75,7 @@ filesystems (Linux ext4, native git server) will fail outright.
 ### 4.1 Phase 1 — Discover Configs
 
 1. Inventory the application's working tree for symlinks pointing into a
-   path containing `configurations-private` (or whatever the project's
+   path containing `<private-repo>` (or whatever the project's
    private-repo convention is named).
 2. For each, capture: link path, target path (raw + resolved), target
    exists?, target case matches on-disk?
@@ -180,7 +180,7 @@ template.
 
 [scripts/audit-symlinks.py](scripts/audit-symlinks.py) walks the current
 working directory for symlinks pointing at any path containing
-`configurations-private` (configurable), and reports per link:
+`<private-repo>` (configurable), and reports per link:
 
 - target absolute path
 - target exists?

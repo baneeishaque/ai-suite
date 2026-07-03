@@ -163,6 +163,8 @@ would split the SSOT and silently diverge during bug fixes.
 - [`mcp-cross-tool-config-sync`](../mcp-cross-tool-config-sync/SKILL.md) —
   Another config-symlink lifecycle, focused on MCP server definitions rather
   than tool XDG directories.
+- [`opencode-config-preserve`](../opencode-config-preserve/SKILL.md)
+  — Concrete example of the same migration pattern for OpenCode CLI/IDE.
 
 ***
 

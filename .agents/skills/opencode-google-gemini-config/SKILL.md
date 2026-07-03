@@ -169,6 +169,7 @@ This is useful for ephemeral sessions or CI environments.
 
 ## 5. Related Skills
 
+- [`opencode-jsonc-util`](../opencode-jsonc-util/SKILL.md) — Base JSONC utility for OpenCode config files
 - [`opencode-provider-persistence-config`](../opencode-provider-persistence-config/SKILL.md)
   — **Base skill.** Owns the generic OpenCode credential storage model and
   startup registration knowledge that this composer builds upon. Refer to

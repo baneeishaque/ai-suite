@@ -148,6 +148,7 @@ After configuring a provider in `opencode.json`:
 
 ## Related Skills
 
+- [`opencode-jsonc-util`](../opencode-jsonc-util/SKILL.md) — Base JSONC utility for OpenCode config files
 - [`opencode-google-gemini-config`](../opencode-google-gemini-config/SKILL.md) —
   Composer skill: Google AI Studio / Gemini-specific credential setup and
   the explicit config-block fix for the restart-retention bug. Consumes

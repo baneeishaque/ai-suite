@@ -228,6 +228,7 @@ This section is a placeholder; the optimal strategy depends on session volume an
 
 ## 6. Related Skills
 
+- [`opencode-jsonc-util`](../opencode-jsonc-util/SKILL.md) — Base JSONC utility for OpenCode config files
 - [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md)
   — Base skill for the generic copy-verify-symlink migration primitive.
 - [`opencode-permission-config`](../opencode-permission-config/SKILL.md) —

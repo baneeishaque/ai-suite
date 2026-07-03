@@ -1429,6 +1429,33 @@ skill, which automates intermediate-state building via Python helpers that
 preserve the original format across all content commits and optionally
 append a single `style:` reformat commit at the end.
 
+#### HEAD-Synthesis Staging (cacheinfo-based)
+
+When the desired intermediate state can be expressed as the committed HEAD
+version with a set of mechanical substitutions (e.g., replace all occurrences
+of `configurations-private` with `<private-repo>`), use `stage-head-synthesize.py`
+to stage a HEAD-derived blob directly — no working-tree file is touched.
+
+1. **Synthesize and stage:** Run
+   `stage-head-synthesize.py --file <f> --replace "old|new"` to read
+   HEAD:`<f>`, apply the replacements, write a new blob, and stage it via
+   `git update-index --cacheinfo`. The working tree remains unchanged.
+2. **Commit:** Commit the staged intermediate version.
+3. **Iterate:** `git add <f>` picks up the remaining working-tree delta from
+   the new HEAD. Repeat for the next commit.
+
+This fills the gap between `stage-file-excluding-lines.py` (working-tree-based
+exclusion) and `agents-md-stage-row.py` (AGENTS.md-row-only). All three scripts
+are siblings under `scripts/`:
+
+- `agents-md-stage-row.py` — HEAD + one new row, alphabetically inserted.
+- `stage-file-excluding-lines.py` — working tree minus matching lines.
+- `stage-head-synthesize.py` — HEAD with mechanical substitutions.
+- `stage-hunk-from-diff.py` — selective hunk staging from a diff.
+
+See also [`stage-head-synthesize.py`](scripts/stage-head-synthesize.py) for
+invocation examples and safety guards.
+
 ---
 
 ### Step 14 — User-Requested Coupling & Deviations

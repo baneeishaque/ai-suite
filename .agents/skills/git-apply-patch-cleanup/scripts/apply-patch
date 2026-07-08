@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+# apply-patch — Apply a git patch file with verification and optional cleanup
+# Part of git-apply-patch-cleanup skill (base primitive)
+#
+# Tier-2 (Bash) per Scripting Language Selection Rules §3.2:
+#   Body IS shell glue (100% native binary invocation: git, rm, cat)
+#
+# Usage: apply-patch <patch-file> [--cleanup] [--dry-run] [--stat] [--check-only] [--verbose] [--help]
+
+set -euo pipefail
+
+# Resolve script directory for template loading
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly SCRIPT_DIR
+
+# Load usage template
+USAGE_TEMPLATE="${SCRIPT_DIR}/apply-patch.usage.template"
+if [[ ! -f "${USAGE_TEMPLATE}" ]]; then
+    echo "ERROR: Usage template not found at ${USAGE_TEMPLATE}" >&2
+    exit 1
+fi
+readonly USAGE_TEMPLATE
+
+# Print usage from template
+usage() {
+    cat "${USAGE_TEMPLATE}"
+}
+
+# Verbose logging
+VERBOSE=false
+log_verbose() {
+    if [[ "${VERBOSE}" == "true" ]]; then
+        echo "[apply-patch] $*" >&2
+    fi
+}
+
+# Main argument parsing
+PATCH_FILE=""
+CLEANUP=false
+DRY_RUN=false
+STAT_ONLY=false
+CHECK_ONLY=false
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --cleanup)
+            CLEANUP=true
+            shift
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            shift
+            ;;
+        --stat)
+            STAT_ONLY=true
+            DRY_RUN=true
+            shift
+            ;;
+        --check-only)
+            CHECK_ONLY=true
+            DRY_RUN=true
+            shift
+            ;;
+        --verbose)
+            VERBOSE=true
+            shift
+            ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        -*)
+            echo "ERROR: Unknown option: $1" >&2
+            usage >&2
+            exit 1
+            ;;
+        *)
+            if [[ -z "${PATCH_FILE}" ]]; then
+                PATCH_FILE="$1"
+            else
+                echo "ERROR: Multiple patch files specified" >&2
+                usage >&2
+                exit 1
+            fi
+            shift
+            ;;
+    esac
+done
+
+# Validate required patch file argument
+if [[ -z "${PATCH_FILE}" ]]; then
+    echo "ERROR: Missing required argument <patch-file>" >&2
+    usage >&2
+    exit 1
+fi
+
+# Verify we are in a git repository
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+    echo "ERROR: Not inside a git repository" >&2
+    exit 1
+fi
+
+# Verify patch file exists and is readable
+if [[ ! -f "${PATCH_FILE}" || ! -r "${PATCH_FILE}" ]]; then
+    echo "ERROR: Patch file not found or not readable: ${PATCH_FILE}" >&2
+    exit 2
+fi
+
+log_verbose "Patch file: ${PATCH_FILE}"
+log_verbose "Flags: cleanup=${CLEANUP}, dry_run=${DRY_RUN}, stat_only=${STAT_ONLY}, check_only=${CHECK_ONLY}"
+
+# Step 1: Check if patch applies cleanly
+log_verbose "Running: git apply --check ${PATCH_FILE}"
+if ! git apply --check "${PATCH_FILE}" 2>/dev/null; then
+    echo "ERROR: Patch does not apply cleanly (git apply --check failed)" >&2
+    exit 3
+fi
+log_verbose "Patch check passed"
+
+# Step 2: If stat or dry-run, show stats and exit
+if [[ "${STAT_ONLY}" == "true" || "${DRY_RUN}" == "true" ]]; then
+    log_verbose "Running: git apply --stat ${PATCH_FILE}"
+    git apply --stat "${PATCH_FILE}"
+    exit 0
+fi
+
+# Step 3: Apply the patch
+log_verbose "Running: git apply ${PATCH_FILE}"
+if ! git apply "${PATCH_FILE}"; then
+    echo "ERROR: Failed to apply patch" >&2
+    exit 4
+fi
+log_verbose "Patch applied successfully"
+
+# Step 4: List applied files (relative to repo root)
+APPLIED_FILES=$(git diff --name-only HEAD 2>/dev/null || git status --short | awk '{print $2}')
+if [[ -n "${APPLIED_FILES}" ]]; then
+    echo "${APPLIED_FILES}"
+fi
+
+# Step 5: Optional cleanup
+if [[ "${CLEANUP}" == "true" ]]; then
+    log_verbose "Cleanup requested, removing: ${PATCH_FILE}"
+    if ! rm -f "${PATCH_FILE}"; then
+        echo "ERROR: Patch applied but failed to remove patch file: ${PATCH_FILE}" >&2
+        exit 5
+    fi
+    log_verbose "Patch file removed"
+fi
+
+exit 0

@@ -1,0 +1,143 @@
+#!/usr/bin/env osascript -l JavaScript
+// teams-jxa-helper.jxa — JXA helper for Chrome + Teams control
+//
+// Subcommands:
+//   teams-running    — Check if Teams is running (exit 0=yes, 1=no)
+//   teams-launch     — Launch Teams app
+//   teams-show       — Show Teams main window
+//   teams-search     — Open Teams search bar (Cmd+E)
+//   chrome-open      — Open URL in Chrome (arg: URL)
+//   chrome-open-tab  — Open URL in new Chrome tab (arg: URL)
+//
+// Exit: 0=success, 1=failure
+// Tier: 1 (JXA is macOS-native, no Python equivalent for app control)
+
+function run(argv) {
+  if (argv.length === 0) {
+    console.log("Usage: teams-jxa-helper.jxa <subcommand> [arg]");
+    console.log("Subcommands: teams-running, teams-launch, teams-show,");
+    console.log("  teams-search, chrome-open <url>, chrome-open-tab <url>");
+    return "1";
+  }
+
+  var subcmd = argv[0];
+  var arg = argv.length > 1 ? argv[1] : null;
+
+  try {
+    switch (subcmd) {
+      case "teams-running":
+        return teamsRunning() ? "0" : "1";
+
+      case "teams-launch":
+        return teamsLaunch();
+
+      case "teams-show":
+        return teamsShow();
+
+      case "teams-search":
+        return teamsSearch();
+
+      case "chrome-open":
+        return chromeOpen(arg, false);
+
+      case "chrome-open-tab":
+        return chromeOpen(arg, true);
+
+      default:
+        console.log("Unknown subcommand: " + subcmd);
+        return "1";
+    }
+  } catch (e) {
+    console.log("Error: " + e.message);
+    return "1";
+  }
+}
+
+function teamsRunning() {
+  try {
+    var app = Application("Microsoft Teams");
+    app.name(); // Will throw if not running
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function teamsLaunch() {
+  var app = Application("Microsoft Teams");
+  app.activate();
+  delay(2);
+  console.log("Teams activated");
+  return "0";
+}
+
+function teamsShow() {
+  try {
+    var se = Application("System Events");
+    var proc = se.processes.byName("Microsoft Teams");
+    var menuBar = proc.menuBars[0];
+    var teamsMenu = menuBar.menuBarItems[1]; // "Microsoft Teams"
+    teamsMenu.click();
+    delay(0.5);
+
+    var menu = teamsMenu.menus[0];
+    var menuItems = menu.menuItems();
+    for (var i = 0; i < menuItems.length; i++) {
+      if (menuItems[i].name() === "Show Main Window") {
+        menuItems[i].click();
+        console.log("Main window shown");
+        return "0";
+      }
+    }
+    console.log("Show Main Window not found in menu");
+    return "1";
+  } catch (e) {
+    console.log("Error showing window: " + e.message);
+    return "1";
+  }
+}
+
+function teamsSearch() {
+  try {
+    // First ensure window is visible
+    teamsShow();
+    delay(0.5);
+
+    // Cmd+E opens search in Teams
+    var se = Application("System Events");
+    se.keystroke("e", { using: "command down" });
+    console.log("Search bar opened (Cmd+E)");
+    return "0";
+  } catch (e) {
+    console.log("Error opening search: " + e.message);
+    return "1";
+  }
+}
+
+function chromeOpen(url, newTab) {
+  if (!url) {
+    console.log("URL required for chrome-open");
+    return "1";
+  }
+
+  try {
+    var chrome = Application("Google Chrome");
+    chrome.includeStandardAdditions = true;
+    chrome.activate();
+    delay(0.3);
+
+    if (newTab) {
+      var win = chrome.windows[0];
+      var tab = win.activeTab;
+      tab.url = url;
+      console.log("Set URL: " + url);
+    } else {
+      chrome.openLocation(url);
+      console.log("Opened: " + url);
+    }
+    return "0";
+  } catch (e) {
+    console.log("Error opening Chrome: " + e.message);
+    return "1";
+  }
+}

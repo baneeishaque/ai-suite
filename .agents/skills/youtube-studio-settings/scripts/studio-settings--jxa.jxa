@@ -1,0 +1,357 @@
+#!/usr/bin/env osascript -l JavaScript
+// studio-settings--jxa.jxa — Apply YouTube Studio settings via JXA
+//
+// Reads YT_VIDEO_ID and YT_SETTINGS (JSON string) from environment.
+// Controls real Google Chrome launched normally — no automation flags,
+// no detection risk, uses your existing session.
+//
+// Exit codes: 0=all applied, 1=partial failure, 2=critical error
+
+(function () {
+  "use strict"
+
+  // ── Read environment ────────────────────────────────────────────────
+  var env = $.NSProcessInfo.processInfo.environment
+  var videoId   = ObjC.unwrap(env.objectForKey("YT_VIDEO_ID"))
+  var settingsStr = ObjC.unwrap(env.objectForKey("YT_SETTINGS"))
+  if (!videoId || !settingsStr) {
+    console.log("ERROR: YT_VIDEO_ID and YT_SETTINGS env vars required")
+    throw new Error("exit 2")
+  }
+  var settings = JSON.parse(settingsStr)
+
+  var chrome = Application("Google Chrome")
+  chrome.includeStandardAdditions = true
+
+  // ── Open Chrome tab ─────────────────────────────────────────────────
+
+  var url = "https://studio.youtube.com/video/" + videoId + "/edit"
+  chrome.activate()
+  delay(0.3)
+  chrome.openLocation(url)
+  delay(2)
+  var win = chrome.windows[0]
+  var tab = win.activeTab
+  console.log("JXA: Opened " + url)
+
+  // ── Helpers — runs JS in Chrome's page context ─────────────────────
+
+  function pageJS(code) {
+    return tab.execute({javascript: code})
+  }
+
+  function waitFor(jsExpr, timeoutMs) {
+    var deadline = new Date().getTime() + timeoutMs
+    while (new Date().getTime() < deadline) {
+      var r = pageJS(jsExpr)
+      if (r === true) return true
+      delay(0.3)
+    }
+    return false
+  }
+
+  // Find and click any visible element by text content
+  function clickText(text, timeoutMs) {
+    return waitFor(
+      "(function(){var t=" + JSON.stringify(text) +
+      ";var els=Array.from(document.querySelectorAll(" +
+      "'button,a,[role=\"button\"],[role=\"submit\"],[role=\"radio\"],[role=\"checkbox\"]," +
+      "ytcp-dropdown-trigger,tp-yt-paper-radio-button,tp-yt-paper-checkbox" +
+      "));var m=els.find(function(e){" +
+      "return e.offsetParent!==null&&e.textContent.toLowerCase().includes(t.toLowerCase())" +
+      "});if(m){m.click();return true}return false})()",
+      timeoutMs || 8000
+    )
+  }
+
+  // Get checkbox checked state by matching label text.
+  // Returns "checked", "unchecked", or null (not found).
+  function checkboxState(text) {
+    var r = pageJS(
+      "(function(){var t=" + JSON.stringify(text) +
+      ";var els=Array.from(document.querySelectorAll(" +
+      "'[role=\"checkbox\"],tp-yt-paper-checkbox'" +
+      "));var m=els.find(function(e){" +
+      "return e.offsetParent!==null&&(e.getAttribute('aria-label')||e.textContent||'').toLowerCase().includes(t.toLowerCase())" +
+      "});if(!m)return null;var ac=m.getAttribute('aria-checked');" +
+      "if(ac==='true')return'checked';if(ac==='false')return'unchecked';" +
+      "if(m.checked)return'checked';return'unchecked'})()"
+    )
+    return r
+  }
+
+  // Click a dropdown trigger then select an option from the popup menu
+  function selectDropdown(dropdownText, optionText, timeoutMs) {
+    // Only search within ytcp-dropdown-trigger elements to avoid sidebar nav matches
+    if (!waitFor(
+      "(function(){var t=" + JSON.stringify(dropdownText) +
+      ";var els=Array.from(document.querySelectorAll(" +
+      "'ytcp-dropdown-trigger'" +
+      "));var m=els.find(function(e){" +
+      "return e.offsetParent!==null&&e.textContent.toLowerCase().includes(t.toLowerCase())" +
+      "});if(m){m.click();return true}return false})()",
+      timeoutMs || 10000
+    )) return false
+    delay(1)
+    // Menu options use tp-yt-paper-item elements (NOT tp-yt-paper-menu-item)
+    return waitFor(
+      "(function(){var t=" + JSON.stringify(optionText) +
+      ";var els=Array.from(document.querySelectorAll(" +
+      "'tp-yt-paper-item,[role=\"menuitem\"],[role=\"option\"]'" +
+      "));var m=els.find(function(e){" +
+      "return e.offsetParent!==null&&e.textContent.toLowerCase().includes(t.toLowerCase())" +
+      "});if(m){m.click();return true}return false})()",
+      timeoutMs || 5000
+    )
+  }
+
+  function dumpInteractive() {
+    var code =
+      "Array.from(document.querySelectorAll(" +
+      "'button,[role=\"button\"],[role=\"radio\"],[role=\"checkbox\"]," +
+      "select,[role=\"listbox\"],a,ytcp-dropdown-trigger,tp-yt-paper-menu-item'" +
+      ")).map(function(e){var r=e.getBoundingClientRect();return[" +
+      "e.tagName,(e.id||''),((e.textContent||'').trim().slice(0,80))," +
+      "(e.getAttribute('role')||e.type||'')," +
+      "(e.getAttribute('aria-checked')||String(e.checked||''))," +
+      "(r.width>0&&r.height>0)," +
+      "(e.getAttribute('aria-label')||'').slice(0,50)" +
+      "].join('|')}).filter(function(l){return l.split('|')[5]==='true'}).join('\\n')"
+    return pageJS(code)
+  }
+
+  // ── Wait for page to render ─────────────────────────────────────────
+
+  if (!waitFor(
+    "document.title.toLowerCase().includes('studio')||" +
+    "document.querySelector('ytcp-dropdown-trigger')!==null",
+    30000
+  )) {
+    console.log("ERROR: Page did not load within 30s")
+    tab.close()
+    throw new Error("exit 2")
+  }
+  console.log("JXA: Page loaded")
+  delay(1.5)
+
+  // ── Expand advanced sections (Show more / Show less toggle) ────────
+
+  console.log("JXA: Expanding advanced sections...")
+  // Scroll to reveal Show more, then search broadly
+  var toggleResult = pageJS(
+    "(function(){window.scrollTo(0,document.body.scrollHeight);" +
+    "var tx=Array.from(document.querySelectorAll(" +
+    "'button,[role=submit],[role=button],a,span,div'" +
+    ")).find(function(e){" +
+    "var t=e.textContent.toLowerCase().replace(/\\s+/g,' ').trim();" +
+    "return t==='show more'||t==='show less'});" +
+    "if(!tx){return'not_found'}" +
+    "tx.scrollIntoView({behavior:'instant',block:'center'});" +
+    "var text=tx.textContent.replace(/\\s+/g,' ').trim();" +
+    "if(text.toLowerCase()==='show more'){tx.click();return'show_more_clicked'}" +
+    "return'show_less_found'})()"
+  )
+  console.log("JXA: Toggle search: " + toggleResult)
+
+  if (toggleResult === "show_more_clicked") {
+    delay(3)
+  } else if (toggleResult === "show_less_found") {
+    console.log("JXA: Already expanded")
+    delay(0.5)
+  } else {
+    console.log("JXA: Toggle not found — page may be fully expanded or in a different state")
+    delay(0.5)
+  }
+
+  // ── Dump mode ───────────────────────────────────────────────────────
+
+  if (settings.dump_mode) {
+    delay(1)
+    var dump = dumpInteractive()
+    if (dump) { dump.split("\\n").forEach(function(l) { console.log(l) }) }
+    tab.close()
+    return
+  }
+
+  // ── Apply settings ──────────────────────────────────────────────────
+
+  var changes = []
+  var errors  = []
+
+  // --- Comments off ---
+  if (settings.comments_off) {
+    console.log("JXA: Turning comments off...")
+    var found = selectDropdown("Comments", "Off", 10000)
+    if (found) { changes.push("comments_off") }
+    else { errors.push("comments_off: could not select Off") }
+    delay(0.5)
+  }
+
+  // --- Age restriction 18+ ---
+  if (settings.age_restrict_18plus) {
+    console.log("JXA: Setting age restriction 18+...")
+    // Scroll down to make sure the button is in view, then click
+    var found = waitFor(
+      "(function(){var e=Array.from(document.querySelectorAll('button')).find(" +
+      "function(e){return e.textContent.toLowerCase().includes('age restriction')});" +
+      "if(e){e.scrollIntoView({behavior:'instant',block:'center'});" +
+      "e.click();return true}return false})()",
+      8000
+    )
+
+    delay(2)
+    if (found) {
+      // Radio text: "Yes, restrict my video to viewers over 18"
+      found = waitFor(
+        "(function(){var e=Array.from(document.querySelectorAll('tp-yt-paper-radio-button')).find(" +
+        "function(e){return e.textContent.toLowerCase().includes('over 18')});" +
+        "if(e){e.scrollIntoView({behavior:'instant',block:'center'});" +
+        "e.click();return true}return false})()",
+        5000
+      )
+      if (found) { changes.push("age_restrict_18plus") }
+      else { errors.push("age_restrict_18plus: 18+ radio not found") }
+    } else {
+      errors.push("age_restrict_18plus: Age restriction button not found")
+    }
+    delay(0.5)
+  }
+
+  // --- No subscriber feed ---
+  if (settings.no_subscriber_feed) {
+    console.log("JXA: Disabling subscriber feed...")
+    // Lit web component — cannot set checked=false programmatically.
+    // Must click the host element to trigger the component's internal toggle.
+    var checked_before = pageJS(
+      "(function(){var label='notify subscribers';" +
+      "var host=Array.from(document.querySelectorAll('ytcp-checkbox-lit')).find(" +
+      "function(e){var txt=(e.textContent||'')+(e.getAttribute('aria-label')||'');" +
+      "return e.offsetParent!==null&&txt.toLowerCase().includes(label)});" +
+      "if(!host)return 'not_found';" +
+      "return host.hasAttribute('checked')||host.checked?'checked':'unchecked'})()"
+    )
+    console.log("JXA: Subscriber feed before: " + checked_before)
+    // Only toggle if currently checked
+    var toggled = false
+    if (checked_before === "checked" || checked_before === true) {
+      toggled = waitFor(
+        "(function(){var label='notify subscribers';" +
+        "var host=Array.from(document.querySelectorAll('ytcp-checkbox-lit')).find(" +
+        "function(e){var txt=(e.textContent||'')+(e.getAttribute('aria-label')||'');" +
+        "return e.offsetParent!==null&&txt.toLowerCase().includes(label)});" +
+        "if(!host)return false;" +
+        "host.scrollIntoView({behavior:'instant',block:'center'});" +
+        "host.click();return true})()",
+        8000
+      )
+      delay(1.5)
+      // Verify it changed
+      var checked_after = pageJS(
+        "(function(){var label='notify subscribers';" +
+        "var host=Array.from(document.querySelectorAll('ytcp-checkbox-lit')).find(" +
+        "function(e){var txt=(e.textContent||'')+(e.getAttribute('aria-label')||'');" +
+        "return e.offsetParent!==null&&txt.toLowerCase().includes(label)});" +
+        "if(!host)return 'not_found';" +
+        "return host.hasAttribute('checked')||host.checked?'checked':'unchecked'})()"
+      )
+      console.log("JXA: Subscriber feed after: " + checked_after)
+      if (checked_after === "unchecked") { toggled = true }
+      else {
+        // Fallback: try clicking the internal checkbox div
+        console.log("JXA: Trying fallback click on internal checkbox div...")
+        toggled = waitFor(
+          "(function(){var label='notify subscribers';" +
+          "var host=Array.from(document.querySelectorAll('ytcp-checkbox-lit')).find(" +
+          "function(e){var txt=(e.textContent||'')+(e.getAttribute('aria-label')||'');" +
+          "return e.offsetParent!==null&&txt.toLowerCase().includes(label)});" +
+          "if(!host)return false;" +
+          "var cb=host.shadowRoot?host.shadowRoot.querySelector('[role=checkbox]'):null;" +
+          "if(cb&&cb.offsetParent!==null){cb.click();return true}" +
+          // Host-level click with pointer event
+          "host.dispatchEvent(new PointerEvent('click',{bubbles:true,composed:true,cancelable:true}));" +
+          "return true})()",
+          5000
+        )
+        delay(1)
+      }
+    } else if (checked_before === "unchecked") {
+      console.log("JXA: Already unchecked")
+      toggled = true  // already in desired state
+    } else {
+      console.log("JXA: Checkbox status: " + checked_before)
+    }
+    if (toggled) { changes.push("no_subscriber_feed") }
+    else { errors.push("no_subscriber_feed: could not toggle") }
+    delay(0.5)
+  }
+
+  // --- Caption certification: never aired in US ---
+  if (settings.caption_cert_not_aired_us) {
+    console.log("JXA: Setting caption certification (never aired in US)...")
+    // Click the dropdown trigger
+    var found = selectDropdown("Caption certification",
+      "never aired", 10000) ||
+      selectDropdown("Caption certification",
+      "not aired", 5000) ||
+      selectDropdown("Caption certification",
+      "United States", 5000)
+    if (found) { changes.push("caption_cert_not_aired_us") }
+    else { errors.push("caption_cert_not_aired_us: option not found") }
+    delay(0.5)
+  }
+
+  // --- No remixing ---
+  if (settings.no_remixing) {
+    console.log("JXA: Disabling remixing...")
+    var found = waitFor(
+      "(function(){var e=document.querySelector('#opt-out-radio-button');" +
+      "if(e&&e.offsetParent!==null){e.click();return true}return false})()",
+      5000
+    ) || clickText("Don\u2019t allow remixing", 5000) ||
+       clickText("don\u2019t allow", 5000)
+    if (found) { changes.push("no_remixing") }
+    else { errors.push("no_remixing: element not found") }
+    delay(0.5)
+  }
+
+  // ── Save ────────────────────────────────────────────────────────────
+
+  // Ensure we actually changed something before trying to save
+  var realChanges = changes.filter(function(c) { return !c.includes("(already") })
+  if (realChanges.length > 0) {
+    console.log("JXA: Clicking Save...")
+    // Use a dedicated JS snippet to find the Save button among buttons only
+    var saved = waitFor(
+      "(function(){var els=Array.from(document.querySelectorAll('button')).filter(" +
+      "function(e){return e.offsetParent!==null});" +
+      "var m=els.find(function(e){return e.textContent.trim().toLowerCase()==='save'});" +
+      "if(m){m.scrollIntoView({behavior:'instant',block:'center'});" +
+      "m.click();return true}return false})()",
+      5000
+    )
+    if (saved) {
+      delay(2.5)
+      var toast = pageJS(
+        "(function(){var e=document.querySelector('ytcp-toast-manager');" +
+        "return e?e.textContent.trim():null})()"
+      )
+      console.log("JXA: Save toast: " + (toast || "(not visible)"))
+      changes.push("saved")
+    } else {
+      errors.push("save: Save button not found or not clickable")
+    }
+  } else {
+    console.log("JXA: No changes to save")
+  }
+
+  // ── Report ──────────────────────────────────────────────────────────
+
+  console.log("JXA: Changes: " + JSON.stringify(changes))
+  if (errors.length > 0) {
+    console.log("JXA: Errors: " + JSON.stringify(errors))
+  }
+
+  delay(1)
+  tab.close()
+  if (errors.length > 0) { throw new Error("exit 1") }
+})()

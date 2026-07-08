@@ -1,0 +1,45 @@
+apply-patch — Apply a git patch file with verification and optional cleanup
+
+USAGE:
+    apply-patch <patch-file> [--cleanup] [--dry-run] [--stat] [--check-only] [--verbose] [--help]
+
+ARGUMENTS:
+    <patch-file>    Path to unified-diff patch file (required)
+
+OPTIONS:
+    --cleanup       Delete <patch-file> after successful apply (default: keep)
+    --dry-run       Run git apply --check only; do not modify working tree
+    --stat          Run git apply --stat and print summary; implies --dry-run
+    --check-only    Alias for --dry-run
+    --verbose       Print each git command before execution
+    --help          Show this help and exit
+
+EXIT CODES:
+    0   Success (applied, or dry-run/check passed)
+    1   Usage error / missing dependency / not in git repo
+    2   Patch file not found or unreadable
+    3   git apply --check failed (patch does not apply cleanly)
+    4   git apply failed during actual application
+    5   Cleanup failed (patch applied but rm failed)
+
+EXAMPLES:
+    # Preview what a patch would do
+    apply-patch my-changes.patch --stat
+
+    # Apply patch and keep the patch file
+    apply-patch my-changes.patch
+
+    # Apply patch and delete it afterward
+    apply-patch my-changes.patch --cleanup
+
+    # Dry-run check only (exit 3 if patch doesn't apply cleanly)
+    apply-patch my-changes.patch --check-only
+
+REQUIREMENTS:
+    - git (>= 2.20)
+    - bash (>= 4.0)
+    - Must be run inside a git repository
+
+SKILL:
+    Part of git-apply-patch-cleanup (base skill)
+    See SKILL.md for full documentation

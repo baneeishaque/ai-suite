@@ -1,0 +1,122 @@
+{
+    "cloud": true,
+    "rules": [
+        {
+            "id": 3290999,
+            "clientKey": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "name": "Link work items that are mentioned in the comments",
+            "state": "DISABLED",
+            "description": null,
+            "authorAccountId": "557058:38820234-7cb2-4799-a242-d90b43affd35",
+            "actor": {
+                "type": "ACCOUNT_ID",
+                "value": "557058:f58131cb-b67d-43c7-b30d-6b58d40bd077"
+            },
+            "created": 1776063774350,
+            "updated": 1776063774350,
+            "trigger": {
+                "id": "daedfb0f-4df8-4628-ab29-91f39527c392",
+                "parentId": null,
+                "conditionParentId": null,
+                "component": "TRIGGER",
+                "type": "jira.issue.event.trigger:commented",
+                "value": {
+                    "eventTypes": [],
+                    "eventFilters": [
+                        "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                    ]
+                },
+                "conditions": [],
+                "children": [],
+                "schemaVersion": 1,
+                "connectionId": null,
+                "checksum": null
+            },
+            "components": [
+                {
+                    "id": "7d56cba6-7517-4651-9e4d-9696c38e52e1",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "CONDITION",
+                    "type": "jira.comparator.condition",
+                    "value": {
+                        "first": "{{comment.body}}",
+                        "second": "[A-Z]+-\\d+",
+                        "operator": "REGEX_CONTAINS"
+                    },
+                    "conditions": [],
+                    "children": [],
+                    "schemaVersion": 1,
+                    "connectionId": null,
+                    "checksum": null
+                },
+                {
+                    "id": "089e84b9-d987-439f-9fe2-b20b49e2ba2b",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "ACTION",
+                    "type": "jira.issue.link",
+                    "value": {
+                        "linkType": "outward:10003",
+                        "issue": {
+                            "type": "SMART",
+                            "value": "{{comment.body.match(\"([A-Z]+-\\d+)\")}}"
+                        }
+                    },
+                    "conditions": [],
+                    "children": [],
+                    "schemaVersion": 2,
+                    "connectionId": null,
+                    "checksum": null
+                }
+            ],
+            "canOtherRuleTrigger": false,
+            "notifyOnError": "EVERYERROR",
+            "projects": [],
+            "labels": [],
+            "tags": [
+                {
+                    "id": 7273702,
+                    "ruleIdUuid": "019d85a6-7e8e-7aa8-a51d-907085d4c502",
+                    "tagType": "TEMPLATE_ID",
+                    "tagValue": "software_template_7"
+                },
+                {
+                    "id": 7273700,
+                    "ruleIdUuid": "019d85a6-7e8e-7aa8-a51d-907085d4c502",
+                    "tagType": "CREATION_TYPE",
+                    "tagValue": "USER"
+                },
+                {
+                    "id": 7273701,
+                    "ruleIdUuid": "019d85a6-7e8e-7aa8-a51d-907085d4c502",
+                    "tagType": "SAMPLE_RULE",
+                    "tagValue": "global"
+                }
+            ],
+            "ruleScope": {
+                "resources": [
+                    "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                ]
+            },
+            "ruleHome": {
+                "ruleLifecycleHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                },
+                "ruleBillingHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                }
+            },
+            "writeAccessType": "OWNER_ONLY",
+            "collaborators": [],
+            "billingType": "NORMAL",
+            "idUuid": "019d85a6-7e8e-7aa8-a51d-907085d4c502",
+            "partitionId": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "checksum": {
+                "version": 3,
+                "value": "69ee09bade40f1a41696899b07bfd173c84190ed2981c956c1d1779e6ee36bb4"
+            },
+            "currentVersionId": null
+        }
+    ]
+}

@@ -1,0 +1,236 @@
+{
+    "cloud": true,
+    "rules": [
+        {
+            "id": 3540082,
+            "clientKey": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "name": "Sync Due Date from Parent to Subtasks",
+            "state": "ENABLED",
+            "description": "When a parent issue's due date is added, changed, or removed, propagate the same value to all open subtasks and leave an audit comment. Fails if either edit or comment fails.",
+            "authorAccountId": "557058:38820234-7cb2-4799-a242-d90b43affd35",
+            "actor": {
+                "type": "ACCOUNT_ID",
+                "value": "557058:38820234-7cb2-4799-a242-d90b43affd35"
+            },
+            "created": 1779821052258,
+            "updated": 1779825087628,
+            "trigger": {
+                "id": "b0ddb531-34a2-463f-beaf-d7841c85beb6",
+                "parentId": null,
+                "conditionParentId": null,
+                "component": "TRIGGER",
+                "type": "jira.issue.field.changed",
+                "value": {
+                    "eventFilters": [
+                        "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                    ],
+                    "changeType": "ANY_CHANGE",
+                    "fields": [
+                        {
+                            "value": "duedate",
+                            "type": "field"
+                        }
+                    ],
+                    "actions": [
+                        "edit",
+                        "create"
+                    ]
+                },
+                "conditions": [
+                    {
+                        "id": "063b1a8f-73fc-4aef-9e18-9c0446d348fa",
+                        "parentId": null,
+                        "conditionParentId": "b0ddb531-34a2-463f-beaf-d7841c85beb6",
+                        "component": "CONDITION",
+                        "type": "jira.issue.condition",
+                        "value": {
+                            "selectedField": {
+                                "type": "ID",
+                                "value": "issuetype"
+                            },
+                            "selectedFieldType": "issuetype",
+                            "comparison": "NOT_EQUAL",
+                            "compareValue": {
+                                "type": "ID",
+                                "modifier": null,
+                                "value": "10258",
+                                "multiValue": false,
+                                "source": null
+                            }
+                        },
+                        "conditions": [],
+                        "children": [],
+                        "schemaVersion": 3,
+                        "connectionId": null,
+                        "checksum": null
+                    }
+                ],
+                "children": [],
+                "schemaVersion": 2,
+                "connectionId": null,
+                "checksum": null
+            },
+            "components": [
+                {
+                    "id": "760dd007-12b7-442d-812a-627c659fd39e",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "BRANCH",
+                    "type": "jira.issue.related",
+                    "value": {
+                        "relatedType": "subtasks",
+                        "jql": "",
+                        "linkTypes": [],
+                        "onlyUpdatedIssues": false,
+                        "similarityLimit": 40,
+                        "compareValue": 0
+                    },
+                    "conditions": [],
+                    "children": [
+                        {
+                            "id": "82c07f43-6cc9-4b2e-84f0-e68ad1aa0ca1",
+                            "parentId": "760dd007-12b7-442d-812a-627c659fd39e",
+                            "conditionParentId": null,
+                            "component": "CONDITION",
+                            "type": "jira.issue.condition",
+                            "value": {
+                                "selectedField": {
+                                    "type": "ID",
+                                    "value": "status"
+                                },
+                                "selectedFieldType": "status",
+                                "comparison": "NOT_EQUAL",
+                                "compareValue": {
+                                    "type": "NAME",
+                                    "modifier": null,
+                                    "value": "Done",
+                                    "multiValue": false,
+                                    "source": null
+                                }
+                            },
+                            "conditions": [],
+                            "children": [],
+                            "schemaVersion": 3,
+                            "connectionId": null,
+                            "checksum": null
+                        },
+                        {
+                            "id": "f8bbe87d-0a62-4627-b432-01c19e23959c",
+                            "parentId": "760dd007-12b7-442d-812a-627c659fd39e",
+                            "conditionParentId": null,
+                            "component": "ACTION",
+                            "type": "jira.issue.edit",
+                            "value": {
+                                "operations": [
+                                    {
+                                        "field": {
+                                            "type": "ID",
+                                            "value": "duedate"
+                                        },
+                                        "fieldType": "duedate",
+                                        "type": "SET",
+                                        "value": "{{triggerIssue.dueDate}}"
+                                    }
+                                ],
+                                "advancedFields": null,
+                                "sendNotifications": true
+                            },
+                            "conditions": [],
+                            "children": [],
+                            "schemaVersion": 12,
+                            "connectionId": null,
+                            "checksum": null
+                        },
+                        {
+                            "id": "ff98ba85-dda3-4ff2-8256-27edb74011a4",
+                            "parentId": "760dd007-12b7-442d-812a-627c659fd39e",
+                            "conditionParentId": null,
+                            "component": "CONDITION",
+                            "type": "jira.jql.condition",
+                            "value": "issue = {{issue.key}} AND due = {{triggerIssue.duedate}}",
+                            "conditions": [],
+                            "children": [],
+                            "schemaVersion": 1,
+                            "connectionId": null,
+                            "checksum": null
+                        },
+                        {
+                            "id": "7a6f266a-7b3b-4798-a230-711d865c4048",
+                            "parentId": "760dd007-12b7-442d-812a-627c659fd39e",
+                            "conditionParentId": null,
+                            "component": "ACTION",
+                            "type": "jira.issue.outgoing.webhook",
+                            "value": {
+                                "url": "{{issue.self.replaceAll(\"/rest/.*\", \"\")}}/rest/api/3/issue/{{issue.key}}/comment",
+                                "urlSecure": false,
+                                "headers": [
+                                    {
+                                        "id": "_header_1779823141123",
+                                        "name": "Content-Type",
+                                        "value": "application/json",
+                                        "headerSecure": false
+                                    },
+                                    {
+                                        "id": "_header_1779825063509",
+                                        "name": "Authorization",
+                                        "value": "Basic YmFuZWVpc2hhcXVlQGdtYWlsLmNvbTpBVEFUVDN4RmZHRjA2YWdBdHpSaGw0ZUZTV2QxM0NBU1hQQ2RFbjlUemFwSmVHc3hjMF9qbTNQZGJlZ1l4Ujh6Rk9vaDdKU2k5NXdpQ1V2SU5mVWJyVzB5cTlwa0hjWG9lNFZ5cFdWSXJWT3hHZGJBNG02eXFjTUpXQlFEVmprX2N6Wm9zVmNqQUh4Q29FdE1jaFhKakI0RnZOaTlzbDhLdi1idnlPQVZqSTA1MzdyQUtzSGpfNXc9RDVGNTMzQjM=",
+                                        "headerSecure": false
+                                    }
+                                ],
+                                "sendIssue": false,
+                                "contentType": "custom",
+                                "customBody": "{\n  \"body\": {\n    \"type\": \"doc\",\n    \"version\": 1,\n    \"content\": [\n      {\n        \"type\": \"paragraph\",\n        \"content\": [\n          {\n            \"type\": \"text\",\n            \"text\": \"[{{now}}] Due date synced from parent {{triggerIssue.key}} → {{triggerIssue.duedate}}\"\n          }\n        ]\n      }\n    ]\n  }\n}",
+                                "method": "POST",
+                                "responseEnabled": true,
+                                "continueOnErrorEnabled": false
+                            },
+                            "conditions": [],
+                            "children": [],
+                            "schemaVersion": 1,
+                            "connectionId": null,
+                            "checksum": null
+                        }
+                    ],
+                    "schemaVersion": 1,
+                    "connectionId": null,
+                    "checksum": null
+                }
+            ],
+            "canOtherRuleTrigger": false,
+            "notifyOnError": "FIRSTERROR",
+            "projects": [],
+            "labels": [],
+            "tags": [
+                {
+                    "id": 8164911,
+                    "ruleIdUuid": "019e659a-0162-71f0-97bb-3d7894472956",
+                    "tagType": "IS_RULE_UPDATED",
+                    "tagValue": "true"
+                }
+            ],
+            "ruleScope": {
+                "resources": [
+                    "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                ]
+            },
+            "ruleHome": {
+                "ruleLifecycleHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                },
+                "ruleBillingHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                }
+            },
+            "writeAccessType": "OWNER_ONLY",
+            "collaborators": [],
+            "billingType": "NORMAL",
+            "idUuid": "019e659a-0162-71f0-97bb-3d7894472956",
+            "partitionId": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "checksum": {
+                "version": 3,
+                "value": "97d650cc9e22857eb6a7ffb5835d6ec035c3fe988db64ec82608293ebaa349a6"
+            },
+            "currentVersionId": null
+        }
+    ]
+}

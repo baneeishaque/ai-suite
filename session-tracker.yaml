@@ -272,18 +272,72 @@ session_tracker:
               desc: unzip the chat export files in the respective chat folder
             - id: ST4
               desc: rename the chat export files to kebab case
+            - id: ST5
+              desc: generate per-meeting folders with HTML/JSON from the original export
+            - id: ST6
+              desc: split the original HTML at meeting boundaries (was generating from JSON, missing rich content)
+            - id: ST7
+              desc: update meeting folder end times — use the greater of (meeting-ended timestamp vs start+duration-label)
+              notes:
+                - note: >
+                    Teams Chat Exporter's "⏱ <duration>" label on "Meeting ended" differs from the
+                    Meeting started→Meeting ended timestamp span in all 3 meetings. Folder end time
+                    uses the greater value. Per-meeting meeting-notes.yaml files document exact deltas.
+                      discrepancies:
+                    - folder: "meeting-2026-03-25_124811_125811-jira-ticket-discussion-with-praveena"
+                      ts_duration: "0:01:56"
+                      label_duration: "0:10:00"
+                      delta: "0:08:04"
+                      work_log_ref: "mar2026-rough.txt:138 — praveena call discussion of ticket"
+                    - folder: "meeting-2026-05-07_121730_123808-praveena-call"
+                      ts_duration: "0:17:08"
+                      label_duration: "0:20:38"
+                      delta: "0:03:30"
+                      work_log_ref: "may2026-rough.txt:28 — Praveena Call"
+                    - folder: "meeting-2026-07-04_152232_212511-local-testing-env-setup-and-staging-data-reconciliation"
+                      ts_duration: "5:56:35"
+                      label_duration: "6:02:39"
+                      delta: "0:06:04"
         - id: T6
           desc: analyze the microsoft teams chat export files for a particular chat
           references:
             - paths:
                 - path: oleovista-acers/oleovista-acer-teams-chats/<chat_name>
+          status: pending
         - id: T7
           desc: decide followup actions based on the analysis of a particular microsoft teams chat
           references:
             - paths:
                 - path: oleovista-acers/oleovista-acer-teams-chats/<chat_name>
+          status: pending
         - id: T8
           desc: execute followup actions based on the analysis of a particular microsoft teams chat
+          status: pending
+        - id: T9
+          desc: enrich meeting intelligence from recordings and transcripts
+          status: pending
+          notes:
+            - note: >
+                Meetings have OneDrive recordings and/or Teams-generated transcripts
+                (available via Teams recording URLs). Multi-source pipeline:
+                1. Fetch Teams-generated transcript (if available from Teams URL)
+                2. Fetch recording URLs from Teams or OneDrive
+                3. Download video files
+                4. Extract audio and transcribe as fallback (Malayalam + English mix)
+                5. Cross-reference all sources (chat log, Teams transcript, audio transcript)
+                   for enriched meeting notes
+                6. Store combined assets (transcript, summary) in meeting folder
+            - note: >
+                Using combined assets we can produce:
+                - Meeting minutes
+                - Follow-up action items (with owners, deadlines, status tracking)
+                - Task lists extracted from discussion
+                - Agendas distilled from the content
+                - Better meeting names & descriptions based on actual content
+                - All artifacts stored per-meeting in the chat folder structure
+          references:
+            - paths:
+                - path: oleovista-acers/oleovista-acer-teams-chats
           references:
             - paths:
                 - path: oleovista-acers/oleovista-acer-teams-chats/<chat_name>

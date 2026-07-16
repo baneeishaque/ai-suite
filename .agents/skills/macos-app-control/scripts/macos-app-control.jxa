@@ -1,0 +1,262 @@
+#!/usr/bin/env osascript -l JavaScript
+// macos-app-control.jxa — Generic macOS app control via JXA
+//
+// Subcommands:
+//   app-running     — Check if app is running (arg: app-name)
+//   app-launch      — Launch app (arg: app-name)
+//   app-show        — Show app main window (arg: app-name)
+//   app-activate    — Bring app to foreground (arg: app-name)
+//   send-keys       — Send keyboard shortcut (arg: key, --modifiers mods)
+//   menu-click      — Click menu item (arg: app-name, --menu path)
+//   chrome-open     — Open URL in Chrome (arg: URL)
+//   chrome-open-tab — Open URL in new Chrome tab (arg: URL)
+//
+// Exit: 0=success, 1=failure
+// Tier: 1 (JXA is macOS-native, no Python equivalent for app control)
+
+function run(argv) {
+  if (argv.length === 0) {
+    console.log("Usage: macos-app-control.jxa <subcommand> [args]");
+    console.log("Subcommands: app-running, app-launch, app-show, app-activate,");
+    console.log("  send-keys, menu-click, chrome-open, chrome-open-tab");
+    return "1";
+  }
+
+  var subcmd = argv[0];
+  var args = argv.slice(1);
+
+  // Parse --key value pairs from args
+  var positional = [];
+  var flags = {};
+  for (var i = 0; i < args.length; i++) {
+    if (args[i].startsWith("--") && i + 1 < args.length) {
+      flags[args[i].substring(2)] = args[i + 1];
+      i++; // skip value
+    } else {
+      positional.push(args[i]);
+    }
+  }
+
+  try {
+    switch (subcmd) {
+      case "app-running":
+        return appRunning(positional[0]) ? "0" : "1";
+
+      case "app-launch":
+        return appLaunch(positional[0]);
+
+      case "app-show":
+        return appShow(positional[0]);
+
+      case "app-activate":
+        return appActivate(positional[0]);
+
+      case "send-keys":
+        return sendKeys(positional[0], flags["modifiers"] || "");
+
+      case "menu-click":
+        return menuClick(positional[0], flags["menu"] || "");
+
+      case "chrome-open":
+        return chromeOpen(positional[0], false);
+
+      case "chrome-open-tab":
+        return chromeOpen(positional[0], true);
+
+      default:
+        console.log("Unknown subcommand: " + subcmd);
+        return "1";
+    }
+  } catch (e) {
+    console.log("Error: " + e.message);
+    return "1";
+  }
+}
+
+function appRunning(appName) {
+  if (!appName) return false;
+  try {
+    var app = Application(appName);
+    app.name(); // Will throw if not running
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function appLaunch(appName) {
+  if (!appName) {
+    console.log("App name required");
+    return "1";
+  }
+  var app = Application(appName);
+  app.activate();
+  delay(2);
+  console.log(appName + " activated");
+  return "0";
+}
+
+function appShow(appName) {
+  if (!appName) {
+    console.log("App name required");
+    return "1";
+  }
+  try {
+    var se = Application("System Events");
+    var proc = se.processes.byName(appName);
+    var menuBar = proc.menuBars[0];
+    var appMenu = menuBar.menuBarItems[1];
+    appMenu.click();
+    delay(0.5);
+
+    var menu = appMenu.menus[0];
+    var menuItems = menu.menuItems();
+    for (var i = 0; i < menuItems.length; i++) {
+      var name = "";
+      try { name = menuItems[i].name(); } catch(e) {}
+      if (name === "Show Main Window" || name === "Show " + appName) {
+        menuItems[i].click();
+        console.log("Main window shown");
+        return "0";
+      }
+    }
+    console.log("Show Main Window not found in menu");
+    return "1";
+  } catch (e) {
+    console.log("Error showing window: " + e.message);
+    return "1";
+  }
+}
+
+function appActivate(appName) {
+  if (!appName) {
+    console.log("App name required");
+    return "1";
+  }
+  try {
+    var app = Application(appName);
+    app.activate();
+    delay(0.5);
+    console.log(appName + " activated");
+    return "0";
+  } catch (e) {
+    console.log("Error activating: " + e.message);
+    return "1";
+  }
+}
+
+function sendKeys(key, modifiersStr) {
+  if (!key) {
+    console.log("Key required");
+    return "1";
+  }
+  try {
+    var se = Application("System Events");
+    var mods = {};
+    if (modifiersStr) {
+      var modList = modifiersStr.split(",");
+      for (var i = 0; i < modList.length; i++) {
+        var mod = modList[i].trim();
+        if (mod) mods[mod] = true;
+      }
+    }
+    se.keystroke(key, mods);
+    console.log("Sent keystroke: " + key + (modifiersStr ? " with " + modifiersStr : ""));
+    return "0";
+  } catch (e) {
+    console.log("Error sending keys: " + e.message);
+    return "1";
+  }
+}
+
+function menuClick(appName, menuPath) {
+  if (!appName || !menuPath) {
+    console.log("App name and --menu path required");
+    return "1";
+  }
+  try {
+    var se = Application("System Events");
+    var proc = se.processes.byName(appName);
+    var menuBar = proc.menuBars[0];
+
+    // Parse menu path: "MenuName>SubMenuItem"
+    var parts = menuPath.split(">");
+    var currentMenu = null;
+
+    // Find the top-level menu bar item
+    var menuBarItems = menuBar.menuBarItems();
+    for (var i = 0; i < menuBarItems.length; i++) {
+      var name = "";
+      try { name = menuBarItems[i].name(); } catch(e) {}
+      if (name === parts[0]) {
+        currentMenu = menuBarItems[i];
+        break;
+      }
+    }
+
+    if (!currentMenu) {
+      console.log("Menu not found: " + parts[0]);
+      return "1";
+    }
+
+    // Navigate through sub-menus
+    for (var j = 1; j < parts.length; j++) {
+      var menu = currentMenu.menus[0];
+      var items = menu.menuItems();
+      var found = false;
+      for (var k = 0; k < items.length; k++) {
+        var itemName = "";
+        try { itemName = items[k].name(); } catch(e) {}
+        if (itemName === parts[j]) {
+          if (j === parts.length - 1) {
+            // Last item — click it
+            items[k].click();
+            console.log("Clicked: " + menuPath);
+            return "0";
+          } else {
+            currentMenu = items[k];
+            found = true;
+            break;
+          }
+        }
+      }
+      if (!found) {
+        console.log("Menu item not found: " + parts[j]);
+        return "1";
+      }
+    }
+    return "0";
+  } catch (e) {
+    console.log("Error clicking menu: " + e.message);
+    return "1";
+  }
+}
+
+function chromeOpen(url, newTab) {
+  if (!url) {
+    console.log("URL required for chrome-open");
+    return "1";
+  }
+
+  try {
+    var chrome = Application("Google Chrome");
+    chrome.includeStandardAdditions = true;
+    chrome.activate();
+    delay(0.3);
+
+    if (newTab) {
+      // Set URL on current tab (new tab creation not supported via JXA)
+      var win = chrome.windows[0];
+      var tab = win.activeTab;
+      tab.url = url;
+      console.log("Set URL: " + url);
+    } else {
+      chrome.openLocation(url);
+      console.log("Opened: " + url);
+    }
+    return "0";
+  } catch (e) {
+    console.log("Error opening Chrome: " + e.message);
+    return "1";
+  }
+}

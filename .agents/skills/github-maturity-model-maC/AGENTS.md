@@ -1,0 +1,19 @@
+# GitHub Maturity Model MaC — Companion Bridge
+
+## Purpose
+
+This bridge provides passive context for non-skill-aware runtimes. The operational Single Source of Truth (SSOT) lives in [`SKILL.md`](SKILL.md).
+
+## When This Skill Applies
+
+- You need to add Model as Code maturity markers (shield.io badges) to a repository README.
+- A higher-level repo template composer requires MaC maturity annotations.
+
+## Operational Procedure
+
+Read [`SKILL.md`](SKILL.md) for the full operational procedure, including script invocation with `--maturity` and `--output` flags. Do NOT execute any step without first loading `SKILL.md`.
+
+## Cross-References
+
+- [`github-repo-template`](../github-repo-template/SKILL.md) — C6 composer that includes this skill
+- [`github-repo-publish`](../github-repo-publish/SKILL.md) — C7 orchestrator

@@ -1,0 +1,13 @@
+[
+  {"command": "awk '/^Skill/,0' AGENTS.md", "expect": "allow"},
+  {"command": "awk '{print $1}' file.txt", "expect": "allow"},
+  {"command": "awk -F, '{print $2}' data.csv", "expect": "allow"},
+  {"command": "awk 'BEGIN {print \"hello\"}'", "expect": "allow"},
+  {"command": "awk -v var=42 '{print var}'", "expect": "allow"},
+  {"command": "awk -f /tmp/script.awk", "expect": "ask"},
+  {"command": "awk -f script.awk data.txt", "expect": "ask"},
+  {"command": "awk '{system(\"ls\")}'", "expect": "ask"},
+  {"command": "awk 'BEGIN {system(\"rm -rf /tmp\")}'", "expect": "ask"},
+  {"command": "awk -f /tmp/evil.awk '{print $1}'", "expect": "ask"},
+  {"command": "awk 'END {system(\"echo done\")}'", "expect": "ask"}
+]

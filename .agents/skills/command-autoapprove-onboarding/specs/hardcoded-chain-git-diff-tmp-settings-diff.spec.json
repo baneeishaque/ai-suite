@@ -1,0 +1,17 @@
+{
+  "_comment": "Reference spec for the Hardcoded Tmp-Write→Read MUTATES exception (is-this-command-safe cheatsheet §Hardcoded Tmp-Write→Read Exception Pattern). Proves the regex auto-approves only the pinned /tmp/settings_diff.txt chain and rejects every chained-injection variant. Re-run on any future edit to this entry.",
+  "pattern": "^git( -C [^;&|<>$`()]+)? diff( --cached)?( -- [^;&|<>$`()]+)? > /tmp/settings_diff\\.txt; wc -l /tmp/settings_diff\\.txt && head( -[0-9]+)? /tmp/settings_diff\\.txt$",
+  "must_match": [
+    "git -C /tmp/repo diff -- path/to/file.json > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head -100 /tmp/settings_diff.txt",
+    "git diff > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head -100 /tmp/settings_diff.txt",
+    "git diff --cached -- a.txt > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head /tmp/settings_diff.txt"
+  ],
+  "must_reject": [
+    "git diff > /tmp/other.txt; wc -l /tmp/other.txt && head -100 /tmp/other.txt",
+    "git diff > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && head -100 /tmp/settings_diff.txt; rm -rf ~",
+    "git diff > /tmp/settings_diff.txt && rm -rf ~",
+    "git diff > /etc/passwd",
+    "git diff > /tmp/settings_diff.txt; wc -l /tmp/settings_diff.txt && cat /tmp/settings_diff.txt",
+    "git diff > /tmp/settings_diff.txt | sh"
+  ]
+}

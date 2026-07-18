@@ -368,8 +368,6 @@
 
 ## Conventions
 
-## Conventions
-
 - Lowercase kebab-case (hyphenated) naming for skill directories under `.agents/skills/`
 - Kebab-case for files in `ai-agent-rules/` (per `ai-rule-standardization-rules.md`)
 - See [README.md](README.md) for project overview

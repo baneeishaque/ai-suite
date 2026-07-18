@@ -442,17 +442,17 @@ alongside the artifact files; leave unrelated hunks unstaged for their own commi
 
 **When `git add -p` hunk boundaries don't align with row boundaries** (e.g.,
 two session rows land in the same hunk as an out-of-scope row), use the
-[`agents-md-stage-row.py`](scripts/agents-md-stage-row.py) script instead:
+[`agents-md-stage-row.py`](../git-hunk-staging-primitives/scripts/agents-md-stage-row.py) script instead:
 
 ```bash
 # Dry-run: preview alphabetical position
-python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
     --row "| My Skill | [path](path) | description |" \
     --dry-run
 
 # Stage exactly one row (default --mode staged: reads HEAD:AGENTS.md,
 # inserts row, updates index; working tree is NOT touched)
-python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
     --row "| My Skill | [path](path) | description |"
 ```
 
@@ -491,12 +491,12 @@ Three viable techniques, in order of preference:
    deferred rows are picked up cleanly by `git add <file>` for commit C.
 
    ```bash
-   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
        --file .agents/skills/X/SKILL.md \
        --exclude "../Y/SKILL.md" \
        --dry-run
 
-   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
        --file .agents/skills/X/SKILL.md \
        --exclude "../Y/SKILL.md"
    ```
@@ -507,7 +507,7 @@ Three viable techniques, in order of preference:
    staged blob:
 
    ```bash
-   python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
        --file .agents/skills/cra-reset-mocks-test-strategy/SKILL.md \
        --exclude "## Composition" \
        --exclude "Composition Mechanism" \
@@ -875,29 +875,29 @@ remain unstaged; the working tree is never modified.
 
 ```bash
 # Dry-run: preview matched hunks without staging
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
     --file .agents/skills/foo/SKILL.md \
     --match "blockquote" \
     --check
 
 # Stage only hunks containing a specific substring:
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
     --file .agents/skills/foo/SKILL.md \
     --match "Phase 1g"
 
 # Stage hunks matching ANY of multiple patterns:
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
     --file .agents/skills/foo/SKILL.md \
     --match "stash-apply" \
     --match "live editor"
 
 # Stage hunks from a regex pattern:
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
     --file .agents/skills/foo/SKILL.md \
     --match-regex "Phase\s+1[g-h]"
 
 # Stage hunks from the staged diff (--cached) instead of the working tree:
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-diff.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
     --file .agents/skills/foo/SKILL.md \
     --match "submodule" \
     --cached
@@ -915,13 +915,15 @@ python3 .agents/skills/git-atomic-commit-construction/scripts/stage-hunk-from-di
 5. Runs `git apply --cached` with the filtered patch to stage exactly
    those hunks into the index. Non-matching hunks remain unstaged.
 
-**Complementary primitives:**
+**Complementary primitives (delegated to base skill `git-hunk-staging-primitives`):**
 
 | Script | Action | Used in |
 |---|---|---|
 | `stage-hunk-from-diff.py` | Stage ONLY matching hunks | §3i (this section) |
 | `stage-file-excluding-lines.py` | Stage file MINUS matching lines | §2f.1 |
 | `agents-md-stage-row.py` | Stage exactly one AGENTS.md row | §2f |
+| `stage-head-synthesize.py` | Stage HEAD with substitutions | §13 |
+| `stage-specific-hunks.py` | Stage specific hunk indices | §3i.1, §13 |
 | `git add -p` | Interactive hunk-by-hunk staging | §3a–§3f |
 
 **Edge cases:**
@@ -953,7 +955,7 @@ untouched. The excluded line stays on disk and is picked up cleanly by
 
 ```bash
 # Commit 1: stage the file minus the second addition
-python3 .agents/skills/git-atomic-commit-construction/scripts/stage-file-excluding-lines.py \
+python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
     --file <file> \
     --exclude "<content-of-second-line>"
 
@@ -1433,7 +1435,7 @@ append a single `style:` reformat commit at the end.
 
 When the desired intermediate state can be expressed as the committed HEAD
 version with a set of mechanical substitutions (e.g., replace all occurrences
-of `configurations-private` with `<private-repo>`), use `stage-head-synthesize.py`
+of `<private-config-repo>` with `<private-repo>`), use `stage-head-synthesize.py`
 to stage a HEAD-derived blob directly — no working-tree file is touched.
 
 1. **Synthesize and stage:** Run
@@ -1453,7 +1455,7 @@ are siblings under `scripts/`:
 - `stage-head-synthesize.py` — HEAD with mechanical substitutions.
 - `stage-hunk-from-diff.py` — selective hunk staging from a diff.
 
-See also [`stage-head-synthesize.py`](scripts/stage-head-synthesize.py) for
+See also [`stage-head-synthesize.py`](../git-hunk-staging-primitives/scripts/stage-head-synthesize.py) for
 invocation examples and safety guards.
 
 ---
@@ -1565,6 +1567,27 @@ The agent is **BLOCKED** from:
 - **[Repo Scratch Output Capture](../repo-scratch-output-capture/SKILL.md)**
   — For writing the commit preview artifact to `scratch/commit-preview.md`
   (§2d mandate 4) with the `ensure-scratch-gitignored.py` helper.
+- **[Git Hunk Staging Primitives](../git-hunk-staging-primitives/SKILL.md)**
+  — Base skill providing all 5 hunk-staging primitives via public CLI
+  contract: `stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+  `agents-md-stage-row.py`, `stage-head-synthesize.py`,
+  `stage-specific-hunks.py`. This skill is a composer: it does NOT
+  re-implement hunk-staging primitives; it orchestrates the base skill.
+
+## Composition Rationale
+
+This skill is a **composer**: it does NOT re-implement hunk-staging primitives.
+It orchestrates the base skill `git-hunk-staging-primitives` via its public
+CLI contract. The base skill owns the 5 generic primitives
+(`stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+`agents-md-stage-row.py`, `stage-head-synthesize.py`,
+`stage-specific-hunks.py`) as domain-agnostic deterministic Tier-A scripts.
+This skill adds the domain-specific logic: commit-preview quality mandates
+(§2d), deferred cross-reference handling (§2f.1), adjacent-lines fallback
+(§3i.1), HEAD-synthesis (§13), and the full atomic commit construction
+protocol (§0–§16). Inlining the primitives would split the SSOT and force
+other composers (`git-history-refinement`, `git-pre-execution-safety-stash`)
+to duplicate them.
 
 ## Common Pitfalls
 

@@ -1,0 +1,21 @@
+# Prompt log entries — each entry is one instruction block from commit.txt
+# Common prompt factored out as a default; only the varying parts stored per entry.
+defaults:
+  common_prompt: "strictly & deeply follow /Users/dk/lab-data/ai-suite/ai-agent-rules/git-atomic-commit-construction-rules.md instructions & /Users/dk/lab-data/ai-suite/.agents/skills/git-atomic-commit-construction/SKILL.md instructions."
+  snippets:
+    atomic: "we need maximum atomic commits."
+
+entries:
+  - ref: preview-hunks
+    tags: [commit, preview, hunk, review, verify]
+    add_on: "give me complete arranged commits preview with complete hunk previews."
+
+  - ref: preview-hunks-atomic
+    tags: [commit, preview, atomic, review, verify]
+    compose: preview-hunks
+    add_on: "{atomic}"
+
+  - ref: exec-atomic
+    tags: [commit, exec, review, verify]
+    prefix: "commit the changes in"
+    add_on: "{atomic}"

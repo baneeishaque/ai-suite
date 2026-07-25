@@ -1679,74 +1679,283 @@ session_tracker:
       title: OpenCode Improvements
       tasks:
         - id: L0T1
-          title: on session export - can choose the folder where the export file can saved (currently it is saved in the root of the workspace)
+          title: session export improvements
+          tasks:
+            - id: L1T1
+              title: can choose the folder where the export file can saved (currently it is saved in the root of the workspace)
+
+            - id: L1T2
+              title: can enter the whole path of the export file (currently it is saved in the root of the workspace)
+
+            - id: L1T3
+              title: existing file overwriting confirmation is must
+
+          status: deprecated
+          deprecated_reason: replaced by plugin hooks based logging of requests & responses
 
         - id: L0T2
-          title: on session export - can enter the whole path of the export file (currently it is saved in the root of the workspace)
+          title: keyboard shortcut to scroll to last of the session
+          status: done
+          notes:
+            - note: already implemented in OpenCode — End (Fn+Right on macOS) or Ctrl+Alt+G jumps to last message
+            - note: configurable via keybinds in opencode.json (messages_last binding)
 
         - id: L0T3
-          title: on session export - existing file overwriting confirmation is must
+          title: disable providers from UI (currently it is enabled for all providers)
+          status: pending
+          notes:
+            - note: only config-file mechanism exists (disabled_providers / enabled_providers in opencode.json + per-provider disabled flag) — no TUI toggle yet
+            - note: need to develop the UI
 
         - id: L0T4
-          title: keyboard shortcut to scroll to last of the session
+          title: replace json for data transfer
+          status: pending
+          notes:
+            - note: LLM provider APIs (Anthropic, OpenAI, Google, etc.) all use JSON — OpenCode cannot change their protocol; the provider dictates the API format
+            - note: binary formats (protobuf/msgpack/flatbuffers) are faster — smaller payloads, zero-copy parse, no text parsing overhead
+            - note: for local self-hosted LLMs (Ollama, llama.cpp, vLLM), inference latency dominates (seconds) vs JSON serialization (microseconds) — the gain is ~0.001% of total latency
+            - note: worth exploring only if self-hosting multiple small models at high throughput where request volume per second is high enough for parse overhead to matter
+            - note: "two implementation approaches — fork inference server to add binary protocol support, or run a local proxy that translates binary to JSON for provider APIs"
+          follow_up_tasks:
+            - id: L1T1
+              title: evaluate fork inference server for binary protocol
+              notes:
+                - note: modify Ollama / llama.cpp-server / vLLM to accept protobuf or msgpack on a separate port
+                - note: OpenCode sends protobuf requests then server deserializes, runs inference, returns protobuf-encoded response
+                - note: pros — no extra hop, lowest latency, full control over schema
+                - note: cons — must maintain a fork that diverges from upstream, rebase effort on each release, protocol stability burden
+                - note: viable only for a dedicated team managing a custom deployment
+            - id: L1T2
+              title: evaluate build local proxy binary to JSON translator
+              notes:
+                - note: small local daemon that receives protobuf/msgpack from OpenCode, deserializes, forwards as JSON HTTP to the LLM server, reads JSON response, serializes back to binary
+                - note: pros — zero changes to the inference server, works with any existing Ollama/llama.cpp/vLLM setup, easy to deploy as sidecar
+                - note: cons - extra network hop adds ~0.1-0.5ms latency per request, both sides still do serialization (binary to JSON to binary), proxy becomes a single point of failure
+                - note: can be extended to add caching, rate-limiting, request logging, or model routing in the future
+            - id: L1T3
+              title: benchmark actual gain before committing
+              notes:
+                - note: set up self-hosted model via Ollama and a simple proxy measuring round-trip time with JSON vs msgpack/protobuf
+                - note: key metrics — request serialization time, response deserialization time, payload size reduction, total RTT for single vs batch requests
+                - note: only proceed with L1T1 or L1T2 if benchmark shows meaningful latency improvement for expected throughput
 
         - id: L0T5
-          title: disable providers from UI (currently it is enabled for all providers)
-
-        - id: L0T6
-          title: replace json for data transfer
-
-        - id: L0T7
           title: automatic logging of requests & responses via. proxy & hooks (maybe we can use entire)
           tasks:
             - id: L1T1
               title: via. proxy
               status: done
+              notes:
+                - note: "repo: https://github.com/agardnerIT/opencode-video-content — companion to YouTube tutorial on capturing OpenCode-LLM traffic with mitmproxy"
+                - note: mitmproxy on port 9453, addon script mitm_custom_script_ag.py intercepts LLM API calls (filters by system role in messages), saves request + response JSON to flows/opencode.ai_<timestamp>_<counter>.json
+                - note: "command: mitmproxy --listen-port 9453 -s mitm_custom_script_ag.py"
+                - note: "OpenCode started via: NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem HTTPS_PROXY=http://localhost:9453 HTTP_PROXY=http://localhost:9453 opencode"
+                - note: each captured file contains full request body (model, messages, params) + response (status, headers, raw SSE stream with reasoning, content, usage, cost)
+                - note: extracted/processed outputs — body_structured.yaml, body_deduped.yaml, body_merged.yaml, body_extracted.yaml, body_deduped.md — show per-chunk, deduplicated, and human-readable views
+                - note: ~226 captured flows across 2 sessions (Jul 21-22 2026) covering opencode.ai endpoints via Cloudflare/OpenRouter
+                - note: "alternative built-in approach exists: experimental.openTelemetry: true in opencode.json (documented in README)"
               tasks:
                 - id: L2T1
                   title: extract from proxy logs
                   status: done
-                  tasks:
+                  notes:
+                    - note: 226 captured request/response pairs as JSON in flows/opencode.ai_<timestamp>_<counter>.json across 2 sessions (Jul 21-22 2026)
+                    - note: each JSON file has full request body (model, messages, system prompt, params) + response (status code, headers, raw SSE stream)
+                    - note: "processed outputs: body_output.txt, body_structured.yaml, body_deduped.yaml, body_merged.yaml, body_extracted.yaml, body_deduped.md"
+                    - note: "body_structured.yaml — every SSE data: chunk as separate YAML entry (token-by-token reasoning + content)"
+                    - note: body_deduped.yaml — deduplicated with reasoning concatenated, final content + usage merged
+                    - note: body_merged.yaml — merged preserving both reasoning_details array and concatenated reasoning + content
+                    - note: body_extracted.yaml — clean extract of processing_comments, keepalive_comments, reasoning, response, finish_reason, usage, inference_cost
+                    - note: body_deduped.md — human-readable markdown with SSE comments, reasoning text, final response, token usage
+                    - note: "flow #107 (big-pickle model) extracted separately: opencode_107_body_output.txt, opencode_107_body_structured.yaml, opencode_107_body_deduped.yaml, opencode_107_body_merged.yaml, opencode_107_body_deduped.md"
+                    - note: all outputs reside in /Users/dk/lab-data/opencode-video-content/flows/
+                  follow_up_tasks:
                     - id: L3T1
                       title: document the workflow
+                      status: pending
+                      notes:
+                        - note: "workflow reconstructed from captured flows (opencode.ai_17846721xx_*.json) in /Users/dk/lab-data/opencode-video-content/flows/"
+                        - note: "Step 1 — Setup: mitmproxy on port 9453 with mitm_custom_script_ag.py addon script (filters by system role, saves request+response JSON)"
+                        - note: "Step 2 — Capture: OpenCode launched with HTTPS_PROXY=http://localhost:9453 and NODE_EXTRA_CA_CERTS=~/.mitmproxy/mitmproxy-ca-cert.pem"
+                        - note: "Step 3 — Flow files: 226 LLM API request/response pairs auto-saved as flows/opencode.ai_<timestamp>_<counter>.json"
+                        - note: "Step 4 — Validate: captured JSON verified with jq (opencode.ai_1784672149_11.json was valid)"
+                        - note: "Step 5 — Extract body: jq '.response.body' to decode escaped SSE stream into body_output.txt"
+                        - note: "Step 6 — Structured YAML: parsed every SSE data: chunk into per-entry YAML → body_structured.yaml"
+                        - note: "Step 7 — Deduplicate: merged duplicate reasoning chunks, concatenated final content + usage → body_deduped.yaml"
+                        - note: "Step 8 — Merge: preserved both reasoning_details array and concatenated reasoning + content → body_merged.yaml"
+                        - note: "Step 9 — Extract clean fields: processing_comments, keepalive_comments, reasoning, response, finish_reason, usage, inference_cost → body_extracted.yaml"
+                        - note: "Step 10 — Markdown report: human-readable format with tables for usage/cost → body_deduped.md"
+                        - note: "Step 11 — Repeat for flow #107 (big-pickle model): opencode_107_body_*.txt/yaml/md outputs"
+                        - note: "Workflow captured in two opencode sessions: Jul 21 (flows 1-112) and Jul 22 (flows 113-226), 2026"
+                      references:
+                        - paths:
+                            - path: ../opencode-video-content/mitm_custom_script_ag.py
+                            - path: ../opencode-video-content/flows/opencode.ai_1784672149_11.json
+                            - path: ../opencode-video-content/flows/body_output.txt
+                            - path: ../opencode-video-content/flows/body_structured.yaml
+                            - path: ../opencode-video-content/flows/body_deduped.yaml
+                            - path: ../opencode-video-content/flows/body_merged.yaml
+                            - path: ../opencode-video-content/flows/body_extracted.yaml
+                            - path: ../opencode-video-content/flows/body_deduped.md
+                            - path: ../opencode-video-content/flows/opencode_107_body_output.txt
+                            - path: ../opencode-video-content/flows/opencode_107_body_structured.yaml
+                            - path: ../opencode-video-content/flows/opencode_107_body_deduped.yaml
+                            - path: ../opencode-video-content/flows/opencode_107_body_merged.yaml
+                            - path: ../opencode-video-content/flows/opencode_107_body_deduped.md
 
             - id: L1T2
               title: via. plugin hooks
               status: done
+              notes:
+                - note: "opencode-logger plugin: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts (535 lines, TypeScript)"
+                - note: uses @opencode-ai/plugin SDK — registers a single event handler that listens to the raw OpenCode event stream
+                - note: "outputs: .opencode/logs/<sessionID>.jsonl (every event as JSON line), .yaml (structured multi-doc YAML with header + per-turn docs), .state.json (resume tracking), .turns.jsonl (turn-by-turn for crash recovery)"
+                - note: "YAML structure: doc 1 = session header (session id/created/updated, model, title, compactedAt); subsequent docs = user turn (user text+time + assistant steps array)"
+                - note: "each assistant step captures: agent, model.id, model.provider, thinking text, thinking_duration, tool_calls (array of {tool, args, result}), response text, duration"
+                - note: "event flow: session.created → session state init, message.updated → store metadata, message.part.updated → accumulate text/reasoning/tool calls into turn/step, session.status(idle) → finalize + write YAML"
+                - note: "session ses_07568f752ffe1gL7GvX0mbUk38 was the development session for this plugin — fixed two compaction bugs: (1) pre-compaction turns lost when auto-prompt creates new messageID; (2) missing compactedAt marker in YAML"
+                - note: "formal JSON schema at plugins/session-yaml-schema.json defines sessionHeader, userTurn, and step structures with timestamp/duration patterns"
+                - note: "plugin dependencies: @opencode-ai/plugin@1.4.10, js-yaml@^5.2.1 (in package.json)"
+                - note: "backups: opencode-logger.ts.bak.1784811183 and .bak.1784834804 preserve state before/during debugging"
+                - note: "L2T1 (to yaml) implemented via this plugin — the plugin converts raw event stream into structured YAML output"
+              references:
+                - paths:
+                    - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+                    - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/session-yaml-schema.json
+                    - path: /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/07568f752ffe1gL7GvX0mbUk38/07568f752ffe1gL7GvX0mbUk38.md
+                    - path: /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/07568f752ffe1gL7GvX0mbUk38/07568f752ffe1gL7GvX0mbUk38-2.md
+                    - path: /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38.yaml
+                    - path: /Users/dk/lab-data/configurations-private/opencode/config/package.json
               tasks:
                 - id: L2T1
-                  title: to yaml
+                  title: to yaml (convert raw event stream into structured YAML output)
                   status: done
-                  tasks:
+                  notes:
+                    - note: opencode-logger plugin captures every event from the raw OpenCode event stream and serializes it to multi-document YAML
+                    - note: "YAML file per session at .opencode/logs/<sessionID>.yaml — human-readable, structured by turns"
+                    - note: "Document 1: session header with id, created/updated timestamps, model (id + provider), title, compactedAt (if applicable)"
+                    - note: "Document 2+: one per user-assistant interaction — user block (text + time) + assistant steps array"
+                    - note: "each step = agent, model, thinking, thinking_duration, tool_calls (tool+args+result), response text, duration, timestamps"
+                    - note: "flush strategy: turns accumulated in memory, written to YAML on session.status(idle) event — never mid-turn"
+                    - note: "crash recovery: .turns.jsonl written per-turn as backup, reloaded on restart to rebuild in-memory state"
+                    - note: "parallel output format: .jsonl (one JSON line per event for machine processing)"
+                    - note: "formal JSON Schema at plugins/session-yaml-schema.json validates the YAML structure"
+                    - note: "plugin source: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts"
+                  references:
+                    - paths:
+                        - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+                        - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/session-yaml-schema.json
+                        - path: /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38.yaml
+                        - path: /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/07568f752ffe1gL7GvX0mbUk38/07568f752ffe1gL7GvX0mbUk38-2.md
+                  follow_up_tasks:
                     - id: L3T1
-                      title: yaml json schema for above file
+                      title: JSON schema for opencode-logger YAML format
                       status: done
+                      notes:
+                        - note: "JSON Schema (draft-07) at plugins/session-yaml-schema.json — validates the multi-document YAML output from opencode-logger"
+                        - note: "defines 3 types: sessionHeader (id, created, updated, model, optional compacted/title), userTurn (user text+time + assistant steps array), step (agent, model, thinking, tool_calls, response, duration)"
+                        - note: "custom patterns: localTimestamp (M/D/YYYY, HH:MM:SS.fff AM/PM TZ), durationString (number + ms/s)"
+                        - note: "step uses anyOf: requires either time or response — allows pure-thinking steps without visible response"
+                        - note: "toolCall schema captures tool name, args object, optional result text and error text"
+                        - note: "109 lines, strict with additionalProperties: false on all objects"
+                      references:
+                        - paths:
+                            - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/session-yaml-schema.json
                       follow_up_tasks:
                         - id: L4T1
-                          title: yaml yaml schema for above file
+                          title: YAML schema definition for opencode-logger format
+                          status: pending
+                          notes:
+                            - note: create a YAML schema (Kwalify / YAML Schema spec) for the multi-document YAML output produced by opencode-logger
+                            - note: complements the existing JSON Schema (session-yaml-schema.json) — YAML-native format enables validation without JSON Schema tooling
+                            - note: "schema should cover: sessionHeader (id, timestamps, model, title, compactedAt), userTurn (user text+time + assistant steps), step (agent, model, thinking, tool_calls, response, duration)"
+                            - note: "can be implemented as Kwalify schema (.yaml) or a Python/YAML-based validator script"
+                          references:
+                            - paths:
+                                - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/session-yaml-schema.json
+                                - path: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+
+                    - id: L3T2
+                      title: instead of rewriting the whole file, append new turns to the existing YAML file
+                      status: pending
+
+                    - id: L3T3
+                      title: to github gist yaml (convert raw event stream into structured YAML output)
+
+                    - id: L3T4
+                      title: instead logging to a single file (and file size increases each time), split the log into multiple files (e.g., one per turn or per N turns) to avoid large file sizes and improve manageability
+
+        - id: L0T6
+          title: sticky header for selected contents of the chat window
+          status: wontfix
+          notes:
+            - note: "Issue #29063 (feat(tui): add sticky user prompt while scrolling session answers) — Closed as not planned. Feature was NOT implemented by OpenCode."
+            - note: "Assigned to simonklee but never implemented — issue was simply closed without merging"
+            - note: "Desktop home page has its own sticky headers (v1.18.3: 'Fixed home page scrolling so sticky headers and the session list behave correctly') but that is for the desktop session list, not TUI"
+            - note: "'Improve review panel resizing and sticky controls' (changelog) is about the desktop review panel — also unrelated to TUI session view"
+            - note: "No alternative implementation found in OpenCode TUI codebase — feature would need to be built from scratch"
+          references:
+            - paths:
+                - path: https://github.com/anomalyco/opencode/issues/29063
+                - path: https://opencode.ai/changelog
+          related_tasks:
+            - id: L1T1
+              title: evaluate building custom TUI sticky header plugin
+              notes:
+                - note: "OpenCode has plugin hooks (opencode-logger.ts pattern) — but no TUI rendering hooks for modifying message scroll behavior"
+                - note: "Would need to fork OpenCode CLI or contribute upstream; significant effort for a cosmetic feature"
+
+        - id: L0T7
+          title: export as html file with collapse, copy for snippets & code blocks
+          status: done
+          notes:
+            - note: "Plugin opencode-export-html by ekisu (npm, MIT) already implements this — self-contained HTML, collapse/copy, Shiki highlighting, KaTeX, diffs"
+            - note: "Install: `opencode plugin --global opencode-export-html`, use: `/export-to-html` slash command in TUI"
+            - note: "Built-in `opencode export <session_id>` only outputs JSON — plugin is needed for HTML"
+            - note: "Output is a self-extracting archive: session data + CSS + JS zstd-compressed and embedded in HTML; decompressed client-side by fzstd bootstrap (~11 KB inline)"
+            - note: "Uses same SolidJS renderer as OpenCode's live share pages (opncd.ai) — visual parity"
+            - note: "~2.5 MB final HTML verified"
+            - note: "Saves to current repo root ($PWD) as <session-title>.html — e.g., /Users/dk/lab-data/ai-suite/List installed OpenCode plugins.html"
+            - note: "Repo: https://github.com/ekisu/opencode-export-html"
+          references:
+            - paths:
+                - path: https://github.com/ekisu/opencode-export-html
+                - path: https://www.npmjs.com/package/opencode-export-html
 
         - id: L0T8
-          title: sticky header for selected contents of the chat window
+          title: auto-approve permissions for autonomous AI operation
+          desc: Enable auto-pilot mode via TUI command palette (Ctrl+P) or --auto flag so AI works continuously without interruptions; disable when supervision needed
+          status: done
+          notes:
+            - note: "Three ways to enable: (1) CLI --auto flag, (2) TUI command palette Ctrl+P -> 'Enable auto-approve permissions', (3) per-prompt 'always' in ask dialog"
+            - note: "CLI: `opencode --auto` or `opencode run --auto 'task'` — deny rules still enforced; shows muted 'auto' indicator next to agent name"
+            - note: "TUI toggle: Ctrl+P opens command palette, search 'auto' -> Enable/Disable auto-approve permissions — instant toggle, no restart needed"
+            - note: "Per-prompt always: when ask dialog appears, select 'always' to approve matching patterns for rest of session"
+            - note: "Disable: Ctrl+P -> 'Disable auto-approve permissions' — returns to normal supervised ask/deny mode"
+            - note: "Danger variant: `--dangerously-skip-permissions` bypasses everything including deny — use only in throwaway VMs"
+            - note: "Keybinding reference: Ctrl+Alt+K opens Which Key overlay showing all available keybinds"
+            - note: "Command palette is ctrl+p in terminal TUI (not Cmd+K — macOS Cmd does not apply in terminal)"
+            - note: "Ctrl+K is bound to input_delete_to_line_end (kill to end of line) — not command palette"
+            - note: "Auto mode only affects would-ask permissions; explicit deny rules in permission config still enforced"
+            - note: "Config at ~/.config/opencode/opencode.json has granular permission rules (bash, edit, read, etc.) with last-match-wins pattern ordering"
+          references:
+            - paths:
+                - path: https://opencode.ai/docs/permissions
+                - path: https://opencode.ai/docs/keybinds
 
         - id: L0T9
-          title: export as html file with collapse, copy for snippets & code blocks
-
-        - id: L0T10
-          desc: apply auto-approve via opencode DB then restrict
-
-        - id: L0T11
           desc: commit changes in configurations-private/opencode/config/opencode.json
           references:
             - paths:
                 - path: configurations-private/opencode/config/opencode.json
 
-        - id: L0T12
+        - id: L0T10
           desc: commit the changes of session 0d1351b81ffeVg3Ao8OWue5rde
           references:
             - paths:
                 - path: ai-suite/docs/2026-07-05_0d1351b81ffeVg3Ao8OWue5rde_multiple-accounts-for-opencode-providers_audit-log_v1.md
 
-        - id: L0T13
+        - id: L0T11
           desc: configure agent router in open code
           references:
             - paths:

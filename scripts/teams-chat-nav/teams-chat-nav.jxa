@@ -1,0 +1,43 @@
+#!/usr/bin/env osascript -l JavaScript
+// teams-chat-nav.jxa — Open Teams web and navigate to a specific chat
+//
+// Usage: osascript -l JavaScript teams-chat-nav.jxa "Chat Name"
+
+ObjC.import("Foundation");
+
+function run(argv) {
+  if (argv.length === 0) { console.log("Error: chat name required"); return "1"; }
+  var chatName = argv[0];
+  var chrome = Application("Google Chrome");
+  chrome.includeStandardAdditions = true;
+
+  chrome.activate();
+  delay(0.5);
+
+  chrome.openLocation("https://teams.microsoft.com");
+  delay(6);
+
+  // Resolve inject JS path relative to this script
+  var args = $.NSProcessInfo.processInfo.arguments;
+  var scriptPath = args.objectAtIndex(3).js;
+  var dir = scriptPath.substring(0, scriptPath.lastIndexOf("/"));
+  var injectPath = dir + "/teams-chat-nav-inject.js";
+  var contents = $.NSString.stringWithContentsOfFileEncodingError(
+    $(injectPath).stringByStandardizingPath,
+    $.NSUTF8StringEncoding,
+    null
+  );
+  if (!contents.isNil()) {
+    var injectJs = contents.js;
+    var safeName = chatName.replace(/'/g, "\\'").replace(/"/g, '\\"');
+    injectJs = injectJs.replace("CHAT_NAME_PLACEHOLDER", "'" + safeName + "'");
+
+    var tab = chrome.windows[0].activeTab;
+    var result = tab.execute({ javascript: injectJs });
+    console.log(result);
+    return "0";
+  }
+
+  console.log("Error: could not read inject JS");
+  return "1";
+}

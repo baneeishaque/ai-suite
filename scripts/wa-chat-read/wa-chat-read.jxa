@@ -1,0 +1,156 @@
+#!/usr/bin/env osascript -l JavaScript
+ObjC.import("Foundation");
+
+function run(argv) {
+  if (argv.length === 0) {
+    console.log("Usage: osascript wa-chat-read.jxa \"Contact Name\" [resultIndex] [maxMessages]");
+    console.log("  Phase 1 (no resultIndex): Search and show results");
+    console.log("  Phase 2 (with resultIndex): Open result #N and read messages");
+    return "1";
+  }
+
+  var contactQuery = argv[0];
+  var resultIndex = argv.length > 1 ? parseInt(argv[1]) : -1;
+  var maxMessages = argv.length > 2 ? parseInt(argv[2]) : 50;
+
+  var chrome = Application("Google Chrome");
+  chrome.includeStandardAdditions = true;
+
+  // Find existing WhatsApp tab or open new one
+  var tab = null;
+  for (var w = 0; w < chrome.windows.length && !tab; w++)
+    for (var t = 0; t < chrome.windows[w].tabs.length && !tab; t++) {
+      var url = chrome.windows[w].tabs[t].url();
+      if (url && url.indexOf("web.whatsapp.com") !== -1) tab = chrome.windows[w].tabs[t];
+    }
+  if (!tab) {
+    chrome.openLocation("https://web.whatsapp.com");
+    delay(10);
+    for (var w = 0; w < chrome.windows.length && !tab; w++)
+      for (var t = 0; t < chrome.windows[w].tabs.length && !tab; t++) {
+        var url = chrome.windows[w].tabs[t].url();
+        if (url && url.indexOf("web.whatsapp.com") !== -1) tab = chrome.windows[w].tabs[t];
+      }
+  }
+  if (!tab) { console.log("Error: could not open WhatsApp"); return "1"; }
+
+  chrome.activate();
+  delay(0.5);
+
+  function callJs(fn) { try { return tab.execute({ javascript: fn }); } catch (e) { return null; } }
+
+  // Wait for page ready
+  for (var i = 0; i < 20; i++) {
+    delay(1);
+    try { if (tab.execute({ javascript: "document.readyState" }) === "complete") break; } catch (e) {}
+  }
+
+  var args = $.NSProcessInfo.processInfo.arguments;
+  var scriptPath = args.objectAtIndex(3).js;
+  var dir = scriptPath.substring(0, scriptPath.lastIndexOf("/"));
+  var injectPath = dir + "/wa-chat-read-inject.js";
+  var src = $.NSString.stringWithContentsOfFileEncodingError(
+    $(injectPath).stringByStandardizingPath,
+    $.NSUTF8StringEncoding,
+    null
+  ).js;
+  if (!src) { console.log("Error: could not read inject JS"); return "1"; }
+
+  callJs(src);
+  delay(0.5);
+
+  // Search
+  var r = callJs("window.stepSearchBox()");
+  console.log("search: " + r);
+  if (r === "not_found") { console.log("Error: search box not found"); return "1"; }
+  delay(1);
+
+  r = callJs("window.stepTypeQuery(" + JSON.stringify(contactQuery) + ")");
+  console.log("type: " + r);
+
+  // Wait for search results to be filtered (row with text "Contacts" appears)
+  for (var wait = 0; wait < 20; wait++) {
+    delay(1);
+    var hasContacts = callJs("var rows=document.querySelectorAll('#pane-side [role=row]'); var found=false; for(var i=0;i<rows.length;i++){ if(rows[i].textContent.trim().toLowerCase()==='contacts'){found=true;break;} } found ? 'yes' : 'no'");
+    if (hasContacts === "yes") break;
+  }
+
+  if (resultIndex < 0) {
+    // Phase 1: Show results
+    delay(1);
+    r = callJs("window.stepGetResults()");
+    console.log("results: " + r);
+
+    var safeFilename = contactQuery.replace(/[^a-zA-Z0-9_-]/g, "_");
+    var outputPath = dir + "/logs";
+    var fm = $.NSFileManager.defaultManager;
+    if (!fm.fileExistsAtPath($(outputPath).stringByStandardizingPath)) {
+      var err = Ref();
+      fm.createDirectoryAtPathWithIntermediateDirectoriesAttributesError(
+        $(outputPath).stringByStandardizingPath, true, $.NSDictionary.dictionary, err
+      );
+    }
+    var logFile = outputPath + "/wa-chat-" + safeFilename + "-results.json";
+    var logText = $.NSString.stringWithString(r);
+    logText.writeToFileAtomicallyEncodingError(
+      $(logFile).stringByStandardizingPath, true, $.NSUTF8StringEncoding, null
+    );
+
+    console.log("(Results saved to: " + logFile + ")");
+    return "0";
+  }
+
+  // Phase 2: Open result and read messages
+  // Keyboard navigation on the still-visible search results
+  r = callJs("window.stepOpenResultByKeyboard(" + resultIndex + ")");
+  console.log("open: " + r);
+  if (r === "no_search_box") { console.log("Error: no search box"); return "1"; }
+
+  // Wait for conversation panel to appear
+  for (var wait = 0; wait < 20; wait++) {
+    delay(1);
+    var hasMain = callJs("document.querySelector('#main') ? 'yes' : 'no'");
+    if (hasMain === "yes") break;
+  }
+  var opened = callJs("document.querySelector('#main') ? 'yes' : 'no'");
+  console.log("chat opened: " + opened);
+
+  r = callJs("window.stepGetMessages(" + maxMessages + ")");
+  console.log("messages: " + r);
+
+  try {
+    var resultObj = JSON.parse(String(r));
+  } catch (e) {
+    console.log("parse error: " + e);
+    return "1";
+  }
+  var safeFilename = contactQuery.replace(/[^a-zA-Z0-9_-]/g, "_");
+  var now = $.NSDate.date;
+  var fmt = $.NSDateFormatter.alloc.init;
+  fmt.dateFormat = "yyyy-MM-dd_HHmmss";
+  var outputPath = dir + "/logs";
+  var fm = $.NSFileManager.defaultManager;
+  if (!fm.fileExistsAtPath($(outputPath).stringByStandardizingPath)) {
+    var err = Ref();
+    fm.createDirectoryAtPathWithIntermediateDirectoriesAttributesError(
+      $(outputPath).stringByStandardizingPath, true, $.NSDictionary.dictionary, err
+    );
+  }
+  var logFile = outputPath + "/wa-chat-" + safeFilename + "-" + fmt.stringFromDate(now).js + ".json";
+  var logText = $.NSString.stringWithString(JSON.stringify(resultObj, null, 2));
+  logText.writeToFileAtomicallyEncodingError(
+    $(logFile).stringByStandardizingPath, true, $.NSUTF8StringEncoding, null
+  );
+
+  console.log("\n=== Messages (" + resultObj.count + ") ===");
+  if (resultObj.messages && resultObj.messages.length > 0) {
+    for (var i = 0; i < resultObj.messages.length; i++) {
+      console.log("  " + (i + 1) + ". " + resultObj.messages[i]);
+    }
+  } else {
+    console.log("  (no messages)");
+  }
+  console.log("\n(Saved to: " + logFile + ")");
+
+  return "0";
+}

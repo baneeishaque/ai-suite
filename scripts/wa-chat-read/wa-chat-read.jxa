@@ -3,15 +3,17 @@ ObjC.import("Foundation");
 
 function run(argv) {
   if (argv.length === 0) {
-    console.log("Usage: osascript wa-chat-read.jxa \"Contact Name\" [resultIndex] [maxMessages]");
+    console.log("Usage: osascript wa-chat-read.jxa \"Contact Name\" [resultIndex] [maxMessages] [targetDate DD/MM/YYYY]");
     console.log("  Phase 1 (no resultIndex): Search and show results");
     console.log("  Phase 2 (with resultIndex): Open result #N and read messages");
+    console.log("  With targetDate: scroll history and read messages from that day");
     return "1";
   }
 
   var contactQuery = argv[0];
   var resultIndex = argv.length > 1 ? parseInt(argv[1]) : -1;
   var maxMessages = argv.length > 2 ? parseInt(argv[2]) : 50;
+  var targetDate = argv.length > 3 ? argv[3] : "";
 
   var chrome = Application("Google Chrome");
   chrome.includeStandardAdditions = true;
@@ -114,6 +116,82 @@ function run(argv) {
   }
   var opened = callJs("document.querySelector('#main') ? 'yes' : 'no'");
   console.log("chat opened: " + opened);
+
+  if (targetDate) {
+    // History mode: scroll to bottom, then walk up collecting all rows
+    r = callJs("window.stepStartHistoryRead(" + JSON.stringify(targetDate) + ")");
+    console.log("history start: " + r);
+    var startObj = null;
+    try { startObj = JSON.parse(String(r)); } catch (e) {}
+    var chunk = startObj && startObj.ch ? Math.floor(startObj.ch * 1.2) : 800;
+
+    // Ensure we're really at the bottom before collecting
+    for (var settle = 0; settle < 5; settle++) {
+      delay(1);
+      var sb = JSON.parse(String(callJs("window.stepScrollToBottom()")));
+      if (sb.atBottom) break;
+    }
+    console.log("settled: " + callJs("window.stepScrollToBottom()"));
+
+    var done = false;
+    var stuck = 0;
+    for (var iter = 0; iter < 400 && !done; iter++) {
+      delay(0.9);
+      var col = JSON.parse(String(callJs("window.stepCollectVisible()")));
+      if (col.error) { console.log("collect error: " + col.error); break; }
+      console.log("  iter " + iter + ": stored=" + col.total + " added=" + col.added + " crossedBefore=" + col.crossedBefore + " st=" + col.st + " sh=" + col.sh);
+      var scr = JSON.parse(String(callJs("window.stepScrollUpBy(" + chunk + ")")));
+      if (scr.error) { console.log("scroll error: " + scr.error); break; }
+      if (scr.atTop) { done = true; break; }
+      if (col.added === 0) {
+        stuck++;
+        if (stuck > 6) { done = true; break; }
+      } else {
+        stuck = 0;
+      }
+    }
+
+    r = callJs("window.stepFinishHistoryRead(" + maxMessages + ")");
+    console.log("messages: " + r);
+
+    try {
+      var resultObj = JSON.parse(String(r));
+    } catch (e) {
+      console.log("parse error: " + e);
+      return "1";
+    }
+    var safeFilename = contactQuery.replace(/[^a-zA-Z0-9_-]/g, "_");
+    var now = $.NSDate.date;
+    var fmt = $.NSDateFormatter.alloc.init;
+    fmt.dateFormat = "yyyy-MM-dd_HHmmss";
+    var outputPath = dir + "/logs";
+    var fm = $.NSFileManager.defaultManager;
+    if (!fm.fileExistsAtPath($(outputPath).stringByStandardizingPath)) {
+      var err = Ref();
+      fm.createDirectoryAtPathWithIntermediateDirectoriesAttributesError(
+        $(outputPath).stringByStandardizingPath, true, $.NSDictionary.dictionary, err
+      );
+    }
+    var logFile = outputPath + "/wa-chat-" + safeFilename + "-" + targetDate.replace(/\//g, "-") + "-" + fmt.stringFromDate(now).js + ".json";
+    var logText = $.NSString.stringWithString(JSON.stringify(resultObj, null, 2));
+    logText.writeToFileAtomicallyEncodingError(
+      $(logFile).stringByStandardizingPath, true, $.NSUTF8StringEncoding, null
+    );
+
+    console.log("\n=== Messages " + targetDate + " (" + resultObj.count + ") ===");
+    if (resultObj.messages && resultObj.messages.length > 0) {
+      for (var i = 0; i < resultObj.messages.length; i++) {
+        var msg = resultObj.messages[i];
+        var arrow = msg.direction === "in" ? "<-" : "->";
+        console.log("  " + (i + 1) + ". [" + msg.time + "] " + arrow + " " + msg.sender + ": " + msg.text);
+      }
+    } else {
+      console.log("  (no messages)");
+    }
+    console.log("\n(Saved to: " + logFile + ")");
+
+    return "0";
+  }
 
   r = callJs("window.stepGetMessages(" + maxMessages + ")");
   console.log("messages: " + r);

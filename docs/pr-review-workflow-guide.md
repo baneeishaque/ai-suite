@@ -779,6 +779,7 @@ the PR enters a remediation cycle:
 | **All blocking findings resolved** | Re-review passes | `gh pr review --approve` | — |
 | **Blocking findings remain** | Re-review finds same issues | `gh pr review --request-changes` (reference prior comment) | — |
 | **Reviewer rejects outright** | Fundamental design flaw / out of scope | `gh pr review --comment` with "Reject" + rationale; notify user for escalation | Escalate to tech lead / product owner |
+| **Merged despite unresolved `CHANGES_REQUESTED`** | PR merged while a blocking review is still open, with no new commits addressing it | Post-merge protocol (§4.1.3): verify whether the blocking findings were resolved in the merge diff; if not, flag the **merge-over-review violation** in the post-merge comment and still document the unaddressed findings in the follow-up issue | — |
 
 **Re-review protocol (mandatory):**
 

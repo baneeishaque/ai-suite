@@ -169,6 +169,7 @@ well-structured (easier to review one at a time).
 | `gh: not found` | `gh` not installed | `brew install gh` |
 | `Please re-authenticate` | Login expired | `gh auth login` |
 | `404` from `gh api` | Wrong repo name, or you lack access | Confirm `owner/name`; check `gh repo view owner/name` |
+| `Could not resolve to a Repository` (GraphQL) / `404` (REST) for a repo that exists | Wrong identity: GitHub hides private repos from accounts without access — the symptom is *invisibility*, not 403 | Switch to the account that owns the repo (`§4.0.1` multi-account note) |
 | `file not found` for scripts | Wrong working directory | Run from the repo root: `/Users/dk/lab-data/ai-suite` |
 | JSON "no such key" | The ref you passed has no commits (e.g., a raw file ref) | Pass a branch name or commit SHA, not a file path |
 
@@ -197,13 +198,28 @@ git status           # understand the working tree before any fetch
 
 > **Multi-account note (personal account → company private repo):**
 > If `gh auth status` shows a personal account but the PR is in a company
-> private repo, you will hit 403 (wrong identity). The
+> private repo, GitHub **hides the repo**: `gh` reports "Could not resolve to a
+> Repository" (GraphQL) or `404 Not Found` (REST) — NOT a 403. This is
+> deliberate: private repos are invisible to identities without access. If
+> `git ls-remote` against the remote works but `gh` cannot resolve the repo,
+> the repo exists and the problem is identity, not naming. The
 > `git-github-auth-fallback` skill provides these paths:
 >
+> * **Keychain PAT discovery (macOS, first step)**: the company PAT may
+>   already be in the macOS keychain under the remote's embedded username.
+>   Discover it without exposing it:
+>
+>   ```bash
+>   git credential-osxkeychain get <<< $'protocol=https\nhost=github.com\nusername=<company-username>\n'
+>   ```
+>
+>   If a `password` line is returned, you have the company PAT; use it via
+>   Path D (below). Never paste it into shell history.
 > * **Path F (macOS, recommended)**: `git config --global credential.useHttpPath true`,
 >   flush keychain, push → macOS prompts for company PAT per-repo-path.
 > * **Path D**: `gh auth login` (sign in as company account) +
 >   `gh auth setup-git` — `gh` manages credentials for both API and git.
+>   Non-interactive: `echo <company-pat> | gh auth login --with-token`.
 > * **Path B (non-TTY)**: Temporarily embed PAT in remote URL,
 >   push, immediately revert (never commit the URL).
 > * **Path C**: Switch remote to SSH (`git@github.com:org/repo.git`).
@@ -896,6 +912,7 @@ Then notify the user and STOP — do not start the next PR until they confirm.
 | :--- | :--- | :--- |
 | `gh: not found` | `gh` not installed | `brew install gh`, or fall back to `github-rest-api-fallback` (§4.0.1) |
 | `gh auth status` → 401/403 | Credentials stale/wrong identity | `git-github-auth-fallback` §2 classification before retry |
+| `gh` says "Could not resolve to a Repository" but `git ls-remote` works | Private repo invisible to the active identity (not a naming error) | Switch to the owning account (`§4.0.1` keychain PAT discovery + Path D); then retry `--repo owner/name` |
 | Stage 3 scripts say "commit not found" | Objects not fetched locally | `gh pr checkout 42` first (with user confirmation) |
 | `pwsh` missing | PowerShell not installed | `brew install --cask powershell`; or use `pwsh-preview` |
 | `gh api` rate limit | Too many rapid calls | Wait; reduce `--limit` values |

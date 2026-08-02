@@ -762,6 +762,13 @@ The review comment MUST contain:
 3. **Manual-test results** — if Stage 4 ran, the ✅/❌ matrix.
 4. **Verdict** — Approve / Request changes / Comment.
 
+**Body formatting (GitHub soft-wraps — do NOT hard-wrap):** the 72-character
+wrap rule of `git-commit-message-rules.md` applies to git commit messages
+ONLY, never to `--body-file` content. Write one line per paragraph / bullet;
+GitHub wraps long lines automatically. Hard-wrapped bodies render as ragged
+fixed-width columns and misindented continuation lines break bullet
+rendering.
+
 After posting, follow the **explicit handoff**: notify the user and STOP. Do
 not proceed to any other PR until the user confirms ("done", "next",
 "approved").

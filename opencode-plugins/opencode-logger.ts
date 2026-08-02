@@ -1,9 +1,11 @@
 import type { Plugin } from "@opencode-ai/plugin"
-import { mkdirSync, appendFileSync, writeFileSync, existsSync, readFileSync } from "node:fs"
+import { mkdirSync, appendFileSync, writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs"
 import { join } from "node:path"
 import { dump, loadAll } from "js-yaml"
 
 const LOG_BASE = ".opencode/logs"
+
+const YAML_SPLIT_MODE = "flat-timestamped"
 
 function ts(): string {
   return new Date().toISOString()
@@ -79,6 +81,19 @@ function normalizeResult(result: string): string {
 function writeYAML(ses: string, includePending = false) {
   try {
     const s = getSS(ses)
+    if (YAML_SPLIT_MODE === "flat-timestamped") {
+      writeYAMLFlatTimestamped(ses, includePending)
+    } else if (YAML_SPLIT_MODE === "per-turn") {
+      writeYAMLSplit(ses, includePending)
+    } else {
+      writeYAMLSingle(ses, includePending)
+    }
+  } catch { /* no crash */ }
+}
+
+function writeYAMLSingle(ses: string, includePending = false) {
+  try {
+    const s = getSS(ses)
     const yp = join(LOG_BASE, `${ses}.yaml`)
     const header: Record<string, unknown> = {
       session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },
@@ -96,6 +111,103 @@ function writeYAML(ses: string, includePending = false) {
   } catch { /* no crash */ }
 }
 
+function writeYAMLSplit(ses: string, includePending = false) {
+  try {
+    const s = getSS(ses)
+    const baseDir = join(LOG_BASE, ses)
+    mkdirSync(baseDir, { recursive: true })
+
+    // Write header
+    const header: Record<string, unknown> = {
+      session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },
+    }
+    if (s.model) header.model = s.model
+    if (s.title) header.title = s.title
+    if (s.compactedAt) {
+      header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }
+    }
+    writeFileSync(join(baseDir, "00-header.yaml"), buildYAML([header]))
+
+    // Write each turn
+    for (let i = 0; i < s.turns.length; i++) {
+      const turnNum = String(i + 1).padStart(4, "0")
+      writeFileSync(join(baseDir, `${turnNum}-turn.yaml`), buildYAML([s.turns[i]]))
+    }
+
+    // Write pending turn if requested
+    if (includePending && s.turn && s.turn.steps.length > 0) {
+      const turnNum = String(s.turns.length + 1).padStart(4, "0")
+      writeFileSync(join(baseDir, `${turnNum}-turn-pending.yaml`), buildYAML([s.turn.toFields()]))
+    }
+  } catch { /* no crash */ }
+}
+
+function writeYAMLFlatTimestamped(ses: string, includePending = false) {
+  try {
+    const s = getSS(ses)
+    const baseDir = join(LOG_BASE, ses)
+    mkdirSync(baseDir, { recursive: true })
+
+    // Header file (turn 000) - write once if not exists
+    const headerFiles = readdirSync(baseDir).filter(f => f.startsWith("000-header-"))
+    if (headerFiles.length === 0) {
+      const header: Record<string, unknown> = {
+        session: { id: ses, created: formatLocal(s.created ?? ts()) },
+      }
+      if (s.model) header.model = s.model
+      if (s.title) header.title = s.title
+      if (s.compactedAt) {
+        header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }
+      }
+      const headerTime = s.created ?? ts()
+      const headerFilename = `000-header-${headerTime.replace(/[:.]/g, "-")}.yaml`
+      writeFileSync(join(baseDir, headerFilename), buildYAML([header]))
+    }
+
+    // Write newly completed turns (not yet written)
+    for (let i = s.writtenTurns; i < s.turns.length; i++) {
+      const turn = s.turns[i]
+      const turnNum = String(i + 1).padStart(3, "0")
+      const turnTime = (turn.endTime as string) ?? turn.time ?? ts()
+      const turnFilename = `${turnNum}-${turnTime.replace(/[:.]/g, "-")}.yaml`
+      writeFileSync(join(baseDir, turnFilename), buildYAML([turn]))
+      s.writtenTurns++
+    }
+
+    // Write pending turn if requested
+    if (includePending && s.turn && s.turn.steps.length > 0) {
+      const turnNum = String(s.turns.length + 1).padStart(3, "0")
+      const startTime = s.turn.startTime ?? ts()
+      const pendingFilename = `${turnNum}-pending-${startTime.replace(/[:.]/g, "-")}.yaml`
+      writeFileSync(join(baseDir, pendingFilename), buildYAML([s.turn.toFields()]))
+    }
+  } catch { /* no crash */ }
+}
+
+function writeTurnCompleted(ses: string, turnIndex: number, turnFields: Record<string, unknown>) {
+  try {
+    const s = getSS(ses)
+    const baseDir = join(LOG_BASE, ses)
+    mkdirSync(baseDir, { recursive: true })
+
+    const turnNum = String(turnIndex + 1).padStart(3, "0")
+    const turnTime = (turnFields.endTime as string) ?? turnFields.time ?? ts()
+    const completedFilename = `${turnNum}-${turnTime.replace(/[:.]/g, "-")}.yaml`
+    const completedPath = join(baseDir, completedFilename)
+
+    // Remove any pending file for this turn
+    const pendingPattern = `${turnNum}-pending-`
+    const pendingFiles = readdirSync(baseDir).filter(f => f.startsWith(pendingPattern))
+    for (const pf of pendingFiles) {
+      try { require("node:fs").unlinkSync(join(baseDir, pf)) } catch { /* ignore */ }
+    }
+
+    writeFileSync(completedPath, buildYAML([turnFields]))
+    // Track that this turn has been written
+    if (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1
+  } catch { /* no crash */ }
+}
+
 function finalizeTurn(ses: string) {
   const s = getSS(ses)
   if (!s.turn || s.turn.steps.length === 0) return false
@@ -106,7 +218,10 @@ function finalizeTurn(ses: string) {
       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
     }
   }
-  pushTurn(s.turn.toFields(), ses)
+  const turnFields = s.turn.toFields()
+  pushTurn(turnFields, ses)
+  // Write completed turn file (index is length - 1 after push)
+  writeTurnCompleted(ses, s.turns.length - 1, turnFields)
   s.turn = null
   return true
 }
@@ -144,16 +259,25 @@ function initSession(ses: string, info?: Record<string, unknown>) {
       try { s.turns.push(JSON.parse(line) as Record<string, unknown>) } catch { /* skip bad line */ }
     }
   }
-  const yp = join(LOG_BASE, `${ses}.yaml`)
-  if (existsSync(yp) && s.turns.length === 0) {
-    try {
-      const existing = loadAll(readFileSync(yp, "utf-8")) as Record<string, unknown>[]
-      for (let i = 1; i < existing.length; i++) {
-        const d = existing[i]
-        if (d?.user) s.turns.push(d)
-      }
-    } catch { /* skip bad yaml recovery */ }
+  // Recover from split YAML files (new format) or single YAML (legacy)
+  const splitFiles = loadSplitYAML(ses)
+  if (splitFiles.length > 0 && s.turns.length === 0) {
+    for (const doc of splitFiles) {
+      if (doc?.user) s.turns.push(doc)
+    }
+  } else {
+    const yp = join(LOG_BASE, `${ses}.yaml`)
+    if (existsSync(yp) && s.turns.length === 0) {
+      try {
+        const existing = loadAll(readFileSync(yp, "utf-8")) as Record<string, unknown>[]
+        for (let i = 1; i < existing.length; i++) {
+          const d = existing[i]
+          if (d?.user) s.turns.push(d)
+        }
+      } catch { /* skip bad yaml recovery */ }
+    }
   }
+  s.writtenTurns = s.turns.length
   s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())
   s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()
   s.model = modelFromInfo(info ?? {})
@@ -161,6 +285,37 @@ function initSession(ses: string, info?: Record<string, unknown>) {
   s.turn = null
   s.compactedAt = null
   s.firstUserTime = null
+}
+
+function loadSplitYAML(ses: string): Record<string, unknown>[] {
+  try {
+    // Check flat-timestamped format (session subdirectory)
+    const sessionDir = join(LOG_BASE, ses)
+    let files: string[] = []
+    if (existsSync(sessionDir)) {
+      files = readdirSync(sessionDir)
+        .filter(f => f.match(/^\d{3}-/) && f.endsWith(".yaml"))
+        .sort()
+        .map(f => join(ses, f))
+    }
+
+    // Fallback to legacy per-turn format (flat files with ses_ prefix)
+    if (files.length === 0) {
+      files = readdirSync(LOG_BASE)
+        .filter(f => f.startsWith(`${ses}_`) && f.endsWith(".yaml"))
+        .sort()
+    }
+
+    const docs: Record<string, unknown>[] = []
+    for (const f of files) {
+      try {
+        const content = readFileSync(join(LOG_BASE, f), "utf-8")
+        const loaded = loadAll(content) as Record<string, unknown>[]
+        docs.push(...loaded)
+      } catch { /* skip bad file */ }
+    }
+    return docs
+  } catch { return [] }
 }
 
 // ---------------------------------------------------------------------------
@@ -275,13 +430,14 @@ interface SessionState {
   firstUserTime: string | null
   created: string | null
   updated: string | null
+  writtenTurns: number
 }
 const SS = new Map<string, SessionState>()
 
 function getSS(ses: string): SessionState {
   let s = SS.get(ses)
   if (!s) {
-    s = { turn: null, turns: [], turnsFile: null, model: null, title: null, compactedAt: null, firstUserTime: null, created: null, updated: null }
+    s = { turn: null, turns: [], turnsFile: null, model: null, title: null, compactedAt: null, firstUserTime: null, created: null, updated: null, writtenTurns: 0 }
     SS.set(ses, s)
   }
   return s
@@ -380,20 +536,13 @@ export const OpenCodeLogger: Plugin = async () => {
               if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
                 if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
                 if (s.turn && s.turn.steps.length > 0) {
-                  s.turn.endTime = ts()
-                  if (s.turn.currentStep && !s.turn.currentStep.endTime) {
-                    s.turn.currentStep.endTime = ts()
-                    if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
-                      s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+                  if (finalizeTurn(ses as string)) {
+                    if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+                      s.created = s.firstUserTime
                     }
+                    writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+                    writeYAML(ses as string)
                   }
-                  pushTurn(s.turn.toFields(), ses as string)
-                  s.updated = ts()
-                  if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
-                    s.created = s.firstUserTime
-                  }
-                  writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
-                  writeYAML(ses as string)
                 }
                 s.turn = new Turn()
                 s.turn.userText = part.text ?? ""

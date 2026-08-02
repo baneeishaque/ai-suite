@@ -1,0 +1,109 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpenCode Session YAML",
+  "description": "Multi-document YAML schema for opencode session logger output. Each ----delimited document validates against one of the defined schemas.",
+  "definitions": {
+    "localTimestamp": {
+      "type": "string",
+      "pattern": "^\\d{1,2}/\\d{1,2}/\\d{4}, \\d{1,2}:\\d{2}:\\d{2}(\\.\\d{3})? (AM|PM) [A-Z]+[+-]?\\d{1,2}(:\\d{2})?$"
+    },
+    "durationString": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d+)?(ms|s)$"
+    },
+    "sessionHeader": {
+      "type": "object",
+      "required": ["session", "model"],
+      "properties": {
+        "session": {
+          "type": "object",
+          "required": ["id", "created", "updated"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^ses_" },
+            "created": { "$ref": "#/definitions/localTimestamp" },
+            "updated": { "$ref": "#/definitions/localTimestamp" },
+            "compacted": { "$ref": "#/definitions/localTimestamp" }
+          },
+          "additionalProperties": false
+        },
+        "model": {
+          "type": "object",
+          "required": ["id", "provider"],
+          "properties": {
+            "id": { "type": "string" },
+            "provider": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "title": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "toolCall": {
+      "type": "object",
+      "required": ["tool", "args"],
+      "properties": {
+        "tool": { "type": "string" },
+        "args": { "type": "object" },
+        "result": { "type": "string" },
+        "error": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "properties": {
+        "agent": { "type": "string" },
+        "model": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "provider": { "type": "string" }
+          },
+          "required": ["id", "provider"],
+          "additionalProperties": false
+        },
+        "thinking": { "type": "string" },
+        "thinking_duration": { "$ref": "#/definitions/durationString" },
+        "thinking_duration_ms": { "type": "number" },
+        "time": { "$ref": "#/definitions/localTimestamp" },
+        "tool_calls": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/toolCall" }
+        },
+        "response": { "type": "string" },
+        "duration": { "$ref": "#/definitions/durationString" },
+        "duration_ms": { "type": "number" }
+      },
+      "anyOf": [
+        { "required": ["time"] },
+        { "required": ["response"] }
+      ],
+      "additionalProperties": false
+    },
+    "userTurn": {
+      "type": "object",
+      "required": ["user"],
+      "properties": {
+        "user": {
+          "type": "object",
+          "required": ["text"],
+          "properties": {
+            "text": { "type": "string" },
+            "time": { "$ref": "#/definitions/localTimestamp" }
+          },
+          "additionalProperties": false
+        },
+        "assistant": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/step" }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/sessionHeader" },
+    { "$ref": "#/definitions/userTurn" }
+  ]
+}

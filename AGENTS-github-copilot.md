@@ -5,7 +5,7 @@ In addition to the common Permanent Operating Reminders in
 when running under GitHub Copilot (VS Code / JetBrains / CLI). For the
 skills table, see [`AGENTS-legacy.md`](AGENTS-legacy.md).
 
-1. **Prefer Bash heredocs over the editor `edit` AND `create` tools for large writes.**
+1. **Prefer Bash heredoc over the editor `edit` AND `create` tools for large writes.**
    Both `edit` and `create` hang on large / many-line operations (the
    `create` tool stresses the IDE renderer the same way `edit` does when
    `file_text` is large — empirically anything > ~10 KB or > ~100 lines).

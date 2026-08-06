@@ -7,16 +7,7 @@
    silently hangs when a path is missing. Issue independent shell calls (use
    parallel tool calls for unrelated probes). See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1](ai-agent-rules/shell-execution-rules.md).
-2. **Prefer Bash heredocs over the editor `edit` AND `create` tools for large writes.**
-   Both `edit` and `create` hang on large / many-line operations (the
-   `create` tool stresses the IDE renderer the same way `edit` does when
-   `file_text` is large — empirically anything > ~10 KB or > ~100 lines).
-   For whole-file authoring use `cat > file <<'EOF' ... EOF`; for in-place
-   transforms use `python3 - <<'PY' ... PY`. The `edit` tool is reserved
-   for small, uniquely-anchored surgical replacements; the `create` tool
-   is reserved for short new files (< ~10 KB / < ~100 lines). See
-   [`ai-agent-rules/shell-execution-rules.md` §2.3.2](ai-agent-rules/shell-execution-rules.md).
-3. **Never nest heredocs inside heredocs.** When using
+2. **Never nest heredocs inside heredocs.** When using
    `python3 - <<'PY'` whose body contains a Python triple-quoted string,
    the inner content MUST NOT contain heredoc-sentinel-looking tokens
    (`EOF`, `PY`, `MARKEREOF`, etc.) or fenced code blocks — the outer
@@ -25,7 +16,7 @@
    `cat > /tmp/script.py <<'ZZZ_OTHER_ZZZ'` then run the script. Each
    stage carries one heredoc with a body-unique sentinel. See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.3](ai-agent-rules/shell-execution-rules.md).
-4. **Bound tool-output size AND cumulative scrollback to protect the IDE renderer.** Large outputs
+3. **Bound tool-output size AND cumulative scrollback to protect the IDE renderer.** Large outputs
    streamed into the chat transcript (recursive `grep -r` over many-file
    trees, `cat` on minified bundles, full dumps of files like
    `workbench.desktop.main.js`) can freeze the VS Code renderer; the user's
@@ -48,7 +39,7 @@
    checklist, and the post-freeze recovery protocol — collected across
    reminders §1–§4 above and reified as one skill — are owned by
    [`.agents/skills/ide-renderer-freeze-prevention/SKILL.md`](.agents/skills/ide-renderer-freeze-prevention/SKILL.md).
-5. **Prefer scripts over prose instructions — both when authoring AND when
+4. **Prefer scripts over prose instructions — both when authoring AND when
     consuming a skill.** Scripts are more deterministic than rules, skills,
     or sub-agent prompts.
     *Authoring side*: when designing or refactoring a skill/rule/sub-agent,
@@ -68,7 +59,7 @@
     See
     [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md)
     `## Consumer Discipline — Always Invoke, Never Re-derive`.
-6. **Do NOT probe into heavy-filewatcher symlinked trees; address files
+5. **Do NOT probe into heavy-filewatcher symlinked trees; address files
    by exact path.** Walking a directory that fans out into symlinked
    private-config / cloud-sync / IDE-indexed subtrees (specifically
    `/Users/dk/Lab_Data/configurations-private/` in this workspace)
@@ -100,7 +91,7 @@
    tool calls issued
    during the post-freeze drain window are themselves reported as
    `interrupted`; recover via `bash` heredoc writes first.)
-7. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
+6. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
    `find` / `cat`.** The host runtime exposes first-class code-search
    tools that respect tool-output sizing, scrollback hygiene, and the
    §2.3.1 atomization rule. Falling back to `bash grep` (or `rg` inside

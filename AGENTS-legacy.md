@@ -2,7 +2,8 @@
 
 This file contains the full repository skills table, preserved for runtimes
 that do not support the `.agents/skills/<name>/SKILL.md` directory contract.
-For active operating reminders, see [`AGENTS.md`](AGENTS.md).
+For active operating reminders, see [`AGENTS.md`](AGENTS.md). For GitHub
+Copilot-specific instructions, see [`AGENTS-github-copilot.md`](AGENTS-github-copilot.md).
 
 ## Skills
 

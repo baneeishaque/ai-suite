@@ -111,6 +111,9 @@
      query (e.g. piped post-processing the tool does not support).
    See
    [`ai-agent-rules/shell-execution-rules.md` §2.3.1.2](ai-agent-rules/shell-execution-rules.md).
+7. **Always use `trash` instead of `rm` or `rmdir` on macOS.** `trash` moves files and directories to
+   `~/.Trash` (recoverable) instead of permanently deleting them. Use `trash` for all file and directory
+   deletions unless the user explicitly asks for permanent removal.
 
 ## Conventions
 

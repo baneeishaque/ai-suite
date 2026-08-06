@@ -114,6 +114,9 @@
 7. **Always use `trash` instead of `rm` or `rmdir` on macOS.** `trash` moves files and directories to
    `~/.Trash` (recoverable) instead of permanently deleting them. Use `trash` for all file and directory
    deletions unless the user explicitly asks for permanent removal.
+8. **Never touch `.DS_Store` files on macOS.** Do not read, write, move, trash, or delete `.DS_Store`
+   files by any means. They are Finder metadata files managed by the OS and should be left completely
+   untouched.
 
 ## Conventions
 

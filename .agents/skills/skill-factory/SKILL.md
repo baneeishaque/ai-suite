@@ -356,6 +356,18 @@ Every skill generated via the Factory MUST automatically undergo the final verif
   Recommended fix-script execution order is documented in
   **[Markdown Generation §3.1](../markdown-generation/SKILL.md#31-execution-order)**.
 - **Bridge Audit**: Confirm `<skill-dir>/AGENTS.md` exists, carries NO YAML frontmatter (no leading `---` block), contains the five required sections from §2.3.2 (`# <Skill> — Companion Bridge` / `## Purpose` / `## When This Skill Applies` / `## Operational Procedure` / `## Cross-References`), and is within the 40–120 line size guidance from §2.3.5. A skill with no bridge file is INCOMPLETE.
+- **Metadata-Separation Audit**: Run the
+  [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md)
+  composer in `--check` mode over the authored skill (and, for library-wide changes, over the whole
+  library) and confirm it exits 0 — no inline `Changelog` / `Traceability` sections remain in any
+  `SKILL.md`; every skill carries `CHANGELOG.md` / `TRACEABILITY.md` beside `SKILL.md` with pointer-only
+  sections in the SSOT.
+
+  ```bash
+  python3 .agents/skills/markdown/skill-doc-metadata-separation/scripts/separate-skill-doc-metadata.py \
+    --target .agents/skills/<skill-name> --check
+  ```
+
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows
   immediately above and below to verify the sort order holds.

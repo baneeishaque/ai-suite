@@ -267,7 +267,7 @@ A bridge audit row is added to §3 Post-Drafting Checklist verifying that `<skil
     Use the shared registration helper instead of hand-editing the table:
 
     ```bash
-    python3 .agents/skills/git-atomic-commit-construction/scripts/agents-md-stage-row.py \
+    python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
         --mode worktree \
         --row "| Skill Name | [\`.agents/skills/<skill-name>/SKILL.md\`](.agents/skills/<skill-name>/SKILL.md) | One-line description |"
     ```

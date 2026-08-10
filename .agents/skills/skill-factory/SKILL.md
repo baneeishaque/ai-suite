@@ -727,6 +727,12 @@ Visually scan the diff for style drift vs surrounding lines: do the inserted bul
 
 ## Related Skills
 
+- [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md) — composer enforcing
+  the §2.1 / §2.2 item 5 separate-file convention for `Changelog` / `Traceability`; its `--check`
+  mode is the §3 Metadata-Separation Audit.
+- [`markdown-section-to-companion-doc`](../markdown/markdown-section-to-companion-doc/SKILL.md) — base
+  primitive (section → companion-file split) that the metadata-separation composer delegates all
+  file mutation to.
 - [`human-scanable-organization`](../general/human-scanable-organization/SKILL.md) — the 8±2
   human-scanability principle and grouping methodology that determines when and how to
   sub-group a skill folder.

@@ -50,7 +50,17 @@ Reference exemplar: [vscode-search-exclude-glob](../vscode-search-exclude-glob/S
 ### 2.1 Directory Structure
 
 - Create the target folder in `.agents/skills/<skill-name>/` (hyphens required for names).
-- Initialize `SKILL.md` (active SSOT) and `AGENTS.md` (companion bridge).
+- Initialize `SKILL.md` (active SSOT), `AGENTS.md` (companion bridge), and — when the skill's metadata
+  sections are separated per the library convention — `CHANGELOG.md` (release history) and
+  `TRACEABILITY.md` (provenance/session records) as sibling companion files.
+- **Metadata-Separation Convention** (library standard, established 2026-08-10): `Changelog` and
+  `Traceability` are **information, not instructions** — they MUST live in `CHANGELOG.md` /
+  `TRACEABILITY.md` sibling files, with `SKILL.md` retaining pointer-only sections
+  (`## Changelog` → `See [CHANGELOG.md](CHANGELOG.md).`). An inline `Changelog` / `Traceability`
+  section with body content inside `SKILL.md` is a compliance violation. Enforce/apply via the
+  [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md) composer (which
+  delegates all file mutation to the [`markdown-section-to-companion-doc`](../markdown/markdown-section-to-companion-doc/SKILL.md)
+  base primitive) — do NOT hand-edit the split.
 - For **composer skills**: the composer's script MUST resolve the base script via a relative path anchored to its own
   location (`SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"` then `BASE="$SCRIPT_DIR/../../<base-skill>/scripts/..."`),
   so invocation works regardless of the caller's `cwd`. The composer MUST verify the base script exists and exit

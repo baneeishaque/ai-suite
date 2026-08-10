@@ -414,3 +414,12 @@ The agent is FORBIDDEN from:
   tools, not system-wide binaries.
 - **Asking the user to install manually before exhausting all fallback package managers**
   per the priority matrix in §2.1.
+
+***
+
+## Related Skills
+
+| Skill | Relationship |
+| :--- | :--- |
+| [`docker-resource-inventory`](../docker/docker-resource-inventory/SKILL.md) | Consumer — delegates docker CLI install/verify when the binary is absent |
+| [`docker-resource-cleanup`](../docker/docker-resource-cleanup/SKILL.md) | Consumer — delegates docker CLI install/verify when the binary is absent |

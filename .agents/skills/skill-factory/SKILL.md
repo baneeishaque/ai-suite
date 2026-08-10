@@ -89,6 +89,12 @@ The `SKILL.md` MUST include:
 5. **Traceability Section**: Links to permanent conversation logs. All such logs MUST be sanitised through the
    **[Redaction & Portability Skill](../redaction-portability/SKILL.md)** before being committed — see §3 of this
    document for the mandatory audit checklist.
+6. **Separate-File Convention (MANDATORY)**: the `Traceability` section — like `Changelog` — is information,
+   not instructions, and MUST be authored directly in a sibling `TRACEABILITY.md` (respectively `CHANGELOG.md`)
+   companion file, with `SKILL.md` carrying only the pointer section (`## Traceability` → `See
+   [TRACEABILITY.md](TRACEABILITY.md).`) per §2.1. Do NOT draft an inline `## Traceability` / `## Changelog`
+   body inside `SKILL.md`; if an existing skill has one, split it with the
+   [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md) composer.
 
 **No-Parallel-Rule-File Mandate**: When the Factory produces a new skill, it MUST NOT also produce a parallel
 rule file (`ai-agent-rules/<topic>-rules.md`) covering the same procedure. Rule / instruction files are

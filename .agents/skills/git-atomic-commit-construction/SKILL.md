@@ -415,6 +415,53 @@ Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
 Loop until the user confirms the preview is correct. Do NOT begin execution
 until the user says "start".
 
+#### 2d.2 — Post-Execution Preview Verification
+
+After all arranged commits have been executed (or when resuming a session
+that may have previously generated a commit preview), verify completion
+by checking the preview against `git log`.
+
+**Automated verification (preferred):**
+
+Delegate to the
+[`git-commit-preview-verify`](../git/basic/edit/git-commit-preview-verify/SKILL.md)
+base skill:
+
+```bash
+python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+    --preview scratch/commit-preview.md \
+    --format text
+```
+
+This parses the preview's `Commit N:` sections (any heading level),
+cross-references each commit title against `git log --oneline`, and
+reports done/pending status. Use `--format json` for machine-readable
+output.
+
+**Manual verification (fallback):**
+
+1. Read `scratch/commit-preview.md` and extract each `Commit N:` title
+2. Run `git log --oneline -20` and check for matching titles
+3. Report which commits are done and which are pending
+
+**Cleanup:**
+
+Once all commits are verified as executed, delete the preview file:
+
+```bash
+# Automated (with verification gate)
+python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+    --preview scratch/commit-preview.md \
+    --cleanup
+
+# Manual
+trash scratch/commit-preview.md
+```
+
+The preview file MUST NOT be deleted until all commits are confirmed
+executed. If any commits are pending, the preview must be retained for
+the next session.
+
 #### 2e — Commit Authorization
 
 The agent **MUST NOT** proceed with any commit execution until the user
@@ -1556,6 +1603,8 @@ The agent is **BLOCKED** from:
   — MANDATORY for extracting metadata during parent-repo sync commits (Step 6).
 - **[Git Commit Metadata Extraction](../git-commit-metadata-extraction/SKILL.md)**
   — The foundational primitive for all high-fidelity extraction.
+- **[Git Commit Preview Verify](../git/basic/edit/git-commit-preview-verify/SKILL.md)**
+  — Base skill for post-execution verification of commit previews (§2d.2).
 - **[Git History Refinement](../git-history-refinement/SKILL.md)**
   — For splitting or refining non-atomic existing commits.
 - **[Claude Config Change Gate](../claude-config-change-gate/SKILL.md)**

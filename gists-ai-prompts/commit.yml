@@ -20,7 +20,13 @@ entries:
     compose: preview-hunks
     add_on: "{atomic}"
 
-  - ref: exec-atomic
-    tags: [commit, exec, review, verify]
-    prefix: "commit the changes in"
-    add_on: "{atomic}"
+  - ref: write-preview-hunks-atomic
+    tags: [commit, write, preview, atomic, review, verify, markdown, arrange, hunk]
+    compose: preview-hunks-atomic
+    add_on: "write commit preview file - use artifact naming skill for path."
+
+  - ref: exec-write-preview-hunks-atomic
+    tags: [commit, exec, review, verify, arrange]
+    prefix: "commit the changes in ."
+    compose: write-preview-hunks-atomic
+    add_on: ""

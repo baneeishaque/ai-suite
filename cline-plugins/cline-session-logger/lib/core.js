@@ -159,6 +159,7 @@ export function newSessionState() {
     transcriptTurns: null, // turn count of the last transcript sync (for change logging)
     usage: null, // aggregate token/cost usage from Cline session metadata
     gitBranch: null,
+    clineVersion: null, // Cline extension version from hook payloads (provenance)
   };
 }
 
@@ -206,6 +207,7 @@ export function buildDocs(state, taskId) {
     ...(state.title ? { title: state.title } : {}),
     ...(state.usage ? { usage: state.usage } : {}),
     ...(state.gitBranch ? { git_branch: state.gitBranch } : {}),
+    ...(state.clineVersion ? { cline_version: state.clineVersion } : {}),
   };
   return [header, ...state.turns];
 }

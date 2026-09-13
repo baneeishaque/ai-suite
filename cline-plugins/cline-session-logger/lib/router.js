@@ -3,7 +3,7 @@
 // {"cancel":false} (fail-open: the logger must never block the agent).
 import { loadPersisted, resolveBase, savePersisted, loadTurnsFromDisk, sanitizeTaskId, serializeLiveTurn, taskDir, writeJSONL, writeTurnsJSONL, writeYAML } from "./io.js";
 import { Turn, finalizeTurn, modelFromHook, newSessionState, normalizeResult, reviveLiveTurn, ts } from "./core.js";
-import { loadTranscriptDocs, readSessionMeta, resolveSession, writeTranscriptYaml } from "./cline-session.js";
+import { loadTranscriptDocs, readSessionMeta, resolveSession, stripUserTags, writeTranscriptYaml } from "./cline-session.js";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -43,6 +43,7 @@ function hydrate(taskId, dir, payload) {
   state.transcriptTurns = persisted.transcriptTurns ?? null;
   state.usage = persisted.usage ?? null;
   state.gitBranch = persisted.gitBranch ?? null;
+  state.clineVersion = persisted.clineVersion ?? null;
   // Live turn survives across hook processes via state.json.
   state.turn = reviveLiveTurn(persisted.liveTurn ?? null);
   return { state, persisted };
@@ -61,6 +62,7 @@ function persist(dir, taskId, state) {
     transcriptTurns: state.transcriptTurns,
     usage: state.usage,
     gitBranch: state.gitBranch,
+    clineVersion: state.clineVersion,
     liveTurn: serializeLiveTurn(state.turn),
   });
   void taskId;
@@ -113,7 +115,10 @@ export async function handle(payload) {
       const task = payload?.taskStart?.task ?? payload?.taskStart?.taskMetadata?.initialTask ?? "";
       if (!state.created) state.created = now;
       if (model) state.model = model;
-      if (!state.title && typeof task === "string") state.title = task.slice(0, 120) || null;
+      if (typeof payload?.clineVersion === "string" && payload.clineVersion) {
+        state.clineVersion = payload.clineVersion;
+      }
+      if (!state.title && typeof task === "string") state.title = stripUserTags(task).slice(0, 120) || null;
       persist(dir, taskId, state);
       writeYAML(dir, taskId, state);
       writeJSONL(dir, taskId, { timestamp: now, taskId, type: "task.start", model: state.model, title: state.title });
@@ -148,7 +153,7 @@ export async function handle(payload) {
         state.turn = new Turn();
         state.turn.startTime = now;
       }
-      state.turn.userText = typeof prompt === "string" ? prompt : String(prompt ?? "");
+      state.turn.userText = stripUserTags(typeof prompt === "string" ? prompt : String(prompt ?? ""));
       state.turn.userTime = now;
       if (model) state.model = model;
       persist(dir, taskId, state);
@@ -217,8 +222,30 @@ export async function handle(payload) {
         state.created = now;
         if (model) state.model = model;
       }
+      // Harvest the final result text (TaskComplete.taskMetadata.result).
+      // Tool-less tasks would otherwise leave no turn file at all, and the
+      // transcript flush can lag behind this hook — so record it here, but
+      // skip when the live turn already ends with the identical text.
+      const result = payload?.taskComplete?.taskMetadata?.result
+        ?? payload?.taskComplete?.result
+        ?? payload?.taskCancel?.taskMetadata?.result
+        ?? payload?.taskCancel?.result
+        ?? "";
+      if (typeof result === "string" && result.trim() !== "") {
+        if (!state.turn) {
+          state.turn = new Turn();
+          state.turn.startTime = now;
+        }
+        const step = state.turn.ensureStep(state.model);
+        const joined = step.responseText.join("");
+        if (!joined.endsWith(result)) step.responseText.push(result);
+      }
       completeTurnIfAny(dir, taskId, state, "turn.complete");
-      writeJSONL(dir, taskId, { timestamp: now, taskId, type: hook === "TaskCancel" ? "task.cancel" : "task.complete" });
+      writeJSONL(dir, taskId, {
+        timestamp: now, taskId,
+        type: hook === "TaskCancel" ? "task.cancel" : "task.complete",
+        ...(typeof result === "string" && result !== "" ? { result } : {}),
+      });
       break;
     }
     case "PreCompact": {
@@ -257,6 +284,9 @@ function syncClineSession(dir, taskId, payload) {
     if (!found) return;
     const newlyLinked = state.clineSession?.sessionId !== found.sessionId;
     state.clineSession = { sessionId: found.sessionId, sessionPath: found.sessionPath };
+    if (typeof payload?.clineVersion === "string" && payload.clineVersion) {
+      state.clineVersion = payload.clineVersion;
+    }
     const meta = readSessionMeta(found.sessionPath, found.sessionId) ?? {};
     const mdata = meta.metadata ?? {};
     const modelId = meta.model ?? mdata.modelId ?? mdata.model ?? null;

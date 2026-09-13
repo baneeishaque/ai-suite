@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Cline hook: PreCompact — runs BEFORE conversation context is compacted.
+# PATH-hardened launcher (may be symlinked: resolves to the canonical
+# cline-plugins/cline-session-logger/hooks dir). GUI-spawned processes
+# (VS Code from Dock/Finder) have no node on PATH, so locate node first,
+# then exec the JS router.
+# Always prints {"cancel":false}; diagnostics go to ~/.cline-hook-errors.log.
+# Resolve through symlinks to the canonical hooks dir (global installs
+# symlink into ~/Documents/Cline/Hooks; cd -P alone only resolves dirs).
+SRC="$0"
+while [ -L "$SRC" ]; do
+  LINK="$(readlink "$SRC")"
+  case "$LINK" in
+    /*) SRC="$LINK" ;;
+    *) SRC="$(dirname "$SRC")/$LINK" ;;
+  esac
+done
+PHYS_DIR="$(cd -P "$(dirname "$SRC")" && pwd || dirname "$SRC")"
+PLUGIN_DIR="$(dirname "$PHYS_DIR")"
+ERRLOG="$HOME/.cline-hook-errors.log"
+export PATH="$HOME/.local/share/mise/shims:$HOME/.mise/shims:/opt/homebrew/opt/node/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+if ! command -v node >/dev/null 2>&1; then
+  echo "[$(date -u +%FT%TZ)] PreCompact: node not found (PATH=$PATH)" >>"$ERRLOG" 2>/dev/null
+  printf '{"cancel":false}'
+  exit 0
+fi
+exec node "$PLUGIN_DIR/lib/run-hook.js" 2>>"$ERRLOG"

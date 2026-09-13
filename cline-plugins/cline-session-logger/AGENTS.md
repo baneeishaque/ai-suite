@@ -33,8 +33,20 @@ multi-doc YAML + JSONL under `.cline/run-logs/<taskId>/` so
   `.cline/run-logs/<taskId>/state.json` (`liveTurn` + `pendingFile`). No in-memory
   continuity assumptions.
 - Fail-open always: every invocation prints `{"cancel":false}`, never blocks Cline.
-- Sparse mode: `thinking`/`response` stay empty (Cline hooks carry no assistant
-  text streams). Tool calls are the primary content.
+- Sparse mode: hook payloads carry no assistant text (real payloads
+  arrive with tool names undefined), so `thinking`/`response` in
+  hook-driven turns stay empty. The canonical `transcript.yaml`
+  (see below) carries the full content instead.
+- Cline session bridge (`lib/cline-session.js`): every hook also
+  resolves Cline's own session (`~/.cline/data/sessions`, override
+  via `CLINE_SESSIONS_ROOT` for tests) by workspace + conversation
+  timestamp, caches the link in `state.json`, enriches the header
+  (real model/title/usage/git branch/`cline_session_id`), and
+  rewrites the canonical `transcript.yaml` (thinking + text +
+  tool_use/tool_result segmented into turns; `user_input` tags
+  stripped; per-step token counts when present). Raw hook payloads
+  are always captured to `<task>.payloads.jsonl` (payload shapes
+  drift from the docs — this log grounds future mapping).
 - Pending files (`NNN-pending-*.yaml`) are crash-safety evidence: only the tracked
   `pendingFile` is ever deleted, never promoted. Orphans from crashed sessions
   are left untouched.
@@ -50,10 +62,11 @@ multi-doc YAML + JSONL under `.cline/run-logs/<taskId>/` so
 
 ## Verification
 
-- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 13 tests,
+- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 19 tests,
   layers mirror `opencode-plugins` LG-HK (CL-HK) + LG-RC (CL-RC) conventions,
-  plus CL-HK-070 (real shim under GUI-like minimal PATH) and CL-HK-071
-  (invocation via symlink, the global-install path).
+  plus CL-HK-070 (real shim under GUI-like minimal PATH), CL-HK-071
+  (invocation via symlink, the global-install path), and CL-SE (session
+  bridge: discovery, segmentation, enrichment, transcript rewrite).
 - Manual drill: pipe hook JSON through each executable, assert `{"cancel":false}`
   and header + `001-*.yaml` + `.jsonl` + `.turns.jsonl` artifacts.
 

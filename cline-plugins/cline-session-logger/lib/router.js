@@ -3,6 +3,7 @@
 // {"cancel":false} (fail-open: the logger must never block the agent).
 import { loadPersisted, resolveBase, savePersisted, loadTurnsFromDisk, sanitizeTaskId, serializeLiveTurn, taskDir, writeJSONL, writeTurnsJSONL, writeYAML } from "./io.js";
 import { Turn, finalizeTurn, modelFromHook, newSessionState, normalizeResult, reviveLiveTurn, ts } from "./core.js";
+import { loadTranscriptDocs, readSessionMeta, resolveSession, writeTranscriptYaml } from "./cline-session.js";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -38,6 +39,10 @@ function hydrate(taskId, dir, payload) {
   state.title = persisted.title ?? header?.title ?? null;
   state.compactedAt = persisted.compactedAt ?? null;
   state.pendingFile = persisted.pendingFile ?? null;
+  state.clineSession = persisted.clineSession ?? null;
+  state.transcriptTurns = persisted.transcriptTurns ?? null;
+  state.usage = persisted.usage ?? null;
+  state.gitBranch = persisted.gitBranch ?? null;
   // Live turn survives across hook processes via state.json.
   state.turn = reviveLiveTurn(persisted.liveTurn ?? null);
   return { state, persisted };
@@ -52,6 +57,10 @@ function persist(dir, taskId, state) {
     compactedAt: state.compactedAt,
     writtenTurns: state.writtenTurns,
     pendingFile: state.pendingFile,
+    clineSession: state.clineSession,
+    transcriptTurns: state.transcriptTurns,
+    usage: state.usage,
+    gitBranch: state.gitBranch,
     liveTurn: serializeLiveTurn(state.turn),
   });
   void taskId;
@@ -86,6 +95,14 @@ export async function handle(payload) {
   const taskId = sanitizeTaskId(payload?.taskId ?? payload?.taskStart?.taskMetadata?.taskId);
   const base = resolveBase(payload?.workspaceRoots);
   const dir = taskDir(base, taskId);
+  // Raw payload capture: real Cline payload shapes drift from the docs
+  // (e.g. tool names arrived undefined); this log grounds future mapping.
+  try {
+    appendFileSync(
+      join(dir, `${sanitizeTaskId(taskId)}.payloads.jsonl`),
+      JSON.stringify({ timestamp: ts(), hookName: payload?.hookName ?? null, payload }) + "\n",
+    );
+  } catch { /* ignore */ }
   const now = hookTs(payload);
   const model = modelFromHook(payload?.model);
   const hook = payload?.hookName;
@@ -140,7 +157,7 @@ export async function handle(payload) {
     }
     case "PreToolUse": {
       const { state } = hydrate(taskId, dir, payload);
-      const tool = payload?.preToolUse?.tool ?? "unknown";
+      const tool = payload?.preToolUse?.tool ?? payload?.preToolUse?.name ?? "unknown";
       const params = payload?.preToolUse?.parameters ?? {};
       if (!state.created) {
         state.created = now;
@@ -158,7 +175,7 @@ export async function handle(payload) {
     case "PostToolUse": {
       const { state } = hydrate(taskId, dir, payload);
       const pu = payload?.postToolUse ?? {};
-      const tool = pu.tool ?? "unknown";
+      const tool = pu.tool ?? pu.name ?? "unknown";
       const params = pu.parameters ?? {};
       const ok = pu.success !== false;
       if (!state.created) {
@@ -222,6 +239,59 @@ export async function handle(payload) {
       break;
     }
   }
+  // Best-effort Cline session sync: enrich header (model/title/usage) and
+  // rewrite the canonical transcript view. Self-contained (rehydrates from
+  // disk) so every hook type benefits without touching the switch above.
+  syncClineSession(dir, taskId, payload);
+}
+
+// Link the hook task to Cline's own session store, enrich the header, and
+// rewrite transcript.yaml. All best-effort: any failure is swallowed so the
+// hook-driven log (the primary record) is never affected.
+function syncClineSession(dir, taskId, payload) {
+  try {
+    const roots = payload?.workspaceRoots;
+    const ws = Array.isArray(roots) && roots[0] ? roots[0] : process.cwd();
+    const { state } = hydrate(taskId, dir, payload);
+    const found = resolveSession(taskId, ws, state.clineSession ?? null);
+    if (!found) return;
+    const newlyLinked = state.clineSession?.sessionId !== found.sessionId;
+    state.clineSession = { sessionId: found.sessionId, sessionPath: found.sessionPath };
+    const meta = readSessionMeta(found.sessionPath, found.sessionId) ?? {};
+    const mdata = meta.metadata ?? {};
+    const modelId = meta.model ?? mdata.modelId ?? mdata.model ?? null;
+    if (modelId) state.model = { id: modelId, provider: meta.provider ?? state.model?.provider ?? "" };
+    const title = (typeof mdata.title === "string" && mdata.title)
+      || (typeof meta.prompt === "string" ? meta.prompt.slice(0, 120) : null)
+      || null;
+    if (title) state.title = title;
+    const usage = mdata.aggregateUsage ?? mdata.usage ?? null;
+    if (usage && typeof usage === "object") {
+      state.usage = {
+        inputTokens: usage.inputTokens ?? null,
+        outputTokens: usage.outputTokens ?? null,
+        cacheReadTokens: usage.cacheReadTokens ?? null,
+        cacheWriteTokens: usage.cacheWriteTokens ?? null,
+        totalCost: usage.totalCost ?? null,
+      };
+    }
+    const branch = mdata.git?.branch ?? null;
+    if (branch) state.gitBranch = branch;
+    const docs = loadTranscriptDocs(found.sessionPath, found.sessionId);
+    if (docs) {
+      writeTranscriptYaml(dir, docs);
+      if (!newlyLinked && docs.length !== (state.transcriptTurns ?? -1)) {
+        writeJSONL(dir, taskId, { timestamp: ts(), taskId, type: "transcript.sync", sessionId: found.sessionId, turns: docs.length });
+      }
+      state.transcriptTurns = docs.length;
+    }
+    if (newlyLinked) {
+      writeJSONL(dir, taskId, { timestamp: ts(), taskId, type: "session.linked", sessionId: found.sessionId });
+    }
+    state.updated = ts();
+    writeYAML(dir, taskId, state);
+    persist(dir, taskId, state);
+  } catch { /* best effort only */ }
 }
 
 export async function run() {

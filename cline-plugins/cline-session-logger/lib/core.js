@@ -155,6 +155,10 @@ export function newSessionState() {
     updated: null,
     writtenTurns: 0,
     pendingFile: null, // filename of OUR pending YAML (orphans from crashes are never touched)
+    clineSession: null, // { sessionId, sessionPath } link to Cline's own session store
+    transcriptTurns: null, // turn count of the last transcript sync (for change logging)
+    usage: null, // aggregate token/cost usage from Cline session metadata
+    gitBranch: null,
   };
 }
 
@@ -193,12 +197,15 @@ export function buildDocs(state, taskId) {
     session: {
       id: taskId,
       origin: "cline",
+      ...(state.clineSession?.sessionId ? { cline_session_id: state.clineSession.sessionId } : {}),
       created: formatLocal(state.created ?? ts()),
       updated: formatLocal(state.updated ?? ts()),
       ...(state.compactedAt ? { compacted: formatLocal(state.compactedAt) } : {}),
     },
     model: state.model ?? { id: "unknown", provider: "unknown" },
     ...(state.title ? { title: state.title } : {}),
+    ...(state.usage ? { usage: state.usage } : {}),
+    ...(state.gitBranch ? { git_branch: state.gitBranch } : {}),
   };
   return [header, ...state.turns];
 }

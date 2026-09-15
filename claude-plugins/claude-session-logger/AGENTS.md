@@ -31,7 +31,9 @@ under `.claude/run-logs/<sessionId>/` so
   `PostToolUse` (`tool_response` + `duration_ms`), `PostToolUseFailure`
   (`error`, `is_interrupt`), `PostToolBatch`, `Stop`
   (`last_assistant_message`), `StopFailure`, `SubagentStart/Stop`,
-  `Pre/PostCompact`, `TaskCreated/Completed`, `Pre/PostModelSwitch`,
+  `Pre/PostCompact`, `TaskCreated/Completed`, `Pre/PostModelSwitch`
+  (router handles them; omitted from `settings-snippet.json` because
+  older CLIs reject them as unknown events),
   `SessionEnd` (`reason`). No launcher shims: each event's command in
   `settings-snippet.json` invokes `lib/run-hook.js` directly, with
   mise/homebrew bin dirs prepended (GUI-spawned hosts have no node).

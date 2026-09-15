@@ -1,5 +1,5 @@
 {
-  "$comment": "claude-session-logger user-level hooks. Merge into ~/.claude/settings.json with: jq -s '.[0].hooks * .[1].hooks | {hooks: .}' ~/.claude/settings.json settings-snippet.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json (review the diff first). Replace $REPO with the checkout path. The logger prints nothing and exits 0, so it never disturbs sessions.",
+  "$comment": "claude-session-logger user-level hooks (15 events; Pre/PostModelSwitch intentionally omitted — older CLIs reject them as unknown events, and the router already handles them when a newer CLI sends them). Merge into ~/.claude/settings.json with: jq -s '.[0].hooks * .[1].hooks | {hooks: .}' ~/.claude/settings.json settings-snippet.json > /tmp/settings.json && mv /tmp/settings.json ~/.claude/settings.json (review the diff first). Replace $REPO with the checkout path. The logger prints nothing and exits 0, so it never disturbs sessions.",
   "hooks": {
     "SessionStart": [
       {
@@ -134,30 +134,6 @@
       }
     ],
     "TaskCompleted": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "export PATH=\"$HOME/.local/share/mise/shims:$HOME/.mise/shims:/opt/homebrew/bin:/usr/local/bin:$PATH\" && node \"$REPO/claude-plugins/claude-session-logger/lib/run-hook.js\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PreModelSwitch": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "export PATH=\"$HOME/.local/share/mise/shims:$HOME/.mise/shims:/opt/homebrew/bin:/usr/local/bin:$PATH\" && node \"$REPO/claude-plugins/claude-session-logger/lib/run-hook.js\"",
-            "timeout": 30
-          }
-        ]
-      }
-    ],
-    "PostModelSwitch": [
       {
         "matcher": "",
         "hooks": [

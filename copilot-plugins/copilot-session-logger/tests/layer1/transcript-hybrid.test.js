@@ -4,8 +4,9 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { appendFileSync } from "node:fs";
 import { drive, filesIn, headerOf, readJSONL, sessionLogDir, turnFiles, useTempWorkspace, writeTranscript, writeTranscriptText, yamlDocs } from "../helpers/copilot-harness.js";
-import { pingStream, sessionStart, stop, toolCallStream, transcriptRequest, userPrompt } from "../helpers/copilot-fixtures.js";
+import { cliStream, pingStream, sessionStart, stop, toolCallStream, transcriptRequest, userPrompt } from "../helpers/copilot-fixtures.js";
 
 describe("CP-TR transcript hybrid", () => {
   it("CP-TR-001 transcript enriches header and writes transcript.yaml", async (t) => {
@@ -97,6 +98,42 @@ describe("CP-TR transcript hybrid", () => {
     const doc = yamlDocs(dir, session, completed[0])[0];
     assert.equal(doc.user.text, "Ping Test");
     assert.equal(doc.assistant[0].response, "Pong.");
+  });
+
+  it("CP-TR-008 CLI stream records model, tokens, repo context", async (t) => {
+    const dir = useTempWorkspace(t);
+    const session = "sess-tr-008";
+    const tp = writeTranscriptText(dir, "live.jsonl", cliStream(session));
+    await drive(dir, [sessionStart(session), { ...userPrompt(session, "Ping Test"), transcript_path: tp }]);
+    const header = headerOf(dir, session);
+    assert.equal(header.model.id, "gpt-5.6-luna");
+    assert.equal(header.session.git_branch, "main");
+    assert.equal(header.session.repository, "acme/demo");
+    assert.deepEqual(header.usage, { outputTokens: 7, nanoAiu: 746350000 });
+    const docs = yamlDocs(dir, session, "transcript.yaml");
+    assert.equal(docs[0].user.interaction_id, "inter-1");
+    assert.equal(docs[0].assistant[0].phase, "final_answer");
+    assert.equal(docs[0].assistant[0].request_id, "req-1");
+    assert.deepEqual(docs[0].assistant[0].tokens, { outputTokens: 7 });
+  });
+
+  it("CP-TR-009 Stop waits out the transcript flush, then backfills", async (t) => {
+    const dir = useTempWorkspace(t);
+    const session = "sess-tr-009";
+    // Transcript without the answer first: Stop finds no pair (after its
+    // bounded re-read) and stays clean.
+    const lines = cliStream(session).split("\n").filter((l) => !l.includes("assistant.message") && !l.includes("assistant.turn_end"));
+    const tp = writeTranscriptText(dir, "live.jsonl", lines.join("\n"));
+    // transcript_path present but answer not flushed yet: bounded re-read,
+    // then clean no-op.
+    await drive(dir, [sessionStart(session), userPrompt(session, "Ping Test"), { ...stop(session), transcript_path: tp }]);
+    assert.equal(turnFiles(dir, session).length, 0);
+    // The flush lands; the next Stop backfills the turn.
+    appendFileSync(tp, "\n" + cliStream(session).split("\n").filter((l) => l.includes("assistant.message") || l.includes("assistant.turn_end")).join("\n"));
+    await drive(dir, [{ ...stop(session), transcript_path: tp }]);
+    const completed = turnFiles(dir, session);
+    assert.equal(completed.length, 1);
+    assert.equal(yamlDocs(dir, session, completed[0])[0].assistant[0].response, "Pong.");
   });
 
   it("CP-TR-007 stream toolRequests args parse from JSON strings", async (t) => {

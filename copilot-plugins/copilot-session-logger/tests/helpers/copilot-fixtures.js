@@ -76,6 +76,45 @@ export function toolCallStream(sessionId) {
   return lines.map((l) => JSON.stringify(l)).join("\n");
 }
 
+// CLI-shaped live stream (session-state/events.jsonl): session context,
+// model_change, interaction pairing, per-message model + output tokens,
+// usage checkpoint. Mirrors the real Copilot CLI ping capture.
+export function cliStream(sessionId, userText = "Ping Test", assistantText = "Pong.") {
+  const t = "2026-09-15T09:33:31.094Z";
+  const lines = [
+    {
+      type: "session.start",
+      data: {
+        sessionId, version: 1, producer: "copilot-agent", copilotVersion: "1.0.81-0", startTime: t,
+        context: { cwd: "/tmp/ws", gitRoot: "/tmp/ws", repository: "acme/demo", hostType: "github", branch: "main" },
+      },
+      id: "evt-1", timestamp: t, parentId: null,
+    },
+    { type: "session.model_change", data: { newModel: "auto" }, id: "evt-2", timestamp: t, parentId: "evt-1" },
+    {
+      type: "user.message",
+      data: { content: userText, attachments: [], interactionId: "inter-1" },
+      id: "evt-3", timestamp: t, parentId: "evt-2",
+    },
+    { type: "assistant.turn_start", data: { turnId: "0", interactionId: "inter-1" }, id: "evt-4", timestamp: t, parentId: "evt-3" },
+    {
+      type: "assistant.message",
+      data: {
+        messageId: "msg-1", model: "gpt-5.6-luna", content: assistantText, toolRequests: [],
+        interactionId: "inter-1", turnId: "0", phase: "final_answer", outputTokens: 7, requestId: "req-1",
+      },
+      id: "evt-5", timestamp: t, parentId: "evt-4",
+    },
+    { type: "assistant.turn_end", data: { turnId: "0" }, id: "evt-6", timestamp: t, parentId: "evt-5" },
+    {
+      type: "session.usage_checkpoint",
+      data: { totalNanoAiu: 746350000, totalPremiumRequests: 0 },
+      id: "evt-7", timestamp: t, parentId: "evt-6",
+    },
+  ];
+  return lines.map((l) => JSON.stringify(l)).join("\n");
+}
+
 // Transcript-shaped request (VS Code chat export shape, trimmed).
 export function transcriptRequest(text, opts = {}) {
   return {

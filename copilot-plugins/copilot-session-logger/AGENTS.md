@@ -40,9 +40,12 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
   `{"cancel":false}` here. Diagnostics go to
   `~/.copilot-hook-errors.log` (plus workspace-local `hook-errors.log`
   when `cwd` is known); stdout stays pure JSON.
-- Install is user-level only (v1): copy the example JSON into
-  `~/.copilot/hooks/`. No workspace hook files are shipped, so team
-  checkouts never double-log.
+- Install is user-level only (v1), via symlink (mirrors the Cline
+  `~/Documents/Cline/Hooks/` symlinks): `ln -s <repo>/copilot-plugins/
+  copilot-session-logger/hooks-config/copilot-hooks.example.json
+  ~/.copilot/hooks/copilot-session-logger.json` (assumes the checkout
+  lives at `~/lab-data/ai-suite`). No workspace hook files are shipped,
+  so team checkouts never double-log.
 - Hooks are separate processes: all state round-trips through
   `.copilot/run-logs/<sessionId>/state.json` (`liveTurn` + `subTurns` +
   `activeSubagent` + `pendingFile`). No in-memory continuity assumptions.
@@ -53,15 +56,29 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
   (requested `modelId` is `copilot/auto`), so hook-driven turns record
   tool calls; the canonical `transcript.yaml` carries full content.
 - Transcript hybrid (`lib/copilot-transcript.js`): every hook also reads
-  `transcript_path` when present and best-effort folds it into the header
-  (actual model from `result.details`, never `copilot/auto`; usage rollup
+  `transcript_path` when present. The live file is a JSONL event stream
+  (one envelope `{type, data, id, timestamp, parentId}` per line):
+  `session.start` (provenance: `producer`, `copilotVersion`,
+  `vscodeVersion`), `user.message` (`content`, `attachments`),
+  `assistant.turn_start`/`turn_end` (`turnId`), `assistant.message`
+  (`messageId`, full `content`, `toolRequests` with JSON-string args,
+  `reasoningText`), `tool.execution_start`/`complete` (`toolCallId`,
+  `toolName`, `arguments`, `success`). The stream carries NO model or
+  token fields — those come only from manual chat exports
+  (`{requests: [...]}` shape, also supported: actual model from
+  `result.details`, never `copilot/auto`; usage rollup
   `promptTokens`/`completionTokens`/`copilotCredits`; `agent`/`mode`;
-  title) plus per-request docs (full response markdown, per-request usage
-  and timings, `variableData` URIs + ≤500-char snippets, `code_blocks`
-  counts, `errorDetails` codes). Format drift is tolerated; any failure
-  is swallowed. Raw hook payloads are always captured to
-  `<session>.payloads.jsonl` (payload shapes drift from the docs — this
-  log grounds future mapping).
+  per-request usage, timings, `variableData` URIs + ≤500-char snippets,
+  `code_blocks` counts, `errorDetails` codes). Output: header provenance
+  + canonical `transcript.yaml` (full text, reasoning, tool requests).
+  Format drift is tolerated; any failure is swallowed. Raw hook payloads
+  are always captured to `<session>.payloads.jsonl` (payload shapes drift
+  from the docs — this log grounds future mapping).
+- Stop backfill: tool-less turns (prompt, no tool calls — e.g. a ping)
+  would otherwise vanish. On `Stop`, when the transcript's last Q/A pair
+  matches the live prompt, the assistant text is attached so the turn is
+  recorded. `SessionStart`'s requested `model: "auto"` is logged on the
+  `session.start` jsonl entry (never promoted to header model).
 - Tool arg summarizers (`ARG_SUMMARIZERS` in `lib/router.js`) cover the
   observed inventory (`run_in_terminal`, `copilot_readFile`,
   `copilot_applyPatch`, `copilot_getErrors`, `copilot_findTextInFiles`,
@@ -94,9 +111,10 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
 
 ## Verification
 
-- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 18 tests,
+- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 21 tests,
   CP-HK (event mapping), CP-SUB (nested subagents), CP-TR (transcript
-  hybrid), CP-STOP (finalize), CP-RC (recovery).
+  hybrid: export + live stream + Stop backfill), CP-STOP (finalize),
+  CP-RC (recovery).
 - Stdout drill: pipe each event JSON through `lib/run-hook.js`, assert
   `{"continue":true}` and header + `001-*.yaml` + `.jsonl` +
   `.turns.jsonl` artifacts.

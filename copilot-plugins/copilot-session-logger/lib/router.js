@@ -52,6 +52,8 @@ function hydrate(sessionId, dir, payload) {
   state.producer = persisted.producer ?? header?.session?.producer ?? null;
   state.copilotVersion = persisted.copilotVersion ?? header?.session?.copilot_version ?? null;
   state.vscodeVersion = persisted.vscodeVersion ?? header?.session?.vscode_version ?? null;
+  state.gitBranch = persisted.gitBranch ?? header?.session?.git_branch ?? null;
+  state.repo = persisted.repo ?? header?.session?.repository ?? null;
   state.activeSubagent = persisted.activeSubagent ?? null;
   state.turn = reviveTurn(persisted.liveTurn ?? null);
   state.subTurns = {};
@@ -79,6 +81,8 @@ function persist(dir, sessionId, state) {
     producer: state.producer,
     copilotVersion: state.copilotVersion,
     vscodeVersion: state.vscodeVersion,
+    gitBranch: state.gitBranch,
+    repo: state.repo,
     activeSubagent: state.activeSubagent,
     liveTurn: serializeTurn(state.turn),
     subTurns: serializeSubTurns(state.subTurns),
@@ -185,6 +189,10 @@ export async function handle(payload) {
       const { state } = hydrate(sessionId, dir, payload);
       if (!state.created) state.created = now;
       if (typeof payload?.cwd === "string" && payload.cwd) state.cwd = payload.cwd;
+      // CLI sessions lead with initial_prompt on SessionStart.
+      if (!state.title && typeof payload?.initial_prompt === "string" && payload.initial_prompt !== "") {
+        state.title = payload.initial_prompt.slice(0, 120);
+      }
       persist(dir, sessionId, state);
       writeYAML(dir, sessionId, state);
       writeJSONL(dir, sessionId, { timestamp: now, sessionId, type: "session.start", source: payload?.source ?? null, model: payload?.model ?? null });
@@ -304,8 +312,20 @@ export async function handle(payload) {
         state.activeSubagent = null;
       }
       backfillStopResponse(state, payload);
-      completeTurnIfAny(dir, sessionId, state, "turn.complete");
-      writeJSONL(dir, sessionId, { timestamp: now, sessionId, type: "session.stop", stopHookActive: payload?.stop_hook_active ?? null });
+      if (!state.turn || state.turn.steps.length === 0) {
+        // Nothing to complete (and no backfilled answer): keep the live
+        // turn so a later Stop can still backfill it once the transcript
+        // flush lands. finalizeTurn would drop it.
+        state.updated = ts();
+        writeYAML(dir, sessionId, state);
+        persist(dir, sessionId, state);
+      } else {
+        completeTurnIfAny(dir, sessionId, state, "turn.complete");
+      }
+      writeJSONL(dir, sessionId, {
+        timestamp: now, sessionId, type: "session.stop",
+        stopHookActive: payload?.stop_hook_active ?? null, stopReason: payload?.stop_reason ?? null,
+      });
       break;
     }
     default: {
@@ -321,6 +341,12 @@ export async function handle(payload) {
   syncCopilotTranscript(dir, sessionId, payload);
 }
 
+function lastMatchingPair(parsed, userText) {
+  const pair = parsed?.lastPair;
+  if (!pair || pair.userText.trim() !== userText.trim()) return null;
+  return pair;
+}
+
 // Stop-time backfill: tool-less turns (user text, no steps — e.g. a ping)
 // would otherwise vanish. When the transcript's last Q/A pair matches the
 // live turn's prompt, attach the assistant text so the turn is recorded.
@@ -331,9 +357,16 @@ function backfillStopResponse(state, payload) {
     if (typeof turn.userText !== "string" || turn.userText.trim() === "") return;
     const transcriptPath = payload?.transcript_path;
     if (typeof transcriptPath !== "string" || transcriptPath === "") return;
-    const parsed = parseTranscriptFile(transcriptPath);
-    const pair = parsed?.lastPair;
-    if (!pair || pair.userText.trim() !== turn.userText.trim()) return;
+    // The transcript lags the hook (async flush): one bounded re-read when
+    // the first parse has no matching pair yet (the CLI ping proved the race).
+    let pair = lastMatchingPair(parseTranscriptFile(transcriptPath), turn.userText);
+    if (!pair) {
+      try {
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+      } catch { /* ignore */ }
+      pair = lastMatchingPair(parseTranscriptFile(transcriptPath), turn.userText);
+    }
+    if (!pair) return;
     if (typeof pair.assistantText !== "string" || pair.assistantText === "") return;
     // NOTE: Step stores text as arrays (no setThinkingResponse here).
     turn.ensureStep(state.model).responseText.push(pair.assistantText);
@@ -355,6 +388,8 @@ function syncCopilotTranscript(dir, sessionId, payload) {
       if (parsed.provenance.producer && !state.producer) state.producer = parsed.provenance.producer;
       if (parsed.provenance.copilotVersion && !state.copilotVersion) state.copilotVersion = parsed.provenance.copilotVersion;
       if (parsed.provenance.vscodeVersion && !state.vscodeVersion) state.vscodeVersion = parsed.provenance.vscodeVersion;
+      if (parsed.provenance.branch && !state.gitBranch) state.gitBranch = parsed.provenance.branch;
+      if (parsed.provenance.repository && !state.repo) state.repo = parsed.provenance.repository;
     }
     if (parsed.model && !state.model) state.model = modelFromTranscript(parsed.model);
     else if (parsed.model && state.model?.id === "unknown") state.model = modelFromTranscript(parsed.model);
@@ -363,15 +398,15 @@ function syncCopilotTranscript(dir, sessionId, payload) {
     if (!state.title && parsed.title) state.title = parsed.title;
     if (parsed.usage) {
       // The transcript is cumulative: take running maxima (monotonic).
+      // CLI streams contribute outputTokens/inputTokens/nanoAiu/
+      // premiumRequests; exports contribute prompt/completion/credits.
       const prev = state.usage ?? {};
-      const usage = {
-        promptTokens: Math.max(prev.promptTokens ?? 0, parsed.usage.promptTokens ?? 0) || null,
-        completionTokens: Math.max(prev.completionTokens ?? 0, parsed.usage.completionTokens ?? 0) || null,
-        copilotCredits: Math.max(prev.copilotCredits ?? 0, parsed.usage.copilotCredits ?? 0) || null,
-      };
-      state.usage = (usage.promptTokens == null && usage.completionTokens == null && usage.copilotCredits == null)
-        ? null
-        : usage;
+      const usage = {};
+      for (const k of ["promptTokens", "completionTokens", "copilotCredits", "outputTokens", "inputTokens", "nanoAiu", "premiumRequests"]) {
+        const v = Math.max(prev[k] ?? 0, parsed.usage[k] ?? 0) || null;
+        if (v != null) usage[k] = v;
+      }
+      state.usage = Object.keys(usage).length > 0 ? usage : null;
     }
     if (parsed.docs) {
       writeTranscriptYaml(dir, parsed.docs);

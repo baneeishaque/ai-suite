@@ -49,6 +49,7 @@ function streamDoc(userEvent, assistantEvents) {
   const userTime = asIso(userEvent?.timestamp);
   if (userTime) doc.user.time = userTime;
   if (userEvent?.id) doc.user.message_id = userEvent.id;
+  if (typeof userEvent?.data?.interactionId === "string") doc.user.interaction_id = userEvent.data.interactionId;
   const attachments = userEvent?.data?.attachments;
   if (Array.isArray(attachments) && attachments.length > 0) doc.user.attachments = attachments.length;
   const steps = [];
@@ -58,6 +59,13 @@ function streamDoc(userEvent, assistantEvents) {
     const step = {};
     if (typeof data.content === "string" && data.content !== "") step.response = data.content;
     if (typeof data.messageId === "string") step.message_id = data.messageId;
+    if (typeof data.model === "string" && data.model !== "") step.model = { id: data.model, provider: "copilot" };
+    if (typeof data.phase === "string" && data.phase !== "") step.phase = data.phase;
+    if (typeof data.requestId === "string" && data.requestId !== "") step.request_id = data.requestId;
+    const tokens = {};
+    if (Number.isFinite(data.outputTokens)) tokens.outputTokens = data.outputTokens;
+    if (Number.isFinite(data.inputTokens)) tokens.inputTokens = data.inputTokens;
+    if (Object.keys(tokens).length > 0) step.tokens = tokens;
     if (typeof data.reasoningText === "string" && data.reasoningText !== "") step.reasoning = data.reasoningText;
     const requests = Array.isArray(data.toolRequests) ? data.toolRequests : [];
     if (requests.length > 0) {
@@ -100,18 +108,39 @@ function parseStream(raw) {
     currentUser = null;
     currentAssistant = [];
   };
+  let streamModel = null;
+  const streamUsage = {};
   for (const ev of events) {
     if (ev.type === "session.start") {
       const d = ev.data ?? {};
       if (typeof d.producer === "string") provenance.producer = d.producer;
       if (typeof d.copilotVersion === "string") provenance.copilotVersion = d.copilotVersion;
       if (typeof d.vscodeVersion === "string") provenance.vscodeVersion = d.vscodeVersion;
+      const ctx = d.context ?? {};
+      if (typeof ctx.repository === "string" && ctx.repository) provenance.repository = ctx.repository;
+      if (typeof ctx.hostType === "string" && ctx.hostType) provenance.host = ctx.hostType;
+      if (typeof ctx.branch === "string" && ctx.branch) provenance.branch = ctx.branch;
+      if (typeof ctx.gitRoot === "string" && ctx.gitRoot) provenance.gitRoot = ctx.gitRoot;
+    } else if (ev.type === "session.model_change") {
+      const next = ev.data?.newModel;
+      if (typeof next === "string" && next !== "" && next !== "auto") streamModel = next;
+    } else if (ev.type === "session.usage_checkpoint") {
+      const d = ev.data ?? {};
+      if (Number.isFinite(d.totalNanoAiu)) streamUsage.nanoAiu = d.totalNanoAiu;
+      if (Number.isFinite(d.totalPremiumRequests)) streamUsage.premiumRequests = d.totalPremiumRequests;
+    } else if (ev.type === "assistant.message") {
+      const d = ev.data ?? {};
+      if (typeof d.model === "string" && d.model !== "") streamModel = d.model;
+      if (Number.isFinite(d.outputTokens)) streamUsage.outputTokens = (streamUsage.outputTokens ?? 0) + d.outputTokens;
+      if (Number.isFinite(d.inputTokens)) streamUsage.inputTokens = (streamUsage.inputTokens ?? 0) + d.inputTokens;
+      if (!currentUser) continue; // assistant content without a user turn: ignore
+      currentAssistant.push(ev);
     } else if (ev.type === "user.message") {
       flush();
       currentUser = ev;
       currentAssistant = [];
-    } else if (ev.type === "assistant.turn_start" || ev.type === "assistant.message" || ev.type === "assistant.turn_end") {
-      if (!currentUser) continue; // assistant content without a user turn: ignore
+    } else if (ev.type === "assistant.turn_start" || ev.type === "assistant.turn_end") {
+      if (!currentUser) continue; // bracket without a user turn: ignore
       currentAssistant.push(ev);
     }
     // tool.execution_* events duplicate assistant.message.toolRequests:
@@ -131,11 +160,11 @@ function parseStream(raw) {
   }
   return {
     provenance: Object.keys(provenance).length > 0 ? provenance : null,
-    model: null, // the stream carries no model identity
+    model: streamModel, // assistant.message.model, else non-auto model_change
     agent: null,
     mode: null,
     title: firstUser ? firstUser.slice(0, 120) : null,
-    usage: null, // the stream carries no token/credit counters
+    usage: Object.keys(streamUsage).length > 0 ? streamUsage : null,
     docs: kept,
     lastPair,
   };

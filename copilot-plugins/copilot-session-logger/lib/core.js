@@ -182,10 +182,12 @@ export function newSessionState() {
     writtenTurns: 0,
     pendingFile: null, // filename of OUR pending YAML (orphans from crashes are never touched)
     transcriptTurns: null, // turn count of the last transcript sync (for change logging)
-    usage: null, // rollup { promptTokens, completionTokens, copilotCredits }
+    usage: null, // rollup { promptTokens, completionTokens, copilotCredits, outputTokens, nanoAiu, premiumRequests }
     producer: null, // transcript producer (e.g. copilot-agent)
     copilotVersion: null, // Copilot build from the live transcript
     vscodeVersion: null, // VS Code / Insiders build from the live transcript
+    gitBranch: null, // branch from the live transcript session context
+    repo: null, // repository (owner/name) from the live transcript session context
   };
 }
 
@@ -246,6 +248,8 @@ export function buildDocs(state, taskId) {
       ...(state.producer ? { producer: state.producer } : {}),
       ...(state.copilotVersion ? { copilot_version: state.copilotVersion } : {}),
       ...(state.vscodeVersion ? { vscode_version: state.vscodeVersion } : {}),
+      ...(state.gitBranch ? { git_branch: state.gitBranch } : {}),
+      ...(state.repo ? { repository: state.repo } : {}),
       created: formatLocal(state.created ?? ts()),
       updated: formatLocal(state.updated ?? ts()),
       ...(state.compactedAt ? { compacted: formatLocal(state.compactedAt) } : {}),

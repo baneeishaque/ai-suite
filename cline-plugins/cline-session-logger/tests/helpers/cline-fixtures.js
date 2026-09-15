@@ -21,8 +21,16 @@ export function base(taskId, hookName, extra = {}) {
   };
 }
 
-export const taskStart = (taskId, task = "test task") => base(taskId, "TaskStart", {
-  taskStart: { task, taskMetadata: { taskId, initialTask: task } },
+export const taskStart = (taskId, task = "test task", opts = {}) => base(taskId, "TaskStart", {
+  taskStart: {
+    task,
+    taskMetadata: {
+      taskId,
+      ...(opts.ulid ? { ulid: opts.ulid } : {}),
+      initialTask: task,
+      ...(opts.extraIds ?? {}),
+    },
+  },
 });
 
 export const taskResume = (taskId) => base(taskId, "TaskResume", {
@@ -46,12 +54,18 @@ export const postTool = (taskId, tool = "read_file", opts = {}) => base(taskId, 
   },
 });
 
-export const taskComplete = (taskId) => base(taskId, "TaskComplete", {
-  taskComplete: { task: "done" },
+export const taskComplete = (taskId, opts = {}) => base(taskId, "TaskComplete", {
+  taskComplete: {
+    task: "done",
+    ...(opts.taskMetadata ? { taskMetadata: opts.taskMetadata } : {}),
+  },
 });
 
-export const taskCancel = (taskId) => base(taskId, "TaskCancel", {
-  taskCancel: { task: "cancelled" },
+export const taskCancel = (taskId, opts = {}) => base(taskId, "TaskCancel", {
+  taskCancel: {
+    task: "cancelled",
+    ...(opts.taskMetadata ? { taskMetadata: opts.taskMetadata } : {}),
+  },
 });
 
 export const preCompact = (taskId) => base(taskId, "PreCompact", {

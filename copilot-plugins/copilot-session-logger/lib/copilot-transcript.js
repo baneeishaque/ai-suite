@@ -1,9 +1,23 @@
 // Copilot transcript hybrid: best-effort parse of the transcript_path file
-// handed to hooks (VS Code chat session shape: { requests: [...] }) into
-// canonical turn docs plus header enrichment (actual model, usage rollup).
-// The transcript format is NOT a stable hook API and drifts — every access
-// is defensive and any failure returns null (the hook-driven log stays
-// the primary record).
+// into canonical turn docs plus header enrichment.
+//
+// Two shapes are supported (both observed live):
+// A. Live transcript JSONL event stream (*.jsonl under
+//    .../GitHub.copilot-chat/transcripts/<session>.jsonl), one envelope
+//    per line: {type, data, id, timestamp, parentId}. Event types seen:
+//    session.start {sessionId, version, producer, copilotVersion,
+//      vscodeVersion, startTime}, user.message {content, attachments},
+//    assistant.turn_start {turnId}, assistant.message {messageId, content,
+//      toolRequests [{toolCallId, name, arguments}], reasoningText},
+//    tool.execution_start {toolCallId, toolName, arguments},
+//    tool.execution_complete {toolCallId, success}, assistant.turn_end.
+//    NOTE: the stream carries NO model/token/credit fields.
+// B. Manual chat export (whole-file JSON {requests: [...]}): per-request
+//    modelId, result{details,metadata,timings,errorDetails}, token and
+//    credit counters, variableData. Only source for usage data.
+//
+// Returns { provenance, model, agent, mode, title, usage, docs, lastPair }
+// or null. Any failure returns null — the hook-driven log stays primary.
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { dump } from "js-yaml";
@@ -16,6 +30,118 @@ function asIso(value) {
   const ms = typeof value === "number" ? value : Date.parse(value);
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
+
+function parseArgs(value) {
+  if (value == null) return {};
+  if (typeof value === "object") return value;
+  if (typeof value !== "string" || value === "") return {};
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" ? parsed : { _raw: value.slice(0, 2000) };
+  } catch { return { _raw: value.slice(0, 2000) }; }
+}
+
+// ---- shape A: live JSONL event stream ----
+
+function streamDoc(userEvent, assistantEvents) {
+  const content = userEvent?.data?.content;
+  const doc = { user: { text: typeof content === "string" ? content : "" } };
+  const userTime = asIso(userEvent?.timestamp);
+  if (userTime) doc.user.time = userTime;
+  if (userEvent?.id) doc.user.message_id = userEvent.id;
+  const attachments = userEvent?.data?.attachments;
+  if (Array.isArray(attachments) && attachments.length > 0) doc.user.attachments = attachments.length;
+  const steps = [];
+  for (const ev of assistantEvents) {
+    if (ev.type !== "assistant.message") continue;
+    const data = ev.data ?? {};
+    const step = {};
+    if (typeof data.content === "string" && data.content !== "") step.response = data.content;
+    if (typeof data.messageId === "string") step.message_id = data.messageId;
+    if (typeof data.reasoningText === "string" && data.reasoningText !== "") step.reasoning = data.reasoningText;
+    const requests = Array.isArray(data.toolRequests) ? data.toolRequests : [];
+    if (requests.length > 0) {
+      step.tool_requests = requests.map((r) => ({
+        tool: r?.name ?? "unknown",
+        args: parseArgs(r?.arguments),
+        ...(r?.toolCallId ? { toolUseId: r.toolCallId } : {}),
+      }));
+    }
+    if (Object.keys(step).length > 0) steps.push(step);
+  }
+  if (steps.length > 0) doc.assistant = steps;
+  const turnIds = [...new Set(assistantEvents.filter((ev) => ev.data?.turnId != null).map((ev) => String(ev.data.turnId)))];
+  if (turnIds.length > 0) doc.turn_ids = turnIds;
+  return doc;
+}
+
+function parseStream(raw) {
+  const events = [];
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    try {
+      const envelope = JSON.parse(trimmed);
+      if (envelope && typeof envelope === "object" && typeof envelope.type === "string") events.push(envelope);
+    } catch { /* skip corrupt lines */ }
+  }
+  if (events.length === 0) return null;
+  if (!events.some((e) => e.type === "session.start" || e.type === "user.message" || e.type === "assistant.message")) {
+    return null;
+  }
+  const provenance = {};
+  const docs = [];
+  let currentUser = null;
+  let currentAssistant = [];
+  const flush = () => {
+    if (!currentUser) return;
+    const doc = streamDoc(currentUser, currentAssistant);
+    if (doc.user?.text || doc.assistant) docs.push(doc);
+    currentUser = null;
+    currentAssistant = [];
+  };
+  for (const ev of events) {
+    if (ev.type === "session.start") {
+      const d = ev.data ?? {};
+      if (typeof d.producer === "string") provenance.producer = d.producer;
+      if (typeof d.copilotVersion === "string") provenance.copilotVersion = d.copilotVersion;
+      if (typeof d.vscodeVersion === "string") provenance.vscodeVersion = d.vscodeVersion;
+    } else if (ev.type === "user.message") {
+      flush();
+      currentUser = ev;
+      currentAssistant = [];
+    } else if (ev.type === "assistant.turn_start" || ev.type === "assistant.message" || ev.type === "assistant.turn_end") {
+      if (!currentUser) continue; // assistant content without a user turn: ignore
+      currentAssistant.push(ev);
+    }
+    // tool.execution_* events duplicate assistant.message.toolRequests:
+    // skipped (kept in reserve for arg backfill if toolRequests ever empties).
+  }
+  flush();
+  const kept = docs.slice(-MAX_DOCS);
+  if (kept.length === 0) return null;
+  const firstUser = kept.find((d) => d.user?.text)?.user?.text ?? null;
+  let lastPair = null;
+  for (let i = kept.length - 1; i >= 0; i--) {
+    const responses = (kept[i].assistant ?? []).map((s) => s.response).filter((r) => typeof r === "string" && r !== "");
+    if (kept[i].user?.text && responses.length > 0) {
+      lastPair = { userText: kept[i].user.text, assistantText: responses.join("\n") };
+      break;
+    }
+  }
+  return {
+    provenance: Object.keys(provenance).length > 0 ? provenance : null,
+    model: null, // the stream carries no model identity
+    agent: null,
+    mode: null,
+    title: firstUser ? firstUser.slice(0, 120) : null,
+    usage: null, // the stream carries no token/credit counters
+    docs: kept,
+    lastPair,
+  };
+}
+
+// ---- shape B: manual chat export {requests: [...]} ----
 
 function textOf(parts) {
   if (!Array.isArray(parts)) return "";
@@ -106,41 +232,65 @@ function requestDoc(request) {
   return doc;
 }
 
-// Parse a transcript file into { model, agent, mode, title, usage, docs }.
-// Returns null when the file is missing, unparsable, or holds no requests.
+function parseExport(data) {
+  const requests = Array.isArray(data) ? data : data?.requests ?? null;
+  if (!Array.isArray(requests) || requests.length === 0) return null;
+  const kept = requests.slice(-MAX_DOCS);
+  const docs = kept.map(requestDoc).filter((d) => d.user?.text || d.assistant);
+  if (docs.length === 0) return null;
+  const first = kept[0];
+  const agent = typeof first?.agent === "string" ? first.agent : first?.agent?.id ?? null;
+  const modeInfo = first?.modeInfo ?? null;
+  const usage = { promptTokens: 0, completionTokens: 0, copilotCredits: 0 };
+  let hasUsage = false;
+  for (const r of kept) {
+    if (Number.isFinite(r?.promptTokens)) { usage.promptTokens += r.promptTokens; hasUsage = true; }
+    if (Number.isFinite(r?.completionTokens)) { usage.completionTokens += r.completionTokens; hasUsage = true; }
+    if (Number.isFinite(r?.copilotCredits)) { usage.copilotCredits += r.copilotCredits; hasUsage = true; }
+  }
+  // Last actual model wins (mid-session model switches land here).
+  let model = null;
+  for (const r of kept) model = modelOf(r) ?? model;
+  const title = typeof first?.message?.text === "string" ? first.message.text.slice(0, 120) || null : null;
+  let lastPair = null;
+  for (let i = docs.length - 1; i >= 0; i--) {
+    const responses = (docs[i].assistant ?? []).map((s) => s.response).filter((r) => typeof r === "string" && r !== "");
+    if (docs[i].user?.text && responses.length > 0) {
+      lastPair = { userText: docs[i].user.text, assistantText: responses.join("\n") };
+      break;
+    }
+  }
+  return {
+    provenance: null,
+    model,
+    agent: typeof agent === "string" && agent !== "" ? agent : null,
+    mode: modeInfo && typeof modeInfo === "object"
+      ? { kind: modeInfo.kind ?? null, permissionLevel: modeInfo.permissionLevel ?? null }
+      : null,
+    title,
+    usage: hasUsage ? usage : null,
+    docs,
+    lastPair,
+  };
+}
+
+// Parse a transcript file into { provenance, model, agent, mode, title,
+// usage, docs, lastPair }. Returns null when the file is missing,
+// unparsable, or holds no turns.
 export function parseTranscriptFile(transcriptPath) {
   try {
     const raw = readFileSync(transcriptPath, "utf-8");
-    const data = JSON.parse(raw);
-    const requests = Array.isArray(data) ? data : data?.requests ?? data?.messages ?? null;
-    if (!Array.isArray(requests) || requests.length === 0) return null;
-    const kept = requests.slice(-MAX_DOCS);
-    const docs = kept.map(requestDoc).filter((d) => d.user?.text || d.assistant);
-    if (docs.length === 0) return null;
-    const first = kept[0];
-    const agent = typeof first?.agent === "string" ? first.agent : first?.agent?.id ?? null;
-    const modeInfo = first?.modeInfo ?? null;
-    const usage = { promptTokens: 0, completionTokens: 0, copilotCredits: 0 };
-    let hasUsage = false;
-    for (const r of kept) {
-      if (Number.isFinite(r?.promptTokens)) { usage.promptTokens += r.promptTokens; hasUsage = true; }
-      if (Number.isFinite(r?.completionTokens)) { usage.completionTokens += r.completionTokens; hasUsage = true; }
-      if (Number.isFinite(r?.copilotCredits)) { usage.copilotCredits += r.copilotCredits; hasUsage = true; }
-    }
-    // Last actual model wins (mid-session model switches land here).
-    let model = null;
-    for (const r of kept) model = modelOf(r) ?? model;
-    const title = typeof first?.message?.text === "string" ? first.message.text.slice(0, 120) || null : null;
-    return {
-      model,
-      agent: typeof agent === "string" && agent !== "" ? agent : null,
-      mode: modeInfo && typeof modeInfo === "object"
-        ? { kind: modeInfo.kind ?? null, permissionLevel: modeInfo.permissionLevel ?? null }
-        : null,
-      title,
-      usage: hasUsage ? usage : null,
-      docs,
-    };
+    if (!raw || !raw.trim()) return null;
+    // Shape B first: whole-file JSON with a requests array.
+    try {
+      const data = JSON.parse(raw);
+      if (data && typeof data === "object") {
+        const exported = parseExport(data);
+        if (exported) return exported;
+      }
+    } catch { /* not whole-file JSON: fall through to the stream */ }
+    // Shape A: JSONL event stream.
+    return parseStream(raw);
   } catch { return null; }
 }
 

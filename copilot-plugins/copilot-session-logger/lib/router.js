@@ -49,6 +49,9 @@ function hydrate(sessionId, dir, payload) {
   state.pendingFile = persisted.pendingFile ?? null;
   state.transcriptTurns = persisted.transcriptTurns ?? null;
   state.usage = persisted.usage ?? header?.usage ?? null;
+  state.producer = persisted.producer ?? header?.session?.producer ?? null;
+  state.copilotVersion = persisted.copilotVersion ?? header?.session?.copilot_version ?? null;
+  state.vscodeVersion = persisted.vscodeVersion ?? header?.session?.vscode_version ?? null;
   state.activeSubagent = persisted.activeSubagent ?? null;
   state.turn = reviveTurn(persisted.liveTurn ?? null);
   state.subTurns = {};
@@ -73,6 +76,9 @@ function persist(dir, sessionId, state) {
     pendingFile: state.pendingFile,
     transcriptTurns: state.transcriptTurns,
     usage: state.usage,
+    producer: state.producer,
+    copilotVersion: state.copilotVersion,
+    vscodeVersion: state.vscodeVersion,
     activeSubagent: state.activeSubagent,
     liveTurn: serializeTurn(state.turn),
     subTurns: serializeSubTurns(state.subTurns),
@@ -181,7 +187,7 @@ export async function handle(payload) {
       if (typeof payload?.cwd === "string" && payload.cwd) state.cwd = payload.cwd;
       persist(dir, sessionId, state);
       writeYAML(dir, sessionId, state);
-      writeJSONL(dir, sessionId, { timestamp: now, sessionId, type: "session.start", source: payload?.source ?? null });
+      writeJSONL(dir, sessionId, { timestamp: now, sessionId, type: "session.start", source: payload?.source ?? null, model: payload?.model ?? null });
       break;
     }
     case "UserPromptSubmit": {
@@ -297,6 +303,7 @@ export async function handle(payload) {
         completeSubTurnIfAny(dir, sessionId, state, state.activeSubagent);
         state.activeSubagent = null;
       }
+      backfillStopResponse(state, payload);
       completeTurnIfAny(dir, sessionId, state, "turn.complete");
       writeJSONL(dir, sessionId, { timestamp: now, sessionId, type: "session.stop", stopHookActive: payload?.stop_hook_active ?? null });
       break;
@@ -314,10 +321,29 @@ export async function handle(payload) {
   syncCopilotTranscript(dir, sessionId, payload);
 }
 
-// Read transcript_path when present and fold its per-request record into
-// the header (model/title/usage rollup) plus the canonical transcript.yaml.
-// All best-effort: any failure is swallowed so the hook-driven log (the
-// primary record) is never affected.
+// Stop-time backfill: tool-less turns (user text, no steps — e.g. a ping)
+// would otherwise vanish. When the transcript's last Q/A pair matches the
+// live turn's prompt, attach the assistant text so the turn is recorded.
+function backfillStopResponse(state, payload) {
+  try {
+    const turn = state.turn;
+    if (!turn || turn.steps.length > 0) return;
+    if (typeof turn.userText !== "string" || turn.userText.trim() === "") return;
+    const transcriptPath = payload?.transcript_path;
+    if (typeof transcriptPath !== "string" || transcriptPath === "") return;
+    const parsed = parseTranscriptFile(transcriptPath);
+    const pair = parsed?.lastPair;
+    if (!pair || pair.userText.trim() !== turn.userText.trim()) return;
+    if (typeof pair.assistantText !== "string" || pair.assistantText === "") return;
+    // NOTE: Step stores text as arrays (no setThinkingResponse here).
+    turn.ensureStep(state.model).responseText.push(pair.assistantText);
+  } catch { /* best effort only */ }
+}
+
+// Read transcript_path when present and fold its record into the header
+// (versions, actual model, title, usage rollup) plus the canonical
+// transcript.yaml. All best-effort: any failure is swallowed so the
+// hook-driven log (the primary record) is never affected.
 function syncCopilotTranscript(dir, sessionId, payload) {
   try {
     const transcriptPath = payload?.transcript_path;
@@ -325,6 +351,11 @@ function syncCopilotTranscript(dir, sessionId, payload) {
     const { state } = hydrate(sessionId, dir, payload);
     const parsed = parseTranscriptFile(transcriptPath);
     if (!parsed) return;
+    if (parsed.provenance) {
+      if (parsed.provenance.producer && !state.producer) state.producer = parsed.provenance.producer;
+      if (parsed.provenance.copilotVersion && !state.copilotVersion) state.copilotVersion = parsed.provenance.copilotVersion;
+      if (parsed.provenance.vscodeVersion && !state.vscodeVersion) state.vscodeVersion = parsed.provenance.vscodeVersion;
+    }
     if (parsed.model && !state.model) state.model = modelFromTranscript(parsed.model);
     else if (parsed.model && state.model?.id === "unknown") state.model = modelFromTranscript(parsed.model);
     if (parsed.agent && !state.agent) state.agent = parsed.agent;

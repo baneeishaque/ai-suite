@@ -55,18 +55,27 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
 - Sparse mode: Copilot hook payloads carry no assistant text or model
   (requested `modelId` is `copilot/auto`), so hook-driven turns record
   tool calls; the canonical `transcript.yaml` carries full content.
+- Works with Copilot CLI too (verified live): the CLI fires the same
+  PascalCase hook events and honors `command` entries from the same
+  `~/.copilot/hooks/` dir; its transcript lives at
+  `~/.copilot/session-state/<session>/events.jsonl` in the same envelope
+  shape, plus CLI-only events below.
 - Transcript hybrid (`lib/copilot-transcript.js`): every hook also reads
   `transcript_path` when present. The live file is a JSONL event stream
   (one envelope `{type, data, id, timestamp, parentId}` per line):
   `session.start` (provenance: `producer`, `copilotVersion`,
-  `vscodeVersion`), `user.message` (`content`, `attachments`),
-  `assistant.turn_start`/`turn_end` (`turnId`), `assistant.message`
-  (`messageId`, full `content`, `toolRequests` with JSON-string args,
+  `vscodeVersion`, plus `context{repository, hostType, branch, gitRoot}`
+  → header `repository`/`git_branch`), `user.message` (`content`,
+  `interactionId`, `attachments`), `assistant.turn_start`/`turn_end`
+  (`turnId`), `assistant.message` (`messageId`, full `content`, `model`
+  → header model, `phase`, `requestId`, per-message
+  `input/outputTokens`, `toolRequests` with JSON-string args,
   `reasoningText`), `tool.execution_start`/`complete` (`toolCallId`,
-  `toolName`, `arguments`, `success`). The stream carries NO model or
-  token fields — those come only from manual chat exports
-  (`{requests: [...]}` shape, also supported: actual model from
-  `result.details`, never `copilot/auto`; usage rollup
+  `toolName`, `arguments`, `success`), CLI-only `session.model_change`
+  (`newModel`), `session.usage_checkpoint` (`totalNanoAiu`,
+  `totalPremiumRequests`) → header usage. Manual chat exports
+  (`{requests: [...]}` shape) stay supported as the other usage source
+  (actual model from `result.details`, never `copilot/auto`;
   `promptTokens`/`completionTokens`/`copilotCredits`; `agent`/`mode`;
   per-request usage, timings, `variableData` URIs + ≤500-char snippets,
   `code_blocks` counts, `errorDetails` codes). Output: header provenance
@@ -77,8 +86,12 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
 - Stop backfill: tool-less turns (prompt, no tool calls — e.g. a ping)
   would otherwise vanish. On `Stop`, when the transcript's last Q/A pair
   matches the live prompt, the assistant text is attached so the turn is
-  recorded. `SessionStart`'s requested `model: "auto"` is logged on the
-  `session.start` jsonl entry (never promoted to header model).
+  recorded — with one bounded 1s re-read for the transcript flush race,
+  and the live turn preserved (not finalized) when no pair is found so a
+  later `Stop` can still backfill it. `SessionStart`'s requested
+  `model: "auto"` is logged on the `session.start` jsonl entry (never
+  promoted to header model); CLI `initial_prompt` seeds the title and
+  `stop_reason` is logged on `session.stop`.
 - Tool arg summarizers (`ARG_SUMMARIZERS` in `lib/router.js`) cover the
   observed inventory (`run_in_terminal`, `copilot_readFile`,
   `copilot_applyPatch`, `copilot_getErrors`, `copilot_findTextInFiles`,
@@ -111,7 +124,7 @@ JSONL under `.copilot/run-logs/<sessionId>/` so
 
 ## Verification
 
-- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 21 tests,
+- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 23 tests,
   CP-HK (event mapping), CP-SUB (nested subagents), CP-TR (transcript
   hybrid: export + live stream + Stop backfill), CP-STOP (finalize),
   CP-RC (recovery).

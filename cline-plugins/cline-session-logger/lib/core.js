@@ -160,6 +160,9 @@ export function newSessionState() {
     usage: null, // aggregate token/cost usage from Cline session metadata
     gitBranch: null,
     clineVersion: null, // Cline extension version from hook payloads (provenance)
+    taskIds: null, // all string ID-like fields from taskMetadata (taskId, ulid, parentTaskId, ...)
+    ulid: null, // canonical copy of taskMetadata.ulid when present
+    userId: null, // top-level hook userId (provenance)
   };
 }
 
@@ -199,6 +202,9 @@ export function buildDocs(state, taskId) {
       id: taskId,
       origin: "cline",
       ...(state.clineSession?.sessionId ? { cline_session_id: state.clineSession.sessionId } : {}),
+      ...(state.ulid ? { ulid: state.ulid } : {}),
+      ...(state.taskIds && Object.keys(state.taskIds).length > 0 ? { task_ids: state.taskIds } : {}),
+      ...(state.userId ? { user_id: state.userId } : {}),
       created: formatLocal(state.created ?? ts()),
       updated: formatLocal(state.updated ?? ts()),
       ...(state.compactedAt ? { compacted: formatLocal(state.compactedAt) } : {}),

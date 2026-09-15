@@ -24,6 +24,46 @@ function hookTs(payload) {
   return ts();
 }
 
+function pickTaskMetadata(payload) {
+  return payload?.taskStart?.taskMetadata
+    ?? payload?.taskComplete?.taskMetadata
+    ?? payload?.taskCancel?.taskMetadata
+    ?? null;
+}
+
+// Collect every string ID-like field from a taskMetadata object:
+// explicit taskId/ulid plus any *Id spillover. Capped + string-only
+// so future IDs are captured without code changes. Fail-open: null when empty.
+function extractTaskIds(meta) {
+  if (!meta || typeof meta !== "object") return null;
+  const out = {};
+  for (const [k, v] of Object.entries(meta)) {
+    if (typeof v !== "string" || v === "") continue;
+    const low = k.toLowerCase();
+    if (low === "taskid" || low === "ulid" || low.endsWith("id")) out[k] = v.slice(0, 256);
+  }
+  return Object.keys(out).length > 0 ? out : null;
+}
+
+// Forward-only identity harvest: merge taskMetadata IDs + top-level
+// userId into state. Late arrivals (TaskComplete) fill gaps left by
+// TaskStart; extracted values win on conflict.
+function applyTaskIdentity(state, payload) {
+  let changed = false;
+  const ids = extractTaskIds(pickTaskMetadata(payload));
+  if (ids) {
+    state.taskIds = { ...(state.taskIds ?? {}), ...ids };
+    if (typeof ids.ulid === "string" && ids.ulid) state.ulid = ids.ulid;
+    changed = true;
+  }
+  const userId = payload?.userId;
+  if (typeof userId === "string" && userId !== "" && userId.slice(0, 256) !== state.userId) {
+    state.userId = userId.slice(0, 256);
+    changed = true;
+  }
+  return changed;
+}
+
 function hydrate(taskId, dir, payload) {
   // Rebuild state from disk on every invocation (hooks are separate
   // processes; no in-memory state survives). Live Turn is recreated empty;
@@ -44,6 +84,9 @@ function hydrate(taskId, dir, payload) {
   state.usage = persisted.usage ?? null;
   state.gitBranch = persisted.gitBranch ?? null;
   state.clineVersion = persisted.clineVersion ?? null;
+  state.taskIds = persisted.taskIds ?? null;
+  state.ulid = persisted.ulid ?? null;
+  state.userId = persisted.userId ?? null;
   // Live turn survives across hook processes via state.json.
   state.turn = reviveLiveTurn(persisted.liveTurn ?? null);
   return { state, persisted };
@@ -63,6 +106,9 @@ function persist(dir, taskId, state) {
     usage: state.usage,
     gitBranch: state.gitBranch,
     clineVersion: state.clineVersion,
+    taskIds: state.taskIds,
+    ulid: state.ulid,
+    userId: state.userId,
     liveTurn: serializeLiveTurn(state.turn),
   });
   void taskId;
@@ -118,17 +164,27 @@ export async function handle(payload) {
       if (typeof payload?.clineVersion === "string" && payload.clineVersion) {
         state.clineVersion = payload.clineVersion;
       }
+      applyTaskIdentity(state, payload);
       if (!state.title && typeof task === "string") state.title = stripUserTags(task).slice(0, 120) || null;
       persist(dir, taskId, state);
       writeYAML(dir, taskId, state);
-      writeJSONL(dir, taskId, { timestamp: now, taskId, type: "task.start", model: state.model, title: state.title });
+      writeJSONL(dir, taskId, {
+        timestamp: now, taskId, type: "task.start", model: state.model, title: state.title,
+        ...(state.ulid ? { ulid: state.ulid } : {}),
+        ...(state.taskIds && Object.keys(state.taskIds).length > 0 ? { taskIds: state.taskIds } : {}),
+        ...(state.userId ? { userId: state.userId } : {}),
+      });
       break;
     }
     case "TaskResume": {
       const { state } = hydrate(taskId, dir, payload);
+      const identityChanged = applyTaskIdentity(state, payload);
       if (!state.created) {
         state.created = now;
         if (model) state.model = model;
+        persist(dir, taskId, state);
+        writeYAML(dir, taskId, state);
+      } else if (identityChanged) {
         persist(dir, taskId, state);
         writeYAML(dir, taskId, state);
       }
@@ -222,6 +278,7 @@ export async function handle(payload) {
         state.created = now;
         if (model) state.model = model;
       }
+      applyTaskIdentity(state, payload);
       // Harvest the final result text (TaskComplete.taskMetadata.result).
       // Tool-less tasks would otherwise leave no turn file at all, and the
       // transcript flush can lag behind this hook — so record it here, but
@@ -245,6 +302,9 @@ export async function handle(payload) {
         timestamp: now, taskId,
         type: hook === "TaskCancel" ? "task.cancel" : "task.complete",
         ...(typeof result === "string" && result !== "" ? { result } : {}),
+        ...(state.ulid ? { ulid: state.ulid } : {}),
+        ...(state.taskIds && Object.keys(state.taskIds).length > 0 ? { taskIds: state.taskIds } : {}),
+        ...(state.userId ? { userId: state.userId } : {}),
       });
       break;
     }

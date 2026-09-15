@@ -52,7 +52,13 @@ multi-doc YAML + JSONL under `.cline/run-logs/<taskId>/` so
   unknown/unknown; the real model comes from session metadata).
   `TaskComplete.taskMetadata.result` is injected as the turn's final
   response (deduped), so even tool-less tasks produce `001-*.yaml`;
-  it also lands on the `task.complete` jsonl entry. `user_input`
+  it also lands on the `task.complete` jsonl entry. Every string
+  ID-like field in `taskMetadata` (`taskId`, `ulid`, any `*Id`
+  spillover) is harvested forward-only into the header
+  (`session.ulid`, `session.task_ids`) and the `task.start` /
+  `task.complete` jsonl entries (late arrivals on `TaskComplete`
+  backfill gaps); top-level `userId` lands in the header
+  (`session.user_id`) and jsonl. `user_input`
   wrappers are stripped from human YAML text (titles, turn text);
   machine jsonl and `*.payloads.jsonl` keep raw bytes.
 - Pending files (`NNN-pending-*.yaml`) are crash-safety evidence: only the tracked
@@ -70,13 +76,14 @@ multi-doc YAML + JSONL under `.cline/run-logs/<taskId>/` so
 
 ## Verification
 
-- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 23 tests,
+- `npm test` (`node --test tests/layer1/*.test.js tests/layer2/*.test.js`): 28 tests,
   layers mirror `opencode-plugins` LG-HK (CL-HK) + LG-RC (CL-RC) conventions,
   plus CL-HK-070 (real shim under GUI-like minimal PATH), CL-HK-071
   (invocation via symlink, the global-install path), CL-SE (session
   bridge: discovery, segmentation, enrichment, transcript rewrite),
-  and CL-CP (completion harvest: result injection, tag stripping,
-  version provenance).
+  CL-CP (completion harvest: result injection, tag stripping,
+  version provenance), and CL-TID (taskMetadata identity: ulid,
+  *Id spillover, userId).
 - Manual drill: pipe hook JSON through each executable, assert `{"cancel":false}`
   and header + `001-*.yaml` + `.jsonl` + `.turns.jsonl` artifacts.
 

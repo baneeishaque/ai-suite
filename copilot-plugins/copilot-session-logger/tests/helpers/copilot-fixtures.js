@@ -18,7 +18,7 @@ export function base(sessionId, hook_event_name, extra = {}) {
   };
 }
 
-export const sessionStart = (sessionId, source = "new") => base(sessionId, "SessionStart", { source });
+export const sessionStart = (sessionId, source = "new") => base(sessionId, "SessionStart", { source, model: "auto" });
 
 export const userPrompt = (sessionId, prompt = MARKERS.userText) => base(sessionId, "UserPromptSubmit", { prompt });
 
@@ -39,6 +39,42 @@ export const subagentStop = (sessionId, agentId = "subagent-1") =>
 export const stop = (sessionId) => base(sessionId, "Stop", { stop_hook_active: false });
 
 export const unknownEvent = (sessionId) => base(sessionId, "SomeFutureEvent", {});
+
+// Live transcript JSONL stream (one envelope per line), ping-shaped.
+export function pingStream(sessionId, userText = "Ping Test", assistantText = "Pong.") {
+  const t = "2026-09-15T02:48:36.924Z";
+  const lines = [
+    { type: "session.start", data: { sessionId, version: 1, producer: "copilot-agent", copilotVersion: "0.66.2026091401", vscodeVersion: "1.138.0-insider", startTime: t }, id: "evt-1", timestamp: t, parentId: null },
+    { type: "user.message", data: { content: userText, attachments: [] }, id: "evt-2", timestamp: t, parentId: "evt-1" },
+    { type: "assistant.turn_start", data: { turnId: "0" }, id: "evt-3", timestamp: t, parentId: "evt-2" },
+    { type: "assistant.message", data: { messageId: "msg-1", content: assistantText, toolRequests: [], reasoningText: "" }, id: "evt-4", timestamp: t, parentId: "evt-3" },
+    { type: "assistant.turn_end", data: { turnId: "0" }, id: "evt-5", timestamp: t, parentId: "evt-4" },
+  ];
+  return lines.map((l) => JSON.stringify(l)).join("\n");
+}
+
+// Live stream with reasoning + a tool request (arguments as JSON string,
+// exactly as the agent host writes them).
+export function toolCallStream(sessionId) {
+  const t = "2026-09-15T02:48:36.924Z";
+  const lines = [
+    { type: "session.start", data: { sessionId, version: 1, producer: "copilot-agent", copilotVersion: "0.66.2026091401", vscodeVersion: "1.138.0-insider", startTime: t }, id: "evt-1", timestamp: t, parentId: null },
+    { type: "user.message", data: { content: "List files", attachments: [] }, id: "evt-2", timestamp: t, parentId: "evt-1" },
+    { type: "assistant.turn_start", data: { turnId: "0" }, id: "evt-3", timestamp: t, parentId: "evt-2" },
+    {
+      type: "assistant.message",
+      data: {
+        messageId: "msg-2",
+        content: "I'll list the directory.",
+        toolRequests: [{ toolCallId: "toolu_1", name: "copilot_listDirectory", arguments: "{\"path\": \"src\"}" }],
+        reasoningText: "Need the file list first.",
+      },
+      id: "evt-4", timestamp: t, parentId: "evt-3",
+    },
+    { type: "assistant.turn_end", data: { turnId: "0" }, id: "evt-5", timestamp: t, parentId: "evt-4" },
+  ];
+  return lines.map((l) => JSON.stringify(l)).join("\n");
+}
 
 // Transcript-shaped request (VS Code chat export shape, trimmed).
 export function transcriptRequest(text, opts = {}) {

@@ -28,6 +28,12 @@ export function writeTranscript(dir, name, data) {
   return p;
 }
 
+export function writeTranscriptText(dir, name, text) {
+  const p = join(dir, name);
+  writeFileSync(p, text);
+  return p;
+}
+
 export function sessionLogDir(dir, sessionId) {
   return join(dir, ".copilot", "run-logs", sessionId);
 }

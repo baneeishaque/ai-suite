@@ -80,6 +80,32 @@ def find_root_fs(start: Path) -> Optional[Path]:
     return None
 
 
+def submodule_mounts(repo_root: Path) -> List[Path]:
+    """Mount dirs registered in ``repo_root/.gitmodules`` (empty if none)."""
+    mounts: List[Path] = []
+    gitmodules = repo_root / ".gitmodules"
+    if not gitmodules.is_file():
+        return mounts
+    rc, out = run_git(
+        ["config", "--file", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"],
+        repo_root,
+    )
+    if rc != 0:
+        try:
+            for line in gitmodules.read_text(encoding="utf-8").splitlines():
+                m = re.match(r"\s*path\s*=\s*(\S+)", line)
+                if m:
+                    mounts.append((repo_root / m.group(1)).resolve())
+        except OSError:
+            pass
+        return mounts
+    for line in out.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2:
+            mounts.append((repo_root / parts[1]).resolve())
+    return mounts
+
+
 def find_repo_root(path: Path, use_git: bool = True) -> Tuple[Optional[Path], str]:
     """Return (root, method). Handles files, dirs, symlinks, bare, non-git."""
     start = path.resolve()
@@ -89,6 +115,15 @@ def find_repo_root(path: Path, use_git: bool = True) -> Tuple[Optional[Path], st
     if use_git:
         root = find_root_git(anchor)
         if root is not None:
+            # Uninitialized-submodule guard: a path under a registered mount
+            # whose own .git is absent would otherwise be attributed to the
+            # parent; the mount dir is the honest standalone-clone boundary.
+            try:
+                for m in submodule_mounts(root):
+                    if (start == m or m in start.parents) and not (m / ".git").exists():
+                        return m, "git-uninitialized-mount"
+            except OSError:
+                pass
             return root, "git"
     fs_root = find_root_fs(anchor)
     return (fs_root, "fs") if fs_root is not None else (None, "none")

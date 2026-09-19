@@ -46,8 +46,9 @@ State file: exists
 ```
 
 **Exit codes:**
-- `0` — session ID found, title and state file verified
+- `0` — session ID found (and state gate satisfied when `--state` given)
 - `1` — any pipeline step failed (missing log, missing key, etc.)
+- `2` — session found but `--state` gate mismatched (`--json` still prints the payload)
 
 **Output (`--json`):**
 ```json

@@ -90,18 +90,18 @@ Author-style skill/rule docs carry a metadata blockquote immediately below the
 title: consecutive `> **Label:** value` lines such as `> **Skill ID:**`,
 `> **Version:**`, `> **Layer:**`, `> **Standard:**`.
 
-* **Problem**: CommonMark renders consecutive blockquote lines as a SINGLE
+- **Problem**: CommonMark renders consecutive blockquote lines as a SINGLE
   paragraph. Without separators the `**Label:**` tokens of the whole header
   block glue into one run on screen (`**Skill ID:** **Version:** 1.0.0 ...`).
-* **Canonical rule**: inside a consecutive run of 2+ `> **Label:**` lines, end
+- **Canonical rule**: inside a consecutive run of 2+ `> **Label:**` lines, end
   EVERY line except the last with `<br>`. The last line of the run carries no
   `<br>`.
-* **Blank `>` separators are FORBIDDEN**: an empty `>` line collapses under
+- **Blank `>` separators are FORBIDDEN**: an empty `>` line collapses under
   CommonMark regardless of `<br>` on the neighboring lines.
-* **Single header line**: a run of exactly one `> **Label:**` line needs no
+- **Single header line**: a run of exactly one `> **Label:**` line needs no
   `<br>` (nothing follows it in the same paragraph).
 
-*Canonical (renders line-by-line):*
+Canonical (renders line-by-line):
 
 ```markdown
 > **Skill ID:** `demo-skill`<br>
@@ -109,7 +109,7 @@ title: consecutive `> **Label:** value` lines such as `> **Skill ID:**`,
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 ```
 
-*Collapsed (single paragraph — FORBIDDEN):*
+Collapsed (single paragraph — FORBIDDEN):
 
 ```markdown
 > **Skill ID:** `demo-skill`<br>

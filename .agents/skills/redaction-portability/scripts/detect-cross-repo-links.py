@@ -200,6 +200,24 @@ def audit_file(
     return findings, warnings
 
 
+def apply_name_only_fix(filepath: Path, findings: List[Dict[str, Any]]) -> int:
+    """Replace findings back-to-front (offset-safe). Returns count applied."""
+    text = filepath.read_text(encoding="utf-8")
+    masked = mask_code(text)
+    spans = [(s, e, label) for s, e, label, _, _ in collect_links(text, masked)]
+    targets = {(f["label"], f["target"]) for f in findings if f["file"] == str(filepath)}
+    # Keep only spans whose (label, target) pair is a reported finding.
+    span_targets = {(s, e): t for s, e, _, t, _ in collect_links(text, masked)}
+    todo = sorted(
+        [(s, e, label) for s, e, label in spans if (label, span_targets.get((s, e))) in targets],
+        reverse=True,
+    )
+    for s, e, label in todo:
+        text = text[:s] + f"`{label}` (in a sibling repository)" + text[e:]
+    filepath.write_text(text, encoding="utf-8")
+    return len(todo)
+
+
 def detect_cross_repo_links(filepath, fix=False):
     # TRANSIENT synthesis glue (superseded by commit 6): preserves the old
     # single-file int-return contract for the old main(). --fix is parked
@@ -212,8 +230,13 @@ def detect_cross_repo_links(filepath, fix=False):
     findings, warnings = audit_file(path, repo_root)
     for w in warnings:
         print(f"WARNING: {w}", file=sys.stderr)
-    if fix:
-        print("NOTE: --fix is parked until the offset-safety commit.", file=sys.stderr)
+    if fix and findings:
+        per_file: Dict[str, List[Dict[str, Any]]] = {}
+        for d in findings:
+            per_file.setdefault(d["file"], []).append(d)
+        for fp, items in per_file.items():
+            n = apply_name_only_fix(Path(fp), items)
+            print(f"  → {fp}: stubbed {n} link(s)")
     if findings:
         print(f"Found {len(findings)} cross-repo link(s) in {filepath}:")
         for d in findings:

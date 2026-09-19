@@ -77,9 +77,10 @@ State file: exists
 ## Script Reference
 
 `find-current-session.py`:
-1. Resolves repo root via `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, git top-level, legacy `parents[4]` fallback
+1. Resolves repo root via `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, git top-level, legacy `parents[4]` fallback (cached per-process via `lru_cache`)
 2. Resolves base script paths under repo root (with `SCRIPT_DIR`-relative fallback)
 3. Resolves log dir via `--log-dir`, `$OPENCODE_LOGS_DIR`, or `<repo-root>/.opencode/logs`
+4. Walks `ses_*/` dirs newest-first, accepting the first header whose `session.id` parses (probe via `extract-field.py`)
 2. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
 3. Parses JSON Lines output to get the newest file path
 4. Runs `extract-field.py` twice: once for `session.id`, once for `title`

@@ -9,7 +9,7 @@ category: Documentation-Standards
 This skill provides a standardized protocol for generating Markdown that complies with the **Industrial standard**
 (120-character line limit) and passes `markdownlint-cli2` (markdown linting CLI tool) audits.
 
-***
+*
 
 ## 1. Core Syntax Standards
 
@@ -30,7 +30,8 @@ Every generated file MUST adhere to these absolute constraints:
 
 ### 1.3 Frontmatter
 
-- **Rules/Skills**: Use the triple-dash block (`---`) as defined in [ai-rule-standardization-rules.md](../../../ai-agent-rules/ai-rule-standardization-rules.md).
+- **Rules/Skills**: Use the triple-dash block (`---`) as defined in [ai-rule-standardization-rules.md](../../../ai-
+agent-rules/ai-rule-standardization-rules.md).
 - **General Docs**: Use the HTML comment block (`<!-- title: ... -->`) for indexing.
 
 ### 1.4 Cross-Reference Links & Anchors

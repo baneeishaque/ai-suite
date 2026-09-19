@@ -43,7 +43,17 @@ The `markdownlint-cli2` tool validates anchors via **MD051 - Link fragments shou
 - **Verification**: Run `markdownlint-cli2` - it will catch broken anchor errors (MD051)
 - **Best Practice**: Always use anchors when linking to headers within skill/rule files
 
-### 1.5 Path Verification
+### 1.5 Registry Link Standards (Registry Tables)
+
+In centralized registry files (e.g., `AGENTS.md`, skill indexes), links to internal
+repository paths MUST follow these formatting requirements:
+
+- **Backtick Labels**: The link label MUST be the full relative path to the file,
+  enclosed in backticks (e.g., `[`.agents/skills/my_skill/SKILL.md`](.agents/skills/my_skill/SKILL.md)`).
+- **Consistency**: All links within the same registry table MUST follow this exact
+  style for uniform readability and automatic navigation support.
+
+### 1.6 Path Verification
 
 #### Default (CLI-Only)
 

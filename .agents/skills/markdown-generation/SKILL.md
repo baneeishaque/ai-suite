@@ -193,6 +193,29 @@ directionality is **asymmetric** and MUST be enforced as follows:
   and provides a consistent visual weight.
 - **Forbidden**: Do NOT use hyphens (`---`) or underscores (`___`) for dividers.
 
+### 1.9 Layout & Alignment
+
+- **Centered Blocks**: Use `<div align="center">` followed by a blank line to
+  center-align branding elements.
+- **Lint Compliance**: Avoid inline suppression (`MD033`). Instead, use the
+  project-level `.markdownlint.jsonc` configuration to globally allow the
+  `div` element for layout purposes.
+- **Closing Tags**: Always ensure a matching `</div>` closing tag is present.
+- **Empirical Spacing**: Maintain a blank line between the HTML markers and
+  markdown content.
+
+*Example:*
+
+```markdown
+<div align="center">
+
+![Badge](url)
+
+*Caption text*
+
+</div>
+```
+
 *
 
 ## 2. Verification Workflow

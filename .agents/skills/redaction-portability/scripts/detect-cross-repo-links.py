@@ -200,6 +200,37 @@ def audit_file(
     return findings, warnings
 
 
+def iter_md_files(
+    inputs: List[Path], include_submodules: bool
+) -> Tuple[List[Path], List[str]]:
+    """Expand files/dirs to a *.md list. Skips nested repos unless requested."""
+    files: List[Path] = []
+    warnings: List[str] = []
+    for inp in inputs:
+        p = Path(inp)
+        if not p.exists():
+            warnings.append(f"{inp}: path does not exist")
+            continue
+        if p.is_file():
+            if p.suffix == ".md":
+                files.append(p.resolve())
+            else:
+                warnings.append(f"{inp}: not a .md file, skipped")
+            continue
+        for dirpath, dirnames, filenames in os.walk(p, followlinks=False):
+            cur = Path(dirpath)
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+            if not include_submodules:
+                nested = [d for d in list(dirnames) if (cur / d / ".git").exists()]
+                for d in nested:
+                    warnings.append(f"{cur / d}: nested repo skipped (use --include-submodules)")
+                    dirnames.remove(d)
+            for f in filenames:
+                if f.endswith(".md"):
+                    files.append((cur / f).resolve())
+    return sorted(set(files)), warnings
+
+
 def apply_name_only_fix(filepath: Path, findings: List[Dict[str, Any]]) -> int:
     """Replace findings back-to-front (offset-safe). Returns count applied."""
     text = filepath.read_text(encoding="utf-8")
@@ -251,16 +282,44 @@ def detect_cross_repo_links(filepath, fix=False):
 
 
 def main():
+    # TRANSIENT synthesis glue (superseded by commit 7): directory expansion
+    # + per-root grouping on the old paths/fix CLI.
     parser = argparse.ArgumentParser(description="Detect cross-repo relative links in skill files.")
     parser.add_argument("paths", nargs="+", help="Files to scan")
     parser.add_argument("--fix", action="store_true", help="Replace cross-repo links with name-only references")
     args = parser.parse_args()
 
+    files, warnings = iter_md_files([Path(p) for p in args.paths], False)
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
+    if not files:
+        return 2 if warnings else 0
+    by_root: Dict[str, List[Path]] = {}
+    for f in files:
+        root, _ = find_repo_root(f)
+        if root is None:
+            print(f"WARNING: no repo root for {f}; skipped", file=sys.stderr)
+            continue
+        by_root.setdefault(str(root), []).append(f)
     exit_code = 0
-    for p in args.paths:
-        code = detect_cross_repo_links(p, fix=args.fix)
-        if code != 0:
-            exit_code = code
+    for root_s, group in sorted(by_root.items()):
+        root = Path(root_s)
+        for f in group:
+            f_find, f_warn = audit_file(f, root)
+            for w in f_warn:
+                print(f"WARNING: {w}", file=sys.stderr)
+            if f_find:
+                print(f"Found {len(f_find)} cross-repo link(s) in {f}:")
+                for d in f_find:
+                    print(
+                        f"  {d['file']}:{d['line']} [{d['label']}]({d['target']})"
+                        f" — {d['up_count']} up(s), allowed {d['allowed_ups']}"
+                        f" → {d['resolved']}"
+                    )
+                exit_code = 1
+                if args.fix:
+                    n = apply_name_only_fix(f, f_find)
+                    print(f"  → {f}: stubbed {n} link(s)")
     return exit_code
 
 

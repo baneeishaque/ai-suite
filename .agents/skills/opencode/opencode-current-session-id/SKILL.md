@@ -37,6 +37,7 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 | `--repo-root PATH` | No | Override repo root discovery (default: `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, then `git rev-parse --show-toplevel`, then legacy `parents[4]`) |
 | `--json` | No | Emit single-line JSON instead of human-readable text |
 | `--state {exists,missing,any}` | No | Gate on state-file presence (default: `any`; mismatch exits 2) |
+| `--since ISO_TIMESTAMP` | No | Filter sessions by `st_mtime >= timestamp` (e.g. `2026-09-19T10:00:00`) |
 | `--dry-run` | No | Print discovered paths (repo_root, log_dir, base scripts) as JSON and exit without extractors |
 
 **Output (text, default):**
@@ -68,6 +69,7 @@ State file: exists
 - **YAML header missing session.id**: exits 1 with the header path and base stderr detail
 - **Newest header corrupt**: next-newest `ses_*/` dir is tried before the flat fallback
 - **No state file**: still succeeds (reports "missing") unless `--state exists` (exits 2)
+- **`--since` filters all sessions**: exits 1 with "could not find newest YAML log"
 - **Symlinked log dir**: follows symlinks via `Path.rglob`
 
 ## Prohibited Actions

@@ -5,6 +5,8 @@ Composer: sequences file-glob-sort-by-mtime + yaml-field-extract base skills.
 """
 from __future__ import annotations
 import argparse, json, os, subprocess, sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
@@ -67,6 +69,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--json", action="store_true", help="Emit single-line JSON instead of human-readable text")
     ap.add_argument("--state", choices=("exists", "missing", "any"), default="any",
                     help="Gate on state-file presence (default: any; mismatch exits 2)")
+    ap.add_argument("--since", default=None, help="Filter sessions by st_mtime >= ISO timestamp (e.g. 2026-09-19T10:00:00)")
     ap.add_argument("--dry-run", action="store_true", help="Print discovered paths (repo_root, log_dir, base scripts) and exit without extractors")
     return ap.parse_args(argv)
 
@@ -128,16 +131,36 @@ def main(argv: list[str] | None = None) -> int:
         [d for d in log_dir.iterdir() if d.is_dir() and d.name.startswith("ses_")],
         key=lambda d: d.stat().st_mtime, reverse=True)
 
+    # Apply --since filter if provided
+    if args.since:
+        try:
+            since_ts = datetime.fromisoformat(args.since).timestamp()
+            session_dirs = [d for d in session_dirs if d.stat().st_mtime >= since_ts]
+        except ValueError:
+            print(f"ERROR: --since requires valid ISO timestamp (e.g. 2026-09-19T10:00:00)", file=sys.stderr)
+            return 1
+
+    # Probe top-N dirs in parallel (default top 5)
     yaml_path = None
     fast_sid: str | None = None
-    for sdir in session_dirs:
-        header_files = sorted(sdir.glob("000-header-*.yaml"))
-        if not header_files:
-            continue
-        sid_probe = probe_session_id(extract_field, header_files[-1])
-        if sid_probe:
-            yaml_path, fast_sid = header_files[-1], sid_probe
-            break
+    max_parallel = 5
+    if session_dirs:
+        with ThreadPoolExecutor(max_workers=min(max_parallel, len(session_dirs))) as executor:
+            future_to_dir = {
+                executor.submit(probe_session_id, extract_field, sorted(sdir.glob("000-header-*.yaml"))[-1]): sdir
+                for sdir in session_dirs[:max_parallel]
+                if sorted(sdir.glob("000-header-*.yaml"))
+            }
+            for future in as_completed(future_to_dir):
+                sdir = future_to_dir[future]
+                sid_probe = future.result()
+                if sid_probe:
+                    header_files = sorted(sdir.glob("000-header-*.yaml"))
+                    yaml_path, fast_sid = header_files[-1], sid_probe
+                    # Cancel remaining futures
+                    for f in future_to_dir:
+                        f.cancel()
+                    break
 
     # Fall back to flat *.yaml in log dir
     sort_err = ""

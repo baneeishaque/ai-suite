@@ -309,7 +309,7 @@ applied, `fix-fenced-code-language.py` will repair the damage.
 - **Formatting Protocol**: [ai-rule-standardization-rules.md](../../../ai-agent-rules/ai-rule-standardization-rules.md)
 - **Error Patterns & Case Studies**: [markdown-generation-error-patterns.md](./markdown-generation-error-patterns.md)
 
-***
+*
 
 ## 5. CI Integration
 

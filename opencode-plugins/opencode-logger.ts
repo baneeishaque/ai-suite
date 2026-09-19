@@ -463,29 +463,30 @@ export const OpenCodeLogger: Plugin = async () => {
 
         switch (event.type) {
             case "session.created": {
-              const info = p?.info
-              if (!info?.id) break
-              if (sid) {
+              const sessionID = p?.sessionID ?? p?.info?.id
+              if (!sessionID) break
+              if (sid && sessionID !== sid) {
                 // Sub-agent session — don't overwrite main session state
-                writeJSONL(sid, { timestamp: now, sessionID: info.id, type: "session.sub_created" })
+                writeJSONL(sid, { timestamp: now, sessionID: sessionID, type: "session.sub_created" })
                 break
               }
-              initSession(info.id as string, info)
-              const s = getSS(info.id as string)
+              initSession(sessionID as string, p?.info ?? {})
+              const s = getSS(sessionID as string)
               msgStore.clear()
-              saveState(sid!, { created: s.created })
-              writeJSONL(sid!, { timestamp: now, sessionID: sid, type: "session.created", model: s.model, title: s.title })
+              saveState(sessionID as string, { created: s.created })
+              writeJSONL(sessionID as string, { timestamp: now, sessionID, type: "session.created", model: s.model, title: s.title })
               break
             }
 
-           case "session.updated": {
-             const info = p?.info
-             if (!info?.id || info.id !== sid) break
-             const s = getSS(info.id as string)
-             if (info.title) s.title = info.title
-             if (info.time?.updated) s.updated = new Date(info.time.updated).toISOString()
-             break
-           }
+            case "session.updated": {
+              const sessionID = p?.sessionID ?? p?.info?.id
+              if (!sessionID || sessionID !== sid) break
+              const s = getSS(sessionID as string)
+              const info = p?.info ?? {}
+              if ((info as any).title) s.title = (info as any).title
+              if ((info as any).time?.updated) s.updated = new Date((info as any).time.updated).toISOString()
+              break
+            }
 
            case "message.updated": {
              const info = p?.info
@@ -634,7 +635,8 @@ export const OpenCodeLogger: Plugin = async () => {
 
             case "session.status": {
               const props = p?.properties ?? p
-              if (props?.status?.type !== "idle") break
+              const status = props?.status ?? {}
+              if ((status as any).type !== "idle") break
               const ses = props?.sessionID ?? sid
               if (!ses || ses !== sid) break
 
@@ -662,7 +664,7 @@ export const OpenCodeLogger: Plugin = async () => {
             case "session.deleted":
             case "server.instance.disposed": {
               const info = p?.info
-              const ses = event.type === "session.deleted" ? (info?.id ?? sid) : sid
+              const ses = event.type === "session.deleted" ? (p?.sessionID ?? info?.id ?? sid) : sid
               if (!ses || ses !== sid) break
               const s = getSS(ses)
               s.updated = ts()

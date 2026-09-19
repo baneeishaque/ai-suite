@@ -247,7 +247,7 @@ trailing whitespace or a URL scheme (`https://`), wrap the entire value in
 double quotes (`"..."`). Bare unquoted descriptions containing internal
 colons are FORBIDDEN.
 
-**Correct:**
+*Correct:*
 
 ```yaml
 ---
@@ -255,7 +255,7 @@ description: "Repository-specific composer that uses the generic ai-suite skill 
 ---
 ```
 
-**Incorrect:**
+*Incorrect:*
 
 ```yaml
 ---

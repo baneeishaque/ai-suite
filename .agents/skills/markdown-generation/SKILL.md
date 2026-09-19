@@ -199,7 +199,7 @@ Before finalizing ANY markdown file, the agent MUST:
 7. **Fidelity Verification**: Ensure the "Fidelity Mandate" (no loss of user technical specifics) is upheld during
    formatting.
 
-***
+*
 
 ## 3. Companion Scripts
 
@@ -301,7 +301,7 @@ code here
 and strips any language tag from closing fences. If `--fix` has already been
 applied, `fix-fenced-code-language.py` will repair the damage.
 
-***
+*
 
 ## 4. Related Rules
 

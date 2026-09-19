@@ -129,6 +129,33 @@ def find_repo_root(path: Path, use_git: bool = True) -> Tuple[Optional[Path], st
     return (fs_root, "fs") if fs_root is not None else (None, "none")
 
 
+def mask_code(text: str) -> str:
+    """Blank fenced blocks + inline code, preserving offsets and newlines."""
+    def blank(m: re.Match[str]) -> str:
+        return re.sub(r"[^\n]", " ", m.group(0))
+    masked = FENCED_RE.sub(blank, text)
+    return INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), masked)
+
+
+def collect_links(text: str, masked: str) -> List[Tuple[int, int, str, str, str]]:
+    """Return (start, end, label, target, kind) for ../ links outside code."""
+    out: List[Tuple[int, int, str, str, str]] = []
+    for m in INLINE_LINK_RE.finditer(masked):
+        s, e = m.span()
+        orig = INLINE_LINK_RE.match(text, s, e)
+        label = orig.group(1) if orig else m.group(1)
+        out.append((s, e, label, m.group(2), "inline"))
+    for m in REF_DEF_RE.finditer(masked):
+        s, e = m.span(1)
+        out.append((s, e, "(ref-def)", m.group(1), "ref-def"))
+    return sorted(out)
+
+
+def line_no(text: str, offset: int) -> int:
+    """1-based line number for offset."""
+    return text.count("\n", 0, offset) + 1
+
+
 def detect_cross_repo_links(filepath, fix=False):
     path = Path(filepath).resolve()
     repo_root, _root_method = find_repo_root(path)

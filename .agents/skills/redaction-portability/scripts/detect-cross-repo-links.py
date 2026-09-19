@@ -156,55 +156,75 @@ def line_no(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
 
-def detect_cross_repo_links(filepath, fix=False):
-    path = Path(filepath).resolve()
-    repo_root, _root_method = find_repo_root(path)
-    if not repo_root:
-        print(f"WARNING: could not find repo root for {filepath}", file=sys.stderr)
-        return 1
-
-    rel_to_repo = path.relative_to(repo_root)
-    depth = len(rel_to_repo.parents)
-
-    link_pattern = re.compile(r'\[([^\]]*?)\]\(((?:\.\./)+[^)]+)\)')
-    matches = list(link_pattern.finditer(path.read_text(encoding="utf-8")))
-
-    findings = []
-    for m in matches:
-        link_text = m.group(1)
-        link_target = m.group(2)
-
-        up_count = link_target.count("../")
-        total_up = depth + up_count
-        escapes = total_up > 1
-
-        resolved = (path.parent / link_target).resolve()
-        in_repo = False
+def audit_file(
+    filepath: Path, repo_root: Path, suggest_urls: bool = True
+) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Audit one markdown file. Returns (findings, warnings)."""
+    findings: List[Dict[str, Any]] = []
+    warnings: List[str] = []
+    try:
+        text = filepath.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        warnings.append(f"{filepath}: skipped (non-UTF-8)")
+        return findings, warnings
+    except OSError as exc:
+        warnings.append(f"{filepath}: unreadable ({exc})")
+        return findings, warnings
+    try:
+        rel = filepath.resolve().relative_to(repo_root)
+        allowed_ups = len(rel.parent.parts)
+    except ValueError:
+        allowed_ups = 0
+    masked = mask_code(text)
+    for s, e, label, target, kind in collect_links(text, masked):
+        up_count = target.count("../")
+        resolved = (filepath.parent / target).resolve()
         try:
             resolved.relative_to(repo_root)
             in_repo = True
         except ValueError:
-            pass
+            in_repo = False
+        if in_repo:
+            continue
+        item: Dict[str, Any] = {
+            "file": str(filepath),
+            "line": line_no(text, s),
+            "label": label,
+            "target": target,
+            "kind": kind,
+            "up_count": up_count,
+            "allowed_ups": allowed_ups,
+            "resolved": str(resolved),
+        }
+        findings.append(item)
+    return findings, warnings
 
-        if not in_repo:
-            findings.append((m.start(), m.end(), link_text, link_target, up_count, total_up))
 
-    if not findings:
-        return 0
-
-    print(f"Found {len(findings)} cross-repo link(s) in {filepath}:")
-    for start, end, text, target, up, total in findings:
-        print(f"  [{text}]({target}) — {up} levels up from file depth {depth} (total: {total})")
-
+def detect_cross_repo_links(filepath, fix=False):
+    # TRANSIENT synthesis glue (superseded by commit 6): preserves the old
+    # single-file int-return contract for the old main(). --fix is parked
+    # here and reintroduced offset-safe in commit 5.
+    path = Path(filepath).resolve()
+    repo_root, _root_method = find_repo_root(path)
+    if not repo_root:
+        print(f"WARNING: could not find repo root for {filepath}", file=sys.stderr)
+        return 2
+    findings, warnings = audit_file(path, repo_root)
+    for w in warnings:
+        print(f"WARNING: {w}", file=sys.stderr)
     if fix:
-        content = path.read_text(encoding="utf-8")
-        for start, end, text, target, up, total in findings:
-            replacement = f"`{text}` (in a sibling repository)"
-            content = content[:start] + replacement + content[end:]
-        path.write_text(content, encoding="utf-8")
-        print(f"  → Fixed {len(findings)} link(s)")
-
-    return 1 if findings else 0
+        print("NOTE: --fix is parked until the offset-safety commit.", file=sys.stderr)
+    if findings:
+        print(f"Found {len(findings)} cross-repo link(s) in {filepath}:")
+        for d in findings:
+            print(
+                f"  {d['file']}:{d['line']} [{d['label']}]({d['target']})"
+                f" — {d['up_count']} up(s), allowed {d['allowed_ups']}"
+                f" → {d['resolved']}"
+            )
+        return 1
+    print("OK: no cross-repo links.")
+    return 0
 
 
 def main():

@@ -186,6 +186,13 @@ directionality is **asymmetric** and MUST be enforced as follows:
   inside the submodule's own tree. CI / pre-commit hooks SHOULD flag such
   links.
 
+### 1.8 Section Dividers (Industrial Standard)
+
+- **Marker**: Use three asterisks (`***`) for all horizontal rules.
+- **Rule Compliance**: This ensures compliance with `markdownlint` rule MD035
+  and provides a consistent visual weight.
+- **Forbidden**: Do NOT use hyphens (`---`) or underscores (`___`) for dividers.
+
 *
 
 ## 2. Verification Workflow

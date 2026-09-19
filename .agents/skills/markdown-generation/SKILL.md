@@ -303,10 +303,11 @@ applied, `fix-fenced-code-language.py` will repair the damage.
 
 *
 
-## 4. Related Rules
+## 4. Related Rules & References
 
 - **SSOT**: [markdown-generation-rules.md](../../../ai-agent-rules/markdown-generation-rules.md)
 - **Formatting Protocol**: [ai-rule-standardization-rules.md](../../../ai-agent-rules/ai-rule-standardization-rules.md)
+- **Error Patterns & Case Studies**: [markdown-generation-error-patterns.md](./markdown-generation-error-patterns.md)
 
 ***
 

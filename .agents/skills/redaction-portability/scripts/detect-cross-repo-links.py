@@ -156,6 +156,34 @@ def line_no(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
 
+def nearest_existing(dirpath: Path) -> Path:
+    """Nearest existing ancestor (for git probing of not-yet-created targets)."""
+    cur = dirpath
+    while not cur.exists() and cur != cur.parent:
+        cur = cur.parent
+    return cur
+
+
+def suggest_parent_url(resolved: Path) -> Optional[str]:
+    """Build a SHA-pinned GitHub URL if the target sits in a GitHub repo."""
+    anchor = nearest_existing(resolved.parent if resolved.suffix else resolved)
+    outer = find_root_git(anchor)
+    if outer is None:
+        return None
+    try:
+        rel = resolved.relative_to(outer)
+    except ValueError:
+        return None
+    _, remote = run_git(["config", "--get", "remote.origin.url"], outer)
+    m = re.search(r"github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?$", remote or "")
+    if not m:
+        return None
+    _, sha = run_git(["rev-parse", "HEAD"], outer)
+    if not re.fullmatch(r"[0-9a-f]{40}", sha or ""):
+        return None
+    return f"https://github.com/{m.group(1)}/{m.group(2)}/blob/{sha}/{rel.as_posix()}"
+
+
 def audit_file(
     filepath: Path, repo_root: Path, suggest_urls: bool = True
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
@@ -196,6 +224,10 @@ def audit_file(
             "allowed_ups": allowed_ups,
             "resolved": str(resolved),
         }
+        if suggest_urls:
+            url = suggest_parent_url(resolved)
+            if url:
+                item["suggested_url"] = url
         findings.append(item)
     return findings, warnings
 
@@ -249,78 +281,92 @@ def apply_name_only_fix(filepath: Path, findings: List[Dict[str, Any]]) -> int:
     return len(todo)
 
 
-def detect_cross_repo_links(filepath, fix=False):
-    # TRANSIENT synthesis glue (superseded by commit 6): preserves the old
-    # single-file int-return contract for the old main(). --fix is parked
-    # here and reintroduced offset-safe in commit 5.
-    path = Path(filepath).resolve()
-    repo_root, _root_method = find_repo_root(path)
-    if not repo_root:
-        print(f"WARNING: could not find repo root for {filepath}", file=sys.stderr)
+def main(argv: Optional[List[str]] = None) -> int:
+    """CLI entry point. Exit 0 clean, 1 findings, 2 usage/error."""
+    ap = argparse.ArgumentParser(
+        description="Flag markdown ../ links escaping their enclosing Git repo."
+    )
+    ap.add_argument("paths", nargs="+", help="Files or directories to scan")
+    ap.add_argument("--root", default=None, help="Force repo root (skip discovery)")
+    ap.add_argument("--no-git", action="store_true", help="Skip git discovery (fs fallback)")
+    ap.add_argument("--include-submodules", action="store_true")
+    ap.add_argument("--no-suggest-urls", action="store_true")
+    ap.add_argument("--fix", action="store_true", help="Name-only stub (pedagogical refs only)")
+    ap.add_argument("--json", action="store_true", help="Emit JSON array")
+    ap.add_argument("--strict", action="store_true", help="Warnings exit 2")
+    args = ap.parse_args(argv)
+
+    if args.fix:
+        print(
+            "NOTE: --fix writes name-only stubs; operational refs need "
+            "SHA-pinned hosted URLs instead (redaction-portability §0.2).",
+            file=sys.stderr,
+        )
+
+    files, warnings = iter_md_files([Path(p) for p in args.paths], args.include_submodules)
+    if not files and warnings:
+        for w in warnings:
+            print(f"WARNING: {w}", file=sys.stderr)
         return 2
-    findings, warnings = audit_file(path, repo_root)
+
+    forced_root = Path(args.root).resolve() if args.root else None
+    if forced_root is not None and not forced_root.is_dir():
+        print(f"ERROR: --root {args.root} is not a directory", file=sys.stderr)
+        return 2
+
+    all_findings: List[Dict[str, Any]] = []
+    # Group files by discovered root so mixed-repo scans stay correct.
+    by_root: Dict[str, List[Tuple[Path, str]]] = {}
+    for f in files:
+        if forced_root is not None:
+            root, method = forced_root, "forced"
+        else:
+            root, method = find_repo_root(f, use_git=not args.no_git)
+        if root is None:
+            warnings.append(f"{f}: no repo root found ({method}); skipped")
+            continue
+        by_root.setdefault(str(root), []).append((f, method))
+
+    for root_s, group in sorted(by_root.items()):
+        root = Path(root_s)
+        for f, method in group:
+            f_find, f_warn = audit_file(f, root, suggest_urls=not args.no_suggest_urls)
+            for item in f_find:
+                item["repo_root"] = str(root)
+                item["repo_method"] = method
+            all_findings.extend(f_find)
+            warnings.extend(f_warn)
+
     for w in warnings:
         print(f"WARNING: {w}", file=sys.stderr)
-    if fix and findings:
+
+    if args.json:
+        print(json.dumps(all_findings, indent=2))
+    elif all_findings:
+        print(f"Found {len(all_findings)} cross-repo link(s):")
+        for d in all_findings:
+            sug = f"\n    suggest: {d['suggested_url']}" if d.get("suggested_url") else ""
+            print(
+                f"  {d['file']}:{d['line']} [{d['label']}]({d['target']})"
+                f" — {d['up_count']} up(s), allowed {d['allowed_ups']}"
+                f" → {d['resolved']}{sug}"
+            )
+    else:
+        print("OK: no cross-repo links.")
+
+    if args.fix and all_findings:
         per_file: Dict[str, List[Dict[str, Any]]] = {}
-        for d in findings:
+        for d in all_findings:
             per_file.setdefault(d["file"], []).append(d)
         for fp, items in per_file.items():
             n = apply_name_only_fix(Path(fp), items)
             print(f"  → {fp}: stubbed {n} link(s)")
-    if findings:
-        print(f"Found {len(findings)} cross-repo link(s) in {filepath}:")
-        for d in findings:
-            print(
-                f"  {d['file']}:{d['line']} [{d['label']}]({d['target']})"
-                f" — {d['up_count']} up(s), allowed {d['allowed_ups']}"
-                f" → {d['resolved']}"
-            )
+
+    if all_findings:
         return 1
-    print("OK: no cross-repo links.")
+    if warnings and args.strict:
+        return 2
     return 0
-
-
-def main():
-    # TRANSIENT synthesis glue (superseded by commit 7): directory expansion
-    # + per-root grouping on the old paths/fix CLI.
-    parser = argparse.ArgumentParser(description="Detect cross-repo relative links in skill files.")
-    parser.add_argument("paths", nargs="+", help="Files to scan")
-    parser.add_argument("--fix", action="store_true", help="Replace cross-repo links with name-only references")
-    args = parser.parse_args()
-
-    files, warnings = iter_md_files([Path(p) for p in args.paths], False)
-    for w in warnings:
-        print(f"WARNING: {w}", file=sys.stderr)
-    if not files:
-        return 2 if warnings else 0
-    by_root: Dict[str, List[Path]] = {}
-    for f in files:
-        root, _ = find_repo_root(f)
-        if root is None:
-            print(f"WARNING: no repo root for {f}; skipped", file=sys.stderr)
-            continue
-        by_root.setdefault(str(root), []).append(f)
-    exit_code = 0
-    for root_s, group in sorted(by_root.items()):
-        root = Path(root_s)
-        for f in group:
-            f_find, f_warn = audit_file(f, root)
-            for w in f_warn:
-                print(f"WARNING: {w}", file=sys.stderr)
-            if f_find:
-                print(f"Found {len(f_find)} cross-repo link(s) in {f}:")
-                for d in f_find:
-                    print(
-                        f"  {d['file']}:{d['line']} [{d['label']}]({d['target']})"
-                        f" — {d['up_count']} up(s), allowed {d['allowed_ups']}"
-                        f" → {d['resolved']}"
-                    )
-                exit_code = 1
-                if args.fix:
-                    n = apply_name_only_fix(f, f_find)
-                    print(f"  → {f}: stubbed {n} link(s)")
-    return exit_code
 
 
 if __name__ == "__main__":

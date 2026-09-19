@@ -48,6 +48,12 @@ State file: exists
 - `0` — session ID found, title and state file verified
 - `1` — any pipeline step failed (missing log, missing key, etc.)
 
+**Output (`--json`):**
+```json
+{"session_id": "ses_XXXXXXXXXXXXX", "title": "My Session Title", "state": "exists", "yaml_path": "<path>", "log_dir": "<path>"}
+```
+`title` is `null` when the YAML header has no `title` key.
+
 ## Protocol
 
 1. Run `python3 scripts/find-current-session.py`

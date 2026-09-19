@@ -32,9 +32,12 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| _(none)_ | — | Runs the full pipeline; no CLI args needed |
+| _(none)_ | — | Runs the full pipeline with auto-discovered repo root and log dir |
+| `--log-dir PATH` | No | Override `.opencode/logs/` directory (default: `<repo-root>/.opencode/logs` or `$OPENCODE_LOGS_DIR`) |
+| `--repo-root PATH` | No | Override repo root discovery (default: `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, then `git rev-parse --show-toplevel`, then legacy `parents[4]`) |
+| `--json` | No | Emit single-line JSON instead of human-readable text |
 
-**Output:**
+**Output (text, default):**
 ```
 Session ID: ses_XXXXXXXXXXXXX
 Title: My Session Title

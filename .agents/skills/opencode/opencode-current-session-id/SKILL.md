@@ -64,8 +64,9 @@ State file: exists
 ## Edge Cases
 
 - **No YAML logs exist**: exits 1 with "could not find newest YAML log"
-- **YAML header missing session.id**: exits 1
-- **No state file**: still succeeds (reports "missing")
+- **YAML header missing session.id**: exits 1 with the header path and base stderr detail
+- **Newest header corrupt**: next-newest `ses_*/` dir is tried before the flat fallback
+- **No state file**: still succeeds (reports "missing") unless `--state exists` (exits 2)
 - **Symlinked log dir**: follows symlinks via `Path.rglob`
 
 ## Prohibited Actions

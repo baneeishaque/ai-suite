@@ -227,119 +227,29 @@ Before finalizing ANY markdown file, the agent MUST:
    relative to this skill file), incorporating the `MD013` 120-character line length exception.
 2. **Sync Check**: Ensure `.vscode/settings.json` contains `"markdownlint.configFile": ".markdownlint.jsonc"` to
    synchronize the IDE extension with the project's Industrial standard.
-3. **Auto-Fix**: Run `markdownlint-cli2 --fix <file_path>` from the project root.
-   Use paths **relative** to the project root — absolute paths can cause the
-   tool to silently find 0 files (`Linting: 0 file(s)`) and do nothing.
-4. **Dry-Run Companion Scripts**: Before applying any companion script from §3,
-   MUST run with `--check` first to preview changes, review the proposed diffs,
-   then re-run without `--check` to apply. Dry-run before apply is MANDATORY
-   for every companion script.
-5. **Audit Check**: Run `markdownlint-cli2 <file_path>`.
-6. **Manual Correction**: Fix any remaining semantic or structural errors (e.g., heading increments).
-7. **Fidelity Verification**: Ensure the "Fidelity Mandate" (no loss of user technical specifics) is upheld during
+3. **Run Markdown Lint Workflow**: Execute the full
+   **[Markdown Lint Workflow](../general/markdown-lint-workflow/SKILL.md)** 3-step pipeline
+   on the file:
+   - Step 1: `markdownlint-cli2 --fix`
+   - Step 2: Companion scripts in execution order
+   - Step 3: Manual fix + final `markdownlint-cli2` audit
+4. **Fidelity Verification**: Ensure the "Fidelity Mandate" (no loss of user technical specifics) is upheld during
    formatting.
 
 *
 
-## 3. Companion Scripts
+## 3. Lint Fix Protocol
 
-This skill ships seven helper scripts under
-[`scripts/`](scripts/) for one-shot lint fixes:
+Companion scripts and the full 3-step lint fix pipeline have moved to
+**[Markdown Lint Workflow](../general/markdown-lint-workflow/SKILL.md)**.
 
-- [`fix-table-separators.py`](scripts/fix-table-separators.py) — scans for
-  compact table separators (`|---|---|`) and rewrites them with proper spacing
-  (`| --- | --- |`) to satisfy MD060. Use `--check` for dry-run.
-- [`wrap-long-lines.py`](scripts/wrap-long-lines.py) — wraps prose lines
-  exceeding the configured `--max` width (default 120) while preserving code
-  blocks, tables, YAML frontmatter, and list structure. Use `--check` for
-  dry-run.
-- [`fix-fenced-code-language.py`](scripts/fix-fenced-code-language.py) — adds
-  a default language tag (default `text`) to bare opening fenced code blocks
-  to satisfy MD040. Properly undoes `markdownlint-cli2 --fix` damage that
-  attaches `text` to closing fences. Use `--default <lang>` to override the
-  language (default: `text`). Use `--check` for dry-run.
-- [`fix-emphasis-as-heading.py`](scripts/fix-emphasis-as-heading.py) — strips
-  emphasis markers (`*...*`, `_..._`) from lines that are standalone
-  emphasis-as-heading paragraphs to satisfy MD036. Use `--check` for dry-run.
-- [`fix-list-style.py`](scripts/fix-list-style.py) — converts asterisk
-  unordered list markers (`*`) to dash style (`-`) to satisfy MD004.
-  Use `--check` for dry-run.
-- [`fix-heading-spacing.py`](scripts/fix-heading-spacing.py) — inserts a blank
-  line before headings that lack one to satisfy MD022. Skips YAML frontmatter
-  and code blocks. Use `--check` for dry-run.
-- [`fix-container-fence.py`](scripts/fix-container-fence.py) — detects fenced
-  code blocks whose outer fence uses 4+ backtick markers with content containing
-  inner ``` fences (markdown-syntax examples). Adds a `text` language tag to
-  the opening fence to satisfy MD040 without breaking the inner fences. Use
-  `--check` for dry-run.
+This skill delegates all lint-fix operations there. See that skill for:
 
-All seven scripts operate in-place on a list of file arguments.
-
-```bash
-python3 scripts/fix-table-separators.py --check path/to/file.md
-python3 scripts/fix-table-separators.py path/to/file.md
-
-python3 scripts/wrap-long-lines.py --max 120 --check path/to/file.md
-python3 scripts/wrap-long-lines.py --max 120 path/to/file.md
-
-python3 scripts/fix-fenced-code-language.py --check path/to/file.md
-python3 scripts/fix-fenced-code-language.py path/to/file.md
-
-python3 scripts/fix-emphasis-as-heading.py --check path/to/file.md
-python3 scripts/fix-emphasis-as-heading.py path/to/file.md
-
-python3 scripts/fix-list-style.py --check path/to/file.md
-python3 scripts/fix-list-style.py path/to/file.md
-
-python3 scripts/fix-heading-spacing.py --check path/to/file.md
-python3 scripts/fix-heading-spacing.py path/to/file.md
-
-python3 scripts/fix-container-fence.py --check path/to/file.md
-python3 scripts/fix-container-fence.py path/to/file.md
-```
-
-These are convenience tools for the `## 2. Verification Workflow` step 3
-(auto-fix) — they target patterns `markdownlint-cli2 --fix` does not resolve.
-
-### 3.1 Execution Order
-
-When running multiple fix scripts, the following order is **REQUIRED** to avoid
-re-introducing lint errors:
-
-1. `fix-table-separators.py`
-2. `fix-fenced-code-language.py` (MUST run BEFORE `wrap-long-lines.py` — fence
-   lines may exceed the width limit and wrapping a fence line before its
-   language tag has been added produces a broken fence)
-3. `fix-container-fence.py`
-4. `wrap-long-lines.py`
-5. `fix-emphasis-as-heading.py`
-6. `fix-list-style.py`
-7. `fix-heading-spacing.py`
-
-> **Indent drift after editing / lint-fix.** After running the §3.1 pipeline,
-> verify that continuation-line indent in edited regions matches the original
-> file's siblings. `markdownlint-cli2 --fix` and companion scripts can leave
-> whitespace drift on adjacent lines. Delegate detection and repair to the
-> [`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
-> base skill, then re-run the `markdownlint-cli2` audit before staging.
-
-### 3.2 Known `markdownlint-cli2 --fix` Caveats
-
-**`markdownlint-cli2 --fix` corrupts bare closing fences.** When it encounters
-a fenced code block without a language tag (\`\`\`), the built-in `MD040` fix
-attaches a `text` language tag to **every** \`\`\` line — including the
-closing fence — producing a broken construct:
-
-````text
-```text
-code here
-```text
-````
-
-**Resolution:** Do NOT use `markdownlint-cli2 --fix` for MD040. Instead, run
-`fix-fenced-code-language.py` which correctly tracks open/close fence state
-and strips any language tag from closing fences. If `--fix` has already been
-applied, `fix-fenced-code-language.py` will repair the damage.
+- The 7 companion scripts (with descriptions and usage)
+- Required execution order (table separators → fence language → wrap long
+  lines → ...)
+- Known `markdownlint-cli2 --fix` caveats (MD040 fence corruption)
+- The convenience pipeline script `fix-markdown-pipeline.py`
 
 *
 
@@ -348,36 +258,27 @@ applied, `fix-fenced-code-language.py` will repair the damage.
 - **SSOT**: [markdown-generation-rules.md](../../../ai-agent-rules/markdown-generation-rules.md)
 - **Formatting Protocol**: [ai-rule-standardization-rules.md](../../../ai-agent-rules/ai-rule-standardization-rules.md)
 - **Error Patterns & Case Studies**: [markdown-generation-error-patterns.md](./markdown-generation-error-patterns.md)
+- **Lint Fix Pipeline**: [markdown-lint-workflow](../general/markdown-lint-workflow/SKILL.md)
 
 *
 
 ## 5. CI Integration
 
-### 5.1 Pipeline Script Execution Order
+### 5.1 Pipeline Script
 
-When automating lint fixing in a CI pipeline or pre-commit hook, run the
-companion scripts in the order defined in §3.1. The pipeline MUST NOT use
-`markdownlint-cli2 --fix` for MD040 (use `fix-fenced-code-language.py`
-instead) per the caveat in §3.2.
-
-Recommended one-shot invocation from the repo root:
+When automating lint fixing in a CI pipeline or pre-commit hook, use the
+convenience pipeline script from
+**[Markdown Lint Workflow](../general/markdown-lint-workflow/SKILL.md#3-convenience-pipeline-script)**:
 
 ```bash
-python3 .agents/skills/markdown-generation/scripts/fix-table-separators.py \
-  --check file.md
-python3 .agents/skills/markdown-generation/scripts/fix-fenced-code-language.py \
-  --check file.md
-python3 .agents/skills/markdown-generation/scripts/wrap-long-lines.py \
-  --max 120 --check file.md
-python3 .agents/skills/markdown-generation/scripts/fix-emphasis-as-heading.py \
-  --check file.md
-python3 .agents/skills/markdown-generation/scripts/fix-list-style.py \
-  --check file.md
-python3 .agents/skills/markdown-generation/scripts/fix-heading-spacing.py \
-  --check file.md
+python3 .agents/skills/general/markdown-lint-workflow/scripts/fix-markdown-pipeline.py \
+  file.md
 ```
 
-Drop `--check` to apply changes in-place.
+This runs `markdownlint-cli2 --fix`, then all companion scripts in execution
+order, then a final audit — all in one invocation. For individual companion
+script usage, see the
+[Markdown Lint Workflow skill](../general/markdown-lint-workflow/SKILL.md#2-companion-scripts).
 
 ### 5.2 YAML Frontmatter Validation
 
@@ -413,7 +314,24 @@ YAML parse failures in editor preview panes and schema validators.
 ### 5.3 Lint Gate
 
 Every skill authored via the Skill Factory (`skill-factory`) MUST pass the
-full Verification Workflow (§2) including the companion-script pipeline
-(§3.1) before it is considered complete. The factory's Post-Drafting
-Checklist (§3) is the SSOT for the gating criteria; this section is the
-SSOT for the technical execution order.
+full Verification Workflow (§2) including the
+**[Markdown Lint Workflow](../general/markdown-lint-workflow/SKILL.md)** 3-step
+pipeline before it is considered complete. The factory's Post-Drafting
+Checklist (§3) is the SSOT for the gating criteria.
+
+## 6. Companion Scripts
+
+| Script | Location | Purpose |
+| --- | --- | --- |
+| `scripts/join-blockquote-header.py` | Base (generic markdown primitive) | Normalize metadata-header blockquote runs (`> **Label:**` lines) to the §1.6 canonical form: `<br>` on every run line except the last. Idempotent `--check`/`--apply`/`--diff`; CRLF/LF and trailing-newline preserved; stdin or file input. Consumed by the `skill-factory` composer. |
+
+## Composition by Higher-Level Skills
+
+| Composer | Consumes |
+| --- | --- |
+| [`skill-factory`](../skill-factory/SKILL.md) | `scripts/join-blockquote-header.py` via `scripts/audit-normalize-skill-headers.py` (library-wide header audit + apply) |
+
+## Related Skills
+
+- [`markdown-lint-workflow`](../general/markdown-lint-workflow/SKILL.md) — the
+  3-step lint fix pipeline this skill delegates to (§3)

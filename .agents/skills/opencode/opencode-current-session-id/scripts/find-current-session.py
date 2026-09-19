@@ -5,6 +5,7 @@ Composer: sequences file-glob-sort-by-mtime + yaml-field-extract base skills.
 """
 from __future__ import annotations
 import argparse, json, os, subprocess, sys
+from functools import lru_cache
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -13,8 +14,14 @@ ENV_REPO_ROOT_VARS = ("OPENCODE_REPO_ROOT", "AI_SUITE_ROOT")
 ENV_LOG_DIR_VAR = "OPENCODE_LOGS_DIR"
 
 
+@lru_cache(maxsize=1)
 def find_repo_root(start: Path = SCRIPT_DIR) -> Path:
-    """Resolve repo root via env override, git top-level, legacy fallback."""
+    """Resolve repo root via env override, git top-level, legacy fallback.
+
+    Cached per-process: the git rev-parse spawn dominates repeated calls.
+    Call find_repo_root.cache_clear() first if $OPENCODE_REPO_ROOT or
+    $AI_SUITE_ROOT may have changed since the first call.
+    """
     for var in ENV_REPO_ROOT_VARS:
         val = os.environ.get(var, "").strip()
         if val:

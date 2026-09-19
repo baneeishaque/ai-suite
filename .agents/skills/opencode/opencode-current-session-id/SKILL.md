@@ -83,12 +83,14 @@ State file: exists
 1. Resolves repo root via `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, git top-level, legacy `parents[4]` fallback (cached per-process via `lru_cache`)
 2. Resolves base script paths under repo root (with `SCRIPT_DIR`-relative fallback)
 3. Resolves log dir via `--log-dir`, `$OPENCODE_LOGS_DIR`, or `<repo-root>/.opencode/logs`
-4. Walks `ses_*/` dirs newest-first, accepting the first header whose `session.id` parses (probe via `extract-field.py`)
-2. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
-3. Parses JSON Lines output to get the newest file path
-4. Runs `extract-field.py` twice: once for `session.id`, once for `title`
-5. Checks for `.opencode/logs/<sid>.state.json`
-6. Prints results
+4. If `--dry-run`: emits discovery JSON and exits
+5. Walks `ses_*/` dirs newest-first (filtered by `--since` if given), probes top 5 in parallel via `ThreadPoolExecutor`, accepting first header whose `session.id` parses
+6. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
+7. Parses JSON Lines output to get the newest file path
+8. Runs `extract-field.py` twice: once for `session.id`, once for `title`
+9. Checks for `.opencode/logs/<sid>.state.json`
+10. Applies `--state` gate (exit 2 on mismatch; `--json` still prints payload)
+11. Prints results
 
 ## Composition by Lower-Level Skills
 

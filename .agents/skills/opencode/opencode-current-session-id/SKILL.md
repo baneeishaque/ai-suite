@@ -37,6 +37,7 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 | `--repo-root PATH` | No | Override repo root discovery (default: `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, then `git rev-parse --show-toplevel`, then legacy `parents[4]`) |
 | `--json` | No | Emit single-line JSON instead of human-readable text |
 | `--state {exists,missing,any}` | No | Gate on state-file presence (default: `any`; mismatch exits 2) |
+| `--dry-run` | No | Print discovered paths (repo_root, log_dir, base scripts) as JSON and exit without extractors |
 
 **Output (text, default):**
 ```

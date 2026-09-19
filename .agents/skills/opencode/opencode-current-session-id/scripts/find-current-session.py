@@ -67,6 +67,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--json", action="store_true", help="Emit single-line JSON instead of human-readable text")
     ap.add_argument("--state", choices=("exists", "missing", "any"), default="any",
                     help="Gate on state-file presence (default: any; mismatch exits 2)")
+    ap.add_argument("--dry-run", action="store_true", help="Print discovered paths (repo_root, log_dir, base scripts) and exit without extractors")
     return ap.parse_args(argv)
 
 
@@ -99,6 +100,17 @@ def main(argv: list[str] | None = None) -> int:
     else:
         log_dir = repo_root / ".opencode/logs"
 
+    # Dry-run: print discovery info and exit
+    if args.dry_run:
+        print(json.dumps({
+            "repo_root": str(repo_root),
+            "log_dir": str(log_dir),
+            "sort_by_mtime": str(sort_by_mtime),
+            "extract_field": str(extract_field),
+            "since": args.since,
+        }, ensure_ascii=False))
+        return 0
+
     if not sort_by_mtime.is_file():
         print(f"ERROR: sort-by-mtime.py not found at {sort_by_mtime}", file=sys.stderr)
         return 1
@@ -112,8 +124,10 @@ def main(argv: list[str] | None = None) -> int:
     # Fast path: walk ses_*/ dirs newest-first and accept the first header
     # whose session.id actually parses. A corrupt newest header must not
     # shadow an older healthy session.
-    session_dirs = sorted([d for d in log_dir.iterdir() if d.is_dir() and d.name.startswith("ses_")],
-                          key=lambda d: d.stat().st_mtime, reverse=True)
+    session_dirs = sorted(
+        [d for d in log_dir.iterdir() if d.is_dir() and d.name.startswith("ses_")],
+        key=lambda d: d.stat().st_mtime, reverse=True)
+
     yaml_path = None
     fast_sid: str | None = None
     for sdir in session_dirs:

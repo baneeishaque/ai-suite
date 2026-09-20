@@ -6,6 +6,7 @@ import argparse
 import importlib.util
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -113,12 +114,31 @@ def default_config_path() -> Path:
 
 
 def load_json_object(path: Path) -> JsonObject:
-    """Load and validate a top-level JSON object."""
+    """Load and validate a top-level JSON object (supports JSONC: // comments and trailing commas)."""
     if not path.is_file():
         raise FileNotFoundError(f"Input file does not exist: {path}")
 
-    with path.open(encoding="utf-8") as input_file:
-        value = json.load(input_file)
+    text = path.read_text(encoding="utf-8")
+
+    # Strip // comments (not inside quoted strings)
+    lines = text.split("\n")
+    stripped: list[str] = []
+    for line in lines:
+        if "//" in line:
+            in_string = False
+            for i, ch in enumerate(line):
+                if ch == '"':
+                    in_string = not in_string
+                elif ch == "/" and i + 1 < len(line) and line[i + 1] == "/" and not in_string:
+                    line = line[:i]
+                    break
+        stripped.append(line)
+
+    cleaned = "\n".join(stripped)
+    # Remove trailing commas before ] or }
+    cleaned = re.sub(r",(\s*[\]}])", r"\1", cleaned)
+
+    value = json.loads(cleaned)
 
     if not isinstance(value, dict):
         raise ValueError(f"Expected a JSON object in {path}")

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import sys
 
 from opencode_common import (
     JsonObject,

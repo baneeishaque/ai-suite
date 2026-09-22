@@ -209,6 +209,11 @@ Default section order:
 
 When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
 
+- MCP setup: always prefer remote (HTTP) MCP servers over local (stdio) ones when the provider offers a remote endpoint.
+- MCP setup: keep MCP entries in `opencode.json` as `enabled: false` by default; toggle on per task.
+- Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
+- Skill installs: place third-party / global skills in the cross-client `~/.agents/skills/<name>/SKILL.md` location (agentskills.io convention), not `~/.config/opencode/skills/`.
+
 ## Child DOX Index
 
 - [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source

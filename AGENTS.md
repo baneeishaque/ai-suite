@@ -118,8 +118,8 @@
    files by any means. They are Finder metadata files managed by the OS and should be left completely
    untouched.
 9. **When the user asks "which skills cover X", answer in ONE pass with, per relevant skill:** the skill
-   name, a one-line description, and the skill's file listing with ABSOLUTE paths (tree for a skill folder;
-   the absolute path alone for a single-file skill).
+    name, a one-line description, and the skill's file listing with ABSOLUTE paths (tree for a skill folder;
+    the absolute path alone for a single-file skill).
 
 ## Conventions
 

@@ -211,7 +211,19 @@ When the user requests a durable behavior change, record it here or in the relev
 
 ## Child DOX Index
 
-This project is not yet indexed. Before continuing you must scan the project, build the DOX tree and replace this message with the actual index. Go deep and scan files recursively to properly evaluate complexity and create nested DOX files where needed.
+- [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source
+  chat, supporting media, and derived meeting and operating documents.
+- [`cline-plugins/cline-session-logger/AGENTS.md`](cline-plugins/cline-session-logger/AGENTS.md) owns the Cline session-logger
+  hooks plugin (Option A port of `opencode-logger.ts`), live via symlinks in
+  `~/Documents/Cline/Hooks/`, plus its node:test suite.
+- [`copilot-plugins/copilot-session-logger/AGENTS.md`](copilot-plugins/copilot-session-logger/AGENTS.md) owns the GitHub
+  Copilot session-logger agent-hooks plugin (separate fork for the VS Code
+  hooks contract, `origin: copilot`), user-level install via
+  `~/.copilot/hooks/`, plus its node:test suite.
+- [`scripts/swh/AGENTS.md`](scripts/swh/AGENTS.md) owns the Software Heritage
+  crawl-submission automation (Save-code-now JXA, ingest-verify engine,
+  content-link minter) for `ai-suite` and its `ai-agent-rules` submodule.
+- Root-owned files: `README.md`, `LICENSE`, `banner.jpg`, `video-thumbnail.jpg`, and root-level project documentation.
 
 ## graphify
 

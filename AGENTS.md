@@ -120,6 +120,10 @@
 9. **When the user asks "which skills cover X", answer in ONE pass with, per relevant skill:** the skill
     name, a one-line description, and the skill's file listing with ABSOLUTE paths (tree for a skill folder;
     the absolute path alone for a single-file skill).
+10. **Pre-commit, run the dangling-link audit** via the `git-commit-dangling-link-audit` composer
+    (`detect-dangling-links.py` over the commit's SKILL.md/AGENTS.md/changelog files) — flag DANGLES
+    for user disposition (FOLD / RESOLVE-NOW / KEEP-AS-IS) rather than silently fixing stale links;
+    also sweep `/tmp` scans for session-evidence drift before reporting final verdicts.
 
 ## Conventions
 

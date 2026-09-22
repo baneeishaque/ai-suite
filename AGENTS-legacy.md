@@ -125,6 +125,7 @@ Copilot-specific instructions, see [`AGENTS-github-copilot.md`](AGENTS-github-co
 | GitHub Secrets Bulk Set | [`.agents/skills/github-secrets-bulk-set/SKILL.md`](.agents/skills/github-secrets-bulk-set/SKILL.md) | Industrial protocol for setting GitHub repository (or environment) secrets in bulk from a local .env-style secrets file using the `gh` CLI |
 | GitHub Security Policy | [`.agents/skills/github-security-policy/SKILL.md`](.agents/skills/github-security-policy/SKILL.md) | B15 — generate a SECURITY.md for a GitHub repository |
 | GitHub Support Docs | [`.agents/skills/github-support-docs/SKILL.md`](.agents/skills/github-support-docs/SKILL.md) | B16 — generate a SUPPORT.md for a GitHub repository |
+| GitHub Sync | [`.agents/skills/github-sync/SKILL.md`](.agents/skills/github-sync/SKILL.md) | C3 composer — generates GitHub metadata sync workflows (description and topics) |
 | GitHub Workflow Creation | [`.agents/skills/github-workflow-creation/SKILL.md`](.agents/skills/github-workflow-creation/SKILL.md) | Protocol for creating CI/CD workflows with atomic script separation, access control, and optimized deployment patterns |
 | GitHub Workflows | [`.agents/skills/github-workflows/SKILL.md`](.agents/skills/github-workflows/SKILL.md) | C4 composer — generates all GitHub Actions workflows (lint, PR labeler, sync) |
 | Gitignore Rules | [`.agents/skills/gitignore-rules/SKILL.md`](.agents/skills/gitignore-rules/SKILL.md) | User asks to audit `.gitignore`, or directory-ignore + negation patterns detected |

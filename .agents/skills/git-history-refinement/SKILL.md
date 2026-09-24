@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git History Refinement Skill
 
-> **Skill ID:** `git-history-refinement`
-> **Version:** 1.0.0
+> **Skill ID:** `git-history-refinement`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # IDE Noise Removal via Commit Edit Skill
 
-> **Skill ID:** `noise-removal-via-commit-edit`
-> **Version:** 1.0.0
+> **Skill ID:** `noise-removal-via-commit-edit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

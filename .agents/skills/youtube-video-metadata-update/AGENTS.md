@@ -15,4 +15,5 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
+- [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle
 - [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) — base skill that provides the detected language code used for `--language`

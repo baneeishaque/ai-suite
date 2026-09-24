@@ -24,5 +24,7 @@ loading `SKILL.md` — this bridge is intentionally non-actionable.
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — SSOT with the complete procedure.
+- [`git-commit-edit-in-worktree`](../git-commit-edit-in-worktree/SKILL.md) —
+  primary composer that invokes this base inside an isolated worktree.
 - [`git-commit-edit`](../../../../git-commit-edit/SKILL.md) — interactive
   counterpart for single-commit edits.

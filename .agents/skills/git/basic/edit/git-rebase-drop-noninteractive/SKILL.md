@@ -15,6 +15,18 @@ category: Git & Repository Management
 > rewrite (pick → drop / edit) via `GIT_SEQUENCE_EDITOR`<br>
 > **Category:** Git & Repository Management
 
+## Composition Rationale
+
+This skill is a base primitive: the rebase-todo rewrite is a deterministic,
+byte-exact text transform reused by every higher-level workflow that drops or
+edits named commits from history without an interactive editor. Composers
+would otherwise re-derive the todo-rewrite logic ad hoc, splitting the SSOT.
+Known composer:
+
+- [`git-commit-edit-in-worktree`](../git-commit-edit-in-worktree/SKILL.md) —
+  shells out to `scripts/write-drop-todo.py` as its `GIT_SEQUENCE_EDITOR`
+  inside an isolated worktree.
+
 ## Related Skills
 
 - [`git-commit-edit`](../../../../git-commit-edit/SKILL.md) — interactive

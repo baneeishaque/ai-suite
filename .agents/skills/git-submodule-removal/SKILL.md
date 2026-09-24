@@ -100,5 +100,10 @@ rm -rf .git/modules/<PATH>
 
 - **Skill Factory**: Generated via the Skill Factory protocol.
 - **Related Meta-Skill**: `readd_git_submodule` (Orchestrator).
+- **Related Practitioner**: [`git-submodule-history-removal`](../git/submodule/lifecycle/
+  git-submodule-history-removal/SKILL.md) —
+  when the submodule's commits must ALSO be purged from history (INTRO + pointer-update commits rewritten away),
+  run that composer's eleven-gate protocol instead of (or before) this registration-level removal; this skill's
+  `.gitmodules` + `git rm --cached` form is the registration-stage delegate inside its refresh-1 cleanup gate.
 - **Parent Rules**: `ai-agent-rules/git-submodule-rules.md`, `ai-agent-rules/git-atomic-commit-construction-rules.md`.
 - **Reference**: [StackOverflow: How do I remove a submodule?](https://stackoverflow.com/a/1260982/3333438)

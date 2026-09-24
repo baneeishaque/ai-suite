@@ -6,8 +6,8 @@ category: Git-Operations
 
 # Canonical-Source vs Workflow-Repo Pre-Edit Audit Skill
 
-> **Skill ID:** `canonical-source-vs-workflow-repo-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `canonical-source-vs-workflow-repo-audit`<br>
+> **Version:** 1.0.0<br>
 > **Type:** Atomic + script
 
 ## Description

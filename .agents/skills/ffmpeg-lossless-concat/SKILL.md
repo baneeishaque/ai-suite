@@ -232,4 +232,6 @@ pipeline works regardless of the caller's current working directory — see the
   splitting (inverse operation of concat).
 - [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that generates filler
   transitions and pipes into this base skill for lossless concat.
+- [WebM Recording Interrupted Recovery](../webm-recording-interrupted-recovery/SKILL.md) — composer that orchestrates
+  full recording-interruption recovery; uses this skill transitively via the filler-merge composer.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing.

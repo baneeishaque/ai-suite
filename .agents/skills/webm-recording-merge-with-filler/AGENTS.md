@@ -18,5 +18,6 @@ steps. Do NOT execute any step without first loading `SKILL.md` — this bridge 
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
-- [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — the base skill this composer invokes
+- [FFmpeg Filler Generator](../ffmpeg-filler-generator/SKILL.md) — base skill invoked for generating the filler transition
+- [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — base skill invoked for lossless concatenation
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / Pillow if missing

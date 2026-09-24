@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-generate_filler_and_merge.py — Generate a filler transition between webm recording
-segments and losslessly concatenate them using the ffmpeg-lossless-concat base skill.
+generate_filler_and_merge.py — Merge discontinuous webm recording segments with a
+filler transition between each pair, then losslessly concatenate.
+
+Composes two base skills:
+  1. ffmpeg-filler-generator  — generates the filler transition video
+  2. ffmpeg-lossless-concat   — losslessly concatenates source + filler segments
 
 Tier 1 (Python 3.12+) per Scripting Language Selection Rules §2.3.
-Requires: Pillow (python3 -m pip install Pillow)
 """
 
 from __future__ import annotations
@@ -12,64 +15,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
-import textwrap
-
-
-def find_font(size: int):
-    """Return the best available truetype font, or fall back to default bitmap."""
-    candidates = [
-        "/System/Library/Fonts/Helvetica.ttc",
-        "/System/Library/Fonts/HelveticaNeue.ttc",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/TTF/DejaVuSans.ttf",
-    ]
-    for path in candidates:
-        if os.path.isfile(path):
-            from PIL import ImageFont
-            return ImageFont.truetype(path, size)
-    from PIL import ImageFont
-    return ImageFont.load_default()
-
-
-def generate_filler_image(
-    width: int,
-    height: int,
-    text: str,
-    subtext: str,
-    output_png: str,
-) -> None:
-    """Create a black PNG with centered text using Pillow."""
-    from PIL import Image, ImageDraw
-
-    img = Image.new("RGB", (width, height), "black")
-    draw = ImageDraw.Draw(img)
-
-    font_lg = find_font(max(56, width // 40))
-    font_sm = find_font(max(40, width // 56))
-
-    # Measure text size
-    bbox1 = draw.textbbox((0, 0), text, font=font_lg)
-    text_w1 = bbox1[2] - bbox1[0]
-    text_h1 = bbox1[3] - bbox1[1]
-
-    x1 = (width - text_w1) // 2
-    y1 = (height // 2) - text_h1 - 20
-
-    draw.text((x1, y1), text, fill="white", font=font_lg)
-
-    if subtext:
-        bbox2 = draw.textbbox((0, 0), subtext, font=font_sm)
-        text_w2 = bbox2[2] - bbox2[0]
-        x2 = (width - text_w2) // 2
-        y2 = (height // 2) + 10
-        draw.text((x2, y2), subtext, fill="#cccccc", font=font_sm)
-
-    img.save(output_png)
-    print(f"  filler image saved: {output_png}")
 
 
 def probe_video_info(path: str) -> dict:
@@ -119,54 +67,30 @@ def probe_video_info(path: str) -> dict:
     return info
 
 
-def generate_filler_video(
-    width: int,
-    height: int,
-    fps: str,
-    sample_rate: str,
-    duration_sec: int,
-    overlay_png: str,
-    output_webm: str,
-) -> None:
-    """Generate a short filler webm with black background + text overlay."""
-    cmd = [
-        "ffmpeg", "-y",
-        "-f", "lavfi",
-        "-i", f"color=c=black:s={width}x{height}:r={fps}:d={duration_sec}",
-        "-f", "lavfi",
-        "-i", f"anullsrc=r={sample_rate}:cl=stereo:d={duration_sec}",
-        "-i", overlay_png,
-        "-filter_complex", "[0:v][2:v]overlay=0:0",
-        "-c:v", "libvpx-vp9",
-        "-crf", "10",
-        "-b:v", "0",
-        "-c:a", "libopus",
-        "-b:a", "256k",
-        output_webm,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"ERROR: filler generation failed (exit {result.returncode})", file=sys.stderr)
-        for line in result.stderr.strip().splitlines()[-10:]:
-            print(f"  ffmpeg: {line}", file=sys.stderr)
-        sys.exit(result.returncode)
-    print(f"  filler video saved: {output_webm}")
-
-
-def build_concat_file(segment_paths: list[str], filler_webm: str, output_path: str) -> str:
+def build_concat_file(segment_paths: list[str], filler_webm: str) -> str:
     """Build the file list (plain paths, one per line) for the base skill.
 
-    The base ffmpeg-lossless-concat script reads plain paths (NOT ffmpeg concat
-    format) from the --files input.
+    All paths are resolved to absolute form so the base script (which reads
+    this list and writes a concat file to a temp directory in /tmp) can
+    resolve them regardless of its working directory. Filler is inserted
+    between each pair of consecutive segments (N segments -> N-1 fillers).
     """
     fd, tmp_path = tempfile.mkstemp(suffix=".txt", prefix="concat_list_")
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         for i, path in enumerate(segment_paths):
-            fh.write(f"{path}\n")
-            # Insert filler after the first segment and before the next
-            if i == 0 and filler_webm:
-                fh.write(f"{filler_webm}\n")
+            fh.write(f"{os.path.abspath(path)}\n")
+            if i < len(segment_paths) - 1 and filler_webm:
+                fh.write(f"{os.path.abspath(filler_webm)}\n")
     return tmp_path
+
+
+def resolve_base_script(script_dir: str, skill_dir: str, script_path: str) -> str:
+    """Resolve a base skill script path relative to this script's location."""
+    result = os.path.normpath(os.path.join(script_dir, "..", "..", skill_dir, "scripts", script_path))
+    if not os.path.isfile(result):
+        print(f"ERROR: base skill script not found at {result}", file=sys.stderr)
+        sys.exit(1)
+    return result
 
 
 def main() -> None:
@@ -206,18 +130,15 @@ def main() -> None:
     if len(args.segments) < 2:
         parser.error("need at least two --segment files")
 
-    # Locate base script
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_script = os.path.join(
-        script_dir, "..", "..", "ffmpeg-lossless-concat", "scripts", "ffmpeg_lossless_concat.py"
+
+    # Resolve base skill scripts
+    filler_script = resolve_base_script(
+        script_dir, "ffmpeg-filler-generator", "generate_filler.py"
     )
-    base_script = os.path.normpath(base_script)
-    if not os.path.isfile(base_script):
-        print(
-            f"ERROR: base skill script not found at {base_script}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
+    concat_script = resolve_base_script(
+        script_dir, "ffmpeg-lossless-concat", "ffmpeg_lossless_concat.py"
+    )
 
     # Probe first segment for video properties
     print("Probing first segment for video properties...")
@@ -226,66 +147,63 @@ def main() -> None:
     print(f"  fps: {info['r_frame_rate']}")
     print(f"  sample_rate: {info['sample_rate']}")
 
-    # Generate filler assets
-    print("Generating filler overlay image...")
-    png_path = os.path.join(
-        os.path.dirname(args.output) or ".",
-        ".filler_overlay.png",
-    )
-    generate_filler_image(
-        width=info["width"],
-        height=info["height"],
-        text=args.filler_text,
-        subtext=args.filler_subtext,
-        output_png=png_path,
-    )
-
-    filler_webm_path = os.path.join(
-        os.path.dirname(args.output) or ".",
+    # Generate filler via the ffmpeg-filler-generator base skill
+    filler_path = os.path.join(
+        os.path.dirname(os.path.abspath(args.output)) or ".",
         ".filler_segment.webm",
     )
-    print("Generating filler video...")
-    generate_filler_video(
-        width=info["width"],
-        height=info["height"],
-        fps=info["r_frame_rate"],
-        sample_rate=info["sample_rate"],
-        duration_sec=args.filler_duration,
-        overlay_png=png_path,
-        output_webm=filler_webm_path,
-    )
+    print("Generating filler via ffmpeg-filler-generator...")
+    filler_cmd = [
+        sys.executable, filler_script,
+        "--width", str(info["width"]),
+        "--height", str(info["height"]),
+        "--fps", info["r_frame_rate"],
+        "--sample-rate", info["sample_rate"],
+        "--duration", str(args.filler_duration),
+        "--text", args.filler_text,
+        "--subtext", args.filler_subtext,
+        "--output", filler_path,
+    ]
+    filler_result = subprocess.run(filler_cmd, capture_output=True, text=True)
+    if filler_result.stdout:
+        for line in filler_result.stdout.strip().splitlines():
+            print(f"  filler: {line}")
+    if filler_result.stderr:
+        for line in filler_result.stderr.strip().splitlines():
+            print(f"  filler: {line}", file=sys.stderr)
+    if filler_result.returncode != 0:
+        print(f"ERROR: filler generation failed (exit {filler_result.returncode})", file=sys.stderr)
+        sys.exit(filler_result.returncode)
 
     # Build concat file list
     print("Building concat file list...")
     concat_list = build_concat_file(
         segment_paths=args.segments,
-        filler_webm=filler_webm_path,
-        output_path=args.output,
+        filler_webm=filler_path,
     )
 
-    # Invoke base skill
+    # Invoke base skill for lossless concat
     print("Invoking base skill for lossless concat...")
-    base_result = subprocess.run(
-        [sys.executable, base_script, "--files", concat_list, "--output", args.output],
+    concat_result = subprocess.run(
+        [sys.executable, concat_script, "--files", concat_list, "--output", args.output],
         capture_output=True,
         text=True,
     )
-    # Print base skill output
-    if base_result.stdout:
-        for line in base_result.stdout.strip().splitlines():
+    if concat_result.stdout:
+        for line in concat_result.stdout.strip().splitlines():
             print(f"  base: {line}")
-    if base_result.stderr:
-        for line in base_result.stderr.strip().splitlines():
+    if concat_result.stderr:
+        for line in concat_result.stderr.strip().splitlines():
             print(f"  base: {line}", file=sys.stderr)
 
     # Clean up temp files
-    for tmp in [png_path, filler_webm_path, concat_list]:
+    for tmp in [filler_path, concat_list]:
         if os.path.isfile(tmp):
             os.unlink(tmp)
 
-    if base_result.returncode != 0:
-        print(f"ERROR: merge failed (base script exit {base_result.returncode})", file=sys.stderr)
-        sys.exit(base_result.returncode)
+    if concat_result.returncode != 0:
+        print(f"ERROR: merge failed (base script exit {concat_result.returncode})", file=sys.stderr)
+        sys.exit(concat_result.returncode)
 
     print(f"OK: merged output written to {args.output}")
 

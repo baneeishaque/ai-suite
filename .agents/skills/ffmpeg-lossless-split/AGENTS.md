@@ -19,4 +19,6 @@ steps. Do NOT execute any step without first loading `SKILL.md` — this bridge 
 
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation
+- [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that merges webm
+  segments with filler transitions
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing

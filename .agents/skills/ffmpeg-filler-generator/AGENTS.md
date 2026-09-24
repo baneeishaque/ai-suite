@@ -23,4 +23,5 @@ steps. Do NOT execute any step without first loading `SKILL.md` — this bridge 
 ## Cross-References
 
 - [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation
+- [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that invokes this base skill
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / Pillow if missing

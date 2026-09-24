@@ -33,6 +33,22 @@ slide-show chapter card generator) that need a transition segment with custom te
 
 ***
 
+## 2. Composition Rationale
+
+This skill is a **base** — it owns the generic primitive "generate a static-text filler/transition video segment."
+Multiple domain-specific composers reuse this primitive:
+
+- [`webm-recording-merge-with-filler`](../webm-recording-merge-with-filler/SKILL.md) — probes the first recording
+  segment for dimensions, then calls this skill's script to generate a "Recording interrupted" filler that matches
+  the source codecs, before losslessly concatenating.
+- Any future skill that needs a transition card (podcast gap filler, security-camera "no signal" segment, video
+  chapter divider) should invoke this skill rather than re-deriving the Pillow + ffmpeg incantation.
+
+The layering test: *"Could a different domain need the same primitive?"* — **YES**. Inlining the filler generation
+into a composer would split the SSOT across every consumer.
+
+***
+
 ## 3. Environment & Dependencies
 
 ### 3.1 Required Tools
@@ -202,11 +218,21 @@ The output file MUST have:
 
 ***
 
+## 8. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| :--- | :--- |
+| [`webm-recording-merge-with-filler`](../webm-recording-merge-with-filler/SKILL.md) | Calls `scripts/generate_filler.py --width <w> --height <h> --fps <fps> --sample-rate <rate> --duration <sec> --text "<text>" --subtext "<subtext>" --output <filler.webm>` after probing the first source segment for dimensions. Consumes exit code only; does not parse stdout. |
+
+***
+
 ## 9. Related Skills
 
 - [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation;
   composers often call both skills in sequence (filler-generator then concat).
 - [FFmpeg Lossless Split](../ffmpeg-lossless-split/SKILL.md) — sibling base skill for lossless timestamp-based
   splitting; may be used before filling to trim a continuation recording.
+- [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that invokes this
+  base skill as the first stage of its pipeline.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / Python / Pillow
   if any dependency is missing.

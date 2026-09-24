@@ -197,4 +197,6 @@ frame-accurate cuts, a re-encode (`-c libx264` etc.) at the exact timestamp is r
 ## 9. Related Skills
 
 - [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation.
+- [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that inserts a filler
+  transition between webm segments and losslessly concatenates them.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing.

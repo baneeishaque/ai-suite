@@ -215,4 +215,6 @@ The output file MUST:
   generation and lossless merge.
 - [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — base skill used transitively via the filler-merge
   composer for lossless concatenation.
+- [Media Timestamp Summary](../media-timestamp-summary/SKILL.md) — composer that inventories webm segments by
+  chronological order; use to identify main vs continuation recordings by timestamp.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / Pillow if missing.

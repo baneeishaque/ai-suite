@@ -22,5 +22,7 @@ non-actionable.
 
 ## Cross-References
 
+- [`media-timestamp-summary`](../media-timestamp-summary/SKILL.md) — composer
+  that consumes this base skill for media-file chronological sorting.
 - [`text-lines-sort-by-length`](../text-lines-sort-by-length/SKILL.md) —
   sibling base primitive for sorting text file lines by length.

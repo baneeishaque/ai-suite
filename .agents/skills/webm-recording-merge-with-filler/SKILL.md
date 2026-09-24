@@ -271,6 +271,8 @@ See §3.3.1 flag table — all flags correspond directly to the script's `argpar
   to trim a continuation recording at the interruption point before merging.
 - [WebM Recording Interrupted Recovery](../webm-recording-interrupted-recovery/SKILL.md) — composer that orchestrates
   the full recovery workflow (trim continuation via split base, then merge via this skill).
+- [Media Timestamp Summary](../media-timestamp-summary/SKILL.md) — composer that inventories and chronologically sorts
+  webm recording segments by embedded epoch-ms timestamp; use before merging to confirm segment order.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / ffprobe / Python /
   Pillow if any dependency is missing.
 - [YouTube Video Upload](../youtube-video-upload/SKILL.md) — downstream composer that uploads the merged webm (output of

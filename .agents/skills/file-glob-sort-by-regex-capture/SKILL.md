@@ -217,6 +217,7 @@ PY
 
 | Composer Skill | Composition Mechanism |
 | :--- | :--- |
+| [`media-timestamp-summary`](../media-timestamp-summary/SKILL.md) | Calls this base script with `--glob "video-*.webm" --regex "video-(\d+)"` and `--sort-type int` to obtain chronologically-sorted webinar recording segments, then consumes the JSON Lines to generate a human-readable summary file with date conversions and time-gap analysis. |
 | [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) | Calls this base script with `--glob "Screenshot *.png"` / `--glob "Screen Recording *.mov"` and a date-extraction regex to obtain JSON Lines of OneDrive-synced files sorted by embedded date key. Consumes the JSONL stdout and pipes into `json-group-stats` and `json-batch-file-move` via the composer script. |
 
 New composers (e.g. log-file date-range report, screenshot sequence auditor,
@@ -230,6 +231,9 @@ their own location, per the
 
 ## 9. Related Skills
 
+- [`media-timestamp-summary`](../media-timestamp-summary/SKILL.md) — composer
+  that consumes this base skill to produce a formatted summary of media files
+  sorted by embedded epoch-ms timestamp.
 - [`text-lines-sort-by-length`](../text-lines-sort-by-length/SKILL.md) —
   sibling base primitive for sorting lines within a text file by physical line
   length (complementary — operates on file content rather than filenames).

@@ -557,6 +557,7 @@ git -C <repo> status -sb
 | [`github-secrets-bulk-set`](../github-secrets-bulk-set/SKILL.md) | `gh secret set` fails with 401 / 403. | §3.4 / §3.5 PAT validation. |
 | [`jira-acli-operations`](../jira-acli-operations/SKILL.md) | `gh pr create` fails on the PR step. | §3.4 `gh auth login` flow. |
 | [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) | Push a brand-new personal branch to a freshly-created `personal` remote without leaking the PAT into branch tracking config. | §3.2.1 push-without-`-u` two-step pattern; §3.2.2 leaked-PAT recovery. |
+| [`git-submodule-history-removal`](../git/submodule/lifecycle/git-submodule-history-removal/SKILL.md) | Forced push (`--force-with-lease`) of a rewritten branch rejected with 401/403. | §3.8 Path H identity probe first (cheap, read-only), then §3 paths; §5 push verification. |
 
 ***
 
@@ -586,3 +587,8 @@ git -C <repo> status -sb
   `credential.useHttpPath true`, flushed all `github.com` entries from the keychain, then pushed. Per-repo-path
   isolation (enabled by `useHttpPath`) kept personal and company credentials separate. Documented as §3.6
   Path F and §3.7 Path G.
+- August 2026 — `git credential fill` probe added as §3.8 Path H: the read-only identity probe run before any
+  destructive path, plus the session-poisoning sub-case (agent's own earlier Path-B work leaving `GITHUB_PAT`
+  / a repo-local helper that serves the wrong identity to later repos in the same session). Introduced as the
+  first probe for the `git-submodule-history-removal` push gate (401/403 on a forced push of a rewritten
+  branch).

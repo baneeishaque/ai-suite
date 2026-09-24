@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git Commit Edit Skill
 
-> **Skill ID:** `git-commit-edit`
-> **Version:** 1.0.0
+> **Skill ID:** `git-commit-edit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description
@@ -32,14 +32,14 @@ constructs new commits from working-tree changes), this skill modifies
 ## Source Rules
 
 | Rule File | Scope Incorporated |
-|---|---|
+| --- | --- |
 | [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md) | Sections 2–4 (commit/push/stash protocols) |
 | [`git-atomic-commit-construction-rules.md`](../../../ai-agent-rules/git-atomic-commit-construction-rules.md) | Phase 9 (execution & verification), Phase 14 (push protocol) |
 
 ## Prerequisites
 
 | Requirement | Minimum |
-|---|---|
+| --- | --- |
 | VCS | Git 2.x+ |
 | Shell | PowerShell 5.1+ or Bash 4+ |
 | Access | Write access to the project repository |
@@ -48,6 +48,7 @@ constructs new commits from working-tree changes), this skill modifies
 ## When to Apply
 
 Apply this skill when:
+
 - A user asks to "edit a commit," "remove files from a commit," or
   "fix a commit"
 - A specific commit contains unwanted files (noise, binaries,
@@ -59,6 +60,7 @@ Apply this skill when:
 - The user asks to correct the author name or email of specific historical commits
 
 Do NOT apply when:
+
 - The user wants to split a commit into multiple atomic commits — use
   [`git-history-refinement`](../git-history-refinement/SKILL.md) instead
 - Changes are uncommitted (working-tree state) — use
@@ -125,10 +127,13 @@ The agent **MUST** create a backup branch before performing any destructive inte
 
 1. **Incremental Naming:** Use `backup/pre-edit-<n>`
 2. **Branch Creation:**
+
    ```powershell
    git branch backup/pre-edit-<n>
    ```
+
 3. **Remote Backup (Recommended):** Push the backup branch to the remote repository for industrial-grade redundancy:
+
    ```powershell
    git push origin backup/pre-edit-<n>
    ```
@@ -293,8 +298,10 @@ git commit --amend --author="New Name <new.email@example.com>" --no-edit
 
 To remove a commit entirely from the history during an interactive rebase:
 
-1. **Mark for Drop:** In the rebase todo list, change `pick` to `drop` (or simply delete the line) for the target commit hash.
-2. **Complete Rebase:** Run `git rebase --continue`. Git will skip the marked commit and replay all subsequent commits on top of its parent.
+1. **Mark for Drop:** In the rebase todo list, change `pick` to `drop`
+   (or simply delete the line) for the target commit hash.
+2. **Complete Rebase:** Run `git rebase --continue`. Git will skip the
+   marked commit and replay all subsequent commits on top of its parent.
 
 ---
 
@@ -321,7 +328,7 @@ git show --stat HEAD
 **Count check:** Compare the file count before and after. The agent
 MUST report the delta:
 
-```
+```text
 Before: 70 files changed, +1,024 / −21
 After:  16 files changed, +686 / −13
 Removed: 54 noise files
@@ -344,12 +351,14 @@ git rebase --continue
 If a descendant commit conflicts with the edit:
 
 1. **Inspect the conflict:**
+
    ```powershell
    git status
    git diff
    ```
 
 2. **Resolve the conflict** — Edit the conflicting files, then:
+
    ```powershell
    git add <resolved-files>
    git rebase --continue
@@ -357,9 +366,11 @@ If a descendant commit conflicts with the edit:
 
 3. **If the conflict makes the descendant commit empty** (e.g., the
    descendant also touched a removed file):
+
    ```powershell
    git rebase --skip
    ```
+
    **⚠️ Only skip after confirming with the user** that the now-empty
    commit is expected.
 
@@ -439,7 +450,9 @@ git status --short
 
 #### 7b — Pre-Push Remote Backup & Push Authorization
 
-If the branch was previously pushed, a force push is required. Before any destructive operation (force-push), the agent **MUST** create a backup of the remote state:
+If the branch was previously pushed, a force push is required. Before any
+destructive operation (force-push), the agent **MUST** create a backup of
+the remote state:
 
 ```powershell
 git branch backup/pre-force-push-<n> origin/<branch>
@@ -462,39 +475,55 @@ Offer: git push origin <branch>
 The agent **MUST** explicitly ask: *"Shall I push these changes to the remote repository using the offered command?"*
 
 > [!CRITICAL]
-> The agent is **PROHIBITED** from executing any `git push` command (simple or force) without explicit, separate user authorization, even if the rebase was successful.
+> The agent is **PROHIBITED** from executing any `git push` command (simple
+> or force) without explicit, separate user authorization, even if the
+> rebase was successful.
 
 ---
 
-Once the rebase and any necessary pushes are complete, the agent **MUST** verify the final history and explicitly offer to clean up backup branches.
+Once the rebase and any necessary pushes are complete, the agent **MUST**
+verify the final history and explicitly offer to clean up backup branches.
 
 1. **Present the final history:**
+
    ```powershell
    git log --oneline -10
    ```
+
 2. **Offer the cleanup command:**
+
    *"History is verified. Shall I clean up the local and remote backup branches using the following command?"*
+
    ```bash
    git branch -D backup/pre-edit-<n> backup/pre-force-push-<n>
    git push origin --delete backup/pre-edit-<n> backup/pre-force-push-<n>
    ```
 
 > [!CRITICAL]
-> The agent is **PROHIBITED** from deleting backup branches (local or remote) automatically. It **MUST** remain a separate, explicit user authorization step.
+> The agent is **PROHIBITED** from deleting backup branches (local or
+> remote) automatically. It **MUST** remain a separate, explicit user
+> authorization step.
 
 ---
 
 ### Step 9 — Multi-Branch Coordination (Conditional)
 
-If the edited commit was part of a shared base branch (e.g., `master`), all dependent branches must be rebased to avoid duplicate commits and divergence.
+If the edited commit was part of a shared base branch (e.g., `master`),
+all dependent branches must be rebased to avoid duplicate commits and
+divergence.
 
 1. **Identify dependent branches:** Use `git branch -a --contains <old-head-hash>` to find branches tracking the old history.
 2. **Offer synchronization:** For each dependent branch, offer the `rebase --onto` command:
+
    ```bash
    git rebase --onto <new-base-branch> <old-base-hash> <dependent-branch>
    ```
-3. **Cleanup Authorization:** After synchronization and pushing are complete, explicitly ask to delete any temporary local branches created for the rebase:
+
+3. **Cleanup Authorization:** After synchronization and pushing are
+   complete, explicitly ask to delete any temporary local branches created
+   for the rebase:
    *"Synchronization complete. Shall I delete the temporary local branches?"*
+
    ```bash
    git branch -D <temp-branch-1> <temp-branch-2>
    ```
@@ -510,14 +539,15 @@ To convert a branching history into a single line tree (linearizing PR merges):
 
 1. **Start Rebase:** Run `git rebase -i <base-commit>`. Do **NOT** use the `--rebase-merges` flag.
 2. **Review Todo:** Git will automatically propose a linear list of commits, flattening all branches into the main line.
-3. **Complete Rebase:** Run `git rebase --continue`. Note that "Merge pull request" commits will be discarded in favor of a linear sequence.
+3. **Complete Rebase:** Run `git rebase --continue`. Note that "Merge pull
+   request" commits will be discarded in favor of a linear sequence.
 
 ---
 
 ## Scope Coverage
 
 | Category | Convention |
-|---|---|
+| --- | --- |
 | File removal from commit | Restore from parent via `git checkout HEAD~1 --` |
 | File addition to commit | Stage and amend |
 | Content modification | Edit, stage, and amend |
@@ -538,7 +568,9 @@ The agent is **BLOCKED** from:
 - **Skipping the backup steps** — Mandatory before any destructive local rebase or remote force-push
 - **Starting rebase without user confirmation** — The edit plan MUST
   be presented and approved first
-- **Pushing changes automatically** — The agent MUST NOT execute `git push` or `git push --force-with-lease` without explicit user authorization, even if the rebase was successful.
+- **Pushing changes automatically** — The agent MUST NOT execute `git push`
+  or `git push --force-with-lease` without explicit user authorization, even
+  if the rebase was successful.
 - **Editing without stashing first** — If the working tree is dirty,
   stash MUST precede rebase
 - **Skipping conflicted descendants without confirmation** — Empty
@@ -553,7 +585,7 @@ The agent is **BLOCKED** from:
 ## Common Pitfalls
 
 | Pitfall | Solution |
-|---|---|
+| --- | --- |
 | Dirty working tree prevents rebase | Stash first with descriptive message; restore after rebase completes |
 | Rebase editor script not picked up | Verify `GIT_SEQUENCE_EDITOR` env var is set correctly; use absolute path on Windows |
 | Wrong commit marked as `edit` | Verify with `git log --oneline -1` after rebase stops; abort with `git rebase --abort` if wrong |
@@ -577,7 +609,7 @@ Skills that build on this base by feeding it domain-specific
 discovery, classification, or batch logic:
 
 | Composer | Purpose |
-|---|---|
+| --- | --- |
 | [`noise-removal-via-commit-edit`](../noise-removal-via-commit-edit/SKILL.md) | Detects IDE artifact noise in a commit and drives this skill to remove the offending files. |
 | [`git-commit-message-reword`](../git-commit-message-reword/SKILL.md) | Reads the project's commit-message rules, classifies the target commit's diff, authors a Conventional Commits message, and drives this skill's `reword` mode for a single commit. |
 | [`git-commit-message-bulk-reword`](../git-commit-message-bulk-reword/SKILL.md) | Range composer over `git-commit-message-reword`; amortizes the per-commit primitive across a contiguous commit range via a shared map and one rebase invocation. |

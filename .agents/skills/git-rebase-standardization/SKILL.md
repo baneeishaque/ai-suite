@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git Rebase Standardization Skill
 
-> **Skill ID:** `git-rebase-standardization`
-> **Version:** 1.0.0
+> **Skill ID:** `git-rebase-standardization`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

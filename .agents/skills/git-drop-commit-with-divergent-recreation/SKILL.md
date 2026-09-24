@@ -13,8 +13,8 @@ category: Git & Repository Management
 
 # Git Drop Commit With Divergent Recreation Skill (v1)
 
-> **Skill ID:** `git-drop-commit-with-divergent-recreation`
-> **Version:** 1.0.0
+> **Skill ID:** `git-drop-commit-with-divergent-recreation`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

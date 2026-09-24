@@ -18,4 +18,5 @@ steps. Do NOT execute any step without first loading `SKILL.md` — this bridge 
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
+- [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing

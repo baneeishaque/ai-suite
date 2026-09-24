@@ -157,6 +157,15 @@ of all input durations (stream copy preserves exact timing).
 - **Very large files** (> 4 GiB): ffmpeg's concat demuxer handles large files natively. No special handling needed.
 - **Special characters in paths**: The script writes paths with single-quote escaping inside the concat file list
   per ffmpeg's `-f concat` quoting rules.
+- **Duplicate paths in file list**: When the same file appears multiple times in the concat list (e.g. a filler
+  segment inserted between every pair), the script deduplicates paths before `verify_compatibility` to avoid the
+  grouped-probe returning N × streams for the duplicated file. The concat list itself retains duplicates — ffmpeg's
+  concat demuxer handles repeated file references correctly. See `verify_compatibility` in §6.
+- **Relative paths in concat list**: The `generate_concat_file` function resolves every path to absolute form
+  (`os.path.abspath()`) before writing the ffmpeg concat file list. This ensures ffmpeg resolves paths correctly
+  even though the concat file list is written to a temporary directory (`/tmp` or equivalent) whose working
+  directory differs from the caller's `cwd`. Composers that supply the file list SHOULD similarly resolve paths
+  to absolute form before passing them to this base script.
 
 ***
 
@@ -183,7 +192,15 @@ of all input durations (stream copy preserves exact timing).
 5. If `--output`: generate an ffmpeg concat file list, execute the concat command, clean up, and exit with ffmpeg's
    return code.
 
-### 6.1 Argument Breakdown
+### 6.1 Internal Steps (beyond argument parsing)
+
+- **Deduplication**: Before `verify_compatibility`, paths are deduplicated via `list(dict.fromkeys(file_paths))`
+  so the same file listed N times (e.g. a filler segment between every pair) is probed only once. The original
+  (non-deduplicated) list is used for the concat step so ffmpeg concatenates all occurrences.
+- **Path resolution**: `generate_concat_file` resolves every path to absolute via `os.path.abspath()` so ffmpeg's
+  concat demuxer finds the files regardless of where the temp concat file list is written.
+
+### 6.2 Argument Breakdown
 
 - `--files` — Path to a text file listing media files, one absolute or relative path per line. Blank lines and lines
   starting with `#` are ignored.
@@ -206,3 +223,11 @@ base script rather than reinventing compatibility verification and concat invoca
 base script via a relative path anchored to their own location (`os.path.dirname(os.path.abspath(__file__))`) so the
 pipeline works regardless of the caller's current working directory — see the
 [Layered Composition Mandate](../../../ai-agent-rules/ai-rule-standardization-rules.md) for the project-wide rule.
+
+***
+
+## 8. Related Skills
+
+- [FFmpeg Lossless Split](../ffmpeg-lossless-split/SKILL.md) — sibling base skill for lossless timestamp-based
+  splitting (inverse operation of concat).
+- [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing.

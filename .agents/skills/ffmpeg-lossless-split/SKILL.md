@@ -189,9 +189,12 @@ frame-accurate cuts, a re-encode (`-c libx264` etc.) at the exact timestamp is r
   transcoder skill, not this base skill.
 - The Agent MUST NOT manually invoke `ffmpeg -c copy -ss` without using the script — the script validates timestamps
   and streams before executing.
+- The Agent MUST NOT use this skill for concatenation; concat is owned by
+  [`ffmpeg-lossless-concat`](../ffmpeg-lossless-concat/SKILL.md).
 
 ***
 
 ## 9. Related Skills
 
+- [FFmpeg Lossless Concat](../ffmpeg-lossless-concat/SKILL.md) — sibling base skill for lossless concatenation.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing.

@@ -132,13 +132,20 @@ def verify_compatibility(file_paths: list[str]) -> list[dict]:
 
 
 def generate_concat_file(file_paths: list[str]) -> str:
-    """Write an ffmpeg concat demuxer file list and return its path."""
+    """Write an ffmpeg concat demuxer file list and return its path.
+
+    Paths are resolved to absolute form so ffmpeg resolves them correctly
+    regardless of the concat file's location (which is a temp file in /tmp
+    or equivalent). Relative paths would be resolved relative to the concat
+    file's directory, not the caller's cwd.
+    """
     fd, tmp_path = tempfile.mkstemp(suffix=".concat.txt", prefix="ffmpeg_concat_")
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         for path in file_paths:
+            abs_path = os.path.abspath(path)
             # Escape single quotes per ffmpeg concat demuxer syntax:
             #   file '/path/to/file'\''with quotes.webm'
-            escaped = path.replace("'", "'\\''")
+            escaped = abs_path.replace("'", "'\\''")
             fh.write(f"file '{escaped}'\n")
     return tmp_path
 
@@ -201,8 +208,11 @@ def main() -> None:
         print("ERROR: need at least two files to concatenate", file=sys.stderr)
         sys.exit(1)
 
+    # Deduplicate paths for verification (same file may appear multiple times
+    # in the concat list, e.g. a filler segment inserted between every pair)
+    unique_paths = list(dict.fromkeys(file_paths))
     # Verify compatibility
-    verify_compatibility(file_paths)
+    verify_compatibility(unique_paths)
     print("OK: all files are compatible for lossless concat")
 
     if args.verify_only:

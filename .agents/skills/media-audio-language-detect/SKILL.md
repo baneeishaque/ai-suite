@@ -101,6 +101,13 @@ Transcript sample: "ok so lot of options is there..."
 }
 ```
 
+### 3.2 Step 2 — Use the Language Code
+
+The returned BCP-47 language code (e.g. `en`) can be passed to:
+
+- [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) via `--language`
+- Any other workflow that needs the language tag
+
 ***
 
 ## 4. Edge Cases

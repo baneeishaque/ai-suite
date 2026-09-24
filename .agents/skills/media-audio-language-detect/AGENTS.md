@@ -15,3 +15,4 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the la
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
+- [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) — consumer of the detected language code

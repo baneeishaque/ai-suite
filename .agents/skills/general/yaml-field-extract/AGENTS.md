@@ -16,4 +16,5 @@ Read [`SKILL.md`](SKILL.md) for the full CLI contract, protocol, edge cases, and
 
 ## Cross-References
 
+- [`file-glob-sort-by-mtime`](../file/file-glob-sort-by-mtime/SKILL.md) — sibling base for finding files by modification time
 - [`opencode-current-session-id`](../../opencode/opencode-current-session-id/SKILL.md) — composer that consumes this skill's output

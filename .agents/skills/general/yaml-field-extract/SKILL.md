@@ -70,3 +70,6 @@ category: General
 
 - `opencode-current-session-id` — composer that uses this skill to extract `session.id` and `title` from YAML headers
 
+## Related Skills
+
+- [`file-glob-sort-by-mtime`](../file/file-glob-sort-by-mtime/SKILL.md) — sibling base; provides the YAML file path by mtime ordering

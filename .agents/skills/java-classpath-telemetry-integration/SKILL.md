@@ -6,9 +6,9 @@ category: Build & Dependency Management
 
 # Java Classpath Telemetry Integration Skill
 
-> **Skill ID:** `java-classpath-telemetry-integration`
-> **Version:** 1.0.0
-> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+> **Skill ID:** `java-classpath-telemetry-integration`<br>
+> **Version:** 1.0.0<br>
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Sibling base**: [`eclipse-pde-telemetry-resilience`](../eclipse-pde-telemetry-resilience/SKILL.md) — the OSGi / PDE / Tycho counterpart
 
 ## Description

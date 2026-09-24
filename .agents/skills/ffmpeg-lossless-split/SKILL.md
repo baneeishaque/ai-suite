@@ -30,6 +30,21 @@ that need lossless timestamp-based extraction as a pipeline stage.
 
 ***
 
+## 2. Composition Rationale
+
+This skill is a **base** — it owns the generic primitive "split/trim a media file at a timestamp without re-encoding."
+Multiple domain-specific composers reuse this primitive:
+
+- [`webm-recording-interrupted-recovery`](../webm-recording-interrupted-recovery/SKILL.md) — trims a continuation
+  recording at the interruption point before merging with a filler transition.
+- Any future skill that needs to cut segments from a longer recording (meeting trim, security-camera segment extraction,
+  podcast chapter split) should invoke this skill rather than re-deriving the `ffmpeg -c copy -ss` incantation.
+
+The layering test: *"Could a different domain need the same primitive?"* — **YES**. Inlining the split logic into a
+composer would split the SSOT across every consumer.
+
+***
+
 ## 3. Environment & Dependencies
 
 ### 3.1 Required Tools
@@ -191,6 +206,14 @@ frame-accurate cuts, a re-encode (`-c libx264` etc.) at the exact timestamp is r
   and streams before executing.
 - The Agent MUST NOT use this skill for concatenation; concat is owned by
   [`ffmpeg-lossless-concat`](../ffmpeg-lossless-concat/SKILL.md).
+
+***
+
+## 8. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| :--- | :--- |
+| [`webm-recording-interrupted-recovery`](../webm-recording-interrupted-recovery/SKILL.md) | Invokes `scripts/split-lossless.py --input <continuation> --split-at <time> --output <temp>` to trim the pre-interruption content from a continuation recording, then feeds the trimmed segment into a filler-merge composer. |
 
 ***
 

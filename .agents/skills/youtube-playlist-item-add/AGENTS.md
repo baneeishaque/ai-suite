@@ -17,4 +17,5 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle
 - [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) — base skill for listing existing playlists
+- [`youtube-playlist-create`](../youtube-playlist-create/SKILL.md) — base skill for creating new playlists
 - [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) — base skill for updating video title/description/tags (often paired in backfill workflows)

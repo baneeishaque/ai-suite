@@ -17,3 +17,6 @@ when the working tree must remain bit-identical after history rewrite.
 - **Related Skills**:
     - [`git-commit-edit`](../git-commit-edit/SKILL.md) — surgical single-commit edits (scalpel vs rebuild)
     - [`git-rebase-standardization`](../git-rebase-standardization/SKILL.md) — multi-branch rebasing chains
+    - [`git-submodule-history-removal`](../git/submodule/lifecycle/git-submodule-history-removal/SKILL.md) —
+      submodule-purge specialization: classification-driven full-history removal of a submodule's INTRO and
+      pointer-update commits via an isolated worktree, with refresh-1/-2 verification gates.

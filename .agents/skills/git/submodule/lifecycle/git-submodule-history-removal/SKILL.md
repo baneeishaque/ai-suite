@@ -61,6 +61,9 @@ this skill in their `## Composition by Higher-Level Skills` tables.
   after the rewrite (the removal commit at the current tip).
 - [`git-github-auth-fallback`](../../../../git-github-auth-fallback/SKILL.md) —
   push-blocker recovery (401/403 at the push gate).
+- [`git-history-refinement`](../../../../git-history-refinement/SKILL.md) —
+  general history-reconstruction toolkit; this composer is its
+  submodule-purge specialization.
 
 ## Environment & Dependencies
 

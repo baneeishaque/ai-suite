@@ -72,4 +72,5 @@ category: General
 
 ## Related Skills
 
+- [`file-glob-sort-by-regex-capture`](../../../file-glob-sort-by-regex-capture/SKILL.md) — sibling base; sorts by regex capture instead of mtime
 - [`text-lines-sort-by-length`](../../text-lines-sort-by-length/SKILL.md) — sorts text lines by length (different domain, same pattern)

@@ -16,4 +16,5 @@ Read [`SKILL.md`](SKILL.md) for the full CLI contract, protocol, edge cases, and
 
 ## Cross-References
 
+- [`file-glob-sort-by-regex-capture`](../../../file-glob-sort-by-regex-capture/SKILL.md) — sibling base skill for regex-capture-based sorting
 - [`opencode-current-session-id`](../../opencode/opencode-current-session-id/SKILL.md) — composer that consumes this skill's output

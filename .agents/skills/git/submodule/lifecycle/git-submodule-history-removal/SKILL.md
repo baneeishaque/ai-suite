@@ -20,6 +20,38 @@ category: Git & Repository Management
 > fast-forward, and gated push<br>
 > **Category:** Git & Repository Management
 
+## Composition Rationale
+
+This skill is a top-level composer. It owns only the domain-level
+orchestration (target selection, gate sequencing, cleanup audit, push
+authorization) and delegates determinism to three siblings:
+
+1. [`git-submodule-history-classification`](../../repair/git-submodule-history-classification/SKILL.md) —
+   discovery + classification: `scripts/list-submodules.py` (registration
+   inventory) and `scripts/classify-submodule-commits.py` (INTRO /
+   POINTER-UPDATE / MIXED per commit). Its post-rewrite empty result is the
+   composer's verification evidence.
+2. [`git-commit-edit-in-worktree`](../../../basic/edit/git-commit-edit-in-worktree/SKILL.md) —
+   the isolation mechanics: baseline capture, scratch worktree, plan
+   emission, scripted rebase, tree-check, `reset --soft` fast-forward, and
+   cleanup gates. This composer supplies the drop SHA list and consumes the
+   fast-forwarded result.
+3. [`git-rebase-drop-noninteractive`](../../../basic/edit/git-rebase-drop-noninteractive/SKILL.md) —
+   the todo rewrite primitive (via `write-drop-todo.py` as
+   `GIT_SEQUENCE_EDITOR`), reached through the composer above.
+
+Value-add of this composer: the eleven-gate sequencing (classification →
+plan → safety → isolate → amend/recovery → tree-check → fast-forward →
+push → cleanup → post-push refresh), the refresh-1 audited cleanup set
+(worktree registration, backup branches, `.gitmodules` removal, path
+remnant — each verified, not assumed), the refresh-2 baseline proof (the
+main worktree's index/untracked/porcelain evidence is byte-identical
+before and after, and the classifier reports ZERO commits), and the push
+gate with `--force-with-lease` — none of which live in the bases.
+
+Bidirectional discoverability: both bases and the isolation composer list
+this skill in their `## Composition by Higher-Level Skills` tables.
+
 ## Related Skills
 
 - [`git-submodule-removal`](../../../../git-submodule-removal/SKILL.md) —

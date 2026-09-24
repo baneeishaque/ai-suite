@@ -25,5 +25,11 @@ intentionally non-actionable.
 - [`SKILL.md`](SKILL.md) — SSOT with the complete procedure.
 - [`scripts/plan-removal.py`](scripts/plan-removal.py) — deterministic
   discovery half (classification + gate emission).
+- [`git-submodule-history-classification`](../../repair/git-submodule-history-classification/SKILL.md) —
+  base skill providing the classification pipeline.
+- [`git-commit-edit-in-worktree`](../../../basic/edit/git-commit-edit-in-worktree/SKILL.md) —
+  isolation composer providing the worktree rebase mechanics.
+- [`git-rebase-drop-noninteractive`](../../../basic/edit/git-rebase-drop-noninteractive/SKILL.md) —
+  base skill providing the todo rewrite primitive.
 - [`git-submodule-removal`](../../../../git-submodule-removal/SKILL.md) —
   registration-level counterpart (when history removal is not required).

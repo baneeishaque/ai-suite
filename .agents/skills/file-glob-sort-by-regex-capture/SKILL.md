@@ -220,3 +220,6 @@ PY
   length (complementary — operates on file content rather than filenames).
 - [`folder-comparison`](../folder-comparison/SKILL.md) — compares directory
   contents for consistency; may use this skill for ordered file listing.
+- [`json-group-stats`](../json-group-stats/SKILL.md) — downstream consumer;
+  groups this script's JSON Lines output by a key field and emits per-group
+  counts or grouped records.

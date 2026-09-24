@@ -176,4 +176,5 @@ The script:
 
 | Composer Skill | Composition Mechanism |
 |---|---|
+| [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) | Calls `scripts/oauth-setup.py` or `scripts/oauth-token-refresh.py` before querying playlists API; consumes the credential cache path from this skill's output. |
 | [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) | Calls `scripts/oauth-setup.py` or `scripts/oauth-token-refresh.py` before making Data API v3 PATCH requests; consumes the credential cache path. |

@@ -30,6 +30,12 @@ from session exports. Previously each bash-analysis skill reimplemented
 the same regex — this skill is the Single Source of Truth for finding
 bash blocks in OpenCode session markdown.
 
+Downstream consumers:
+
+| Composer | Consumption Mechanism |
+|---|---|
+| [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md) | Reads JSONL stdout from this skill's `extract-bash-blocks.py` via pipe or `--input` |
+
 ## Environment & Dependencies
 
 | Requirement | Minimum | Verification |
@@ -78,6 +84,11 @@ python3 scripts/extract-bash-blocks.py --session <path> [--output <path>]
 | 2 | Parse error reading session file |
 | 3 | Session file not found |
 
+## Composition by Higher-Level Skills
+
+| Composer | Composition Mechanism |
+|---|---|
+| [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md) | Reads JSONL from this skill's stdout; classifies each command string into a file operation type |
 ## Scripts
 
 - [`scripts/extract-bash-blocks.py`](scripts/extract-bash-blocks.py) —
@@ -86,6 +97,8 @@ python3 scripts/extract-bash-blocks.py --session <path> [--output <path>]
 
 ## Related Skills
 
+- [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md) —
+  Downstream classifier that consumes this skill's output
 - [`opencode-session-bash-write-extractor`](../opencode-session-bash-write-extractor/SKILL.md) —
   Superseded predecessor (hand-wrote its own bash-block regex)
 

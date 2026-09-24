@@ -20,3 +20,8 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including
 all mandates, scripts, and verification steps. Do NOT execute any step
 without first loading `SKILL.md` — this bridge is intentionally
 non-actionable.
+
+## Cross-References
+
+- [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md)
+  — Downstream classifier consuming this skill's output

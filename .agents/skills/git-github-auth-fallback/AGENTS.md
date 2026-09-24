@@ -11,6 +11,9 @@ This directory hosts the **Git / GitHub Auth Fallback** skill. The active SSOT i
 - **Outputs**: Restored push / fetch capability under the correct identity.
 - **Key risks**: Embedding a PAT in `.git/config` and forgetting to revert it; committing a PAT-bearing URL to
   history; running interactive credential-manager commands inside a no-TTY task (will hang);
-  macOS `osxkeychain` ignoring `credential.useHttpPath` and serving the wrong identity across repos.
+  macOS `osxkeychain` ignoring `credential.useHttpPath` and serving the wrong identity across repos;
+  session poisoning — the agent's OWN earlier PAT-in-URL / `GITHUB_PAT` env-var work (Path B) leaving a
+  repo-local helper or env var that serves the wrong identity to later repos in the same session (probe with
+  §3.8 `git credential fill` BEFORE any destructive path).
 
 For full operational logic, defer to [`SKILL.md`](SKILL.md).

@@ -457,6 +457,58 @@ or the user prefers keychain-based auth), remove the repo-level override:
 git config --local --unset credential.helper
 ```
 
+### 3.8 Path H — `git credential fill` identity probe (RECOMMENDED before ANY other path)
+
+Use when: any 401 / 403, on ANY helper (osxkeychain / manager-core / libsecret),
+and the remote URL has been verified correct — the agent MUST establish which
+identity the credential helper is about to offer BEFORE mutating anything.
+This is the cheapest, least-destructive probe in the skill; run it first.
+
+```bash
+# Probe: what identity would Git offer for github.com right now?
+printf 'protocol=https\nhost=github.com\n\n' | git credential fill
+# Output: username=<identity> and password=<secret> lines if a credential exists,
+# or the helper falls through / errors when nothing is stored.
+
+# Path-scoped variant (multi-account setups, mirrors §3.6.1):
+printf 'protocol=https\nhost=github.com\npath=%s/%s.git\n\n' '<owner>' '<repo>' | git credential fill
+```
+
+Interpretation:
+
+| Probe result | Diagnosis | Next step |
+| :--- | :--- | :--- |
+| `username=<expected-identity>` | Helper state is correct; failure is scope / network / server-side. | Path E (PAT validation) then re-push. |
+| `username=<other-identity>` | Wrong identity cached. | Path A (flush + re-auth) or Path F for useHttpPath setups. |
+| Empty / helper error | No credential stored for this context. | Path A or Path D (re-auth); never Path B unless non-interactive is mandated. |
+
+**Session-poisoning sub-case (the agent's OWN earlier work is the root cause):**
+when the agent previously used Path B (PAT in an env var) or the bare
+`git push -u <PAT-URL>` anti-pattern for ANOTHER repo in the same machine
+session, the leftover `GITHUB_PAT` env var or a repo-local
+`credential.helper` entry can serve the WRONG identity to every later repo
+in the session — while the keychain itself is healthy.
+
+```bash
+# 1. Prove the poisoning source:
+env | grep -iE '^(gh|git)_|_pat='          # session env carrying a token
+git config --show-origin --get-all credential.helper
+#    ^-- lines starting with file:<scope> show which scope set the helper
+
+# 2. Neutralize the poisoned source:
+export -n GITHUB_PAT GH_TOKEN              # zsh / bash: unset from THIS session
+git config --local --unset credential.helper    # only if the local scope set one
+
+# 3. Re-probe — the helper must now answer with the expected identity:
+printf 'protocol=https\nhost=github.com\n\n' | git credential fill
+```
+
+> [!CAUTION]
+> The `git credential fill` output includes the stored password/PAT on
+> stdout. Treat the probe as Tier-A redaction material per
+> [Redaction & Portability](../redaction-portability/SKILL.md) §1: capture
+> ONLY the `username=` line into logs / notes, never the `password=` value.
+
 ***
 
 ## 4. Decision Matrix
@@ -470,6 +522,7 @@ git config --local --unset credential.helper
 | Uncertain whether the PAT has the right scope | E first, then B or A | Cheap pre-flight check before mutating remote URL. |
 | macOS + two GitHub accounts (personal + company) + HTTPS, no SSH | F (`useHttpPath`) | Keys credentials per repo path; cleanest non-SSH option. |
 | macOS + `useHttpPath` still serves wrong identity after flush | G (`.netrc` fallback) | Bypass osxkeychain for the company repo only. |
+| Any 401/403 on a verified-correct URL — probe before mutating | H (`git credential fill` probe) | Cheap, read-only; pinpoints the helper's identity and exposes session env-var poisoning from earlier Path-B work. |
 
 ***
 

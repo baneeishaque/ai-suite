@@ -244,3 +244,6 @@ their own location, per the
 - [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
   composer that orchestrates the 3-base pipeline for OneDrive 5000-file-limit
   workaround.
+- [`macos-screenshots-folder-split`](../macos-screenshots-folder-split/SKILL.md) —
+  domain composer wrapping the OneDrive composer for macOS screenshot and
+  screen recording folders.

@@ -265,3 +265,6 @@ python3 .agents/skills/onedrive-flat-folder-split-by-size/scripts/split-flat-fol
   provides per-group counts for threshold checking.
 - [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
   base that executes the actual file moves.
+- [`macos-screenshots-folder-split`](../macos-screenshots-folder-split/SKILL.md) —
+  domain-specific composer that wraps this skill with macOS screenshot
+  defaults.

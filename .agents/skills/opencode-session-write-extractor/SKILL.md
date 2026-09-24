@@ -101,6 +101,10 @@ python3 scripts/extract-session-writes.py (--session <path> | --yaml <path>) [--
   Tier-1 Python CLI (see
   [Scripting Language Selection Rules §3.1](../../../ai-agent-rules/scripting-language-selection-rules.md))
 
+## Related Skills
+
+- [`opencode-session-edit-extractor`](../opencode-session-edit-extractor/SKILL.md) —
+  Parallel base skill for `Tool: edit` payload extraction
 ## Traceability
 
 - Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —

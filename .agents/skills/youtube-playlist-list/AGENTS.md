@@ -16,3 +16,4 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that uses this skill for playlist selection

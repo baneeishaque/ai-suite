@@ -16,6 +16,7 @@ This is a **base** skill. It calls the YouTube Data API v3 `playlistItems.insert
 - **Out of scope**:
     - OAuth token management (delegated to [`google-oauth-setup`](../google-oauth-setup/SKILL.md)).
     - Creating, listing, updating, or deleting playlists.
+    - Uploading videos (delegated to [`youtube-video-upload`](../youtube-video-upload/SKILL.md)).
     - Any non-YouTube API.
 
 ***
@@ -146,6 +147,7 @@ The script:
 | Composer Skill | Composition Mechanism |
 |---|---|
 | [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/playlist-item-add.py` for every video-to-playlist assignment during the organization workflow; processes videos sequentially. |
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/playlist-item-add.py` (or equivalent API call) after upload to implement dual-playlist membership — adds to both topic-specific playlist and org-wide playlist. |
 
 ***
 

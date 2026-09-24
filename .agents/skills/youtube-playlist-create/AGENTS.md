@@ -19,3 +19,4 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 - [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) — base skill for listing existing playlists
 - [`youtube-playlist-item-add`](../youtube-playlist-item-add/SKILL.md) — base skill for adding videos to a playlist
 - [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) — composer that creates playlists during channel organization
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that optionally creates playlists during upload

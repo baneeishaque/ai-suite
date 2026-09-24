@@ -17,4 +17,5 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including script
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) — composer that uses this base for API auth
 - [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) — base skill that uses this skill for Data API auth (video snippet update)
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that uses this base for upload auth
 - [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) — base skill that uses this skill for Data API auth

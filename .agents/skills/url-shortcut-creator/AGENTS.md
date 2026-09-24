@@ -19,3 +19,4 @@ loading `SKILL.md` — this bridge is intentionally non-actionable.
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that uses this skill to create post-upload URL shortcuts

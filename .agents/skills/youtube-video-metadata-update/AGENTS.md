@@ -17,5 +17,6 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle
 - [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) — complementary base skill for title/description/tags updates
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that invokes this skill as a post-upload step
 - [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) — base skill for playlist listing
 - [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) — base skill that provides the detected language code used for `--language`

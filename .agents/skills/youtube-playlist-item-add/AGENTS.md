@@ -20,3 +20,4 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including creden
 - [`youtube-playlist-create`](../youtube-playlist-create/SKILL.md) — base skill for creating new playlists
 - [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) — composer that adds videos to playlists during channel organization
 - [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) — base skill for updating video title/description/tags (often paired in backfill workflows)
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that adds videos to playlists after upload

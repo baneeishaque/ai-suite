@@ -15,6 +15,7 @@ This is a **composer** skill. It orchestrates the end-to-end workflow of organiz
 - **In scope**: List all channel videos → list all playlists → agent categorizes videos → create missing playlists → add videos to playlists.
 - **Out of scope**:
     - OAuth token management (delegated to [`google-oauth-setup`](../google-oauth-setup/SKILL.md)).
+    - Uploading videos (delegated to [`youtube-video-upload`](../youtube-video-upload/SKILL.md)).
     - Updating video metadata or settings.
     - Bulk deletion or reordering of playlist items.
 

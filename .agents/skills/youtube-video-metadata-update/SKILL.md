@@ -116,6 +116,7 @@ The following fields CANNOT be set via the public YouTube Data API v3 and MUST b
 
 | Composer Skill | Composition Mechanism |
 |---|---|
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/video-metadata-update.py` as a post-upload step after upload via `youtube-video-upload` completes; passes `--embeddable`, `--public-stats`, `--made-for-kids`, `--language`, `--category-id`, `--license`, `--contains-synthetic-media`, `--age-restricted`. |
 | [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) | Detects the spoken language during pre-processing and passes the BCP-47 code as `--language` to the metadata update script. |
 
 ***
@@ -124,6 +125,7 @@ The following fields CANNOT be set via the public YouTube Data API v3 and MUST b
 
 This skill is a **base** skill: it owns only the YouTube Data API v3 `videos.update` PATCH call for metadata fields that must be set post-upload. It delegates all OAuth lifecycle management to [`google-oauth-setup`](../google-oauth-setup/SKILL.md) and is itself composed by:
 
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — invokes `scripts/video-metadata-update.py` as a post-upload step, passing metadata flags the user selected before upload.
 - [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) — calls `scripts/video-metadata-update.py --language <bcp47>` after audio language detection to set the video's default audio language.
 
 Separating metadata update from upload allows other workflows (bulk metadata audit, automated language tagging) to reuse the same API call without re-uploading the video.

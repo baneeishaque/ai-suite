@@ -22,6 +22,8 @@ update).
 - **Out of scope**:
     - OAuth token management (delegated to
       [`google-oauth-setup`](../google-oauth-setup/SKILL.md)).
+    - Uploading videos (delegated to
+      [`youtube-video-upload`](../youtube-video-upload/SKILL.md)).
     - Advanced metadata fields (category, language, embeddable, madeForKids, license,
       publicStatsViewable, containsSyntheticMedia, age restriction — delegated to
       [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md)).
@@ -154,6 +156,7 @@ Confirm the video URL and new values are correct.
 
 | Composer Skill           | Composition Mechanism                                                                                       |
 |--------------------------|-------------------------------------------------------------------------------------------------------------|
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | May call `scripts/video-snippet-update.py` as a post-upload correction step when the user requests a title/description/tags fix after the initial upload completes. |
 | [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | May call `scripts/video-snippet-update.py` during channel organization to standardize video titles and add consistent descriptions/tags across a batch. |
 
 ***

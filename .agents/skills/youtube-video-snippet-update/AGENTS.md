@@ -22,6 +22,8 @@ intentionally non-actionable.
 
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that may invoke this skill
+  for post-upload correction
 - [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) — complementary base
   skill for advanced metadata (category, language, embeddable, etc.)
 - [`youtube-playlist-item-add`](../youtube-playlist-item-add/SKILL.md) — base skill for adding

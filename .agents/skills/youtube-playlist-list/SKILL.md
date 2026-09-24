@@ -150,3 +150,10 @@ The script:
 | Composer Skill | Composition Mechanism |
 |---|---|
 | [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/list-playlists.py` during its Step 3 (list playlists); the agent categorizes videos and the orchestrator passes playlist IDs to `youtube-playlist-item-add` for each assignment. |
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/list-playlists.py` during its pre-processing step; the user chooses a playlist, and the composer passes the playlist **ID** to the upload script as `--playlist-id`. |
+
+***
+
+## 8. Composition Rationale
+
+This skill is a **base** skill: it owns only the YouTube playlist-listing API call. It delegates all OAuth lifecycle management to [`google-oauth-setup`](../google-oauth-setup/SKILL.md) and is itself composed by [`youtube-video-upload`](../youtube-video-upload/SKILL.md) for the upload workflow. Separating playlist listing from upload allows reuse by other YouTube workflows (e.g. bulk playlist audit, content migration, analytics).

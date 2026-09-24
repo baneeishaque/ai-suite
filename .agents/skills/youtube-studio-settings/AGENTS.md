@@ -16,3 +16,4 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the mu
 
 - [`SKILL.md`](SKILL.md) — the SSOT
 - [`google-oauth-setup`](../google-oauth-setup/SKILL.md) — base skill for OAuth credential lifecycle (the Studio session uses Chrome's logged-in state rather than OAuth tokens)
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that may invoke this skill as a post-upload step

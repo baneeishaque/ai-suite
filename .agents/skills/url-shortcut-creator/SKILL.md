@@ -81,3 +81,11 @@ The script prints the absolute path of the created `.html` file:
   is well-formed.
 - **Output directory does not exist**: The script creates it via `os.makedirs`.
 - **File already exists**: The script overwrites without warning. The caller SHOULD check or use a unique name.
+
+***
+
+## 5. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| --- | --- |
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/create-url-shortcut.py` after upload to create clickable `.html` shortcut |

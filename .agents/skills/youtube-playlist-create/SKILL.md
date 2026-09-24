@@ -146,6 +146,7 @@ The script:
 | Composer Skill | Composition Mechanism |
 |---|---|
 | [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/playlist-create.py` during its categorization step when no matching playlist exists; captures the playlist ID for subsequent playlist-item-add calls. |
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | (Optional) May call `scripts/playlist-create.py` when the user wants to upload to a new topic-specific playlist that does not yet exist. |
 
 ***
 

@@ -25,6 +25,7 @@ Use `--backend` to force a specific backend.
     - Remixing (disable)
     - Caption certification (never aired in US)
 - **Out of scope**:
+    - Uploading videos (delegated to [`youtube-video-upload`](../youtube-video-upload/SKILL.md)).
     - OAuth token management (delegated to [`google-oauth-setup`](../google-oauth-setup/SKILL.md)).
     - Metadata fields settable via Data API v3 (delegated to [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md)).
     - Any other YouTube Studio features (playlist management, analytics, captions, monetization).
@@ -162,3 +163,21 @@ The following settings are NOT available via the public YouTube Data API v3 and 
 | Don't publish to subscriber feed | YouTube Studio → Video → Advanced | No (`notifySubscribers` set at upload time only) |
 | Don't allow remixing | YouTube Studio → Video → Advanced | No |
 | Caption certification (never aired in US) | YouTube Studio → Video → Advanced → Caption certification | No |
+
+***
+
+## 6. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/studio-settings.py` as a final post-upload step to apply Studio-only settings. |
+
+***
+
+## 7. Composition Rationale
+
+This skill is a **base** skill: it owns only the browser automation logic for YouTube Studio settings that the Data API cannot touch. It is composed by:
+
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — invokes `scripts/studio-settings.py` as a final post-upload step with user-selected flags.
+
+The multi-backend architecture (JXA → undetected_chromedriver → Playwright stealth) is a single atomic concern: detecting and controlling available browser runtimes. No other skill in the ecosystem duplicates this primitive — keeping it in one place means DOM changes, new backends, and login-flow fixes are maintained in a single SSOT rather than patched across multiple composers.

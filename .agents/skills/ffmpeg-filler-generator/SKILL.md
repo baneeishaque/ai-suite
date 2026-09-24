@@ -234,5 +234,7 @@ The output file MUST have:
   splitting; may be used before filling to trim a continuation recording.
 - [WebM Recording Merge with Filler](../webm-recording-merge-with-filler/SKILL.md) — composer that invokes this
   base skill as the first stage of its pipeline.
+- [WebM Recording Interrupted Recovery](../webm-recording-interrupted-recovery/SKILL.md) — composer that
+  transitively uses this skill via the filler-merge composer.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / Python / Pillow
   if any dependency is missing.

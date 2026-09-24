@@ -235,3 +235,5 @@ pipeline works regardless of the caller's current working directory — see the
 - [WebM Recording Interrupted Recovery](../webm-recording-interrupted-recovery/SKILL.md) — composer that orchestrates
   full recording-interruption recovery; uses this skill transitively via the filler-merge composer.
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg/ffprobe if missing.
+- [YouTube Video Upload](../youtube-video-upload/SKILL.md) — optional downstream consumer; may accept a
+  concat output from this skill as upload input.

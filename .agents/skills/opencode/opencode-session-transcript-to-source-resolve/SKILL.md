@@ -25,6 +25,18 @@ expanding `to N` ranges lives in the base primitive
 — the composer shells out to its script (`--min`/`--max` numeric span), never
 re-deriving the pipeline inline.
 
+It answers the reverse direction of the transcript pipeline: the logger's
+per-turn YAML files (`ses_<id>/NNN-<ts>.yaml`) are the **durable SSOT**;
+`transcripts/NNN-<ts>-transcript.yaml` files produced by
+[`opencode-session-yaml-conversation-extractor`](../opencode-session-yaml-conversation-extractor/SKILL.md)
+are **derived artifacts**. When a session reference (in chat text, a doc, or a
+forensic query) cites a transcript path, consumers that need the source logs
+(machine analysis via
+[`opencode-session-yaml-transcript-extractor`](../opencode-session-yaml-transcript-extractor/SKILL.md)
+or
+[`opencode-session-yaml-tool-call-extractor`](../opencode-session-yaml-tool-call-extractor/SKILL.md))
+MUST resolve to the source first.
+
 ***
 
 ## 1. Environment & Dependencies
@@ -142,6 +154,7 @@ python3 scripts/resolve-transcript-refs.py \
 | Skill | Relationship |
 | :--- | :--- |
 | [`file-glob-sort-by-regex-capture`](../../file-glob-sort-by-regex-capture/SKILL.md) | Consumed base — range expansion shells out to its `--min`/`--max` numeric-span filter |
+| [`opencode-session-yaml-conversation-extractor`](../opencode-session-yaml-conversation-extractor/SKILL.md) | Producer of the transcript artifacts this composer resolves away from |
 | [`opencode-session-yaml-transcript-extractor`](../opencode-session-yaml-transcript-extractor/SKILL.md) | Consumer of the SOURCE logs — the resolution target |
 | [`opencode-session-yaml-tool-call-extractor`](../opencode-session-yaml-tool-call-extractor/SKILL.md) | Consumer of the SOURCE logs — the resolution target |
 | [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md) | Sibling — resolves the ACTIVE session; this composer resolves REFERENCES to any session |

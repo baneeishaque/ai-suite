@@ -177,6 +177,7 @@ python3 scripts/extract-yaml-transcript.py --input <path> \
 | [`opencode-session-path-attribution`](../opencode-session-path-attribution/SKILL.md) | Sibling consumer of the same YAML layouts — cross-session path forensics |
 | [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md) | Sibling — resolves the CURRENT session ID/title from the same logs (different primitive) |
 | [`opencode-session-diff-extractor`](../../opencode-session-diff-extractor/SKILL.md) | Parallel base — parses git-diff blocks from `.md` session exports (different input format) |
+| [`opencode-session-yaml-conversation-extractor`](../opencode-session-yaml-conversation-extractor/SKILL.md) | Parallel base — emits conversation-only YAML (user.text + assistant.response, agent iff compaction) with structure-preserving round-trip; drops thinking/tool_calls |
 
 ***
 

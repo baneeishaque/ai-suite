@@ -27,6 +27,8 @@ non-actionable.
 - [`SKILL.md`](SKILL.md) — SSOT with the resolution rules and CLI contract.
 - [`file-glob-sort-by-regex-capture`](../../file-glob-sort-by-regex-capture/SKILL.md) —
   consumed base: range expansion delegates to its `--min`/`--max` numeric-span filter.
+- [`opencode-session-yaml-conversation-extractor`](../opencode-session-yaml-conversation-extractor/SKILL.md) —
+  producer of the transcript artifacts this composer resolves away from.
 - [`opencode-session-yaml-transcript-extractor`](../opencode-session-yaml-transcript-extractor/SKILL.md) —
   consumer of the SOURCE logs (the resolution target).
 - [`opencode-session-yaml-tool-call-extractor`](../opencode-session-yaml-tool-call-extractor/SKILL.md) —

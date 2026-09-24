@@ -22,5 +22,7 @@ non-actionable.
 
 ## Cross-References
 
+- [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
+  consumer for grouped file-move operations.
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer whose JSON Lines output feeds into this skill.

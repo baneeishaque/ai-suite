@@ -180,6 +180,9 @@ python3 .agents/skills/json-group-stats/scripts/group-stats.py \
 
 ## 8. Related Skills
 
+- [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
+  consumer; takes a JSON array with abspath+key and moves files into
+  subfolders named by key.
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer; generates JSON Lines with abspath+key that feeds into
   this skill via the OneDrive composer.

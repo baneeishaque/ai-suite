@@ -223,3 +223,6 @@ PY
 - [`json-group-stats`](../json-group-stats/SKILL.md) — downstream consumer;
   groups this script's JSON Lines output by a key field and emits per-group
   counts or grouped records.
+- [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
+  consumer; takes a JSON array with abspath+key from this script's output and
+  moves files into subfolders named by key.

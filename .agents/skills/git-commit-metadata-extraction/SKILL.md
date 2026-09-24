@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Commit Metadata Extraction Skill
 
-> **Skill ID:** `git_commit_metadata_extraction`
-> **Version:** 1.0.0
+> **Skill ID:** `git_commit_metadata_extraction`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

@@ -197,9 +197,10 @@ compatibility verification. It orchestrates two base skills:
    `scripts/ffmpeg_lossless_concat.py --files <list> --output <merged.webm>`. The base script verifies codec
    compatibility and losslessly concatenates all segments with `-c copy`.
 
-The composer's domain-specific value over the base alone: it discovers the video resolution, generates a matching filler
-segment with text overlay, and orchestrates the multi-stage pipeline (Pillow → ffmpeg filler → base concat) so the user
-provides only the source segments and the filler text.
+The composer's domain-specific value over either base alone: it discovers video properties from the first segment,
+orchestrates the multi-stage pipeline (probe → filler-gen → concat-list → concat) so the user provides only the
+source segments and filler text. Inlining either base would duplicate primitives that other composers
+(`webm-recording-interrupted-recovery`, future podcast editors, screen-recording gap fillers) also consume.
 
 Bidirectional discoverability: both bases list this composer in their respective `## Composition by Higher-Level Skills`
 tables.
@@ -268,5 +269,7 @@ See §3.3.1 flag table — all flags correspond directly to the script's `argpar
   concatenation of source + filler segments with `-c copy`.
 - [FFmpeg Lossless Split](../ffmpeg-lossless-split/SKILL.md) — base skill for lossless timestamp-based splitting; use
   to trim a continuation recording at the interruption point before merging.
+- [WebM Recording Interrupted Recovery](../webm-recording-interrupted-recovery/SKILL.md) — composer that orchestrates
+  the full recovery workflow (trim continuation via split base, then merge via this skill).
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / ffprobe / Python /
   Pillow if any dependency is missing.

@@ -6,8 +6,8 @@ category: Naming & Conventions
 
 # Lower Case Underscore Naming Convention Skill
 
-> **Skill ID:** `lower-case-underscore-naming`
-> **Version:** 1.2.0
+> **Skill ID:** `lower-case-underscore-naming`<br>
+> **Version:** 1.2.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

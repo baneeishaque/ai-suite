@@ -6,8 +6,8 @@ category: Naming & Conventions
 
 # Lower Case Hyphen Naming Convention Skill
 
-> **Skill ID:** `lower-case-hyphen-naming`
-> **Version:** 1.0.0
+> **Skill ID:** `lower-case-hyphen-naming`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

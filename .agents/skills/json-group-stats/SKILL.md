@@ -15,6 +15,17 @@ to group structured data by a key can compose this skill.
 
 ***
 
+## Composition Rationale
+
+This skill is a standalone base — it does NOT compose any other skill. It is
+consumed by:
+
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  shells out to `scripts/group-stats.py --group-by key --output counts` to
+  compute per-group file counts for OneDrive threshold checking.
+
+***
+
 ## Description
 
 ### In scope
@@ -178,6 +189,14 @@ python3 .agents/skills/json-group-stats/scripts/group-stats.py \
 
 ***
 
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| :--- | :--- |
+| [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) | Pipes a JSON array of file records into this script with `--group-by key --output counts` to obtain per-group file counts for OneDrive threshold checking. Consumes the counts array to determine whether any file group exceeds the 5000-file preview limit. |
+
+***
+
 ## 8. Related Skills
 
 - [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
@@ -186,3 +205,5 @@ python3 .agents/skills/json-group-stats/scripts/group-stats.py \
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer; generates JSON Lines with abspath+key that feeds into
   this skill via the OneDrive composer.
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  composer that orchestrates all three bases.

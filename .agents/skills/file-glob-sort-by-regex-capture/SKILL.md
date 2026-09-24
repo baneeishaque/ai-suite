@@ -213,6 +213,21 @@ PY
 
 ***
 
+## 8. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| :--- | :--- |
+| [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) | Calls this base script with `--glob "Screenshot *.png"` / `--glob "Screen Recording *.mov"` and a date-extraction regex to obtain JSON Lines of OneDrive-synced files sorted by embedded date key. Consumes the JSONL stdout and pipes into `json-group-stats` and `json-batch-file-move` via the composer script. |
+
+New composers (e.g. log-file date-range report, screenshot sequence auditor,
+archive-by-timestamp organizer, flat-folder date-based organizer) MUST reuse
+this base script rather than re-implementing the glob+regex+sort pipeline.
+Composer scripts MUST resolve this base script via a relative path anchored to
+their own location, per the
+[Layered Composition Mandate](../../../ai-agent-rules/ai-rule-standardization-rules.md).
+
+***
+
 ## 9. Related Skills
 
 - [`text-lines-sort-by-length`](../text-lines-sort-by-length/SKILL.md) —
@@ -226,3 +241,6 @@ PY
 - [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
   consumer; takes a JSON array with abspath+key from this script's output and
   moves files into subfolders named by key.
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  composer that orchestrates the 3-base pipeline for OneDrive 5000-file-limit
+  workaround.

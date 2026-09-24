@@ -25,5 +25,7 @@ non-actionable.
 
 - [`json-group-stats`](../json-group-stats/SKILL.md) — upstream pre-check
   for group-size validation before invoking this skill.
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  composer that orchestrates the full pipeline including this skill.
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer of the JSON manifest consumed by this skill.

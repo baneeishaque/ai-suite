@@ -21,6 +21,18 @@ essential for OneDrive-synced folders where read operations trigger download.
 
 ***
 
+## Composition Rationale
+
+This skill is a standalone base — it does NOT compose any other skill. It is
+consumed by:
+
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  shells out to `scripts/batch-move-by-key.py --target-dir <directory>` and
+  pipes a JSON array of file records (abspath+key) via stdin to execute the
+  actual file moves.
+
+***
+
 ## Description
 
 ### In scope
@@ -207,9 +219,19 @@ ls "/path/to/files/2025-12/" | head -5
 
 ***
 
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+| :--- | :--- |
+| [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) | Pipes a JSON array of file records (abspath+key) into this script with `--target-dir <directory>` to execute the actual file-to-subfolder moves in a OneDrive flat-folder split. |
+
+***
+
 ## 8. Related Skills
 
 - [`json-group-stats`](../json-group-stats/SKILL.md) — upstream pre-check;
   groups by key and counts before this script runs.
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer that generates the JSON manifest consumed by this skill.
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  composer that orchestrates the full pipeline.

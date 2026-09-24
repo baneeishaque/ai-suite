@@ -24,5 +24,7 @@ non-actionable.
 
 - [`json-batch-file-move`](../json-batch-file-move/SKILL.md) — downstream
   consumer for grouped file-move operations.
+- [`onedrive-flat-folder-split-by-size`](../onedrive-flat-folder-split-by-size/SKILL.md) —
+  composer that uses this skill for OneDrive threshold checking.
 - [`file-glob-sort-by-regex-capture`](../file-glob-sort-by-regex-capture/SKILL.md) —
   upstream producer whose JSON Lines output feeds into this skill.

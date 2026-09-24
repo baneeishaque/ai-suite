@@ -105,6 +105,7 @@ Transcript sample: "ok so lot of options is there..."
 
 The returned BCP-47 language code (e.g. `en`) can be passed to:
 
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) via `--language`
 - [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) via `--language`
 - Any other workflow that needs the language tag
 
@@ -116,3 +117,11 @@ The returned BCP-47 language code (e.g. `en`) can be passed to:
 - **Short files**: If the media file is shorter than `--duration`, ffmpeg extracts whatever is available. The script still processes the truncated sample.
 - **No audio track**: If the file has no audio stream, ffmpeg produces an empty WAV. SpeechRecognition will return `unknown`.
 - **API rate limits**: Google Web Speech API has rate limits (approximately 50 requests per day for unauthenticated use). If exceeded, the `RequestError` is raised.
+
+***
+
+## 5. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/detect-audio-language.py` during pre-processing to auto-detect the video's spoken language before constructing the upload command with `--language`. |

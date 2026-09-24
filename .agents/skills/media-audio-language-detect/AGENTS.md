@@ -15,4 +15,5 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the la
 ## Cross-References
 
 - [`SKILL.md`](SKILL.md) — the SSOT
+- [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that uses this skill for pre-upload language detection
 - [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) — consumer of the detected language code

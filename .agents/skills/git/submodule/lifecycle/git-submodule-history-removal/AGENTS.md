@@ -25,3 +25,5 @@ intentionally non-actionable.
 - [`SKILL.md`](SKILL.md) — SSOT with the complete procedure.
 - [`scripts/plan-removal.py`](scripts/plan-removal.py) — deterministic
   discovery half (classification + gate emission).
+- [`git-submodule-removal`](../../../../git-submodule-removal/SKILL.md) —
+  registration-level counterpart (when history removal is not required).

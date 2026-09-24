@@ -22,6 +22,11 @@ category: Git & Repository Management
 
 ## Related Skills
 
+- [`git-submodule-removal`](../../../../git-submodule-removal/SKILL.md) —
+  registration-level removal (`.gitmodules`, gitlink, working copy). When
+  history removal is NOT required, that skill is the lightweight path; when
+  it IS required, its final commit-stage work is the composer's counterpart
+  after the rewrite (the removal commit at the current tip).
 - [`git-github-auth-fallback`](../../../../git-github-auth-fallback/SKILL.md) —
   push-blocker recovery (401/403 at the push gate).
 

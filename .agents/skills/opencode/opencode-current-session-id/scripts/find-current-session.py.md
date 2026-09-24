@@ -230,6 +230,7 @@ python3 scripts/find-current-session.py --log-dir tests/fixtures/logs --dry-run
 ## Related Skills
 
 - [`opencode-current-session-id`](../SKILL.md) — owning composer skill
+- [`file-glob-sort-by-mtime`](../../general/file/file-glob-sort-by-mtime/SKILL.md) — base for flat fallback
 - [`yaml-field-extract`](../../general/yaml-field-extract/SKILL.md) — base for header extraction
 - [`code-explanation`](../../code-explanation/SKILL.md) — documentation standards this file follows
 - [`python-script-generation`](../../python-script-generation/SKILL.md) — script generation standards

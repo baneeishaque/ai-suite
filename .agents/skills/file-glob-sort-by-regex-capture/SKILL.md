@@ -235,6 +235,9 @@ their own location, per the
   length (complementary — operates on file content rather than filenames).
 - [`folder-comparison`](../folder-comparison/SKILL.md) — compares directory
   contents for consistency; may use this skill for ordered file listing.
+- [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) —
+  sibling media-domain base skill; operates on file content (audio) rather than
+  filenames.
 - [`json-group-stats`](../json-group-stats/SKILL.md) — downstream consumer;
   groups this script's JSON Lines output by a key field and emits per-group
   counts or grouped records.

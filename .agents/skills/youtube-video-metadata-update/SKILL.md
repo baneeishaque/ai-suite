@@ -127,3 +127,5 @@ This skill is a **base** skill: it owns only the YouTube Data API v3 `videos.upd
 - [`media-audio-language-detect`](../media-audio-language-detect/SKILL.md) — calls `scripts/video-metadata-update.py --language <bcp47>` after audio language detection to set the video's default audio language.
 
 Separating metadata update from upload allows other workflows (bulk metadata audit, automated language tagging) to reuse the same API call without re-uploading the video.
+
+For updates to title, description, or tags — which are set during initial upload and corrected only post-upload — see the complementary [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) skill.

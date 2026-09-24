@@ -141,6 +141,11 @@ The script:
 
 ***
 
+
+## 8. Related Skills
+
+- [`youtube-video-snippet-update`](../youtube-video-snippet-update/SKILL.md) — base skill for updating video title/description/tags (often paired with playlist item add in backfill workflows).
+
 ## 9. Composition Rationale
 
 This skill is a **base** skill: it owns only the YouTube playlist item insertion API call. It delegates all OAuth lifecycle management to [`google-oauth-setup`](../google-oauth-setup/SKILL.md) and is itself composed by video upload and channel organization workflows. Separating playlist item insertion from upload and organization allows each to be reused independently (e.g., bulk playlist migration, adding multiple videos to a playlist).

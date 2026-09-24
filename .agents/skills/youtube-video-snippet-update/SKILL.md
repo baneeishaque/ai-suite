@@ -150,6 +150,14 @@ Confirm the video URL and new values are correct.
 
 ***
 
+## 6. Composition by Higher-Level Skills
+
+| Composer Skill           | Composition Mechanism                                                                                       |
+|--------------------------|-------------------------------------------------------------------------------------------------------------|
+| [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | May call `scripts/video-snippet-update.py` during channel organization to standardize video titles and add consistent descriptions/tags across a batch. |
+
+***
+
 ## 7. Composition Rationale
 
 This skill is a **base** skill: it owns only the YouTube Data API v3 `videos.update` PATCH call for

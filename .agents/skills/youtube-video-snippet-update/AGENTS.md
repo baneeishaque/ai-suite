@@ -26,3 +26,5 @@ intentionally non-actionable.
   skill for advanced metadata (category, language, embeddable, etc.)
 - [`youtube-playlist-item-add`](../youtube-playlist-item-add/SKILL.md) — base skill for adding
   videos to playlists (often paired in backfill workflows)
+- [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) — composer that may
+  invoke both snippet update and playlist item add during channel organization

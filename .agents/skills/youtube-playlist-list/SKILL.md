@@ -142,3 +142,11 @@ The script:
 
 - The agent MUST NOT hardcode a playlist ID or name — always present the list and let the user choose.
 - The agent MUST NOT skip the credential refresh step — a stale token will return 401.
+
+***
+
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/list-playlists.py` during its Step 3 (list playlists); the agent categorizes videos and the orchestrator passes playlist IDs to `youtube-playlist-item-add` for each assignment. |

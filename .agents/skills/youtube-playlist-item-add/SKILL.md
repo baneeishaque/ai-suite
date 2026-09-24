@@ -141,6 +141,13 @@ The script:
 
 ***
 
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/playlist-item-add.py` for every video-to-playlist assignment during the organization workflow; processes videos sequentially. |
+
+***
 
 ## 8. Related Skills
 

@@ -145,6 +145,14 @@ The script:
 
 ***
 
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/channel-video-list.py` with `--format json` as the first step; parses the JSON output to build a video inventory for categorization. |
+
+***
+
 ## 8. Composition Rationale
 
 This skill is a **base** skill: it owns only the YouTube channel video listing API call (channel discovery + uploads playlist pagination). It delegates all OAuth lifecycle management to [`google-oauth-setup`](../google-oauth-setup/SKILL.md) and is itself composed by the channel video organization workflow. Separating video listing from playlist management and organization allows each operation to be reused independently (e.g., bulk video audit, content migration planning).

@@ -141,6 +141,14 @@ The script:
 
 ***
 
+## 7. Composition by Higher-Level Skills
+
+| Composer Skill | Composition Mechanism |
+|---|---|
+| [`youtube-channel-video-organize`](../youtube-channel-video-organize/SKILL.md) | Calls `scripts/playlist-create.py` during its categorization step when no matching playlist exists; captures the playlist ID for subsequent playlist-item-add calls. |
+
+***
+
 ## 8. Composition Rationale
 
 This skill is a **base** skill: it owns only the YouTube playlist-creation API call. It delegates all OAuth lifecycle management to [`google-oauth-setup`](../google-oauth-setup/SKILL.md) and is itself composed by video upload and channel organization workflows. Separating playlist creation from listing and item-add allows each operation to be reused independently.

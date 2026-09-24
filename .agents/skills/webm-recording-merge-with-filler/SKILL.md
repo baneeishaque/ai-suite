@@ -273,3 +273,5 @@ See §3.3.1 flag table — all flags correspond directly to the script's `argpar
   the full recovery workflow (trim continuation via split base, then merge via this skill).
 - [System-Wide Tool Management](../system-wide-tool-management/SKILL.md) — installs ffmpeg / ffprobe / Python /
   Pillow if any dependency is missing.
+- [YouTube Video Upload](../youtube-video-upload/SKILL.md) — downstream composer that uploads the merged webm (output of
+  this skill) to YouTube; cross-referenced so the pipeline is end-to-end visible.

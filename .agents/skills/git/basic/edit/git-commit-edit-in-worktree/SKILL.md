@@ -27,6 +27,11 @@ base skills:
    invoked as the `GIT_SEQUENCE_EDITOR`. Its `scripts/write-drop-todo.py`
    receives the target SHA list (via `--action drop` / `--action edit` /
    `--action reword` remap) and rewrites the todo non-interactively.
+2. [`git-submodule-history-classification`](../../../../git/submodule/repair/
+   git-submodule-history-classification/SKILL.md) —
+   optional scoping input: its `scripts/classify-submodule-commits.py`
+   locates the INTRO commit when the target is a submodule path, and its
+   post-rebase zero-commits result is the verification evidence.
 
 The composer's domain-specific value-add: the isolated-worktree lifecycle
 (baseline capture → plan → backup → isolate → rebase → tree parity →

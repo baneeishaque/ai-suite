@@ -27,6 +27,9 @@ intentionally non-actionable.
 - [`SKILL.md`](SKILL.md) — SSOT with the complete procedure.
 - [`git-rebase-drop-noninteractive`](../git-rebase-drop-noninteractive/SKILL.md) —
   base skill providing the todo-writer invoked as `GIT_SEQUENCE_EDITOR`.
+- [`git-submodule-history-classification`](../../../../git/submodule/repair/
+  git-submodule-history-classification/SKILL.md) —
+  base skill providing commit classification for scoping.
 - [`git-submodule-history-removal`](../../../../git/submodule/lifecycle/
   git-submodule-history-removal/SKILL.md) —
   composer built on top of this skill.

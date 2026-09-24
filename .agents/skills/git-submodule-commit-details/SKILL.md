@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Submodule Commit Details Skill
 
-> **Skill ID:** `git-submodule-commit-details`
-> **Version:** 2.1.0
+> **Skill ID:** `git-submodule-commit-details`<br>
+> **Version:** 2.1.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

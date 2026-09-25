@@ -803,6 +803,39 @@ author disagree on a blocking finding after two rounds, **notify the user**
 
 ---
 
+### 4.8 Stage 6 — auto-merge decision (Laya/Jev System One classifier)
+
+After the review verdict is posted and all blocking findings are resolved, run the
+System One merge-decision gate. With `--execute` the gate merges automatically when it returns `MERGE`:
+
+```bash
+# 1) Local Laya server (free, offline; first run downloads ~324 MB once; ~33-45 s per classification)
+.agents/skills/github/repo/pr-merge-decision-classifier/scripts/laya-server.bash start
+
+# 2) Classify + auto-merge on MERGE (exit 0 = MERGE, 1 = HOLD, 2 = error)
+python3 .agents/skills/github/repo/pr-merge-decision-classifier/scripts/classify-pr.py \
+  --repo owner/name --pr <N> --backend laya --execute --json
+```
+
+Verdict handling:
+
+| Verdict | Meaning | Action |
+| :--- | :--- | :--- |
+| `MERGE` (exit 0) | All gate conditions passed (confidence ≥ 0.9, risk ≤ 0.5, no breaking change, no scope creep, checks satisfied) | The classifier executes `gh pr merge <N> --repo <R> --rebase --delete-branch` and records the result in `execution`; the branch is deleted per repo policy |
+| `HOLD` (exit 1) | One or more gate conditions failed; `reasons[]` names each with its observed value | Do NOT merge; surface the reasons in the review/PR comment; treat as additional reviewer findings |
+| error (exit 2) | Backend, `gh`, or merge failure | Report the error; fall back to manual review; never treat an error as approval |
+
+Operational recommendation: run the first few PRs without `--execute` (decision-only) to calibrate, then enable it.
+
+Backend notes: `laya` is the default local backend. Hosted alternates (`apimaster` → `jev-latest`,
+`morphllm` → `systemone-latest`, `typesafe` direct) use the same wire protocol; apimaster requires a wallet
+top-up and morphllm requires quota. `--backend all` requires unanimity across responding backends.
+
+Boundary: a `MERGE` verdict still requires the Stage 4 verification to have passed; the classifier never
+merges on `HOLD`, never retries a failed merge, and never uses bypass flags.
+
+---
+
 ## 5. End-to-End Annotated Walkthrough
 
 **Scenario:** associate `jane-dev` opened PR #42 (`fix login timeout`) on
@@ -949,6 +982,7 @@ Authoritative skill documents referenced by this guide:
 | GitHub Actions Run Audit | `.agents/skills/github-actions-run-audit/SKILL.md` | Compose pattern reference |
 | GitHub Repo Commit Fetch scripts | `.agents/skills/github-repo-commit-fetch/scripts/` | `list-commits.py`, `commit-details.py`, `fetch-file-at-ref.py` |
 | Git Commit Comparison Audit scripts | `.agents/skills/git-commit-comparison-audit/scripts/` | `compare.py`, `equivalence-check.ps1`, `pair-walker.ps1` |
+| PR Merge Decision Classifier | `.agents/skills/github/repo/pr-merge-decision-classifier/SKILL.md` | Stage 6 merge-decision gate |
 
 Governing rules (SSOT for the mandates below — this guide does not duplicate
 their full text):
@@ -990,4 +1024,12 @@ pwsh -File .agents/skills/git-commit-comparison-audit/scripts/pair-walker.ps1 -L
 
 # Stage 5 — deliver (after "Why vs. What" verdict; handoff: STOP after posting)
 gh pr review 42 --repo owner/name --comment --body-file /tmp/pr42-review.md
+
+# Stage 6 — auto-merge decision (decision-only by default; add --execute to merge on MERGE)
+.agents/skills/github/repo/pr-merge-decision-classifier/scripts/laya-server.bash start
+python3 .agents/skills/github/repo/pr-merge-decision-classifier/scripts/classify-pr.py \
+  --repo owner/name --pr 42 --backend laya --json     # exit 0 = MERGE, 1 = HOLD, 2 = error
+# auto-merge variant (fixed command: gh pr merge --rebase --delete-branch):
+python3 .agents/skills/github/repo/pr-merge-decision-classifier/scripts/classify-pr.py \
+  --repo owner/name --pr 42 --backend laya --execute --json
 ```

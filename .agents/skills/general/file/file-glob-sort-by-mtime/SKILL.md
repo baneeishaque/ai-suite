@@ -74,3 +74,4 @@ category: General
 
 - [`file-glob-sort-by-regex-capture`](../../../file-glob-sort-by-regex-capture/SKILL.md) — sibling base; sorts by regex capture instead of mtime
 - [`text-lines-sort-by-length`](../../text-lines-sort-by-length/SKILL.md) — sorts text lines by length (different domain, same pattern)
+- [`opencode-installed-plugin-lookup`](../../opencode/opencode-installed-plugin-lookup/SKILL.md) — related — plugin registry probe; may order log files from the logger convention

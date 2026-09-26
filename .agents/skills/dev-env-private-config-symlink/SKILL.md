@@ -18,7 +18,7 @@ The protocol covers:
 2. **Link**: create symlinks from the app's working tree to the private
    files.
 3. **Diagnose**: detect broken targets, case-mismatched filesystems
-   (macOS `Lab_Data` vs `lab-data`), and stale links after host migration.
+    (macOS case-mismatch), and stale links after host migration.
 4. **Audit**: confirm every linked file is actually consumed by source code
    somewhere (Kotlin / Java / Dart / JS / TS / Python), and flag dead
    config so symlink overhead is justified.
@@ -46,16 +46,15 @@ reference for new environments:
 | Google Cloud Shell | `~/cloudshell_open/<private-repo>` | [scripts/exemplars/symlink-google-cloud-shell.bash](scripts/exemplars/symlink-google-cloud-shell.bash) |
 | NeverInstall | `../<private-repo>` (sibling of `<app-repo>`) | [scripts/exemplars/symlink-neverinstall.bash](scripts/exemplars/symlink-neverinstall.bash) |
 | Ubuntu (local) | `$HOME/<private-repo>` | [scripts/exemplars/symlink-ubuntu.bash](scripts/exemplars/symlink-ubuntu.bash) |
-| macOS (local) | `~/Lab_Data/<private-repo>` (case-sensitive on the literal path) | (see §3 — case-mismatch caution) |
-| Windows | `C:\Lab_Data\<private-repo>` | [scripts/exemplars/symlink-windows.ps1](scripts/exemplars/symlink-windows.ps1) |
+| macOS (local) | `~/<data-dir>/<private-repo>` (case-sensitive on the literal path) | (see §3 — case-mismatch caution) |
+| Windows | `C:\<data-dir>\<private-repo>` | [scripts/exemplars/symlink-windows.ps1](scripts/exemplars/symlink-windows.ps1) |
 
 New environments MUST add a row above and a matching exemplar script.
 
 ## 3. Case-Mismatch Diagnosis (macOS / Windows Pitfall)
 
 On case-insensitive filesystems (default APFS, NTFS) a symlink whose target
-spells the path with the wrong case (`/Users/dk/lab-data/...` instead of the
-on-disk `/Users/dk/Lab_Data/...`) **resolves successfully at the shell** but
+spells the path with the wrong case (e.g., `~/<data-dir>/...` instead of `~/<Data-Dir>/...`) **resolves successfully at the shell** but
 the resolved real path may differ from what later tooling expects. The
 classic failure mode: a symlink created on a peer host with one case
 convention is checked in or scripted, then breaks (or silently aliases the
@@ -173,7 +172,7 @@ repos consume which config — never rely on memory or naming conventions.
 These scripts are preserved verbatim as **canonical references**. They
 encode environment-specific knowledge (e.g., the exact Gitpod
 `/workspace/` root, the Cloud Shell `~/cloudshell_open/` root, the
-Windows `C:\Lab_Data\` root) that would be lost if reduced to a generic
+Windows `C:\<data-dir>\` root) that would be lost if reduced to a generic
 template.
 
 ## 7. Automated Audit Script
@@ -224,15 +223,14 @@ not used by other skills.
 
 ## 11. Related Skills
 
-- [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md) — Base skill for migrating entire tool configuration directories (XDG) into a companion repo with symlinks. This skill focuses on individual app-level config files (.env, JSON); the base skill generalises directory-level migration for tool configs.
+- [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md) — Base skill for migrating entire tool configuration directories (XDG) into a companion repo with symlinks. This skill focuses on individual app-level config files (`.env`, JSON); the base skill generalises directory-level migration for tool configs.
 
 ## 12. Traceability
 
 This skill was extracted from a session that:
 
 - Detected broken `.env` and `frequencyOfAccounts.json` symlinks in a
-  Kotlin CLI repo (targets pointed at `lab-data` while on-disk path was
-  `Lab_Data`).
+  Kotlin CLI repo (targets with a case-mismatch).
 - Repaired both with case-correct absolute targets.
 - Audited `relationOfAccounts.json` and found zero Kotlin/Java consumers
   — discovered it is exclusively Dart-side, used by two Flutter desktop

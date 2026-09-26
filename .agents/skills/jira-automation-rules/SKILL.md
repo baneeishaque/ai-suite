@@ -262,7 +262,7 @@ All steps below sit **inside** this branch.
 }
 ```
 
-> **Why web request instead of Comment action?** Jira Automation's built-in
+> **Why web request instead of Comment action?** Jira Automation's built-in<br>
 > **Comment on issue** action has a permanent per-rule dedupe memory — it refuses
 > to post a second comment on any issue the rule has previously commented on,
 > regardless of content, even after deleting the comments or toggling the rule

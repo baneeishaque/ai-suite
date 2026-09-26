@@ -99,6 +99,10 @@ python3 scripts/resolve-scratch-path.py --repo <path> --purpose <slug>
 - **No `.git` in repo**: does not require git; only checks the directory exists.
 - **`ses_` prefix handling**: both `--session-id ses_02c6…` and
   `--session-id 02c6…` resolve to folder `scratch/02c6…/`.
+- **Concurrent sessions in the same repo**: the composed auto-discovery is
+  newest-first by mtime and can resolve to a sibling session. When the intended
+  session ID is already known, pin it with `--session-id` instead of relying on
+  discovery.
 
 ## Prohibited Actions
 

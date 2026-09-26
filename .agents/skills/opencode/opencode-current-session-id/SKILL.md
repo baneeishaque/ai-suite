@@ -78,6 +78,12 @@ State file: exists
 - **No state file**: still succeeds (reports "missing") unless `--state exists` (exits 2)
 - **`--since` filters all sessions**: exits 1 with "could not find newest YAML log"
 - **Symlinked log dir**: follows symlinks via `Path.rglob`
+- **Concurrent sessions in the same repo**: discovery selects the newest
+  `ses_*/` directory by mtime — a sibling session that logged more recently
+  wins over the true current session. When the intended session ID is already
+  known (e.g. carried in task context), do NOT rely on auto-discovery — pass
+  the ID explicitly to consumer scripts (e.g.
+  `resolve-scratch-path.py --session-id <id>`).
 
 ## Prohibited Actions
 

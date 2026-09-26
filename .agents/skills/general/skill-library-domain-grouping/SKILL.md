@@ -39,6 +39,7 @@ consumed by:
 
 ```text
 .agents/skills/
+├── calendar/                     (4 items — flat)   <- NEW
 ├── cli/                          (7 items — flat)
 ├── database/                     (9 items — flat)
 ├── docker/                       (2 items — flat)   <- NEW
@@ -51,7 +52,7 @@ consumed by:
 ├── json/                         (3 items — flat)
 ├── markdown/                     (4 items — flat)
 ├── maven/                        (1 item — flat)
-├── mcp/                          (2 items — flat)
+├── mcp/                          (3 items — flat; 2 pending-move)
 ├── media/                        (10 items — flat)
 ├── mise/                         (3 items — flat)
 ├── node/                         (2 items — flat)
@@ -324,11 +325,21 @@ markdown/
 └── skill-doc-metadata-separation              <- NEW
 ```
 
+**calendar/** (4 items — flat):
+
+```text
+calendar/
+├── gmail-event-email-to-ics                    <- NEW
+├── ics-event-extraction-to-json                <- NEW
+├── ics-event-generation-from-json              <- NEW
+└── ics-to-google-calendar-event                <- NEW
+```
 
 **mcp/** (3 items — flat; 2 pending-move):
 
 ```text
 mcp/
+├── google-workspace-mcp-account-switch         <- NEW
 ├── mcp-cross-tool-config-sync                  [pending-move — physical folder at .agents/skills/mcp-cross-tool-config-sync/]
 └── mcp-management                              [pending-move — physical folder at .agents/skills/mcp-management/]
 ```
@@ -382,6 +393,31 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-09-26 — calendar/ domain added (4 items); mcp/ realized (3 items, 2 pending-move)
+
+Added:
+
+* **`ics-event-generation-from-json`** (new base, `calendar/`): deterministic JSON spec → RFC 5545 `.ics`
+  emission (TEXT escaping, 75-octet UTF-8-safe folding, CRLF, UTC or TZID datetimes with `VTIMEZONE`
+  templates, `VALARM`, built-in structural verification).
+* **`ics-event-extraction-to-json`** (new base, `calendar/`): deterministic `.ics` → JSON parse (line
+  unfolding, TEXT unescaping, parameter parsing, multi-VEVENT and VALARM support, zoneinfo-derived
+  `utc`/`iso` datetime forms).
+* **`gmail-event-email-to-ics`** (new composer, `calendar/`): Gmail event-invitation email (attached
+  `.ics` or body-embedded details) → verified maximum-detail `.ics`, composing the google-workspace
+  MCP Gmail tools + both calendar bases.
+* **`ics-to-google-calendar-event`** (new composer, `calendar/`): `.ics` (or JSON spec) → verified
+  Google Calendar event, composing the extraction base + google-workspace MCP calendar tools.
+* **`google-workspace-mcp-account-switch`** (new base, `mcp/`): runtime account switch of the
+  google-workspace MCP session (`auth_clear` → dependent follow-up call → identity verification).
+
+Also enriched `opencode-current-session-id` and `scratch-artifact-naming` (concurrent-session caveats)
+and cross-referenced `google-oauth-setup` and `mcp-management` toward the new MCP base.
+
+Updated Section 1.1 tree (added `calendar/ (4 items — flat)`; `mcp/` 2→3 with 2 pending-move) and
+Section 1.2 listings (`calendar/` flat group; `mcp/` group realized with `mcp-management` and
+`mcp-cross-tool-config-sync` marked pending-move from their physical top-level folders).
 
 ### 2026-09-25 — github/repo/ expanded 6->7: pr-merge-decision-classifier added
 

@@ -393,9 +393,11 @@ Every skill generated via the Factory MUST automatically undergo the final verif
        (d) empty Related Skills sections, (e) missing Related Skills in skills that
        have Composition sections. Resolve all reported issues before declaring the
        skill complete.
+
        ```bash
        python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py
        ```
+
 - **Script Authoring Audit** (when scripts are shipped):
     1. **Cross-Version Smoke Test**: Execute the script with `pwsh-preview` (and, where feasible, `pwsh`) on a real
        input and confirm exit code 0 on the success path and exit code 1 with a `Write-Message`-rendered diagnostic on
@@ -503,7 +505,7 @@ The `## Composition Rationale` section sits in the skill's front-matter zone (be
 #### How a composer's Composition Rationale differs from a base's
 
 | Aspect | Base skill | Composer skill |
-|---|---|---|
+| --- | --- | --- |
 | Direction of wiring | Downstream (lists who depends on me) | Upstream (lists what I depend on) |
 | Mandatory link targets | Every known composer | Every base skill composed |
 | Typical mechanism phrasing | "Composers shell out to `scripts/<base>.sh` and consume its stdout JSON contract" | "Pipes `<input-discovery-output>` into `<base>/scripts/<x>` via `$(dirname "$0")/../../<base>/scripts/<x>`" |
@@ -687,7 +689,7 @@ If **multiple related concerns** are foreseeable → choose a parent heading who
 Before adding or editing any block in an existing skill doc, the author MUST sample the surrounding 20–50 lines AND the document's overall conventions, and ensure the new content matches the dominant local pattern across **all** of the following axes:
 
 | Axis | Examples of variants to choose between |
-|---|---|
+| --- | --- |
 | List marker | `-` vs `*` vs `1.` (numbered) |
 | List indentation depth | 2-space vs 4-space continuation |
 | Blank lines around headings | 0, 1, or 2 blank lines above/below `##` / `###` |

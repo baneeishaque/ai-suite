@@ -61,6 +61,8 @@ DEFAULT_SCOPES = [
     ".agents/skills/**/scripts/**/*.ps1",
     "ai-agent-rules/**/*.md",
     "AGENTS.md",
+    "AGENTS-legacy.md",
+    "AGENTS-github-copilot.md",
     "memories/repo/**/*.md",
 ]
 

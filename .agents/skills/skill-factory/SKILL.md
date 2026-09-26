@@ -299,7 +299,7 @@ A bridge audit row is added to §3 Post-Drafting Checklist verifying that `<skil
   by the **Skill** column. New entries MUST be inserted at the correct sorted position \u2014 NEVER appended to the end.
   After insertion, the Agent MUST visually verify that the row above and below the new entry maintain the sort order.
 - For layered pairs: register **both** the base and the composer in the same change at their respective sorted
-  positions, with the composer's row explicitly noting *"Composer \u2014 feeds X into the base Y skill"* so the dependency
+  positions, with the composer's row explicitly noting *"Composer — feeds X into the base Y skill"* so the dependency
   is visible at the index level.
 - Registration is the LAST registration step: the §2.1 taxonomy-placement update (domain-grouping tree + changelog)
   MUST be completed before the `AGENTS-legacy.md` row is added, so the index never advertises a skill the taxonomy

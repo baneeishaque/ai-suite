@@ -111,4 +111,5 @@ State file: exists
 
 ## Related Skills
 
-- [`opencode-installed-plugin-lookup`](../opencode-installed-plugin-lookup/SKILL.md) — consumer of the logger-location convention (.opencode/logs/)
+- [`opencode-installed-plugin-lookup`](../opencode-installed-plugin-lookup/SKILL.md) — consumer of the logger-location
+  convention (.opencode/logs/)

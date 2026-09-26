@@ -342,7 +342,7 @@ For every SSOT-ONLY or GAP binary (after Step B3):
 
 Two atomic commits per the standard protocol:
 - **Commit 1** (SSOT repo): `docs(is-this-command-safe): add <binaries> to safety-table and cheatsheet`
-- **Commit 2** (configurations-private): `chore(autoapprove): <N new entries + M extensions> for <binaries>`
+- **Commit 2** (<private-config-repo>): `chore(autoapprove): <N new entries + M extensions> for <binaries>`
 
 ***
 

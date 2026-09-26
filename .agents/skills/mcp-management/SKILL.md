@@ -121,6 +121,9 @@ Copilot CLI, Claude Desktop, Cursor, Windsurf, etc.), do NOT hand-edit each tool
 servers (consumes this skill)
 - [`mcp-cross-tool-config-sync`](../mcp-cross-tool-config-sync/SKILL.md) — Cross-tool MCP config sync (consumes this
 skill)
+- [`google-workspace-mcp-account-switch`](../mcp/google-workspace-mcp-account-switch/SKILL.md) — runtime auth operation
+on a configured google-workspace MCP server (account switching); complements this skill's add/configure/verify
+lifecycle.
 
 ***
 

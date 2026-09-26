@@ -204,3 +204,11 @@ The script:
 | [`youtube-playlist-list`](../youtube-playlist-list/SKILL.md) | Calls `scripts/oauth-setup.py` or `scripts/oauth-token-refresh.py` before querying playlists API; consumes the credential cache path from this skill's output. |
 | [`youtube-video-upload`](../youtube-video-upload/SKILL.md) | Calls `scripts/oauth-setup.py` or `scripts/oauth-token-refresh.py` before invoking the upload script; passes the credential cache path as `--credentials`. |
 | [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) | Calls `scripts/oauth-setup.py` or `scripts/oauth-token-refresh.py` before making Data API v3 PATCH requests; consumes the credential cache path. |
+
+***
+
+## 8. Related Skills
+
+- [`google-workspace-mcp-account-switch`](../mcp/google-workspace-mcp-account-switch/SKILL.md) — MCP-layer sibling:
+switches the account of a configured google-workspace MCP server (session clear + browser re-login); this skill covers
+the REST/PKCE credential layer instead.

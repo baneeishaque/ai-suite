@@ -22,3 +22,9 @@ This bridge provides context for tools that do not natively support agent skills
   syntax validation.
 - **Traceability**: Refer to [Section 5](./SKILL.md#5-traceability--recording) for conversation history and
 architectural precedents.
+
+## Cross-References
+
+- [`google-workspace-mcp-account-switch`](../mcp/google-workspace-mcp-account-switch/SKILL.md) — runtime auth operation
+on a configured google-workspace MCP server (account switching); complements this skill's add/configure/verify
+lifecycle.

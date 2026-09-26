@@ -24,3 +24,6 @@ handling. Do NOT execute any step without first loading `SKILL.md` — this brid
 - [`youtube-video-upload`](../youtube-video-upload/SKILL.md) — composer that uses this base for upload auth
 - [`youtube-video-metadata-update`](../youtube-video-metadata-update/SKILL.md) — base skill that uses this skill for
   Data API auth
+- [`google-workspace-mcp-account-switch`](../mcp/google-workspace-mcp-account-switch/SKILL.md) — MCP-layer sibling:
+switches the account of a configured google-workspace MCP server (session clear + browser re-login); this skill covers
+the REST/PKCE credential layer instead.

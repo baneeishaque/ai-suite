@@ -226,16 +226,18 @@ Scripts are **first-class deliverables** of a skill — not disposable session a
 
 Every skill folder MUST contain an `AGENTS.md` file alongside `SKILL.md`. The file is a **passive bridge** that exposes the skill to *non-skill-aware* agent runtimes — clients that auto-load `AGENTS.md` by filename convention (e.g., Codex CLI, some Cursor profiles, some Continue.dev configurations) but do not parse `agentskills.io` YAML frontmatter or the `.agents/skills/<name>/SKILL.md` directory contract. The bridge ensures those agents discover the skill exists and know to read `SKILL.md` for the operational details, instead of silently missing the skill.
 
-#### 2.3.1 Disambiguation — Per-Skill Bridge vs. Root Registry
+#### 2.3.1 Disambiguation — Per-Skill Bridge vs. Root-Level Architecture
 
-Two distinct files share the filename `AGENTS.md`:
+Three root-level files share the `AGENTS` prefix:
 
-| File | Path | Role | Maintained by |
-|---|---|---|---|
-| **Root registry** | `<repo-root>/AGENTS.md` | Index of all skills + Permanent Operating Reminders | §2.4 Registration (root-table row inserted via `agents-md-stage-row.py`) |
-| **Per-skill bridge** | `.agents/skills/<skill>/AGENTS.md` | Companion bridge for one skill | THIS subsection (§2.3) |
+| File | Role | Maintained by |
+| --- | --- | --- |
+| `<repo-root>/AGENTS.md` | Permanent Operating Reminders (all AI tools) | Manual |
+| `<repo-root>/AGENTS-legacy.md` | Skills table for legacy / non-skill-aware runtimes | §2.4 Registration (row inserted via `agents-md-stage-row.py --target AGENTS-legacy.md`) |
+| `<repo-root>/AGENTS-github-copilot.md` | GitHub Copilot-specific instructions (delta only) | Manual |
+| **Per-skill bridge** `.agents/skills/<skill>/AGENTS.md` | Companion bridge for one skill | THIS subsection (§2.3) |
 
-They are NOT the same artifact and MUST NOT be conflated. The per-skill bridge does not list other skills; the root registry does not duplicate per-skill operational content. A failure to distinguish them has been observed where an author put per-skill bridge content into the root registry (or vice versa).
+They are NOT the same artifact and MUST NOT be conflated. The per-skill bridge does not list other skills; the root-level files each serve their distinct roles. A failure to distinguish them has been observed where an author put per-skill bridge content into the root registry (or vice versa).
 
 #### 2.3.2 Required Sections (Template)
 
@@ -279,25 +281,29 @@ A bridge audit row is added to §3 Post-Drafting Checklist verifying that `<skil
 
 ### 2.4 Registration
 
-- Update the root `AGENTS.md` skills table to register the new skill with its absolute path and description.
+- Update the `AGENTS-legacy.md` skills table to register the new skill with its absolute path and description.
     Use the shared registration helper instead of hand-editing the table:
 
     ```bash
     python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+        --target AGENTS-legacy.md \
         --mode worktree \
         --row "| Skill Name | [\`.agents/skills/<skill-name>/SKILL.md\`](.agents/skills/<skill-name>/SKILL.md) | One-line description |"
     ```
 
-    `--mode worktree` reads the working-tree `AGENTS.md`, inserts the row at the alphabetically correct position,
+    `--mode worktree` reads the working-tree `AGENTS-legacy.md`, inserts the row at the alphabetically correct position,
     and writes the result back to the working tree for normal `git add` review. The default `--mode staged`
-    is reserved for the Atomic Commit Construction §2f Interleaving Mandate when `AGENTS.md` already carries
+    is reserved for the Atomic Commit Construction §2f Interleaving Mandate when `AGENTS-legacy.md` already carries
     unrelated pending hunks.
-- **Alphabetical Order Mandate**: The root `AGENTS.md` skills table MUST remain sorted alphabetically (case-insensitive)
+- **Alphabetical Order Mandate**: The `AGENTS-legacy.md` skills table MUST remain sorted alphabetically (case-insensitive)
   by the **Skill** column. New entries MUST be inserted at the correct sorted position \u2014 NEVER appended to the end.
   After insertion, the Agent MUST visually verify that the row above and below the new entry maintain the sort order.
 - For layered pairs: register **both** the base and the composer in the same change at their respective sorted
   positions, with the composer's row explicitly noting *"Composer \u2014 feeds X into the base Y skill"* so the dependency
   is visible at the index level.
+- Registration is the LAST registration step: the §2.1 taxonomy-placement update (domain-grouping tree + changelog)
+  MUST be completed before the `AGENTS-legacy.md` row is added, so the index never advertises a skill the taxonomy
+  does not yet register.
 
 ***
 

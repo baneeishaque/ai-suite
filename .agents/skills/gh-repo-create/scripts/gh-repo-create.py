@@ -31,10 +31,11 @@ def parse_args():
 
 def main():
     args = parse_args()
+    visibility_flag = {"public": "--public", "private": "--private", "internal": "--internal"}[args.visibility]
     cmd = [
         "gh", "repo", "create", args.repo,
         "--source", args.source,
-        "--visibility", args.visibility,
+        visibility_flag,
         "--remote", args.remote,
     ]
     if args.push:

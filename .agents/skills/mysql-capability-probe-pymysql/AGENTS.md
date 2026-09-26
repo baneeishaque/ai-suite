@@ -18,7 +18,7 @@ via a tiny PyMySQL script before adopting the capability in production code.
 ```bash
 python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
     --probe   .agents/skills/mysql-capability-probe-pymysql/scripts/probe-multi-statement.py \
-    --secrets ~/Lab_Data/configurations-private/<project>/act.secrets
+    --secrets ~/<private-config-repo>/<project>/act.secrets
 ```
 
 Exit 0 = supported, 1 = not supported, 2 = config error.

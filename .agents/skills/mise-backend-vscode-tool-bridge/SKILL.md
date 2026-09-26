@@ -80,7 +80,7 @@ Use the Python CLI:
 python3 .agents/skills/mise-backend-vscode-tool-bridge/scripts/bridge_mise_tool_to_vscode.py \
     --language php --backend github --version 8.5.6 \
     --scope "<workspace-root>/<php-repo>/.vscode/settings.json" \
-    --scope "<workspace-root>/<configurations-private>/.../<project>.code-workspace"
+    --scope "<workspace-root>/<private-config-repo>/.../<project>.code-workspace"
 ```
 
 The composer prints the resolved binary path once, then writes each
@@ -96,7 +96,7 @@ python3 .agents/skills/mise-backend-vscode-tool-bridge/scripts/bridge_mise_tool_
     --extra-key intelephense.environment.phpPath \
     --extra-key php-cs-fixer.phpPath \
     --scope "<workspace-root>/<php-repo>/.vscode/settings.json" \
-    --scope "<workspace-root>/<configurations-private>/.../<project>.code-workspace"
+    --scope "<workspace-root>/<private-config-repo>/.../<project>.code-workspace"
 ```
 
 ⚠ Confirm each extra key actually wants a PHP interpreter (not the tool's

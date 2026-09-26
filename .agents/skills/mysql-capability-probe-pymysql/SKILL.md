@@ -123,7 +123,7 @@ Example: pre-flight an FK migration end-to-end —
 
 ```bash
 SCRIPTS_DIR=.agents/skills/mysql-capability-probe-pymysql/scripts
-SECRETS=~/Lab_Data/configurations-private/<project>/act.secrets
+SECRETS=~/<private-config-repo>/<project>/act.secrets
 
 # 0. Know what server flavor / version / default engine we are aiming DDL at.
 python3 "$SCRIPTS_DIR"/probe-server-flavor.py --secrets "$SECRETS" --table transactionsv2

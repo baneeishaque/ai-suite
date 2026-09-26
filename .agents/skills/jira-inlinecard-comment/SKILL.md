@@ -23,16 +23,16 @@ The `acli` CLI produces only plain-text comments. For inlineCard format, this sk
 | `curl` | API calls (fallback / diagnostic) | `curl --version` |
 | `acli` | Comment listing for verification | `acli jira workitem comment list --key TEST --limit 1` |
 
-### 1.1 Token Retrieval from Keywords.txt
+### 1.1 Token Retrieval
 
-Jira API tokens are stored in a local `Keywords.txt` file. To retrieve a token:
+Jira API tokens are stored in a local `<key-file>` file. To retrieve a token:
 
 ```bash
 # By label pattern (returns first matching line's token)
-TOKEN=$(grep -A1 "Jira baneeishaque" /path/to/Keywords.txt | tail -1)
+TOKEN=$(grep -A1 "Jira <user>" /path/to/<key-file> | tail -1)
 
 # By line number
-TOKEN=$(sed -n '51p' /path/to/Keywords.txt)
+TOKEN=$(sed -n '51p' /path/to/<key-file>)
 ```
 
 The script uses `JIRA_SITE`, `JIRA_EMAIL`, and `JIRA_TOKEN` environment variables. Set them before invocation:
@@ -40,7 +40,7 @@ The script uses `JIRA_SITE`, `JIRA_EMAIL`, and `JIRA_TOKEN` environment variable
 ```bash
 export JIRA_SITE="<corp-domain>.atlassian.net"
 export JIRA_EMAIL="<author>@<corp-domain>.com"
-export JIRA_TOKEN="$(grep -A1 'Jira' /path/to/Keywords.txt | tail -1)"
+export JIRA_TOKEN="$(grep -A1 'Jira' /path/to/<key-file> | tail -1)"
 ```
 
 ***

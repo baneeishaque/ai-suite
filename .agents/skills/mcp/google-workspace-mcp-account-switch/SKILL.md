@@ -29,6 +29,8 @@ Consumers:
 
 | Composer | Role |
 | :--- | :--- |
+| [`gmail-event-email-to-ics`](../../calendar/gmail-event-email-to-ics/SKILL.md) | Account preflight before reading another identity's Gmail content |
+| [`ics-to-google-calendar-event`](../../calendar/ics-to-google-calendar-event/SKILL.md) | Account preflight before creating on another identity's calendar |
 
 The protocol was extracted because the two-call ordering constraint is easy to get wrong
 (batching the calls races the credential clear) and was corrected live during the source

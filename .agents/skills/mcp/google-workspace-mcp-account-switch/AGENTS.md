@@ -27,5 +27,9 @@ without first loading `SKILL.md` — this bridge is intentionally non-actionable
 
 ## Cross-References
 
+- [gmail-event-email-to-ics](../../calendar/gmail-event-email-to-ics/SKILL.md) — composer that
+  composes this protocol for its account preflight.
+- [ics-to-google-calendar-event](../../calendar/ics-to-google-calendar-event/SKILL.md) —
+  composer that composes this protocol before creating on another identity's calendar.
 - [mcp-management](../../mcp-management/SKILL.md) — server add/configure/verify lifecycle.
 - [google-oauth-setup](../../google-oauth-setup/SKILL.md) — REST/PKCE credential layer.

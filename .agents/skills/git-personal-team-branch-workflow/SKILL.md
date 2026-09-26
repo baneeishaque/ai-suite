@@ -10,8 +10,8 @@ category: Git & Repository Management
 
 # Git Personal Team Branch Workflow Skill (v1)
 
-> **Skill ID:** `git-personal-team-branch-workflow`
-> **Version:** 1.0.0
+> **Skill ID:** `git-personal-team-branch-workflow`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

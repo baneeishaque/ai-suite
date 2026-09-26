@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Hunk Staging Primitives
 
-> **Skill ID:** `git-hunk-staging-primitives`
-> **Version:** 1.0.0
+> **Skill ID:** `git-hunk-staging-primitives`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

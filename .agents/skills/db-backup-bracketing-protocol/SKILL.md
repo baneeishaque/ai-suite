@@ -6,8 +6,8 @@ category: Database
 
 # Database Backup Bracketing Protocol Skill
 
-> **Skill ID:** `db-backup-bracketing-protocol`
-> **Version:** 1.0.0
+> **Skill ID:** `db-backup-bracketing-protocol`<br>
+> **Version:** 1.0.0<br>
 > **Type:** Composer over [`github-actions-workflow-dispatch`](../github-actions-workflow-dispatch/SKILL.md)
 
 ## Description

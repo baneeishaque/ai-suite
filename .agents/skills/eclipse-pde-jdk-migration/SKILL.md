@@ -6,8 +6,8 @@ category: Build & Dependency Management
 
 # Eclipse PDE JDK Migration Skill
 
-> **Skill ID:** `eclipse-pde-jdk-migration`
-> **Version:** 1.0.0
+> **Skill ID:** `eclipse-pde-jdk-migration`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

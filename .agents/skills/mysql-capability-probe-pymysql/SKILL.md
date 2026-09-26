@@ -6,8 +6,8 @@ category: Database
 
 # MySQL Capability Probe (PyMySQL) Skill (v1)
 
-> **Skill ID:** `mysql-capability-probe-pymysql`
-> **Version:** 1.0.0
+> **Skill ID:** `mysql-capability-probe-pymysql`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## 1. When to Apply

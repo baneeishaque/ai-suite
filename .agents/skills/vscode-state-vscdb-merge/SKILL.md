@@ -6,8 +6,8 @@ category: VS Code / IDE Configuration
 
 # VS Code state.vscdb Merge Skill (v1)
 
-> **Skill ID:** `vscode-state-vscdb-merge`
-> **Version:** 1.0.0
+> **Skill ID:** `vscode-state-vscdb-merge`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale

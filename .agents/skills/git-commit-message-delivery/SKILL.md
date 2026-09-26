@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git Commit Message Delivery Skill (v1) — Base Primitive
 
-> **Skill ID:** `git-commit-message-delivery`
-> **Version:** 1.0.0
+> **Skill ID:** `git-commit-message-delivery`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

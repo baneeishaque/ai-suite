@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git Atomic Commit Construction Skill
 
-> **Skill ID:** `git-atomic-commit-construction`
-> **Version:** 1.0.0
+> **Skill ID:** `git-atomic-commit-construction`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

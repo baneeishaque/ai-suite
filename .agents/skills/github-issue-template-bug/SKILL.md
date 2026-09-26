@@ -6,9 +6,9 @@ category: GitHub-Community
 
 # GitHub Issue Template — Bug Skill (v1)
 
-> **Skill ID:** `github-issue-template-bug`
-> **Version:** 1.0.0
-> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+> **Skill ID:** `github-issue-template-bug`<br>
+> **Version:** 1.0.0<br>
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Base
 
 ## 1. When to Apply

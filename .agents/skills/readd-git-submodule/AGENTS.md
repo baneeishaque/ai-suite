@@ -1,6 +1,6 @@
 # Re-add Git Submodule Companion
 
-> **Skill ID:** `readd-git-submodule`
+> **Skill ID:** `readd-git-submodule`<br>
 > **SSOT:** [SKILL.md](./SKILL.md)
 
 ## Passive Context

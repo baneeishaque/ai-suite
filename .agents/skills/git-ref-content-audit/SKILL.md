@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Ref Content Audit Skill (v1)
 
-> **Skill ID:** `git-ref-content-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `git-ref-content-audit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

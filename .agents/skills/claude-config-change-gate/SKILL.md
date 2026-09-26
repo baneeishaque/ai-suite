@@ -8,8 +8,8 @@ category: Git-Composer
 
 # Claude Config Change Gate — Domain Composer
 
-> **Skill ID:** `claude-config-change-gate`
-> **Version:** 1.0.0
+> **Skill ID:** `claude-config-change-gate`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

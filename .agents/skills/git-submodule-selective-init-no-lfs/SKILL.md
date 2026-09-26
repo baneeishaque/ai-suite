@@ -6,8 +6,8 @@ category: Git-Operations
 
 # Git Submodule Selective Init (No-LFS) Skill (v1)
 
-> **Skill ID:** `git-submodule-selective-init-no-lfs`
-> **Version:** 1.0.0
+> **Skill ID:** `git-submodule-selective-init-no-lfs`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

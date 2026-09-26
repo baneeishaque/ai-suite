@@ -6,8 +6,8 @@ category: Rule-Management
 
 # Script Over Instruction Decomposition Skill
 
-> **Skill ID:** `script-over-instruction-decomposition`
-> **Version:** 1.0.0
+> **Skill ID:** `script-over-instruction-decomposition`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

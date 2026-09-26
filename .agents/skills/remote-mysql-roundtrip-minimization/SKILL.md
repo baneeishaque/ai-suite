@@ -6,8 +6,8 @@ category: Database
 
 # Remote MySQL Round-Trip Minimization Skill (v1)
 
-> **Skill ID:** `remote-mysql-roundtrip-minimization`
-> **Version:** 1.0.0
+> **Skill ID:** `remote-mysql-roundtrip-minimization`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## 1. When to Apply

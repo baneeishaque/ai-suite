@@ -6,8 +6,8 @@ category: Data Formatting & Presentation
 
 # Text to Markdown Conversion Skill
 
-> **Skill ID:** `text-to-markdown`
-> **Version:** 1.0.0
+> **Skill ID:** `text-to-markdown`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

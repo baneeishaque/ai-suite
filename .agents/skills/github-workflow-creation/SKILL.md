@@ -7,8 +7,8 @@ category: CI/CD & DevOps
 
 # GitHub Workflow Creation Skill
 
-> **Skill ID:** `github-workflow-creation`
-> **Version:** 1.1.0
+> **Skill ID:** `github-workflow-creation`<br>
+> **Version:** 1.1.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

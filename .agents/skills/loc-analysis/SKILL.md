@@ -6,8 +6,8 @@ category: Metrics & Reporting
 
 # LOC Analysis Skill
 
-> **Skill ID:** `loc-analysis`
-> **Version:** 1.0.0
+> **Skill ID:** `loc-analysis`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

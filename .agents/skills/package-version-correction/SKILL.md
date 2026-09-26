@@ -8,8 +8,8 @@ category: Package Management & Dependencies
 
 # Package Version Correction Skill
 
-> **Skill ID:** `package-version-correction`
-> **Version:** 1.0.0
+> **Skill ID:** `package-version-correction`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

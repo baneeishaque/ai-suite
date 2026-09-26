@@ -6,8 +6,8 @@ category: PHP-Tools
 
 # PHP mysqli Prepared-Statement Modernization Skill
 
-> **Skill ID:** `php-mysqli-prepared-statement-modernization`
-> **Version:** 1.0.0
+> **Skill ID:** `php-mysqli-prepared-statement-modernization`<br>
+> **Version:** 1.0.0<br>
 > **Type:** Atomic + examples
 
 ## Description

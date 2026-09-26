@@ -8,8 +8,8 @@ category: Base-Primitive
 
 # JSON Content Compare Ignore Keys — Base Primitive
 
-> **Skill ID:** `json-content-compare-ignore-keys`
-> **Version:** 1.0.0
+> **Skill ID:** `json-content-compare-ignore-keys`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

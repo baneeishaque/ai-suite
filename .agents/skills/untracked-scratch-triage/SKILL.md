@@ -6,8 +6,8 @@ category: Code Hygiene & Maintenance
 
 # Untracked Scratch Triage Skill
 
-> **Skill ID:** `untracked-scratch-triage`
-> **Version:** 1.0.0
+> **Skill ID:** `untracked-scratch-triage`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

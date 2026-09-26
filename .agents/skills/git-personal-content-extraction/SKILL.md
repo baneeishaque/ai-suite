@@ -17,8 +17,8 @@ category: Git & Repository Management
 
 # Git Personal Content Extraction Skill (v1)
 
-> **Skill ID:** `git-personal-content-extraction`
-> **Version:** 1.0.0
+> **Skill ID:** `git-personal-content-extraction`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

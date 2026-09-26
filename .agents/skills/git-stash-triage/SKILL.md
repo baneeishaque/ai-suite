@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Stash Triage Skill (v1)
 
-> **Skill ID:** `git-stash-triage`
-> **Version:** 1.0.0
+> **Skill ID:** `git-stash-triage`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale

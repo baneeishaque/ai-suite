@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Submodule Commit Reword Skill
 
-> **Skill ID:** `git_submodule_commit_reword`
-> **Version:** 1.0.0
+> **Skill ID:** `git_submodule_commit_reword`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

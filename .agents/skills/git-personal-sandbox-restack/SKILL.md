@@ -11,8 +11,8 @@ category: Git & Repository Management
 
 # Git Personal Sandbox Restack Skill (v1)
 
-> **Skill ID:** `git-personal-sandbox-restack`
-> **Version:** 1.0.0
+> **Skill ID:** `git-personal-sandbox-restack`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

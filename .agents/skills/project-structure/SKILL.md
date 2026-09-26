@@ -6,8 +6,8 @@ category: Project Organization
 
 # Project Structure & Documentation Skill
 
-> **Skill ID:** `project-structure`
-> **Version:** 1.1.0
+> **Skill ID:** `project-structure`<br>
+> **Version:** 1.1.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

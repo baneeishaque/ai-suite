@@ -10,8 +10,8 @@ category: Git & Repository Management
 
 # Git Commit Identity Rewrite Skill
 
-> **Skill ID:** `git-commit-identity-rewrite`
-> **Version:** 1.0.0
+> **Skill ID:** `git-commit-identity-rewrite`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

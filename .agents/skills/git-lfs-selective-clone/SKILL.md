@@ -8,8 +8,8 @@ category: Git & Repository Management
 
 # Git LFS Selective Clone Skill
 
-> **Skill ID:** `git-lfs-selective-clone`
-> **Version:** 1.0.0
+> **Skill ID:** `git-lfs-selective-clone`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

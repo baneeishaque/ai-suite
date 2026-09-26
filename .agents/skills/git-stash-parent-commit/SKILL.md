@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Stash Parent Commit Skill (v1)
 
-> **Skill ID:** `git-stash-parent-commit`
-> **Version:** 1.0.0
+> **Skill ID:** `git-stash-parent-commit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

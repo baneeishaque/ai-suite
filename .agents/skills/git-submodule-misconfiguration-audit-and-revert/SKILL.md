@@ -6,8 +6,8 @@ category: Git-Operations
 
 # Git Submodule Misconfiguration Audit & Revert Skill (v1)
 
-> **Skill ID:** `git-submodule-misconfiguration-audit-and-revert`
-> **Version:** 1.0.0
+> **Skill ID:** `git-submodule-misconfiguration-audit-and-revert`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

@@ -6,9 +6,9 @@ category: General-Development
 
 # Skill Cross-Reference Audit (v1)
 
-> **Skill ID:** `skill-cross-reference-audit`
-> **Version:** 1.0.0
-> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+> **Skill ID:** `skill-cross-reference-audit`<br>
+> **Version:** 1.0.0<br>
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Base
 
 ## Composition Rationale

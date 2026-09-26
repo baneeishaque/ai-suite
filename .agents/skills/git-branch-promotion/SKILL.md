@@ -10,8 +10,8 @@ category: Git & Repository Management
 
 # Git Branch Promotion Skill (v1)
 
-> **Skill ID:** `git-branch-promotion`
-> **Version:** 1.0.0
+> **Skill ID:** `git-branch-promotion`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

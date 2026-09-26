@@ -6,9 +6,9 @@ category: General-Development
 
 # Script Template Extraction (v1)
 
-> **Skill ID:** `script-template-extraction`
-> **Version:** 1.0.0
-> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+> **Skill ID:** `script-template-extraction`<br>
+> **Version:** 1.0.0<br>
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Base
 
 ## Composition Rationale

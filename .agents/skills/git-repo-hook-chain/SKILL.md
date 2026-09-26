@@ -8,8 +8,8 @@ category: Git-Infrastructure
 
 # Git Repo Hook Chain — General Infrastructure
 
-> **Skill ID:** `git-repo-hook-chain`
-> **Version:** 1.0.0
+> **Skill ID:** `git-repo-hook-chain`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

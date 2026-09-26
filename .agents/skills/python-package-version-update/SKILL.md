@@ -6,8 +6,8 @@ category: Package Management & Dependencies
 
 # Python Package Version Update Skill
 
-> **Skill ID:** `python-package-version-update`
-> **Version:** 1.0.0
+> **Skill ID:** `python-package-version-update`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

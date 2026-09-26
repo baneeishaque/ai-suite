@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Personal Sandbox Remote Skill (v1)
 
-> **Skill ID:** `git-personal-sandbox-remote`
-> **Version:** 1.0.0
+> **Skill ID:** `git-personal-sandbox-remote`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

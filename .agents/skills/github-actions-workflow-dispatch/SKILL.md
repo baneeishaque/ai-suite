@@ -6,9 +6,9 @@ category: GitHub-Automation
 
 # GitHub Actions Workflow Dispatch Skill (v1)
 
-> **Skill ID:** `github-actions-workflow-dispatch`
-> **Version:** 1.0.0
-> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+> **Skill ID:** `github-actions-workflow-dispatch`<br>
+> **Version:** 1.0.0<br>
+> **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Base (per [`skill-factory` §2.0 Layering Decision](../skill-factory/SKILL.md))
 
 ## 1. When to Apply

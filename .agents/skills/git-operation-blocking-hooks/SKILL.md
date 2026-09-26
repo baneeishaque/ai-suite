@@ -8,8 +8,8 @@ category: Git-Composer
 
 # Git Operation Blocking Hooks — Mechanism Composer
 
-> **Skill ID:** `git-operation-blocking-hooks`
-> **Version:** 1.0.0
+> **Skill ID:** `git-operation-blocking-hooks`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

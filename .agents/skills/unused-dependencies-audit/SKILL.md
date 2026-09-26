@@ -8,8 +8,8 @@ category: Package Management & Dependencies
 
 # Unused Dependencies Audit & Removal Skill
 
-> **Skill ID:** `unused-dependencies-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `unused-dependencies-audit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

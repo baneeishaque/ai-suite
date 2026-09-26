@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Git Cross-Ref File Parity Skill (v1)
 
-> **Skill ID:** `git-cross-ref-file-parity`
-> **Version:** 1.0.0
+> **Skill ID:** `git-cross-ref-file-parity`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

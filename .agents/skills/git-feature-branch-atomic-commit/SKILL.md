@@ -7,8 +7,8 @@ category: Git & Repository Management
 
 # Git Feature Branch Atomic Commit Skill
 
-> **Skill ID:** `git-feature-branch-atomic-commit`
-> **Version:** 1.0.0
+> **Skill ID:** `git-feature-branch-atomic-commit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

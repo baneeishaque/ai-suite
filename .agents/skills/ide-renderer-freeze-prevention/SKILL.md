@@ -6,8 +6,8 @@ version: 1.0.0
 
 # IDE Renderer Freeze Prevention Skill (v1)
 
-> **Skill ID:** `ide-renderer-freeze-prevention`
-> **Version:** 1.0.0
+> **Skill ID:** `ide-renderer-freeze-prevention`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

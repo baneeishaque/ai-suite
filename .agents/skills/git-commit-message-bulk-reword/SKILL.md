@@ -10,8 +10,8 @@ category: Git & Repository Management
 
 # Git Commit Message Bulk Reword Skill
 
-> **Skill ID:** `git-commit-message-bulk-reword`
-> **Version:** 1.0.0
+> **Skill ID:** `git-commit-message-bulk-reword`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

@@ -13,8 +13,8 @@ category: Git & Repository Management
 
 # Git Dependent Branch Restack Cascade Skill (v1)
 
-> **Skill ID:** `git-dependent-branch-restack-cascade`
-> **Version:** 1.0.0
+> **Skill ID:** `git-dependent-branch-restack-cascade`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

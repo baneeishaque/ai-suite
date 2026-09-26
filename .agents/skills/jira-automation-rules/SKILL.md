@@ -10,8 +10,8 @@ category: Atlassian Jira
 
 # Jira Automation Rules Skill
 
-> **Skill ID:** `jira-automation-rules`
-> **Version:** 1.0.0
+> **Skill ID:** `jira-automation-rules`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 Complete reference for designing, building, debugging, and hardening **Jira Cloud native

@@ -6,8 +6,8 @@ category: Code Hygiene & Maintenance
 
 # Near-Duplicate File Comparison Skill
 
-> **Skill ID:** `near-duplicate-file-comparison`
-> **Version:** 1.0.0
+> **Skill ID:** `near-duplicate-file-comparison`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

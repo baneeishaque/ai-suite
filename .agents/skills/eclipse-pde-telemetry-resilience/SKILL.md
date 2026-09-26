@@ -6,8 +6,8 @@ category: Build & Dependency Management
 
 # Eclipse PDE Telemetry Resilience Skill
 
-> **Skill ID:** `eclipse-pde-telemetry-resilience`
-> **Version:** 1.0.0
+> **Skill ID:** `eclipse-pde-telemetry-resilience`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

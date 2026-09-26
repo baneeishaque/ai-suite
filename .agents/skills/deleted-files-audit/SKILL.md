@@ -6,8 +6,8 @@ category: Code Hygiene & Maintenance
 
 # Deleted Files Audit Skill
 
-> **Skill ID:** `deleted-files-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `deleted-files-audit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

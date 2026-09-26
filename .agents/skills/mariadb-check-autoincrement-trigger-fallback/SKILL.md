@@ -6,8 +6,8 @@ category: Database
 
 # MariaDB CHECK on AUTO_INCREMENT — Trigger Fallback Skill
 
-> **Skill ID:** `mariadb-check-autoincrement-trigger-fallback`
-> **Version:** 1.0.0
+> **Skill ID:** `mariadb-check-autoincrement-trigger-fallback`<br>
+> **Version:** 1.0.0<br>
 > **Type:** Atomic + script
 
 ## Description

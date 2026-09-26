@@ -6,8 +6,8 @@ category: Build & Dependency Management
 
 # OSGi `Require-Bundle` → `Import-Package` Migration Skill
 
-> **Skill ID:** `osgi-require-bundle-to-import-package`
-> **Version:** 1.0.0
+> **Skill ID:** `osgi-require-bundle-to-import-package`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

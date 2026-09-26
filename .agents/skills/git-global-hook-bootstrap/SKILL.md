@@ -8,8 +8,8 @@ category: Git-Infrastructure
 
 # Git Global Hook Bootstrap — General Infrastructure
 
-> **Skill ID:** `git-global-hook-bootstrap`
-> **Version:** 1.0.0
+> **Skill ID:** `git-global-hook-bootstrap`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

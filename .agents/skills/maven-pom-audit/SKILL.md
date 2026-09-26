@@ -6,8 +6,8 @@ category: Build & Dependency Management
 
 # Maven POM Audit Skill
 
-> **Skill ID:** `maven-pom-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `maven-pom-audit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

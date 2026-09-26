@@ -6,8 +6,8 @@ category: Database
 
 # MySQL Foreign-Key Hardening Workflow Skill
 
-> **Skill ID:** `mysql-fk-hardening-workflow`
-> **Version:** 1.0.0
+> **Skill ID:** `mysql-fk-hardening-workflow`<br>
+> **Version:** 1.0.0<br>
 > **Type:** Composer
 
 ## Description

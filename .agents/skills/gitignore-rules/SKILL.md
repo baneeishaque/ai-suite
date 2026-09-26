@@ -6,8 +6,8 @@ category: Git & Version Control
 
 # Gitignore Rules Skill
 
-> **Skill ID:** `gitignore-rules`
-> **Version:** 1.0.0
+> **Skill ID:** `gitignore-rules`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

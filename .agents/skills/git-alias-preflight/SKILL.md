@@ -6,8 +6,8 @@ category: Git-Infrastructure
 
 # Git Alias Preflight — General Infrastructure
 
-> **Skill ID:** `git-alias-preflight`
-> **Version:** 1.0.0
+> **Skill ID:** `git-alias-preflight`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

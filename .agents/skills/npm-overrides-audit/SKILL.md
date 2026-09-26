@@ -8,8 +8,8 @@ category: Package Management & Dependencies
 
 # NPM Overrides Audit & Correction Skill
 
-> **Skill ID:** `npm-overrides-audit`
-> **Version:** 1.0.0
+> **Skill ID:** `npm-overrides-audit`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

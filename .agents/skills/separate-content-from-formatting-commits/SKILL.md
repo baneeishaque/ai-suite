@@ -6,8 +6,8 @@ category: Git & Repository Management
 
 # Separate Content Changes from Formatting Commits
 
-> **Skill ID:** `separate-content-from-formatting-commits`
-> **Version:** 1.0.0
+> **Skill ID:** `separate-content-from-formatting-commits`<br>
+> **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Description

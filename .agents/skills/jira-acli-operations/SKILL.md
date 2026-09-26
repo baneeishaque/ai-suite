@@ -7,8 +7,8 @@ category: Atlassian Jira
 
 # Jira acli Operations Skill
 
-> **Skill ID:** `jira-acli-operations`
-> **Version:** 2.0.0
+> **Skill ID:** `jira-acli-operations`<br>
+> **Version:** 2.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 Comprehensive reference for all `acli jira` operations — authentication, work

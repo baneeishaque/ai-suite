@@ -100,6 +100,8 @@ record:
 | Amazon Q | `<user-home>/.aws/amazonq/mcp.json` | `mcpServers` | known |
 | Anti Gravity | varies — see [Anti Gravity Version Checker](../antigravity-version-checker/SKILL.md) | `mcpServers` | known |
 | Zed | `<user-home>/.config/zed/settings.json` (nested under `context_servers`) | `context_servers` | known |
+| OpenCode (Global) | `<user-home>/.config/opencode/opencode.json` | `mcp` | known |
+| OpenCode (Project) | `./opencode.json` | `mcp` | known |
 | Other / new tool | TBD | TBD | **probe required → §6** |
 
 Cache this table in `<canonical-root>/docs/tool-schema-records.md`. The probe is then a one-time cost per tool.
@@ -301,6 +303,14 @@ Each generator function is a pure transform of the same input dict:
 | `gen_claude_desktop` | `generated/claude-desktop/claude_desktop_config.json` | passthrough `mcpServers` |
 | `gen_cursor` | `generated/cursor/mcp.json` | passthrough `mcpServers` |
 | `gen_windsurf` | `generated/windsurf/mcp_config.json` | passthrough `mcpServers` |
+| `gen_opencode` | `generated/opencode/opencode.json` | rename `mcpServers` → `mcp`; preserve structure; handles `type: remote` entries with `url`+`headers` intact |
+
+**Remote-server note**: `gen_opencode` is the only generator that handles servers with `type: remote`, `url`,
+and `headers` fields — OpenCode's [remote MCP schema](../opencode-remote-mcp-setup/SKILL.md) supports both
+stdio (`type: local`) and HTTP/WebSocket (`type: remote`) servers. The other generators (copilot-cli, VS Code,
+JetBrains, Claude Desktop, Cursor, Windsurf) assume stdio-only (`command`/`args`) entries and would produce
+invalid configs if passed a remote server. Filter remote entries before feeding the canonical into those
+generators, or extend their transform logic.
 
 A `with_stdio_default(server)` helper injects `"type": "stdio"` if a `command` field exists but no `type` is
 set, so the canonical file can omit the noise.
@@ -346,7 +356,11 @@ python3 scripts/generate-configs.py
 #   output:    generated/
 #     wrote generated/copilot-cli/mcp-config.json
 #     wrote generated/vscode/mcp.json
-#     ...
+#     wrote generated/jetbrains/mcp.json
+#     wrote generated/claude-desktop/claude_desktop_config.json
+#     wrote generated/cursor/mcp.json
+#     wrote generated/windsurf/mcp_config.json
+#     wrote generated/opencode/opencode.json
 #   done.
 
 # JSON-lint every produced file
@@ -382,6 +396,8 @@ Pass `--no-deploy` to generate only (e.g., for CI / dry-run).
 | VS Code Insiders Copilot | `<user-home>/Library/Application Support/Code - Insiders/User/mcp.json` | `<canonical-root>/generated/vscode/mcp.json` |
 | JetBrains GitHub Copilot | `<user-home>/.config/github-copilot/intellij/mcp.json` | `<canonical-root>/generated/jetbrains/mcp.json` |
 | GitHub Copilot CLI | `<user-home>/.copilot/mcp-config.json` | `<canonical-root>/generated/copilot-cli/mcp-config.json` |
+| OpenCode (Global) | `<user-home>/.config/opencode/opencode.json` | `<canonical-root>/generated/opencode/opencode.json` |
+| OpenCode (Project) | `./opencode.json` | `<canonical-root>/generated/opencode/opencode.json` |
 
 The manual replace pattern below remains documented for bootstrap cases
 (brand-new consumer added before the script knows about it) and for
@@ -439,6 +455,7 @@ synchronized server list.
 | JetBrains Copilot | Restart IDE. Open the Copilot tool window → Settings → MCP; confirm servers appear. |
 | Claude Desktop | Quit (⌘Q — not just close) and relaunch. Open the developer console (Help menu) and confirm MCP server logs show successful connection. |
 | Cursor / Windsurf | Restart the editor; check MCP indicator in status bar. |
+| OpenCode | Restop opencode client; check if MCP servers appear in the server list or can be used in chat. |
 
 ### 10.2 Failure Triage
 
@@ -568,7 +585,14 @@ This composer skill is built from these primitives. Each primitive owns its doma
 
 ***
 
-## 15. Related Conversations & Traceability
+## 15. Related Skills
+
+- [`mcp-management`](../mcp-management/SKILL.md) — Server-entry SSOT consumed by this skill's canonical schema
+- [`opencode-remote-mcp-setup`](../opencode-remote-mcp-setup/SKILL.md) — OpenCode-specific remote MCP server composer
+- [`tool-config-schema-probe`](../tool-config-schema-probe/SKILL.md) — Base primitive for discovering new tool schema
+- [`opencode-jsonc-util`](../opencode-jsonc-util/SKILL.md) — Base JSONC utility for OpenCode config files
+
+## 16. Related Conversations & Traceability
 
 Session logs for the architectural decisions behind this skill (schema-split discovery, probe-dummy trick,
 generator + symlink rollout) live under [`docs/conversations/`](../../../docs/conversations/). Apply the

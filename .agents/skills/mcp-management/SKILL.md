@@ -115,6 +115,15 @@ Copilot CLI, Claude Desktop, Cursor, Windsurf, etc.), do NOT hand-edit each tool
 
 ***
 
+## Related Skills
+
+- [`opencode-remote-mcp-setup`](../opencode-remote-mcp-setup/SKILL.md) — OpenCode-specific composer for remote MCP
+servers (consumes this skill)
+- [`mcp-cross-tool-config-sync`](../mcp-cross-tool-config-sync/SKILL.md) — Cross-tool MCP config sync (consumes this
+skill)
+
+***
+
 ## Design Appendix (Design Fidelity)
 
 | Feature | Change Note | Rationale |

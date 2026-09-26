@@ -125,7 +125,39 @@ def gen_jetbrains(canonical: dict) -> None:
     write_json(OUT / "jetbrains" / "mcp.json", {"servers": servers})
 
 
-GENERATORS = (gen_copilot_cli, gen_vscode, gen_jetbrains)
+def gen_claude_desktop(canonical: dict) -> None:
+    """Claude Desktop - passthrough 'mcpServers' key unchanged."""
+    write_json(OUT / "claude-desktop" / "claude_desktop_config.json",
+               {"mcpServers": canonical["mcpServers"]})
+
+
+def gen_cursor(canonical: dict) -> None:
+    """Cursor - passthrough 'mcpServers' key unchanged."""
+    write_json(OUT / "cursor" / "mcp.json",
+               {"mcpServers": canonical["mcpServers"]})
+
+
+def gen_windsurf(canonical: dict) -> None:
+    """Windsurf - passthrough 'mcpServers' key unchanged."""
+    write_json(OUT / "windsurf" / "mcp_config.json",
+               {"mcpServers": canonical["mcpServers"]})
+
+
+def gen_opencode(canonical: dict) -> None:
+    """OpenCode - rename 'mcpServers' key to 'mcp', drop 'inputs'.
+
+    Remote servers (those with 'type': 'remote') keep their 'url' + 'headers';
+    stdio servers get 'type': 'stdio' default injected via with_stdio_default.
+    """
+    servers = {
+        name: with_stdio_default(srv)
+        for name, srv in canonical["mcpServers"].items()
+    }
+    write_json(OUT / "opencode" / "opencode.json", {"mcp": servers})
+
+
+GENERATORS = (gen_copilot_cli, gen_vscode, gen_jetbrains,
+              gen_claude_desktop, gen_cursor, gen_windsurf, gen_opencode)
 
 # Consumer-side symlink deployment map.
 # Key   = tool id (matches a gen_<tool> function's domain).
@@ -140,6 +172,22 @@ DEPLOY_TARGETS: dict[str, tuple[str, str]] = {
         # ../vscode-insiders-configuration/visual-studio-code-user-settings/mcp.json
         "../vscode-insiders-configuration/visual-studio-code-user-settings/mcp.json",
         "generated/vscode/mcp.json",
+    ),
+    "claude-desktop": (
+        "../claude/claude_desktop_config.json",
+        "generated/claude-desktop/claude_desktop_config.json",
+    ),
+    "cursor": (
+        "../.cursor/mcp.json",
+        "generated/cursor/mcp.json",
+    ),
+    "windsurf": (
+        "../.codeium/windsurf/mcp_config.json",
+        "generated/windsurf/mcp_config.json",
+    ),
+    "opencode": (
+        "../.config/opencode/opencode.json",
+        "generated/opencode/opencode.json",
     ),
 }
 

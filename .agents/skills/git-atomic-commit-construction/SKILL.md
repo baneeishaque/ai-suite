@@ -1620,8 +1620,8 @@ The agent is **BLOCKED** from:
   — Base skill providing all 5 hunk-staging primitives via public CLI
   contract: `stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
   `agents-md-stage-row.py`, `stage-head-synthesize.py`,
-  `stage-specific-hunks.py`. This skill is a composer: it does NOT
-  re-implement hunk-staging primitives; it orchestrates the base skill.
+`stage-specific-hunks.py`. This skill is a composer: it does NOT
+   re-implement hunk-staging primitives; it orchestrates the base skill.
 
 ## Composition Rationale
 

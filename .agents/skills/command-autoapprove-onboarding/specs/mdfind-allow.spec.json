@@ -1,0 +1,22 @@
+{
+  "_comment": "Specifies the mdfind autoApprove entry (SAFE-IF-PIPED Spotlight search, safety-table.csv 'mdfind'): anchored, anti-chaining class on every arg slot, read-only pipe sinks (head/tail/grep), explicit `; echo` safe-chain suffix. Re-run on any future edit to that entry.",
+  "pattern": "^mdfind( [^;&|<>$`()]+)+( 2>/dev/null| 2>&1)?( \\| (head|tail)( -[0-9]+)?| \\| grep( -[A-Za-z]+)*( (?:[^ ;&|<>$`()'\"]+|'[^']*'|\"[^\"]*\"))+)?(; echo( (?:[^ ;&|<>$`()'\"]+|'[^']*'|\"[^\"]*\"))+)?( \\|\\| true)?$",
+  "must_match": [
+    "mdfind -name \"eslint-cycle\"",
+    "mdfind -name \"eslint-cycle\" 2>/dev/null",
+    "mdfind -name \"eslint-cycle\" 2>/dev/null; echo \"exit: $?\"",
+    "mdfind \"eslint-cycle\"",
+    "mdfind -name x | head -5",
+    "mdfind -onlyin /tmp \"eslint-cycle\"",
+    "mdfind -name x; echo done"
+  ],
+  "must_reject": [
+    "mdfind",
+    "mdfind -name \"x\" | xargs rm",
+    "mdfind -name \"x\" | rm -rf ~",
+    "mdfind -name \"x\"; rm -rf ~",
+    "mdfind -name \"x\" && ls",
+    "mdfind -name \"x\" > /tmp/out",
+    "mdfind -name \"x\"; echo y; rm -rf ~"
+  ]
+}

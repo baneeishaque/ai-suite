@@ -324,6 +324,15 @@ markdown/
 └── skill-doc-metadata-separation              <- NEW
 ```
 
+
+**mcp/** (3 items — flat; 2 pending-move):
+
+```text
+mcp/
+├── mcp-cross-tool-config-sync                  [pending-move — physical folder at .agents/skills/mcp-cross-tool-config-sync/]
+└── mcp-management                              [pending-move — physical folder at .agents/skills/mcp-management/]
+```
+
 *
 
 ## 2. Placement Rules

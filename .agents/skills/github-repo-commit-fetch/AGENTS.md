@@ -25,9 +25,9 @@ The agent MUST activate the **GitHub Repo Commit Fetch** skill when ANY of the f
 ```bash
 SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 
-python3 "$SCRIPTS_DIR"/list-commits.py     --repo owner/name --limit 5
-python3 "$SCRIPTS_DIR"/commit-details.py   --repo owner/name --sha <SHA> --files-only
-python3 "$SCRIPTS_DIR"/fetch-file-at-ref.py --repo owner/name --ref <SHA> --path <PATH> --out <LOCAL>
+python3 "$SCRIPTS_DIR"/list-commits.py        --repo owner/name --limit 5
+python3 "$SCRIPTS_DIR"/commit-details.py      --repo owner/name --sha <SHA> --files-only
+python3 "$SCRIPTS_DIR"/fetch-file-at-ref.py   --repo owner/name --ref <SHA> --path <PATH> --out <LOCAL>
 ```
 
 > [!NOTE]

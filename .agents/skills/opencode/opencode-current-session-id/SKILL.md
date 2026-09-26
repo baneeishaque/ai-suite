@@ -10,10 +10,13 @@ category: OpenCode
 
 This skill is a **composer**: it does NOT re-implement glob-sorting or YAML parsing. It sequences two base skills:
 
-1. [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — finds the newest `.yaml` file in `.opencode/logs/`
-2. [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — extracts `session.id` and `title` from the YAML header
+1. [`file-glob-sort-by-mtime`](../../general/file/file-glob-sort-by-mtime/SKILL.md) — finds the newest `.yaml` file in
+   `.opencode/logs/`
+2. [`yaml-field-extract`](../../general/yaml-field-extract/SKILL.md) — extracts `session.id` and `title` from the YAML
+   header
 
-The composer's value-add: orchestrating the pipeline, resolving relative script paths, and cross-verifying the state file exists.
+The composer's value-add: orchestrating the pipeline, resolving relative script paths, and cross-verifying the state
+file exists.
 
 ## When to Use
 
@@ -23,7 +26,7 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 ## Environment & Dependencies
 
 | Requirement | Version | Notes |
-|-------------|---------|-------|
+| ------------- | --------- | ------- |
 | Python | 3.12+ | Stdlib only |
 | PyYAML | any | Required by yaml-field-extract (PEP 723 inline metadata) |
 | `.opencode/logs/` | — | Must exist (created by opencode logger plugin) |
@@ -31,7 +34,7 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 ## CLI Contract
 
 | Argument | Required | Description |
-|----------|----------|-------------|
+| ---------- | ---------- | ------------- |
 | _(none)_ | — | Runs the full pipeline with auto-discovered repo root and log dir |
 | `--log-dir PATH` | No | Override `.opencode/logs/` directory (default: `<repo-root>/.opencode/logs` or `$OPENCODE_LOGS_DIR`) |
 | `--repo-root PATH` | No | Override repo root discovery (default: `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, then `git rev-parse --show-toplevel`, then legacy `parents[4]`) |
@@ -41,21 +44,25 @@ The composer's value-add: orchestrating the pipeline, resolving relative script 
 | `--dry-run` | No | Print discovered paths (repo_root, log_dir, base scripts) as JSON and exit without extractors |
 
 **Output (text, default):**
-```
+
+```text
 Session ID: ses_XXXXXXXXXXXXX
 Title: My Session Title
 State file: exists
 ```
 
 **Exit codes:**
+
 - `0` — session ID found (and state gate satisfied when `--state` given)
 - `1` — any pipeline step failed (missing log, missing key, etc.)
 - `2` — session found but `--state` gate mismatched (`--json` still prints the payload)
 
 **Output (`--json`):**
+
 ```json
 {"session_id": "ses_XXXXXXXXXXXXX", "title": "My Session Title", "state": "exists", "yaml_path": "<path>", "log_dir": "<path>"}
 ```
+
 `title` is `null` when the YAML header has no `title` key.
 
 ## Protocol
@@ -80,11 +87,14 @@ State file: exists
 ## Script Reference
 
 `find-current-session.py`:
-1. Resolves repo root via `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, git top-level, legacy `parents[4]` fallback (cached per-process via `lru_cache`)
+
+1. Resolves repo root via `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT`, git top-level, legacy `parents[4]` fallback (cached
+   per-process via `lru_cache`)
 2. Resolves base script paths under repo root (with `SCRIPT_DIR`-relative fallback)
 3. Resolves log dir via `--log-dir`, `$OPENCODE_LOGS_DIR`, or `<repo-root>/.opencode/logs`
 4. If `--dry-run`: emits discovery JSON and exits
-5. Walks `ses_*/` dirs newest-first (filtered by `--since` if given), probes top 5 in parallel via `ThreadPoolExecutor`, accepting first header whose `session.id` parses
+5. Walks `ses_*/` dirs newest-first (filtered by `--since` if given), probes top 5 in parallel via `ThreadPoolExecutor`,
+   accepting first header whose `session.id` parses
 6. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
 7. Parses JSON Lines output to get the newest file path
 8. Runs `extract-field.py` twice: once for `session.id`, once for `title`
@@ -95,7 +105,7 @@ State file: exists
 ## Composition by Lower-Level Skills
 
 | Primitive | Composition Mechanism |
-|-----------|----------------------|
+| ----------- | ---------------------- |
 | `file-glob-sort-by-mtime` | `sort-by-mtime.py --dir .opencode/logs --glob *.yaml --limit 1` → newest path |
 | `yaml-field-extract` | `extract-field.py --file <path> --key session.id` → session ID |
 

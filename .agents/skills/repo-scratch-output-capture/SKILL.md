@@ -9,6 +9,7 @@ category: Code Hygiene & Maintenance
 > **Skill ID:** `repo-scratch-output-capture`<br>
 > **Version:** 1.0.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
+> **Layer:** Base
 
 ## 1. When to Apply
 

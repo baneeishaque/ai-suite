@@ -213,6 +213,7 @@ When the user requests a durable behavior change, record it here or in the relev
 - MCP setup: keep MCP entries in `opencode.json` as `enabled: false` by default; toggle on per task.
 - Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
 - Skill installs: place third-party / global skills in the cross-client `~/.agents/skills/<name>/SKILL.md` location (agentskills.io convention), not `~/.config/opencode/skills/`.
+- Scratch/intermediate files: never write them to temp folders (`/tmp`, `/var/folders/…`, etc.). Resolve every path via the `scratch-artifact-naming` skill script (session-scoped `<repo>/scratch/<session-id>/`) and capture command output via `repo-scratch-output-capture`; then deliberately decide each file's placement and filename — deliverables get a chosen user-facing location with a descriptive kebab-case name.
 
 ## Child DOX Index
 

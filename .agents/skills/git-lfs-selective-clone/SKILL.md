@@ -120,7 +120,7 @@ entries (typical pattern: `*.zip filter=lfs ...`), proceed.
 
 Default per the
 [Git Repository Management Rules §2](../../../ai-agent-rules/git-repo-management-rules.md#2-high-fidelity-cloning-protocol):
-`~/sample/path/<repo-name>/` (or `~/Lab_Data/<repo-name>/` per
+`~/sample/path/<repo-name>/` (or `~/<data-dir>/<repo-name>/` per
 [Repo Discovery Rules](../../../ai-agent-rules/repo-discovery-rules.md)).
 The agent MUST confirm the destination is empty.
 

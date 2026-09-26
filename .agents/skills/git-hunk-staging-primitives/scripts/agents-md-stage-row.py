@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """
-agents-md-stage-row.py — Alphabetically insert a single row into the root
-AGENTS.md skills table, then either stage-only-the-row (atomic-commit mode)
-or write to the working tree (skill-factory registration mode).
+agents-md-stage-row.py — Alphabetically insert a single row into a
+target skills table (default: AGENTS.md for backward compat; use
+--target AGENTS-legacy.md for the legacy skills table), then either
+stage-only-the-row (atomic-commit mode) or write to the working tree
+(skill-factory registration mode).
 
 Modes (--mode):
 ---------------
@@ -125,22 +127,22 @@ def insert_row_alphabetically(lines: list[str], new_row: str) -> tuple[list[str]
 # Mode implementations
 # ---------------------------------------------------------------------------
 
-def read_head(repo: str) -> list[str]:
+def read_head(repo: str, target: str = "AGENTS.md") -> list[str]:
     try:
-        head_content = git("show", "HEAD:AGENTS.md", repo=repo)
+        head_content = git("show", f"HEAD:{target}", repo=repo)
     except subprocess.CalledProcessError as exc:
-        sys.exit(f"ERROR: Could not read HEAD:AGENTS.md — {exc.stderr.strip()}")
+        sys.exit(f"ERROR: Could not read HEAD:{target} — {exc.stderr.strip()}")
     return [line + "\n" for line in head_content.splitlines()]
 
 
-def read_worktree(repo: str) -> list[str]:
-    path = Path(repo) / "AGENTS.md"
+def read_worktree(repo: str, target: str = "AGENTS.md") -> list[str]:
+    path = Path(repo) / target
     if not path.is_file():
         sys.exit(f"ERROR: Working-tree file not found: {path}")
     return path.read_text(encoding="utf-8").splitlines(keepends=True)
 
 
-def sink_staged(repo: str, new_lines: list[str]) -> str:
+def sink_staged(repo: str, new_lines: list[str], target: str = "AGENTS.md") -> str:
     """Write a new blob and point the index at it; working tree untouched."""
     content = "".join(new_lines)
     with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False, encoding="utf-8") as tf:
@@ -148,7 +150,7 @@ def sink_staged(repo: str, new_lines: list[str]) -> str:
         tmp_path = tf.name
     try:
         blob_hash = git("hash-object", "-w", tmp_path, repo=repo)
-        git("update-index", "--cacheinfo", f"100644,{blob_hash},AGENTS.md", repo=repo)
+        git("update-index", "--cacheinfo", f"100644,{blob_hash},{target}", repo=repo)
     except subprocess.CalledProcessError as exc:
         sys.exit(f"ERROR: git operation failed — {exc.stderr.strip()}")
     finally:
@@ -156,9 +158,9 @@ def sink_staged(repo: str, new_lines: list[str]) -> str:
     return blob_hash
 
 
-def sink_worktree(repo: str, new_lines: list[str]) -> None:
+def sink_worktree(repo: str, new_lines: list[str], target: str = "AGENTS.md") -> None:
     """Plain file write to AGENTS.md in the working tree."""
-    path = Path(repo) / "AGENTS.md"
+    path = Path(repo) / target
     path.write_text("".join(new_lines), encoding="utf-8")
 
 
@@ -187,8 +189,12 @@ def main() -> None:
              "worktree: read working tree, write working tree, do not touch the index.",
     )
     parser.add_argument(
+        "--target",
+        default="AGENTS.md",
+        help="Target filename (default: AGENTS.md). Use AGENTS-legacy.md for the legacy skills table.",
+    )
+    parser.add_argument(
         "--repo",
-        default=None,
         help="Path to the git repository root. Defaults to the repo containing this script.",
     )
     parser.add_argument(
@@ -197,17 +203,18 @@ def main() -> None:
         help="Preview the insertion position without changing anything.",
     )
     args = parser.parse_args()
+    target = args.target
 
     repo = args.repo or find_repo_root(os.path.dirname(os.path.abspath(__file__)))
 
     new_row = args.row if args.row.endswith("\n") else args.row + "\n"
 
     if args.mode == "staged":
-        source_lines = read_head(repo)
-        source_label = "HEAD:AGENTS.md"
+        source_lines = read_head(repo, target)
+        source_label = f"HEAD:{target}"
     else:
-        source_lines = read_worktree(repo)
-        source_label = "<worktree>/AGENTS.md"
+        source_lines = read_worktree(repo, target)
+        source_label = f"<worktree>/{target}"
 
     try:
         new_lines, idx = insert_row_alphabetically(source_lines, new_row)
@@ -217,7 +224,7 @@ def main() -> None:
     prev_key = row_sort_key(new_lines[idx - 1]) if idx > 0 else None
     next_key = row_sort_key(new_lines[idx + 1]) if idx + 1 < len(new_lines) else None
     row_key = row_sort_key(new_row)
-    print(f"Mode: {args.mode}  (source: {source_label})")
+    print(f"Mode: {args.mode}  Target: {target}  (source: {source_label})")
     print(f"Position: insert at line {idx + 1}")
     print(f"  prev row: '{prev_key}'")
     print(f"  new  row: '{row_key}'")
@@ -228,14 +235,14 @@ def main() -> None:
         return
 
     if args.mode == "staged":
-        blob_hash = sink_staged(repo, new_lines)
-        print(f"\nStaged: AGENTS.md (blob {blob_hash})")
+        blob_hash = sink_staged(repo, new_lines, target)
+        print(f"\nStaged: {target} (blob {blob_hash})")
         print("Only the new row has been added to the index; all other "
               "working-tree changes remain unstaged.")
     else:
-        sink_worktree(repo, new_lines)
-        print(f"\nWrote: {Path(repo) / 'AGENTS.md'}")
-        print("Working tree updated. Stage normally with: git add AGENTS.md")
+        sink_worktree(repo, new_lines, target)
+        print(f"\nWrote: {Path(repo) / target}")
+        print("Working tree updated. Stage normally with: git add {target}")
 
 
 if __name__ == "__main__":

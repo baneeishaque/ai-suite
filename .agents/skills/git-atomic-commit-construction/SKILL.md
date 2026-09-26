@@ -471,14 +471,14 @@ insufficient.
 #### 2f — Interleaving Mandate (Artifact + Registry Registration)
 
 Whenever a commit introduces or renames an artifact **and** a shared index /
-registry file (e.g., root `AGENTS.md` skills table, `.gitmodules`, CI
+registry file (e.g., `AGENTS-legacy.md` skills table, `.gitmodules`, CI
 workflow manifests) needs a corresponding row or entry for that artifact, the
 registry hunk MUST be **staged in the same commit** as the artifact itself —
 never batched into a separate "registration" commit at the end. This applies to:
 
-- **New skills**: root `AGENTS.md` row for the skill → same commit as the skill
+- **New skills**: `AGENTS-legacy.md` row for the skill → same commit as the skill
   `SKILL.md` / `scripts/` files.
-- **Submodule syncs**: `.gitmodules` URL change and any root `AGENTS.md` row
+- **Submodule syncs**: `.gitmodules` URL change and any `AGENTS-legacy.md` row
   referencing the submodule → same commit as the submodule pointer advance.
 - **Any artifact with a shared index entry**: treat the index row as part of the
   artifact's definition, not as metadata to collect last.
@@ -516,7 +516,7 @@ for ordinary `git status` review and `git add`). See
 workflow.
 
 Forbidden anti-pattern: "commit all artifacts first, then one final commit
-registers them all in AGENTS.md" — this makes individual commits incomplete
+registers them all in AGENTS-legacy.md" — this makes individual commits incomplete
 (skill exists but is not discoverable) and destroys per-feature traceability.
 
 See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-artifact--registry-registration).

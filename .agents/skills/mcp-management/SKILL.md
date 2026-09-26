@@ -96,7 +96,7 @@ echo '{"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}}' | <comm
 
 ### 5.2 Contextual Documentation
 
-- **Session Logs**: Store all session records in the workspace [docs/conversations/](../docs/conversations/) folder.
+- **Session Logs**: Store all session records in the workspace [docs/conversations/](../../../docs/conversations/) folder.
 - **Permanent Link**: Create a relative link in the skill summary or AGENTS.md to the relevant session log for
   future auditability.
 

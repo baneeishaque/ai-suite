@@ -616,6 +616,7 @@ discovery, classification, or batch logic:
 | [`git-commit-identity-rewrite`](../git-commit-identity-rewrite/SKILL.md) | Rewrites author + committer identity (and optionally dates) of one or more commits by copying from a source commit; handles the parent-repo + submodule pointer cascade. |
 | [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md) | Drives this skill's `drop` mode for a commit whose deleted file is recreated downstream from a stale, diverged copy; adds the divergence audit, union-blob splice, and Lesson-2-safe conflict resolution that the base skill does not own. |
 | [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) | Phase 4 — invokes this skill to drop the single-purpose `.gitmodules` URL-change commit (`git rebase --onto <C^> <C> <branch>`). |
+| [`git-commit-edit-in-worktree`](../git/basic/edit/git-commit-edit-in-worktree/SKILL.md) | Worktree-isolated counterpart of this skill: identical edit repertoire (drop / amend / reword / edit) executed in a scratch worktree with an untouched-main-worktree baseline contract — the mandatory route when the working tree is dirty and must stay untouched. |
 
 ## Post-Processing
 

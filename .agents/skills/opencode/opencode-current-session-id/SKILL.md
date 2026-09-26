@@ -111,6 +111,4 @@ State file: exists
 
 ## Related Skills
 
-- [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — base for finding the newest log file
-- [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — base for extracting YAML header fields
 - [`opencode-installed-plugin-lookup`](../opencode-installed-plugin-lookup/SKILL.md) — consumer of the logger-location convention (.opencode/logs/)

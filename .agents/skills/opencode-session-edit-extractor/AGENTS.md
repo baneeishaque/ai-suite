@@ -21,5 +21,11 @@ non-actionable.
 
 ## Cross-References
 
+- Composer: [`edit-application-from-session`](../edit-application-from-session/SKILL.md) —
+  consumes this base skill for applying edits to existing files
 - Related: [`opencode-session-write-extractor`](../opencode-session-write-extractor/SKILL.md) —
   parallel base skill for Tool: write payload extraction
+- Related: [`opencode-session-bash-write-extractor`](../opencode-session-bash-write-extractor/SKILL.md) —
+  parallel base skill for bash heredoc file writes
+- Composer: [`session-full-change-audit`](../session-full-change-audit/SKILL.md) —
+  includes edit payloads in unified change audits with `_source: "edit"`

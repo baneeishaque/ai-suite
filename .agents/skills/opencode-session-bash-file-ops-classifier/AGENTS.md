@@ -19,3 +19,8 @@ Read [`SKILL.md`](SKILL.md) for the full operational procedure.
 
 - [`opencode-session-bash-block-extractor`](../opencode-session-bash-block-extractor/SKILL.md)
   — Upstream block extractor
+- [`session-file-ops-audit`](../session-file-ops-audit/SKILL.md)
+  — Composer using this skill for end-to-end audit
+- [`session-full-change-audit`](../session-full-change-audit/SKILL.md)
+  — Composer that pipes block-extractor output into this classifier,
+    then merges classified ops into unified JSONL stream

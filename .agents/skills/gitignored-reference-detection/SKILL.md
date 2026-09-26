@@ -163,3 +163,4 @@ remediations.
 - [`gitignore-rules`](../gitignore-rules/SKILL.md) — authoring and auditing `.gitignore` rules
 - [`redaction-portability`](../redaction-portability/SKILL.md) — broader portability rules for public-scope artifacts
 - [`mrt-configuration-debug`](../mrt-configuration-debug/SKILL.md) — concrete example: references a gitignored `playwright-cli` local path resolved to public URL
+- [`git-commit-dangling-link-audit`](../git-commit-dangling-link-audit/SKILL.md) — sibling audit: classifies IGNORED targets (link audit delegates them out)

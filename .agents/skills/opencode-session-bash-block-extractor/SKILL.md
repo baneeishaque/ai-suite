@@ -35,6 +35,7 @@ Downstream consumers:
 | Composer | Consumption Mechanism |
 |---|---|
 | [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md) | Reads JSONL stdout from this skill's `extract-bash-blocks.py` via pipe or `--input` |
+| [`session-file-ops-audit`](../session-file-ops-audit/SKILL.md) | Shells out to this skill's script, pipes output into the classifier |
 
 ## Environment & Dependencies
 
@@ -89,6 +90,9 @@ python3 scripts/extract-bash-blocks.py --session <path> [--output <path>]
 | Composer | Composition Mechanism |
 |---|---|
 | [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md) | Reads JSONL from this skill's stdout; classifies each command string into a file operation type |
+| [`session-file-ops-audit`](../session-file-ops-audit/SKILL.md) | Invokes this skill's script FIRST; pipes the output into the classifier, then formats the result as a human-readable report |
+| [`session-full-change-audit`](../session-full-change-audit/SKILL.md) | Invokes this skill's script as first stage of 2-stage bash pipeline; pipes output into classifier, then merges into unified JSONL stream |
+
 ## Scripts
 
 - [`scripts/extract-bash-blocks.py`](scripts/extract-bash-blocks.py) —

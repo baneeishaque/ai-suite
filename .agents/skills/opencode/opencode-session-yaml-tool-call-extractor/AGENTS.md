@@ -26,5 +26,19 @@ documentation. Do NOT execute any step without first loading
 
 ## Cross-References
 
+- [`opencode-session-write-extractor`](../../opencode-session-write-extractor/SKILL.md)
+  — consumer: `--yaml` mode feeds `--tool write` records into its payload contract
+- [`opencode-session-edit-extractor`](../../opencode-session-edit-extractor/SKILL.md)
+  — consumer: `--yaml` mode feeds `--tool edit` records into its payload contract
+- [`opencode-session-bash-block-extractor`](../../opencode-session-bash-block-extractor/SKILL.md)
+  — consumer: `--yaml` mode feeds `--tool bash` command records
+- [`opencode-session-bash-write-extractor`](../../opencode-session-bash-write-extractor/SKILL.md)
+  — consumer: `--yaml` mode feeds bash commands into its heredoc parser
+- [`session-full-change-audit`](../../session-full-change-audit/SKILL.md)
+  — composer: `--yaml` mode dispatches records to the four pipelines
 - [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md)
   — sibling in the `opencode/` group
+- [`opencode-session-path-attribution`](../opencode-session-path-attribution/SKILL.md)
+  — consumer: sweeps every turn file via this skill's CLI
+- [`opencode-installed-plugin-lookup`](../opencode-installed-plugin-lookup/SKILL.md)
+  — sibling: locates the logger before extraction

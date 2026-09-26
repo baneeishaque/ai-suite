@@ -16,14 +16,20 @@ Redirects stdout and stderr of probes, installers, and diagnostic commands to a 
 ## Quick Reference
 
 ```bash
-SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
-my-command > "$SCRATCH/my-command.out" 2> "$SCRATCH/my-command.err"
-echo "Exit: $?  See $SCRATCH/my-command.{out,err}"
+REPO="$(git rev-parse --show-toplevel)"
+printf 'scratch/\n' >> "$REPO/.gitignore" 2>/dev/null
+STEM="$(python3 "$REPO/.agents/skills/general/file/scratch-artifact-naming/scripts/resolve-scratch-path.py" \
+    --repo "$REPO" --purpose my-command)"
+my-command > "$STEM.out" 2> "$STEM.err"
+echo "Exit: $?  See $STEM.{out,err}"
 ```
 
 ## Key Rules
 
-1. Use `<repo-root>/scratch/` — never `/tmp/`.
+1. Use `<repo-root>/scratch/<session-id>/` — never `/tmp/`.
 2. Always capture BOTH stdout and stderr as sibling files.
 3. Add `scratch/` to the committed `.gitignore`, not just `.git/info/exclude`.
-4. Never commit scratch files.
+4. **Get the session folder + filename from
+   [`scratch-artifact-naming`](../general/file/scratch-artifact-naming/SKILL.md)** —
+   do not derive `<purpose>_<ts>` / `<purpose>_<ref-slug>_<sha>` by hand.
+5. Never commit scratch files.

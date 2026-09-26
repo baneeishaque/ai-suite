@@ -1,4 +1,4 @@
-# OpenCode Session Write Extractor — Companion Bridge
+# OpenCode Session Bash Write Extractor — Companion Bridge
 
 ## Purpose
 
@@ -7,8 +7,8 @@ The operational SSOT lives in [`SKILL.md`](SKILL.md).
 
 ## When This Skill Applies
 
-- You have an opencode session export (`.md` format) containing tool calls
-- You need to extract `Tool: write` JSON payloads (`filePath` + `content`) from that session
+- You have an opencode session export (`.md` format) containing Tool: bash calls
+- You need to extract file write operations from heredoc commands (`cat > file << 'EOF'`)
 - The target file(s) to recover are specified via glob pattern
 - You want a domain-agnostic primitive — not specific to any particular file
 
@@ -22,8 +22,10 @@ non-actionable.
 ## Cross-References
 
 - Composer: [`file-recovery-from-session`](../file-recovery-from-session/SKILL.md) —
-  consumes this base skill for recovering written files
-- Related: [`opencode-session-diff-extractor`](../opencode-session-diff-extractor/SKILL.md) —
-  parallel base skill for git diff extraction from session exports
+  consumes this base skill for recovering bash-created files
+- Related: [`opencode-session-write-extractor`](../opencode-session-write-extractor/SKILL.md) —
+  parallel base skill for Tool: write payload extraction
+- Related: [`opencode-session-edit-extractor`](../opencode-session-edit-extractor/SKILL.md) —
+  parallel base skill for Tool: edit payload extraction
 - Composer: [`session-full-change-audit`](../session-full-change-audit/SKILL.md) —
-  includes write payloads in unified change audits with `_source: "write"`
+  includes bash heredoc writes in unified change audits with `_source: "bash-write"`

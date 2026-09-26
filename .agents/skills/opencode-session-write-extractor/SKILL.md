@@ -19,6 +19,10 @@ file. It parses the session markdown, locates tool invocations where
 `**Tool: write**` is used, and emits the `filePath` + `content` pairs
 as JSONL to stdout or a file.
 
+**Composition**: Consumed by `file-recovery-from-session` (composer) for
+recovering written files. Could be reused for any purpose involving
+`Tool: write` payload extraction (e.g., auditing, diffing, CI checks).
+
 ## Composition Rationale
 
 This primitive exists as its own base skill because `Tool: write` is a
@@ -105,6 +109,15 @@ python3 scripts/extract-session-writes.py (--session <path> | --yaml <path>) [--
 
 - [`opencode-session-edit-extractor`](../opencode-session-edit-extractor/SKILL.md) —
   Parallel base skill for `Tool: edit` payload extraction
+- [`opencode-session-diff-extractor`](../opencode-session-diff-extractor/SKILL.md) —
+  Parallel base skill for git diff extraction from session exports
+- [`opencode-session-bash-write-extractor`](../opencode-session-bash-write-extractor/SKILL.md) —
+  Parallel base skill for bash heredoc file writes
+- [`file-recovery-from-session`](../file-recovery-from-session/SKILL.md) —
+  Composer that consumes this skill for file recovery
+- [`session-full-change-audit`](../session-full-change-audit/SKILL.md) —
+  Composer that includes this skill's output in unified change audits
+
 ## Traceability
 
 - Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —

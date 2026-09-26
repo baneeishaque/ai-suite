@@ -40,19 +40,30 @@ reboots while staying out of version control.
 
 ## 3. Naming & Layout
 
+Artifacts are organized **per-session** under a scratch root that is
+gitignored. The session folder is named by the current opencode session ID
+(`ses_` prefix omitted), e.g. `scratch/02c693aeeffetmVJizAQ7kD0iP/`:
+
 ```text
 <repo-root>/
 ├── .gitignore              # contains line: scratch/
 └── scratch/                # gitignored
-    ├── <purpose>.out       # captured stdout
-    ├── <purpose>.err       # captured stderr
-    └── <purpose>.<ext>     # any artifact the script writes
+    └── <session-id>/        # ses_ prefix omitted (e.g. 02c693aeeffetmVJizAQ7kD0iP)
+        ├── <purpose>_<ts>.out      # captured stdout
+        ├── <purpose>_<ts>.err      # captured stderr
+        └── <purpose>_<ref-slug>_<ref-sha>.<ext>  # artifact captured at a git ref
 ```
 
-- `<purpose>` is a short hyphenated slug describing the command (`probe-multi`, `pip-install`,
-  `gradle-build`).
-- Always pair `.out` + `.err` siblings — many tools split signal unpredictably between the two streams.
-- Sub-folders permitted for multi-step workflows (`scratch/<workflow>/<step>.out`).
+- `<purpose>` is a short lowercase-kebab slug describing the command
+  (`probe-multi`, `pip-install`, `gradle-build`).
+- Always pair `.out` + `.err` siblings — many tools split signal unpredictably
+  between the two streams.
+- **Naming and session-folder resolution are delegated to the
+  [`scratch-artifact-naming`](../general/file/scratch-artifact-naming/SKILL.md)
+  base skill** — never re-derive the `<purpose>_<ts>` / `_<ref-slug>_<sha>`
+  forms yourself. Run its `resolve-scratch-path.py` and append the extension.
+- Sub-folders permitted for multi-step workflows
+  (`scratch/<session-id>/<step>.out`).
 
 ## 4. Operational Logic
 
@@ -62,23 +73,35 @@ Idempotent one-liner pattern:
 
 ```bash
 REPO="$(git rev-parse --show-toplevel)"
-SCRATCH="$REPO/scratch"
-mkdir -p "$SCRATCH"
+SCRATCH_ROOT="$REPO/scratch"
+mkdir -p "$SCRATCH_ROOT"
 grep -qxF 'scratch/' "$REPO/.gitignore" 2>/dev/null \
     || echo 'scratch/' >> "$REPO/.gitignore"
 
+SESSION_DIR="$(python3 "$REPO/.agents/skills/general/file/scratch-artifact-naming/scripts/resolve-scratch-path.py" \
+    --repo "$REPO" --purpose my-command | xargs dirname)"
+
 my-command --with --args \
-    > "$SCRATCH/my-command.out" \
-    2> "$SCRATCH/my-command.err"
-echo "Exit: $?  See $SCRATCH/my-command.{out,err}"
+    > "$SESSION_DIR/my-command.out" \
+    2> "$SESSION_DIR/my-command.err"
+echo "Exit: $?  See $SESSION_DIR/my-command.{out,err}"
 ```
 
-Use the bundled script [`scripts/ensure-scratch-gitignored.py`](scripts/ensure-scratch-gitignored.py)
-to perform the setup and emit the absolute scratch path on stdout:
+The **session-dir + naming** part MUST come from
+[`scratch-artifact-naming`](../general/file/scratch-artifact-naming/SKILL.md) —
+run its `resolve-scratch-path.py` (which also creates the dir) instead of
+computing the path by hand. Use the bundled script
+[`scripts/ensure-scratch-gitignored.py`](scripts/ensure-scratch-gitignored.py)
+to perform the setup and emit the absolute session-scoped scratch path on
+stdout:
 
 ```bash
-SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
-my-command > "$SCRATCH/my-command.out" 2> "$SCRATCH/my-command.err"
+REPO="$(git rev-parse --show-toplevel)"
+python3 "$REPO/.agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py" >/dev/null
+STEM="$(python3 "$REPO/.agents/skills/general/file/scratch-artifact-naming/scripts/resolve-scratch-path.py" \
+    --repo "$REPO" --purpose my-command)"
+my-command > "$STEM.out" 2> "$STEM.err"
+echo "Exit: $?  See $STEM.{out,err}"
 ```
 
 ### 4.2 Inspection Protocol
@@ -103,6 +126,9 @@ leftovers; this skill PRODUCES intentional captures — the two are SSOTs for di
 
 This skill is a base primitive consumed by:
 
+- [`scratch-artifact-naming`](../general/file/scratch-artifact-naming/SKILL.md) —
+  **delegate target** for the session folder + naming; this skill composes it
+  (via its `resolve-scratch-path.py`) instead of owning the formulas itself.
 - [`mysql-capability-probe-pymysql`](../mysql-capability-probe-pymysql/SKILL.md) — probe output goes
   to `scratch/probe-*.out|err`.
 - [`mise-tool-management`](../mise-tool-management/SKILL.md) — every `mise install`,

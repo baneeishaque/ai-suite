@@ -19,6 +19,10 @@ file. It parses the session markdown, locates tool invocations where
 `**Tool: edit**` is used, and emits the `filePath`, `oldString`, and
 `newString` values as JSONL to stdout or a file.
 
+**Composition**: Consumed by `edit-application-from-session` (composer)
+for applying edits to existing files. Could be reused for auditing edit
+history, comparing old vs new content, or CI checks.
+
 ## Composition Rationale
 
 This primitive exists as its own base skill because `Tool: edit` is a
@@ -87,6 +91,13 @@ python3 scripts/extract-session-edits.py --session <path> [--file-pattern <glob>
 | 2 | Parse error reading session file |
 | 3 | Session file not found |
 
+## Composition by Higher-Level Skills
+
+| Composer Skill | Purpose |
+|----------------|---------|
+| `edit-application-from-session` | Extract edit payloads → apply to existing files → verify |
+| `session-full-change-audit` | Include edit payloads in unified change audit → mergeable JSONL with `_source: "edit"` |
+
 ## Scripts
 
 - [`scripts/extract-session-edits.py`](scripts/extract-session-edits.py) —
@@ -97,6 +108,14 @@ python3 scripts/extract-session-edits.py --session <path> [--file-pattern <glob>
 
 - [`opencode-session-write-extractor`](../opencode-session-write-extractor/SKILL.md) —
   Parallel base skill for `Tool: write` payload extraction
+- [`opencode-session-bash-write-extractor`](../opencode-session-bash-write-extractor/SKILL.md) —
+  Parallel base skill for bash heredoc file writes
+- [`opencode-session-diff-extractor`](../opencode-session-diff-extractor/SKILL.md) —
+  Parallel base skill for git diff extraction from session exports
+- [`edit-application-from-session`](../edit-application-from-session/SKILL.md) —
+  Composer that consumes this skill for applying edits
+- [`session-full-change-audit`](../session-full-change-audit/SKILL.md) —
+  Composer that includes this skill's output in unified change audits
 
 ## Traceability
 

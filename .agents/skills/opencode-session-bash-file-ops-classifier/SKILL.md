@@ -124,6 +124,17 @@ python3 scripts/classify-bash-file-ops.py --input ops.jsonl
   Upstream block extractor (produces the JSONL this skill consumes)
 - [`opencode-session-bash-write-extractor`](../opencode-session-bash-write-extractor/SKILL.md) —
   Superseded predecessor (limited to heredoc writes only)
+- [`opencode-session-path-attribution`](../opencode/opencode-session-path-attribution/SKILL.md) —
+  sibling — attribution consumes classified-op evidence (move/delete cards)
+
+## Supersession
+
+This skill, combined with
+[`opencode-session-bash-block-extractor`](../opencode-session-bash-block-extractor/SKILL.md),
+supersedes `opencode-session-bash-write-extractor` for detecting ALL bash
+file operations, not just heredoc writes. See
+[`opencode-session-bash-write-extractor/SKILL.md`](../opencode-session-bash-write-extractor/SKILL.md#supersession)
+for details.
 
 ## Traceability
 

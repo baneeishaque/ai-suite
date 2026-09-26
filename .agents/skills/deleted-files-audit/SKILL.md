@@ -390,3 +390,6 @@ install Git via their system package manager:
   — the symmetric counterpart for **untracked** leftovers (this skill
   covers deletions of tracked files; that one covers files that were
   never tracked).
+- [git-commit-dangling-link-audit](../git-commit-dangling-link-audit/SKILL.md)
+  — complementary: a deleted-by-move link target is the dangling
+  subclass — link audit classifies it as DANGLES vs GIT_ONLY.

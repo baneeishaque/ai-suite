@@ -25,3 +25,8 @@ non-actionable.
 
 - [`opencode-session-bash-file-ops-classifier`](../opencode-session-bash-file-ops-classifier/SKILL.md)
   — Downstream classifier consuming this skill's output
+- [`session-file-ops-audit`](../session-file-ops-audit/SKILL.md)
+  — Composer orchestrating bash block extraction + classification + report
+- [`session-full-change-audit`](../session-full-change-audit/SKILL.md)
+  — Higher-level composer that pipes this skill's output into the classifier,
+    then merges into unified JSONL stream

@@ -4,3 +4,8 @@
 
 - Initial release — monolithic + per-turn directory YAML parsing, `--tool` filter, JSONL output contract.
 
+## v1.1 (2026-08-08)
+
+- Composition row for `opencode-session-path-attribution`; Related rows for
+  path-attribution + installed-plugin-lookup (registry/enrichment step of
+  the dangling-commit-link suite).

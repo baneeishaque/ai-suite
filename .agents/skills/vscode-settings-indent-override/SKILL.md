@@ -105,7 +105,7 @@ left at their original indent.
 | Stable — default profile | `<user-home>/Library/Application Support/Code/User/settings.json` |
 | Stable — named profile | `<user-home>/Library/Application Support/Code/User/profiles/<profile-id>/settings.json` |
 
-If the file is symlinked to a `configurations-private` SSOT repository, edits flow through the
+If the file is symlinked to a `<private-config-repo>` SSOT repository, edits flow through the
 symlink automatically — no extra step required.
 
 ***
@@ -148,7 +148,7 @@ python3 .agents/skills/vscode-settings-indent-override/scripts/vscode-settings-i
    failure.
 2. **Indent Check**: `grep '"approve"\|"matchCommandLine"' <settings.json> | sed 's/ /·/g'` — count
    leading dots to confirm the target spaces.
-3. **SSOT Sync**: If `settings.json` is symlinked into `configurations-private`, the symlink target
+3. **SSOT Sync**: If `settings.json` is symlinked into `<private-config-repo>`, the symlink target
    is updated automatically.
 
 ***

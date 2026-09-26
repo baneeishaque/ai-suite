@@ -344,7 +344,7 @@ reformat. The format-preserving textual script then produced 5 commits,
 each landing on the original 2-space format with zero whitespace churn,
 and no trailing `style:` reformat commit was needed.
 
-Session target log: `configurations-private` branch `stash/changes-on-macOS`,
+Session target log: `<private-config-repo>` branch `stash/changes-on-macOS`,
 commits `421a63e` → `718c8b3`.
 
 The lesson — **always inspect the baseline's actual byte-level format

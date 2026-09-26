@@ -38,7 +38,7 @@ hosts disable it. Before adopting this skill, **probe the live target server** v
 ```bash
 python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
     --probe   .agents/skills/mysql-capability-probe-pymysql/scripts/probe-multi-statement.py \
-    --secrets ~/Lab_Data/configurations-private/<project>/act.secrets
+    --secrets ~/<private-config-repo>/<project>/act.secrets
 ```
 
 Exit 0 = proceed; exit 1 = fall back to design (c) optimistic+fallback (§3.3).

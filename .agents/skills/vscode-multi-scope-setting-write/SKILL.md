@@ -21,7 +21,7 @@ Apply when ANY of:
   settings override folder settings**; writing only to one scope creates a
   silent inconsistency between "open as folder" and "open as workspace" modes.
 - A setting must be present in both a per-repo `.vscode/settings.json` AND a
-  shared workspace file (e.g., a centralized `configurations-private` repo
+  shared workspace file (e.g., a centralized `<private-config-repo>` repo
   that contains a multi-root `.code-workspace`).
 - Migrating settings from one scope into another while preserving the
   cascade semantics.
@@ -70,7 +70,7 @@ python3 .agents/skills/vscode-multi-scope-setting-write/scripts/write_vscode_set
     --value "<toolbase>/php" \
     --value-type string \
     --scope "<workspace-root>/<php-repo>/.vscode/settings.json" \
-    --scope "<workspace-root>/<configurations-private>/<workspaces>/<project>.code-workspace"
+    --scope "<workspace-root>/<private-config-repo>/<workspaces>/<project>.code-workspace"
 ```
 
 Re-running the same command produces no diff on either scope (idempotency

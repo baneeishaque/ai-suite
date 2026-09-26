@@ -264,7 +264,7 @@ manual pattern for bootstrap and audit." Adding a new tool means
 appending one entry to a Python dict — no prose edit required.
 
 See the upstream commit (`ai-suite-2` `c190f39`) and downstream sync
-(`configurations-private` `27f0e6e`) for the canonical refactor.
+(`<private-config-repo>` `27f0e6e`) for the canonical refactor.
 
 ## Cross-References
 

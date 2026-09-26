@@ -21,7 +21,7 @@ enforcement across all profiles.
 1. **Global Injection**: Insert these settings into the global `settings.json`.
 1. **Universal Enforcement**: Add the keys to the `workbench.settings.applyToAllProfiles` array in the global file.
 1. **Profile Cleanup**: Remove the settings from the profile file to prevent duplicate definitions.
-1. **Industrial Synchronization**: If the user maintains a `configurations-private` repository, ensure the source-of-truth
+1. **Industrial Synchronization**: If the user maintains a `<private-config-repo>` repository, ensure the source-of-truth
    files are also updated to maintain consistency.
 
 ### 1.2 Preservation Rules

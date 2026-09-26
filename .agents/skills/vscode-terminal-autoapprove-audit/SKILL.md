@@ -302,7 +302,7 @@ Before logging `keep` or `migrate`, scan the entry key for:
 | Internal hostname / domain | Tier B topology | Warn; recommend drop |
 
 > **Warning**: `settings.json` is often committed to version-controlled
-> `configurations-private` repositories and synced via
+> `<private-config-repo>` repositories and synced via
 > `workbench.settings.applyToAllProfiles`. Credentials embedded in entry keys appear in git
 > history. Rotate before removing the entry.
 

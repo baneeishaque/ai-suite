@@ -1622,6 +1622,9 @@ The agent is **BLOCKED** from:
   `agents-md-stage-row.py`, `stage-head-synthesize.py`,
 `stage-specific-hunks.py`. This skill is a composer: it does NOT
    re-implement hunk-staging primitives; it orchestrates the base skill.
+- **[Git Commit Dangling-Link Audit](../git-commit-dangling-link-audit/SKILL.md)**
+  — MANDATORY pre-flight before finalizing any preview that
+  reorders/moves paths: run the link classifier, then Gate 4 on ranges.
 
 ## Composition Rationale
 

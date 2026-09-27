@@ -326,6 +326,69 @@ mise ls 'github:adwinying/php'
 # → 8.5.6  ~/lab-data/Account-Ledger-Server-PHP/mise.toml  8.5.6
 ```
 
+### 2.7 Global-Scope Standalone Tool Install (No Project `mise.toml`)
+
+Layers 2.1–2.6 assume a project-scoped `mise.toml` (`mise use --path`).
+Some tools — standalone CLI utilities like `difftastic`, `bat`, `fzf` — are
+user-level tools (usable across every project), not project-bound languages.
+When the workspace has NO `mise.toml` (checked via `ls mise.toml .mise.toml`),
+the Layer's decision path diverges: the pin goes into the **global**
+`~/.config/mise/config.toml`, and the install targets the **full backend
+specification string** rather than a bare tool name.
+
+#### 2.7.1 Scope Decision Gate (ask the user)
+
+| # | Scope | Command | When |
+| :--- | :--- | :--- | :--- |
+| ① | **Global config** (Recommended for standalone CLI tools) | pin in `~/.config/mise/config.toml` + `mise install '<backend>:<owner>/<repo>@<ver>'` | Tool is a user-level CLI meant to work in every project |
+| ② | Project `mise.toml` | `mise use --path /abs/path/to/project <tool>@<ver>` | Tool is only needed in this repo, and a `mise.toml` exists or will be created |
+| ③ | Install only, no pin | `mise install '<backend>:<owner>/<repo>@<ver>'` | One-off smoke test / evaluation; do not persist |
+
+#### 2.7.2 Freshness + install (global path) — worked recipe
+
+Version selection still runs the §2.2 multi-source freshness check (Tier 1
+`mise ls-remote 'github:<owner>/<repo>'`, Tier 2 `latest-release.py`). Only the
+config-target and the install string differ:
+
+```bash
+# 1. Confirm NO project mise.toml anchors the tool.
+ls mise.toml .mise.toml
+
+# 2. Multi-source freshness (see §2.2):
+mise ls-remote 'github:Wilfred/difftastic' | tail -5
+python3 .agents/skills/github-repo-commit-fetch/scripts/latest-release.py --repo Wilfred/difftastic
+
+# 3. Ask the user for scope (§2.7.1 ①/②/③). If ①:
+#    Add to ~/.config/mise/config.toml under [tools]:
+#      "github:Wilfred/difftastic" = "0.69.0"
+
+# 4. Install the FULL backend spec with scratch capture (Layer 6).
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
+mise install 'github:Wilfred/difftastic@0.69.0' \
+    > "$SCRATCH/mise-install-difftastic.out" 2> "$SCRATCH/mise-install-difftastic.err"
+
+# 5. Verify no deprecation warnings (Layer 6.1) and smoke-test the binary.
+grep -E "deprecated|will be removed" "$SCRATCH/mise-install-difftastic.err" \
+    || echo "no deprecation warnings"
+mise exec -- difft --version
+```
+
+Key differences from §2.5 (project path):
+
+- **Pin location**: global `[tools]` in `~/.config/mise/config.toml`, added by
+  direct config edit after explicit user approval — §2.5's project-scoped
+  `--path` guarantee only applies when a project toml is the target.
+- **Install string**: the FULL backend form `'<backend>:<owner>/<repo>@<version>'`
+  (e.g. `'github:Wilfred/difftastic@0.69.0'`) — a bare `difftastic@0.69.0` does
+  NOT resolve for a `github:` backend.
+- **Binary name**: often differs from repo name (difftastic ships `difft`).
+  Discover the shipped binary in
+  `~/.local/share/mise/installs/github-Wilfred-difftastic/<ver>/` before the
+  smoke test.
+- **Scope gate is mandatory**: get user approval before BOTH the global-config
+  edit AND the install — matching §10's prohibition on unprompted global
+  mutation.
+
 ***
 
 ## 3. Layer 3 — Mise Python Environment Setup
@@ -1193,7 +1256,8 @@ The agent is FORBIDDEN from:
 - Invoking `python` or `pip` directly from PATH — always use `mise exec` with an
   explicit version and `--cd` to guarantee the correct environment.
 - Running `mise use` without a project-scoped config target — always scope to the
-  project directory, not globally.
+  project directory, not globally. **Sole exception**: the §2.7 global-scope
+  standalone-tool flow, which still requires explicit user approval.
 - **Skipping post-edit file validation** — every edited file MUST be validated with its
   industrial-standard tool (§9) before proceeding to the next step.
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the

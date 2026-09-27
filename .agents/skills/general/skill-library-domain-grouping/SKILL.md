@@ -33,6 +33,17 @@ consumed by:
 
 *
 
+## Related Skills
+
+* [`directory-tree-audit`](../directory-tree-audit/SKILL.md) — provides
+  per-folder item counts and tree data that drive placement and sub-grouping
+  decisions.
+* [`project-structure`](../../project-structure/SKILL.md) — industry-standard
+  folder-structure conventions that this taxonomy specializes for the skill
+  library.
+
+*
+
 ## 1. Domain Taxonomy
 
 ### 1.1 Top-Level Domains

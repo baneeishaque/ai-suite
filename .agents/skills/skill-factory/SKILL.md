@@ -49,6 +49,18 @@ Reference exemplar: [vscode-search-exclude-glob](../vscode-search-exclude-glob/S
 
 ### 2.1 Directory Structure
 
+- **Creation-time Taxonomy Placement** (mandatory first sub-step): BEFORE choosing
+  the target folder, consult the domain taxonomy SSOT
+  [`skill-library-domain-grouping` §1.2](../general/skill-library-domain-grouping/SKILL.md#12-sub-groups):
+    1. Match the new skill's topic keyword to the taxonomy's leaf group.
+    2. Place the new skill in that leaf group (e.g. a new composer over opencode
+       session logs goes in the `opencode/` leaf group).
+    3. Verify the parent folder's item count stays ≤10 after addition (use
+       `directory-tree-audit` if uncertain); propose sub-grouping if it would
+       exceed the limit.
+    4. Update the domain-grouping skill's §1.1 tree count, §1.2 listing, and a
+       `## Changelog` entry IN THE SAME CHANGE — a new skill directory without
+       its taxonomy registration is incomplete.
 - Create the target folder in `.agents/skills/<skill-name>/` (hyphens required for names).
 - Initialize `SKILL.md` (active SSOT), `AGENTS.md` (companion bridge), and — when the skill's metadata
   sections are separated per the library convention — `CHANGELOG.md` (release history) and
@@ -745,8 +757,9 @@ Visually scan the diff for style drift vs surrounding lines: do the inserted bul
   human-scanability principle and grouping methodology that determines when and how to
   sub-group a skill folder.
 - [`skill-library-domain-grouping`](../general/skill-library-domain-grouping/SKILL.md) — the
-  project-specific domain taxonomy that governs where every new skill belongs. The
-  Post-Drafting Checklist (§3) enforces compliance.
+  project-specific domain taxonomy that governs where every new skill belongs. Consulted at
+  §2.1 creation time (mandatory taxonomy placement before folder selection) AND enforced
+  by the Post-Drafting Checklist (§3).
 - [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md) — automated
   audit consumed by §3 Composition Audit step; run after any skill modification to verify
   cross-reference integrity, missing bridges, and missing frontmatter.

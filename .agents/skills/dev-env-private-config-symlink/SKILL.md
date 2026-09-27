@@ -224,6 +224,8 @@ not used by other skills.
 ## 11. Related Skills
 
 - [`tool-config-directory-symlink`](../tool-config-directory-symlink/SKILL.md) — Base skill for migrating entire tool configuration directories (XDG) into a companion repo with symlinks. This skill focuses on individual app-level config files (`.env`, JSON); the base skill generalises directory-level migration for tool configs.
+- [`opencode-config-preserve`](../opencode-config-preserve/SKILL.md) — Analogous config preservation protocol
+  for OpenCode CLI/IDE XDG directories, with selective gitignore tracking and recovery-value assessment.
 
 ## 12. Traceability
 

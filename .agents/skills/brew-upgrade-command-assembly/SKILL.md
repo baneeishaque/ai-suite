@@ -4,7 +4,7 @@ description: Generic primitive for assembling Homebrew upgrade/cleanup command c
 category: Package-Management
 ---
 
-# Brew Upgrade Command Assembly Skill (v2) — Base Primitive
+# Brew Upgrade Command Assembly Skill (v4) — Base Primitive
 
 Atomic, domain-agnostic primitive that assembles a Homebrew upgrade
 command chain from provided package lists. The primitive handles the
@@ -58,7 +58,9 @@ python3 assemble-brew-command.py \
   [--formula-names "pkg1,pkg2"] \
   [--cask-names "pkg1,pkg2"] \
   [--fetch-only "pkg1,pkg2"] \
-  [--first "pkg1,pkg2"]
+  [--first "pkg1,pkg2"] \
+  [--yes] \
+  [--log PATH]
 ```
 
 | Flag | Required | Meaning |
@@ -67,6 +69,8 @@ python3 assemble-brew-command.py \
 | `--cask-names` | ❌ | Comma-separated cask names to upgrade+cleanup |
 | `--fetch-only` | ❌ | Comma-separated cask names to fetch-only (appended after `--prune=all`) |
 | `--first` | ❌ | Comma-separated packages to place first in the chain regardless of formula/cask type |
+| `--yes` | ❌ | Prefix every `brew` subcommand with `yes | ` to auto-confirm interactive prompts |
+| `--log` | ❌ | Wrap output in `( ... ) 2>&1 | tee -a <path>` so all output is captured even if the chain short-circuits on failure (appends to an existing log) |
 
 At least one of `--formula-names`, `--cask-names`, or `--fetch-only` must be non-empty.
 
@@ -77,7 +81,12 @@ At least one of `--formula-names`, `--cask-names`, or `--fetch-only` must be non
 - Each package gets a `brew upgrade --verbose --cask/--formula <pkg> && brew cleanup --verbose <pkg>` pair
 - The chain is terminated by `brew cleanup --prune=all --verbose`
 - `brew fetch --cask --verbose <pkg>` entries are appended AFTER the final cleanup
-- All segments are joined with ` && ` producing a single logical line
+- Segments are joined with `;` then space after the export (standalone statement,
+  exit code irrelevant), then ` && ` between all subsequent brew subcommands —
+  producing a single logical line
+- When `--log` is active: wraps the entire chain in `( ... ) 2>&1 | tee -a <path>`
+  so every subcommand's output is captured regardless of `&&` short-circuit;
+  `tee -a` appends to an existing log (created if absent)
 - Trailing newline is always present
 
 ### Exit Codes
@@ -110,11 +119,19 @@ echo -e "formula:git\nfirst:google-chrome\nfetch:antigravity" | python3 assemble
 
 ## 3. Generated Command Anatomy
 
-The raw string this primitive produces follows this structure (one logical line after `&&` joining):
+The raw string this primitive produces follows this structure (one logical line):
 
 ```text
 export HOMEBREW_DOWNLOAD_CONCURRENCY=1; brew upgrade --verbose --cask <first-cask> && brew cleanup --verbose <first-cask> && brew upgrade --verbose --formula <f1> && brew cleanup --verbose <f1> && brew upgrade --verbose --cask <c1> && brew cleanup --verbose <c1> && brew cleanup --prune=all --verbose && brew fetch --cask --verbose <fetch1>
 ```
+
+**Join pattern:** The first join after `export ...` is `;` (NOT ` && `)
+because the export is a standalone statement whose exit code is irrelevant.
+All subsequent brew subcommands are joined with ` && `. A common mistake is
+writing `export ...; && brew upgrade ...` — the `;` terminates the export,
+leaving nothing for `&&` to chain to, which causes a shell parse error.
+See [`general/macos-shell-portability`](../general/macos-shell-portability/SKILL.md)
+§5.1 for details.
 
 Key constraints enforced:
 
@@ -169,14 +186,93 @@ The output places `claude-code@latest` first in the chain, before `gh`, `jq`, an
 
 ***
 
-## 6. Traceability
+## 6. Output Capture Patterns
+
+The generated brew command chain can be long (dozens of `upgrade && cleanup`
+pairs). The user typically needs to see live progress AND keep a log. Two
+patterns suit this:
+
+### 6.1 Interactive: `tee` (live progress + log file)
+
+Pipe the entire chain through `tee` to watch output scroll while saving a permanent log:
+
+```bash
+python3 .agents/skills/brew-upgrade-command-assembly/scripts/assemble-brew-command.py \
+  --formula-names "gh,jq" \
+  --cask-names "google-chrome"
+```
+
+Then execute the output with `tee`:
+
+```bash
+<assembled-command> | tee brew.log
+```
+
+This shows every package's progress on the terminal AND writes a byte-for-byte
+copy to `brew.log` in the working directory. On macOS, `tee` is the BSD variant
+— `tee --version` fails, but `tee --help` works. See
+[`general/macos-shell-portability`](../general/macos-shell-portability/SKILL.md)
+§4.1.
+
+### 6.2 Silent: `repo-scratch-output-capture` (background / unattended)
+
+For probes, pre-flights, or CI-like runs where live output is not needed, use
+the [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
+base skill. It redirects stdout and stderr into separate files under a
+gitignored `scratch/` folder co-located with the repo:
+
+```bash
+SCRATCH="$(python3 .agents/skills/repo-scratch-output-capture/scripts/ensure-scratch-gitignored.py)"
+<assembled-command> > "$SCRATCH/brew-upgrade.out" 2> "$SCRATCH/brew-upgrade.err"
+echo "Exit: $?  See $SCRATCH/brew-upgrade.{out,err}"
+```
+
+### 6.3 Combined (both stdout and stderr through tee)
+
+The `tee` pattern above only captures stdout. To capture both stdout and stderr while still seeing both on the terminal:
+
+```bash
+<assembled-command> 2>&1 | tee brew.log
+```
+
+***
+
+## 7. Related Skills
+
+| Skill | Relationship |
+| :--- | :--- |
+| [`brew-upgrade-workflow`](../brew-upgrade-workflow/SKILL.md) | Composer — discovers outdated leaves and pipes sorted lists into this assembler |
+| [`general/macos-shell-portability`](../general/macos-shell-portability/SKILL.md) | Reference — macOS shell differences (zsh, BSD tools, `;` vs `&&`) for brew commands |
+| [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) | Companion — silent output capture to `scratch/` for background brew runs |
+
+***
+
+## 8. Traceability
 
 - **Source**: `ai-agent-rules/brew-rules.md` Section 3 — Sequential Upgrade and Cleanup Workflow
 - **Industrialized via**: `rule-to-skill-industrialization` protocol
 - **Constraint source**: `brew-rules.md` §3.5 (fetch-after-cleanup
   ordering), §3.6 (export prefix), §1.3 (no --cask/--formula on cleanup)
 
-## 7. Changelog
+## 9. Changelog
+
+### v4 (2026-07-31)
+
+- **`--log` appends**: The `--log` wrapper now uses `tee -a <path>` — output
+  is appended to an existing log file (created if absent) instead of
+  truncating it on every run.
+
+### v3 (2026-06-23)
+
+- **`;` vs `&&` clarification**: §3 Generated Command Anatomy now explicitly
+  documents that the first join is `;` not ` && `, and warns about the common
+  `export ...; &&` parse error.
+- **Output capture patterns**: New §6 documents three capture patterns:
+  interactive `tee`, silent `repo-scratch-output-capture`, and combined
+  `2>&1 | tee`.
+- **Related Skills**: New §7 table links `brew-upgrade-workflow`, `general/macos-shell-portability`, and `repo-scratch-output-capture`.
+- **Portability cross-ref**: §3 links to `general/macos-shell-portability` §5.1 for the `; &&` pitfall explanation.
+- **Section renumbering**: Traceability moved to §8, Changelog to §9.
 
 ### v2 (2026-06-23)
 

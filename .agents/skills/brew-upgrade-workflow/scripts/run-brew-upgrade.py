@@ -17,6 +17,7 @@ import os
 import subprocess
 import sys
 import shlex
+from typing import Optional, List, Set
 
 DEFAULT_PRIORITY = [
     "google-chrome",
@@ -32,7 +33,7 @@ ASSEMBLER_SCRIPT = os.path.join(
 )
 
 
-def run_brew(args: list[str], debug: bool = False) -> str:
+def run_brew(args: List[str], debug: bool = False) -> str:
     """Run a brew command and return stdout. Raises on failure."""
     cmd = ["brew"] + args
     if debug:
@@ -50,7 +51,7 @@ def run_brew(args: list[str], debug: bool = False) -> str:
         raise
 
 
-def parse_outdated(output: str) -> set[str]:
+def parse_outdated(output: str) -> Set[str]:
     """Parse 'brew outdated --greedy' output into a set of package names."""
     packages = set()
     for line in output.strip().splitlines():
@@ -63,19 +64,19 @@ def parse_outdated(output: str) -> set[str]:
     return packages
 
 
-def get_leaves(debug: bool = False) -> set[str]:
+def get_leaves(debug: bool = False) -> Set[str]:
     """Get explicitly installed formulae via 'brew leaves --installed-on-request'."""
     output = run_brew(["leaves", "--installed-on-request"], debug=debug)
     return set(line.strip() for line in output.strip().splitlines() if line.strip())
 
 
-def get_casks(debug: bool = False) -> set[str]:
+def get_casks(debug: bool = False) -> Set[str]:
     """Get installed casks."""
     output = run_brew(["list", "--cask"], debug=debug)
     return set(line.strip() for line in output.strip().splitlines() if line.strip())
 
 
-def get_formulae(debug: bool = False) -> set[str]:
+def get_formulae(debug: bool = False) -> Set[str]:
     """Get installed formulae."""
     output = run_brew(["list", "--formula"], debug=debug)
     return set(line.strip() for line in output.strip().splitlines() if line.strip())
@@ -83,8 +84,8 @@ def get_formulae(debug: bool = False) -> set[str]:
 
 def resolve_type(
     pkg: str,
-    casks: set[str],
-    formulae: set[str],
+    casks: Set[str],
+    formulae: Set[str],
     debug: bool = False,
 ) -> str:
     """Resolve a package as 'formula' or 'cask'.
@@ -117,10 +118,10 @@ def resolve_type(
 
 
 def apply_priority(
-    packages: set[str],
-    user_priority: list[str],
+    packages: Set[str],
+    user_priority: List[str],
     debug: bool = False,
-) -> list[str]:
+) -> List[str]:
     """Sort packages by priority.
 
     Order:
@@ -130,7 +131,7 @@ def apply_priority(
 
     Returns a list of (package_name, priority_group) for debugging.
     """
-    ordered: list[str] = []
+    ordered: List[str] = []
     remaining = set(packages)
 
     # 1. User priority
@@ -155,11 +156,12 @@ def apply_priority(
 
 
 def assemble_command(
-    formula_names: list[str],
-    cask_names: list[str],
-    fetch_only: list[str],
-    first: list[str] | None = None,
+    formula_names: List[str],
+    cask_names: List[str],
+    fetch_only: List[str],
+    first: Optional[List[str]] = None,
     yes: bool = False,
+    log: str = "",
     assembler_path: str = ASSEMBLER_SCRIPT,
 ) -> str:
     """Invoke the base primitive and return the assembled command."""
@@ -174,6 +176,8 @@ def assemble_command(
         cmd += ["--first", ",".join(first)]
     if yes:
         cmd += ["--yes"]
+    if log:
+        cmd += ["--log", log]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         return result.stdout.strip()
@@ -222,6 +226,14 @@ def main() -> int:
         type=str,
         default="",
         help="Write the final command to this file instead of stdout",
+    )
+    parser.add_argument(
+        "--log",
+        type=str,
+        default="",
+        help="Wrap the command in ( ... ) 2>&1 | tee -a <path> so all "
+        "output is captured even if the chain short-circuits (appends "
+        "to an existing log)",
     )
     parser.add_argument(
         "--debug",
@@ -312,32 +324,46 @@ def main() -> int:
         print("No outdated leaves found (all outdated packages are dependencies).", file=sys.stderr)
         return 1
 
-    # Step 6: Resolve formula vs cask for each package
+    # Step 6: Separate priority packages (go first regardless of type)
     fetch_set = set(fetch_only_list)
-    resolved_formulae: list[str] = []
-    resolved_casks: list[str] = []
-    for pkg in apply_priority(filtered, priority_list, debug=args.debug):
+    priority_set = set(priority_list) | set(DEFAULT_PRIORITY)
+    ordered = apply_priority(filtered, priority_list, debug=args.debug)
+
+    # Packages going first: explicit --first, then all priority packages
+    all_first = list(first_list)
+    for pkg in ordered:
+        if pkg in fetch_set:
+            continue
+        if pkg not in all_first and pkg in priority_set:
+            all_first.append(pkg)
+
+    # Resolve ALL packages into formula/cask (assembler needs full lists)
+    all_formulae: list[str] = []
+    all_casks: list[str] = []
+    for pkg in ordered:
         if pkg in fetch_set:
             continue
         pkg_type = resolve_type(pkg, casks, formulae, debug=args.debug)
         if pkg_type == "formula":
-            resolved_formulae.append(pkg)
+            all_formulae.append(pkg)
         else:
-            resolved_casks.append(pkg)
+            all_casks.append(pkg)
 
     if args.debug:
-        print(f"[debug] Formulae: {resolved_formulae}", file=sys.stderr)
-        print(f"[debug] Casks: {resolved_casks}", file=sys.stderr)
+        print(f"[debug] First: {all_first}", file=sys.stderr)
+        print(f"[debug] All formulae: {all_formulae}", file=sys.stderr)
+        print(f"[debug] All casks: {all_casks}", file=sys.stderr)
         print(f"[debug] Fetch-only: {fetch_only_list}", file=sys.stderr)
 
-    # Step 7: Assemble the final command
+    # Step 7: Assemble the final command (assembler handles first ordering)
     try:
         command = assemble_command(
-            formula_names=resolved_formulae,
-            cask_names=resolved_casks,
+            formula_names=all_formulae,
+            cask_names=all_casks,
             fetch_only=fetch_only_list,
-            first=first_list,
+            first=all_first,
             yes=args.yes,
+            log=args.log,
         )
     except subprocess.CalledProcessError:
         return 2

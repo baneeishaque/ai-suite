@@ -8,19 +8,20 @@ See SKILL.md for the full CLI contract.
 
 import argparse
 import sys
+from typing import Union, Optional, List
 
 
-def _add_pkg(parts: list[str], pkg: str, type_flag: str, yes: bool = False) -> None:
+def _add_pkg(parts: List[str], pkg: str, type_flag: str, yes: bool = False) -> None:
     prefix = "yes | " if yes else ""
     parts.append(f"{prefix}brew upgrade --verbose --{type_flag} {pkg}")
     parts.append(f"{prefix}brew cleanup --verbose {pkg}")
 
 
 def assemble_command(
-    formula_names: list[str],
-    cask_names: list[str],
-    fetch_only: list[str],
-    first: list[str] | None = None,
+    formula_names: List[str],
+    cask_names: List[str],
+    fetch_only: List[str],
+    first: Optional[List[str]] = None,
     yes: bool = False,
 ) -> str:
     """Assemble a single-line brew upgrade command chain.
@@ -39,7 +40,8 @@ def assemble_command(
     """
     first = first or []
     first_set = set(first)
-    parts = ["export HOMEBREW_DOWNLOAD_CONCURRENCY=1;"]
+    export_stmt = "export HOMEBREW_DOWNLOAD_CONCURRENCY=1"
+    parts = []
 
     # First-priority packages go first regardless of type
     first_formula = [p for p in first if p in formula_names]
@@ -67,7 +69,7 @@ def assemble_command(
         prefix = "yes | " if yes else ""
         parts.append(f"{prefix}brew fetch --cask --verbose {pkg}")
 
-    return " && ".join(parts)
+    return f"{export_stmt}; {' && '.join(parts)}"
 
 
 def parse_stdin_lines() -> tuple[list[str], list[str], list[str]]:
@@ -144,6 +146,14 @@ def main() -> int:
         help="Read newline-separated package entries from stdin "
         "(prefix with formula:/cask:/fetch: to control placement)",
     )
+    parser.add_argument(
+        "--log",
+        type=str,
+        default="",
+        help="Wrap the output in ( ... ) 2>&1 | tee -a <path> so every "
+        "subcommand's stdout+stderr is captured even if the chain "
+        "short-circuits on failure (appends to an existing log)",
+    )
 
     args = parser.parse_args()
 
@@ -162,6 +172,10 @@ def main() -> int:
     result = assemble_command(
         formula_names, cask_names, fetch_only, first=first_list, yes=args.yes
     )
+
+    if args.log:
+        result = f"( {result} ) 2>&1 | tee -a {args.log}"
+
     print(result)
     return 0
 

@@ -4,7 +4,7 @@ description: Composer skill for Homebrew upgrade workflows — discovers outdate
 category: Package-Management
 ---
 
-# Brew Upgrade Workflow Skill (v2) — Composer
+# Brew Upgrade Workflow Skill (v4) — Composer
 
 Domain-specific composition layer that drives the Homebrew sequential upgrade workflow defined in `brew-rules.md`. It handles:
 
@@ -110,6 +110,8 @@ python3 run-brew-upgrade.py \
   [--priority "pkg1,pkg2"] \
   [--first "pkg1,pkg2"] \
   [--outfile PATH] \
+  [--log PATH] \
+  [--yes] \
   [--debug]
 ```
 
@@ -121,13 +123,17 @@ python3 run-brew-upgrade.py \
 | `--priority` | ❌ | Comma-separated — order these packages first (others follow default priority) |
 | `--first` | ❌ | Comma-separated — place these packages first in the chain regardless of type (defaults to first entry of --priority) |
 | `--outfile` | ❌ | Write the final command to a file instead of stdout |
+| `--log` | ❌ | Wrap the command in `( ... ) 2>&1 | tee -a <path>` so every subcommand's stdout+stderr is captured even if the chain short-circuits on failure (appends to an existing log) |
+| `--yes` | ❌ | Prefix every brew subcommand with `yes | ` to auto-confirm interactive prompts (symlink changes, keg-only conflicts) |
 | `--debug` | ❌ | Print intermediate discovery state (outdated list, leaves, type resolution) |
 
 ### Output Semantics
 
 - **stdout** (default): A single logical line — the full executable command, ready for user review
 - **`--outfile PATH`**: Same command written to the specified file (stdout is silent)
+- **`--log PATH`**: The command is wrapped in `( ... ) 2>&1 | tee -a <path>` so all output flows through `tee -a` and lands in the file regardless of exit code; appends to an existing log (created if absent)
 - **`--debug`**: Additional diagnostic output on stderr, including the raw brew outputs and resolution decisions
+- **`--yes` + `--log`**: Compatible — use both for unattended runs with full log capture
 
 ### Exit Codes
 
@@ -216,9 +222,74 @@ python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
   --first "claude-code@latest"
 ```
 
+Attended run with full log capture (all output preserved even if a
+package fails mid-chain):
+
+```bash
+python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
+  --log brew.log
+```
+
+Unattended / fully automated run (auto-confirm prompts + full log):
+
+```bash
+python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
+  --yes \
+  --log brew.log
+```
+
+Combine with `--only` / `--exclude` / `--priority` as needed; `--log`
+and `--yes` compose freely with every other flag.
+
 ***
 
-## 8. Traceability
+## 8. Execution Guidance (for the User Running the Command)
+
+The agent presents the assembled command for the user to run (see §2.3).
+The user may want to capture output during execution. Three patterns:
+
+### 8.1 Interactive: `| tee brew.log`
+
+Shows live progress and saves a permanent log:
+
+```bash
+<assembled-command> | tee brew.log
+```
+
+To capture both stdout and stderr:
+
+```bash
+<assembled-command> 2>&1 | tee brew.log
+```
+
+On macOS, `tee` is the BSD variant — `tee --version` fails, but `tee --help` works.
+
+### 8.2 Silent: `repo-scratch-output-capture`
+
+For background / CI-like runs where live terminal output is unnecessary,
+use the [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
+base skill to redirect to gitignored `scratch/` files.
+
+### 8.3 macOS Shell Portability
+
+The generated command uses `;` (not ` && `) after the `export`
+statement. Writing `export ...; && brew upgrade ...` causes a shell
+parse error. See
+[`general/macos-shell-portability`](../general/macos-shell-portability/SKILL.md) §5.1.
+
+***
+
+## 9. Related Skills
+
+| Skill | Relationship |
+| :--- | :--- |
+| [`brew-upgrade-command-assembly`](../brew-upgrade-command-assembly/SKILL.md) | Base primitive — assembles the command chain from typed package lists |
+| [`general/macos-shell-portability`](../general/macos-shell-portability/SKILL.md) | Reference — macOS shell differences (zsh, BSD tools, `; &&` pitfalls) for brew command execution |
+| [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) | Companion — silent output capture to `scratch/` for background brew runs |
+
+***
+
+## 10. Traceability
 
 - **Source**: `ai-agent-rules/brew-rules.md` Sections 3–5 (Sequential Upgrade, Default Priority, Installation Reference)
 - **Industrialized via**: `rule-to-skill-industrialization` protocol (§2.4 — Tier Decomposition applied)
@@ -227,9 +298,23 @@ python3 .agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py \
   authoritative reference for brew operations not covered by these
   skills
 
-## 9. Changelog
+## 11. Changelog
 
-### v2 (2026-06-23)
+### v4 (2026-07-31)
+
+- **`--log` appends**: `--log PATH` now wraps the chain in `( ... ) 2>&1 | tee -a <path>` —
+  output is appended to an existing log (created if absent) rather than truncating it.
+
+### v3 (2026-06-23)
+
+- **Execution Guidance**: New §8 documents three output capture patterns for
+  the user when running the assembled command: interactive `tee`, silent
+  `repo-scratch-output-capture`, and combined `2>&1 | tee`.
+- **Portability cross-ref**: §8.3 links to `general/macos-shell-portability` §5.1 for the `;` vs `&&` pitfall explanation.
+- **Related Skills**: New §9 table links `brew-upgrade-command-assembly`, `general/macos-shell-portability`, and `repo-scratch-output-capture`.
+- **Section renumbering**: §§8-10 renumbered to accommodate new sections.
+
+### v2 (2026-06-23) [formerly §9]
 
 - **`--first` flag added**: Packages listed via `--first` are placed first in the entire
   command chain regardless of formula/cask type. Defaults to first entry of `--priority`

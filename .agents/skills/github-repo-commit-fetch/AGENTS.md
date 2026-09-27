@@ -15,8 +15,9 @@ The agent MUST activate the **GitHub Repo Commit Fetch** skill when ANY of the f
 - "List the last N commits on `<repo>`."
 - "What files did commit `<sha>` touch?"
 - "Get me the file `<path>` at ref `<sha>` / `<branch>` without cloning."
+- "What is the latest release tag for `<repo>`?"
 - The agent needs to verify a GitHub-hosted file's content at a historical commit.
-- A higher-level skill (e.g., `github-actions-run-audit`) needs to compose these read primitives.
+- A higher-level skill (e.g., `github-actions-run-audit`, `mise-tool-management`) needs to compose these read primitives.
 
 ***
 
@@ -28,6 +29,7 @@ SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 python3 "$SCRIPTS_DIR"/list-commits.py        --repo owner/name --limit 5
 python3 "$SCRIPTS_DIR"/commit-details.py      --repo owner/name --sha <SHA> --files-only
 python3 "$SCRIPTS_DIR"/fetch-file-at-ref.py   --repo owner/name --ref <SHA> --path <PATH> --out <LOCAL>
+python3 "$SCRIPTS_DIR"/latest-release.py      --repo owner/name
 ```
 
 > [!NOTE]

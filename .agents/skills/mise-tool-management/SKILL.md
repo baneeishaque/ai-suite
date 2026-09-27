@@ -113,7 +113,18 @@ mise ls-remote 'github:<owner>/<repo>' | tail -5
 #### 2.2.2 Tier 2 — Backend-Native Truth (for `github:` backend)
 
 The GitHub Releases API publishes a release the moment the upstream maintainer
-cuts it — before mise's index resync:
+cuts it — before mise's index resync. Query it with the
+[`github-repo-commit-fetch`](../github-repo-commit-fetch/SKILL.md) base
+primitive `latest-release.py` (the shipped script, not an inline one-liner):
+
+```bash
+python3 .agents/skills/github-repo-commit-fetch/scripts/latest-release.py \
+    --repo <owner>/<repo>
+# → {"tag_name": "0.69.0", "name": "0.69.0", "published_at": "..."}
+```
+
+`--repo` is `owner/name` WITHOUT the `github:` prefix. Raw-curl fallback if
+`gh` is unavailable (per `github-rest-api-fallback`):
 
 ```bash
 curl -s https://api.github.com/repos/<owner>/<repo>/releases/latest \

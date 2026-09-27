@@ -1,6 +1,6 @@
 ---
 name: github-repo-commit-fetch
-description: Base skill — read-only fetch primitives for GitHub repo data via the `gh api` CLI. Owns three scripts (list recent commits, fetch one commit's details, fetch a file at a specific ref) that higher-level skills compose into auditing, archaeology, PR-review, and supply-chain workflows. Pure stdlib Python, zero pip dependencies.
+description: Base skill — read-only fetch primitives for GitHub repo data via the `gh api` CLI. Owns four scripts (list recent commits, fetch one commit's details, fetch a file at a specific ref, fetch the latest release) that higher-level skills compose into auditing, archaeology, PR-review, supply-chain, and tool-version-freshness workflows. Pure stdlib Python, zero pip dependencies.
 category: GitHub-Automation
 ---
 
@@ -19,6 +19,7 @@ read GitHub repo data WITHOUT cloning the repo, via `gh api`. Specifically:
 - "What are the N most recent commits on `<repo>`?"
 - "What files did commit `<sha>` touch, and what was its message?"
 - "Give me the file `<path>` exactly as it existed at ref `<sha>`."
+- "What is the latest (non-prerelease) release tag for `<repo>`?"
 
 **Anti-trigger:** If the agent already has a local clone and wants
 hunk-level diffs, use plain `git log` / `git show` / `git cat-file` —
@@ -59,6 +60,7 @@ SCRIPTS_DIR=.agents/skills/github-repo-commit-fetch/scripts
 | [`scripts/list-commits.py`](scripts/list-commits.py) | List N most recent commits on the default (or specified) branch, with optional path filter. | `--repo owner/name` | JSON array of `{sha, short, date, author, message}` |
 | [`scripts/commit-details.py`](scripts/commit-details.py) | Fetch one commit's full metadata: author, date, message, list of changed files with status + additions + deletions. `--files-only` reduces to a bare filename list. | `--repo`, `--sha` | JSON object (or filename lines with `--files-only`) |
 | [`scripts/fetch-file-at-ref.py`](scripts/fetch-file-at-ref.py) | Resolve the contents API's `download_url` for `<path>@<ref>` and stream the body to `<out>` using `urllib` (no `curl` pipeline, no shell quoting). | `--repo`, `--ref`, `--path`, `--out` | `OK: <path> (N bytes) from <url>` on stdout |
+| [`scripts/latest-release.py`](scripts/latest-release.py) | Fetch the latest published (non-prerelease) GitHub release for `<repo>` — the backend-native truth when auditing a tool pinned via a mise `github:` backend. | `--repo owner/name` | JSON object `{tag_name, name, published_at}` |
 
 All scripts return exit code `0` on success, `1` on `gh`/API failure,
 `2` on config error. All emit JSON to stdout (where applicable),
@@ -88,6 +90,7 @@ grep -c "ENGINE=InnoDB" /tmp/backup.sql
 | Composer | Uses (this skill's scripts) | Purpose |
 | --- | --- | --- |
 | [`github-actions-run-audit`](../github-actions-run-audit/SKILL.md) | `list-commits.py`, `commit-details.py`, `fetch-file-at-ref.py` | Verify that a workflow run actually committed the expected artifact (e.g., periodic mysqldump backup contains today's DDL change). |
+| [`mise-tool-management`](../mise-tool-management/SKILL.md) | `latest-release.py` | Tier-2 backend-native freshness probe (§2.2.2): supplies the latest `github:` release tag to compare against `mise ls-remote` during tool install / update. |
 
 When inlined by a composer, scripts MUST be invoked via a relative path
 anchored to the composer's location, per

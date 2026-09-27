@@ -240,6 +240,8 @@ This section is a placeholder; the optimal strategy depends on session volume an
   base).
 - [`vscode-user-settings-symlink`](../vscode-user-settings-symlink/SKILL.md) —
   Analogous config migration for VS Code Insiders.
+- [`opencode-installed-plugin-lookup`](../opencode/opencode-installed-plugin-lookup/SKILL.md)
+  — related — read-only plugin registry probe for the preserved config.
 - [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
   — Staging and atomic-commit protocol used during the migration.
 - [`dev-env-private-config-symlink`](../dev-env-private-config-symlink/SKILL.md)

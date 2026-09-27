@@ -91,6 +91,10 @@ The `SKILL.md` MUST include:
    uses a namespaced Skill ID containing slashes or underscores (e.g., `dgs_ice/foo_bar`), that form is FORBIDDEN
    in `name:` (validator enforces `^[a-z0-9-]+$`) — put the hyphenated single-segment form in `name:` and keep
    the namespaced form in the body under `> **Skill ID:** ...` where it is not lint-validated.
+   The `> **Label:**` metadata header blockquote below the title MUST follow the §1.6 blockquote convention of
+   **[`markdown-generation`](../markdown-generation/SKILL.md#16-blockquote-metadata-headers)** — every line of a
+   2+-line run ends with `<br>` except the last; blank `>` separators are FORBIDDEN. The library-wide composer
+   `scripts/audit-normalize-skill-headers.py` (this skill) enforces the rule via the base primitive.
    The `name:` MUST also satisfy the **Skill-Name Precision Mandate** ([`ai-rule-standardization-rules.md` §Skill Naming](../../../ai-agent-rules/ai-rule-standardization-rules.md)) — every distinguishing constraint of the skill's scope (filetype, transport, mode, exclusion) MUST appear in the name; generic names that omit a qualifying constraint silently collide with future variants and mislead callers. A longer precise name is always preferable to a shorter ambiguous one.
 2. **Environment & Dependencies**: Mandated verification logic (`which`, version checks).
 3. **Operational Logic**: The EXACT steps provided by the user (**Zero Omission**).
@@ -387,6 +391,17 @@ Every skill generated via the Factory MUST automatically undergo the final verif
   ```
 
 - **Registration Audit**: Confirm the new skill row was inserted into the root `AGENTS.md` skills table at the correct
+- **Header Blockquote Audit** (mandatory for every authored/edited skill doc): Run the
+  composer `scripts/audit-normalize-skill-headers.py` and confirm it exits 0 —
+  every `> **Label:**` header run in the library must render line-by-line
+  (`<br>` on all but the last line, §2.2). The composer shells out to the base
+  primitive `markdown-generation/scripts/join-blockquote-header.py`; do NOT
+  reimplement the transform inline.
+
+  ```bash
+  python3 .agents/skills/skill-factory/scripts/audit-normalize-skill-headers.py --check
+  ```
+
   alphabetical (case-insensitive) position by the **Skill** column, NOT appended to the end. Spot-check the rows
   immediately above and below to verify the sort order holds.
 - **Organization Audit**: Confirm the new skill's placement obeys the domain taxonomy in
@@ -857,6 +872,9 @@ included.
 
 ## Related Skills
 
+- [`markdown-generation`](../markdown-generation/SKILL.md) — base primitive
+  `scripts/join-blockquote-header.py` is shelled out to by this skill's
+  `scripts/audit-normalize-skill-headers.py` (the §3 Header Blockquote Audit).
 - [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md) — composer enforcing
   the §2.1 / §2.2 item 5 separate-file convention for `Changelog` / `Traceability`; its `--check`
   mode is the §3 Metadata-Separation Audit.

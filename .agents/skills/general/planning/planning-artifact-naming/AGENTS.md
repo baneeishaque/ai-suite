@@ -25,3 +25,8 @@ loading `SKILL.md` — this bridge is intentionally non-actionable.
   convention when generating planning artifacts for new skills.
 - [`markdown-generation`](../../../markdown-generation/SKILL.md) — Markdown
   formatting standards.
+- [`planning-superseded-version-retirement`](../planning-superseded-version-retirement/SKILL.md)
+  — authorized retirement path for superseded versions (coverage FULL +
+  user consent).
+- [`planning-version-coverage-audit`](../planning-version-coverage-audit/SKILL.md)
+  — the mandatory coverage gate for §2.2 rule 3.

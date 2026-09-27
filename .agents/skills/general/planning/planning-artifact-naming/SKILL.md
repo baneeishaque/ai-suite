@@ -87,6 +87,7 @@ The full 26+ character ID MUST be used — NOT a truncated form.
 | :--- | :--- | :--- |
 | `task` | No (live checklist) | Track progress of the current session's objectives |
 | `implementation-plan` | Yes | Detailed step-by-step plan for executing a goal |
+| `implementation-plan-<topic>` | Yes | Topic-scoped variant used when one session produces MULTIPLE independent implementation plans; `<topic>` is a kebab-case slug disambiguating the plan (e.g. `implementation-plan-acers-audit-history`). The version counter is independent per topic |
 | `commit-preview` | Yes | Preview of commits to be executed |
 | `walkthrough` | Yes | Post-execution record of steps taken and decisions made |
 | `skill-creation-plan` | Yes | Sub-plan for creating a new skill |
@@ -101,8 +102,12 @@ MUST be registered here.
 
 1. NEW artifacts start at `v1`.
 2. When content is updated, increment the version: `v1` → `v2` → `v3`.
-3. OLD versions are NEVER overwritten or deleted. The old file remains
-   alongside the new one.
+3. OLD versions are NEVER erased by creation of a new one. The old file
+   remains alongside the new one by default; however a superseded
+   version MAY be intentionally retired ONLY through the authorized
+   path — coverage audit FULL + explicit user consent — via the composer
+   [`planning-superseded-version-retirement`](../planning-superseded-version-retirement/SKILL.md)
+   (macOS: `trash`, never `rm`).
 4. For `task` (unversioned), the file is edited in place — it is a live
    checklist, not a historical record.
 5. Different artifact types have INDEPENDENT version counters — an
@@ -134,6 +139,16 @@ session-name-slug) and differ only in artifact-type and version.
   convention when generating planning artifacts for new skills.
 - [`markdown-generation`](../../../markdown-generation/SKILL.md) — Markdown
   formatting standards that generated artifacts must obey.
+- [`planning-artifact-lifecycle`](../planning-artifact-lifecycle/SKILL.md) —
+  Lifecycle management for planning artifacts (versioning triggers, CAM §7.1
+  enforcement, deletion protocol). Companion base skill that covers *how to
+  manage* artifacts once named.
+- [`planning-version-coverage-audit`](../planning-version-coverage-audit/SKILL.md) —
+  Mandatory coverage gate used before a superseded version may be
+  intentionally retired (§2.2 rule 3).
+- [`planning-superseded-version-retirement`](../planning-superseded-version-retirement/SKILL.md) —
+  Composer owning the authorized retirement path (coverage FULL + user
+  consent; macOS `trash`, never `rm`).
 
 ***
 

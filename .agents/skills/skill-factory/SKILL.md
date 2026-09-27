@@ -745,6 +745,116 @@ Visually scan the diff for style drift vs surrounding lines: do the inserted bul
 
 ***
 
+## 6. Skill Enrichment Workflow
+
+This section bridges the editing disciplines (§5) with the commit
+workflow. Use it when enriching an existing skill (adding content,
+fixing cross-references, updating style) rather than creating a new
+one from scratch.
+
+### 6.1 Gap Analysis
+
+Before editing, identify what is missing or needs improvement:
+
+1. Read the target skill's SKILL.md deeply — understand its structure,
+   sections, style, and cross-references.
+2. Compare against related skills — are there patterns or conventions
+   in sibling skills that the target lacks?
+3. Check the
+   [`pre-commit-verification-protocol`](../general/pre-commit-verification-protocol/SKILL.md)
+   and [`skill-cross-reference-audit`](../general/skill-cross-reference-audit/SKILL.md)
+   — do any flagged issues apply to this skill?
+4. Define the specific gap (new section, missing cross-ref, style fix,
+   content update).
+
+### 6.2 Read & Pattern-Match Phase
+
+1. Sample the surrounding 20–50 lines of the insertion point per §5.8
+   (Style-Consistency Discipline).
+2. Identify the dominant local patterns:
+   - List marker (`-` vs `*` vs `1.`)
+   - Blank-line spacing around headings
+   - Bold/italic markers
+   - Code-span vs link for skill names (§5.6)
+3. Match the new content to these patterns before writing.
+
+### 6.3 Edit Phase
+
+1. Apply the editing disciplines from §5 as applicable:
+   - §5.1 — Post-Rename Cross-Reference Sweep (if renaming a section)
+   - §5.2 — Cross-Reference Append (if adding a new skill to Related Skills)
+   - §5.3 — Composition Table Membership (if the skill has a Composition table)
+   - §5.4 — Subsection Insertion (if adding a subsection into an existing section)
+   - §5.5 — Numbered-Section Consistency (if adding a new numbered section)
+   - §5.6 — Cross-Reference Link Discipline (every skill/doc name gets a link on first mention)
+   - §5.7 — Heading Scope Discipline (choose a broad-enough parent for foreseeable siblings)
+   - §5.8 — Style-Consistency Discipline (match surrounding document patterns)
+2. Write the new content matching the identified patterns.
+3. Update AGENTS.md bridge if the skill's description or category
+   changed.
+
+### 6.4 Verification Phase
+
+Run the
+[`pre-commit-verification-protocol`](../general/pre-commit-verification-protocol/SKILL.md):
+
+1. Cross-reference audit:
+
+   ```bash
+   python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py
+   ```
+
+2. Markdown lint:
+
+   ```bash
+   markdownlint-cli2 .agents/skills/<skill-path>/SKILL.md
+   ```
+
+3. Visual smoke test:
+
+   ```bash
+   git diff -U0 .agents/skills/<skill-path>/SKILL.md | head -200
+   ```
+
+Fix any issues before staging.
+
+### 6.5 Stage & Commit Phase
+
+Follow the
+[`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
+protocol:
+
+1. Stage the edited files.
+2. For AGENTS.md with multi-session rows, use the
+   [`opencode-agents-md-manager`](../opencode-agents-md-manager/SKILL.md)
+   composer to isolate current-session rows.
+3. Write a descriptive commit message following conventional commits:
+   `feat(skill): <change-description>` or `fix(skill): <change-description>`.
+4. Present the commit-preview and await user authorization per §2e.
+
+### 6.6 Post-Commit Verification
+
+After the commit is executed:
+
+```bash
+git log --oneline -3
+git status
+```
+
+Confirm the commit landed correctly and no unintended files were
+included.
+
+### 6.7 Relationship to Other Workflows
+
+- For **creating a new skill from scratch**, use §1 (Skill Creation
+  Checklist) + §3 (Post-Drafting Checklist).
+- For **editing an existing skill**, use this §6 workflow.
+- For **batch execution across multiple skills**, use
+  [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
+  §2g (batch-by-batch authorization).
+
+***
+
 ## Related Skills
 
 - [`skill-doc-metadata-separation`](../markdown/skill-doc-metadata-separation/SKILL.md) — composer enforcing

@@ -28,7 +28,7 @@ docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md
 
 All planning artifacts MUST be stored under `docs/` in the main
 repository (per
-[Traceability Portability Mandate](../../../../ai-agent-rules/ai-rule-standardization-rules.md)).
+[Traceability Portability Mandate](../../../../../ai-agent-rules/ai-rule-standardization-rules.md)).
 
 ### 1.1 Part Reference
 
@@ -130,9 +130,9 @@ session-name-slug) and differ only in artifact-type and version.
 
 ## 4. Related Skills
 
-- [`skill-factory`](../../skill-factory/SKILL.md) — Consumes this naming
+- [`skill-factory`](../../../skill-factory/SKILL.md) — Consumes this naming
   convention when generating planning artifacts for new skills.
-- [`markdown-generation`](../../markdown-generation/SKILL.md) — Markdown
+- [`markdown-generation`](../../../markdown-generation/SKILL.md) — Markdown
   formatting standards that generated artifacts must obey.
 
 ***

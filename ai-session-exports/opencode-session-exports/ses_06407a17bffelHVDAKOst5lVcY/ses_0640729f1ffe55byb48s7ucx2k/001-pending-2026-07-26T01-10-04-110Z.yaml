@@ -1,0 +1,2317 @@
+---
+user:
+  text: |-
+    You are Agent B. Perform a deep analysis of the database layer in the Django project at /Users/dk/lab-data/oleovista-acers/acers-backend.
+
+    Tasks:
+    1. Read EVERY models.py file in every app under /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/ — list every model, every field with its exact Django field type (CharField, IntegerField, ForeignKey, ManyToManyField, DateTimeField, BooleanField, TextField, JSONField, etc.), and all field parameters (max_length, null, blank, default, choices, on_delete, related_name, db_index, unique, primary_key, verbose_name, help_text)
+    2. Identify all ForeignKey relationships (source model, target model, on_delete behavior, related_name)
+    3. Identify all ManyToManyField relationships (source model, target model, related_name, through model if any)
+    4. Identify all custom managers (objects = CustomManager()) and any custom QuerySet methods (.filter(), .annotate(), .aggregate() patterns in manager classes)
+    5. Read ALL migration files for each app and document what operations they perform (create model, add field, alter field, create index, add constraint, RunSQL, RunPython)
+    6. Check for any raw SQL queries in views.py, models.py, or any other Python file (search for raw(), cursor(), execute(), connection.cursor(), subprocess, os.system patterns)
+    7. Document the full ORM surface area: all model methods, all manager methods, all queryset methods, all custom database functions
+    8. Check pyproject.toml and requirements files for the Django version, djangorestframework version, psycopg2/psycopg version, and any other database-related packages
+    9. Read the database configuration from settings/base.py (DATABASES dict)
+
+    Write a comprehensive report to /Users/dk/lab-data/oleovista-acers/acers-backend/AGENT_B_REPORT.md. Be exhaustive — this is the authoritative ORM surface map.
+  time: 7/26/2026, 6:40:04.053 AM GMT+5:30
+assistant:
+  - agent: general
+    model:
+      id: ling-3.0-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants me to perform a deep analysis of the database layer in a Django project. This is a complex, multi-step task. Let me start by understanding the project structure and then systematically work through each task.
+
+      Let me begin by exploring the project structure and then read all the relevant files.
+    thinking_duration: 764ms
+    thinking_duration_ms: 764
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - content: Explore project structure and find all models.py files
+              status: in_progress
+              priority: high
+            - content: Read every models.py and document all models, fields, parameters
+              status: pending
+              priority: high
+            - content: Identify all ForeignKey and ManyToManyField relationships
+              status: pending
+              priority: high
+            - content: Identify custom managers and QuerySet methods
+              status: pending
+              priority: high
+            - content: Read ALL migration files for each app
+              status: pending
+              priority: high
+            - content: Search for raw SQL queries in views.py, models.py, and other Python files
+              status: pending
+              priority: high
+            - content: Document full ORM surface area (methods, managers, querysets)
+              status: pending
+              priority: high
+            - content: Check pyproject.toml/requirements for Django version and DB packages
+              status: pending
+              priority: high
+            - content: Read database configuration from settings/base.py
+              status: pending
+              priority: high
+            - content: Write comprehensive report to AGENT_B_REPORT.md
+              status: pending
+              priority: high
+        result: |-
+          [
+            {
+              "content": "Explore project structure and find all models.py files",
+              "status": "in_progress",
+              "priority": "high"
+            },
+            {
+              "content": "Read every models.py and document all models, fields, parameters",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Identify all ForeignKey and ManyToManyField relationships",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Identify custom managers and QuerySet methods",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Read ALL migration files for each app",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Search for raw SQL queries in views.py, models.py, and other Python files",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Document full ORM surface area (methods, managers, querysets)",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Check pyproject.toml/requirements for Django version and DB packages",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Read database configuration from settings/base.py",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Write comprehensive report to AGENT_B_REPORT.md",
+              "status": "pending",
+              "priority": "high"
+            }
+          ]
+    time: 7/26/2026, 6:40:04.122 AM GMT+5:30
+    response: |
+      I'll systematically analyze the database layer of this Django project. Let me start by exploring the structure and gathering all the necessary files.
+    duration: 5.364s
+    duration_ms: 5364
+  - agent: general
+    model:
+      id: ling-3.0-flash-free
+      provider: opencode
+    thinking: Let me start by exploring the project structure to find all models.py files and understand the app layout.
+    thinking_duration: 7ms
+    thinking_duration_ms: 7
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls /Users/dk/lab-data/oleovista-acers/acers-backend/
+        result: |
+          1
+          EXCEPTION_HANDLING_IMPLEMENTATION.md
+          README.md
+          SEARCH_MECHANISM_ANALYSIS.md
+          a.py
+          acers
+          c.py
+          data.json
+          db_dumps
+          mise.toml
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps -type f -name "models.py" 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/paper_app/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/models.py
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps -type d -maxdepth 1 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/__pycache__
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/static
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/paper_app
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/templates
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/media
+      - tool: bash
+        args: {}
+        result: (no output)
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers -type f -name "settings.py" -o -name "base.py" 2>/dev/null | grep -i setting
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py
+    time: 7/26/2026, 6:40:09.715 AM GMT+5:30
+    response: |+
+      Let me explore the project structure and find all relevant files in parallel.
+
+
+
+
+    duration: 4.567s
+    duration_ms: 4567
+  - agent: general
+    model:
+      id: ling-3.0-flash-free
+      provider: opencode
+    thinking: Let me find the pyproject.toml and requirements files, and also find all migration files and settings files.
+    thinking_duration: 249ms
+    thinking_duration_ms: 249
+    tool_calls:
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend -maxdepth 2 -name "pyproject.toml" -o -name "requirements*.txt" -o -name "Pipfile" -o -name "setup.cfg" 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/pyproject.toml
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps -type d -name "migrations" 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/paper_app/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/migrations
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/migrations
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config -type f 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/local.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/local.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/base.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/test.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/celery_app.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/api_router.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/asgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/urls.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/celery_app.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/exceptions.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/api_router.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/wsgi.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/exceptions.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/websocket.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/wsgi.py
+      - tool: bash
+        args:
+          command: find /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps -type f -name "views.py" 2>/dev/null
+        result: |
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/paper_app/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/api/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/views.py
+    time: 7/26/2026, 6:40:14.553 AM GMT+5:30
+    response: |+
+      Let me now read the key configuration files and all models.py files in parallel.
+
+
+
+
+
+
+
+
+    duration: 4.827s
+    duration_ms: 4827
+  - agent: general
+    model:
+      id: ling-3.0-flash-free
+      provider: opencode
+    thinking: Now I need to read all the models.py files, pyproject.toml, base.py settings, and all migration files. Let me start by reading the configuration files and all models.py files in parallel.
+    thinking_duration: 556ms
+    thinking_duration_ms: 556
+    tool_calls:
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/pyproject.toml</path>
+          <type>file</type>
+          <content>
+          1: # ==== pytest ====
+          2: [tool.pytest.ini_options]
+          3: minversion = "6.0"
+          4: addopts = "--ds=config.settings.test --reuse-db --import-mode=importlib"
+          5: python_files = [
+          6:     "tests.py",
+          7:     "test_*.py",
+          8: ]
+          9: 
+          10: # ==== Coverage ====
+          11: [tool.coverage.run]
+          12: include = ["acers/**"]
+          13: omit = ["*/migrations/*", "*/tests/*"]
+          14: plugins = ["django_coverage_plugin"]
+          15: 
+          16: # ==== mypy ====
+          17: [tool.mypy]
+          18: python_version = "3.12"
+          19: check_untyped_defs = true
+          20: ignore_missing_imports = true
+          21: warn_unused_ignores = true
+          22: warn_redundant_casts = true
+          23: warn_unused_configs = true
+          24: plugins = [
+          25:     "mypy_django_plugin.main",
+          26:     "mypy_drf_plugin.main",
+          27: ]
+          28: 
+          29: [[tool.mypy.overrides]]
+          30: # Django migrations should not produce any errors:
+          31: module = "*.migrations.*"
+          32: ignore_errors = true
+          33: 
+          34: [tool.django-stubs]
+          35: django_settings_module = "config.settings.test"
+          36: 
+          37: # ==== djLint ====
+          38: [tool.djlint]
+          39: blank_line_after_tag = "load,extends"
+          40: close_void_tags = true
+          41: format_css = true
+          42: format_js = true
+          43: # TODO: remove T002 when fixed https://github.com/djlint/djLint/issues/687
+          44: ignore = "H006,H030,H031,T002"
+          45: include = "H017,H035"
+          46: indent = 2
+          47: max_line_length = 119
+          48: profile = "django"
+          49: 
+          50: [tool.djlint.css]
+          51: indent_size = 2
+          52: 
+          53: [tool.djlint.js]
+          54: indent_size = 2
+          55: 
+          56: [tool.ruff]
+          57: target-version = "py312"
+          58: # Exclude a variety of commonly ignored directories.
+          59: extend-exclude = [
+          60:     "*/migrations/*.py",
+          61:     "staticfiles/*",
+          62: ]
+          63: 
+          64: [tool.ruff.lint]
+          65: select = [
+          66:   "F",
+          67:   "E",
+          68:   "W",
+          69:   "C90",
+          70:   "I",
+          71:   "N",
+          72:   "UP",
+          73:   "YTT",
+          74:   # "ANN", # flake8-annotations: we should support this in the future but 100+ errors atm
+          75:   "ASYNC",
+          76:   "S",
+          77:   "BLE",
+          78:   "FBT",
+          79:   "B",
+          80:   "A",
+          81:   "COM",
+          82:   "C4",
+          83:   "DTZ",
+          84:   "T10",
+          85:   "DJ",
+          86:   "EM",
+          87:   "EXE",
+          88:   "FA",
+          89:   'ISC',
+          90:   "ICN",
+          91:   "G",
+          92:   'INP',
+          93:   'PIE',
+          94:   "T20",
+          95:   'PYI',
+          96:   'PT',
+          97:   "Q",
+          98:   "RSE",
+          99:   "RET",
+          100:   "SLF",
+          101:   "SLOT",
+          102:   "SIM",
+          103:   "TID",
+          104:   "TC",
+          105:   "INT",
+          106:   # "ARG", # Unused function argument
+          107:   "PTH",
+          108:   "ERA",
+          109:   "PD",
+          110:   "PGH",
+          111:   "PL",
+          112:   "TRY",
+          113:   "FLY",
+          114:   # "NPY",
+          115:   # "AIR",
+          116:   "PERF",
+          117:   # "FURB",
+          118:   # "LOG",
+          119:   "RUF",
+          120: ]
+          121: ignore = [
+          122:   "S101", # Use of assert detected https://docs.astral.sh/ruff/rules/assert/
+          123:   "RUF012", # Mutable class attributes should be annotated with `typing.ClassVar`
+          124:   "SIM102", # sometimes it's better to nest
+          125:   "UP038", # Checks for uses of isinstance/issubclass that take a tuple
+          126:           # of types for comparison.
+          127:           # Deactivated because it can make the code slow:
+          128:           # https://github.com/astral-sh/ruff/issues/7871
+          129: ]
+          130: # The fixes in extend-unsafe-fixes will require
+          131: # provide the `--unsafe-fixes` flag when fixing.
+          132: extend-unsafe-fixes = [
+          133:     "UP038",
+          134: ]
+          135: 
+          136: [tool.ruff.lint.isort]
+          137: force-single-line = true
+
+          (End of file - total 137 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py</path>
+          <type>file</type>
+          <content>
+          1: # ruff: noqa: ERA001, E501
+          2: """Base settings to build other settings files upon."""
+          3: 
+          4: import ssl
+          5: from pathlib import Path
+          6: from datetime import timedelta
+          7: import environ
+          8: import os
+          9: import stripe
+          10: BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
+          11: 
+          12: 
+          13: # Initialize the environment variable loader
+          14: env = environ.Env()
+          15: 
+          16: # Load .env file
+          17: env.read_env(str(BASE_DIR / ".env"))
+          18: 
+          19: 
+          20: APPS_DIR = BASE_DIR / "apps"
+          21: 
+          22: 
+          23: READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE")
+          24: if READ_DOT_ENV_FILE:
+          25:     env.read_env(str(BASE_DIR / ".env"))
+          26: 
+          27: 
+          28: # Media URL and Root
+          29: MEDIA_URL = '/media/'
+          30: MEDIA_ROOT = os.path.join(BASE_DIR, 'paper_app', 'media')
+          31: 
+          32:     
+          33: 
+          34: # GENERAL
+          35: # ------------------------------------------------------------------------------
+          36: # https://docs.djangoproject.com/en/dev/ref/settings/#debug
+          37: DEBUG = env.bool("DJANGO_DEBUG", False)
+          38: # Local time zone. Choices are
+          39: # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+          40: # though not all of them may be available with every OS.
+          41: # In Windows, this must be set to your system time zone.
+          42: TIME_ZONE = "UTC"
+          43: # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
+          44: LANGUAGE_CODE = "en-us"
+          45: # https://docs.djangoproject.com/en/dev/ref/settings/#languages
+          46: # from django.utils.translation import gettext_lazy as _
+          47: # LANGUAGES = [
+          48: #     ('en', _('English')),
+          49: #     ('fr-fr', _('French')),
+          50: #     ('pt-br', _('Portuguese')),
+          51: # ]
+          52: # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
+          53: SITE_ID = 1
+          54: # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
+          55: USE_I18N = True
+          56: # https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
+          57: USE_TZ = True
+          58: # https://docs.djangoproject.com/en/dev/ref/settings/#locale-paths
+          59: LOCALE_PATHS = [str(BASE_DIR / "locale")]
+          60: 
+          61: # DATABASES
+          62: # ------------------------------------------------------------------------------
+          63: # https://docs.djangoproject.com/en/dev/ref/settings/#databases
+          64: 
+          65: DATABASES = {
+          66:     "default": env.db("DATABASE_URL"), # PostgreSQL
+          67:     }
+          68: 
+          69: 
+          70: DATABASES["default"]["ATOMIC_REQUESTS"] = True
+          71: # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+          72: DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+          73: 
+          74: # URLS
+          75: # ------------------------------------------------------------------------------
+          76: # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
+          77: ROOT_URLCONF = "config.urls"
+          78: # https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
+          79: WSGI_APPLICATION = "config.wsgi.application"
+          80: ASGI_APPLICATION ="config.asgi.application"
+          81: 
+          82: CHANNEL_LAYERS = {
+          83:     'default': {
+          84:         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+          85:         'CONFIG': {
+          86:             'hosts': [('127.0.0.1', 6379)],
+          87:         },
+          88:     },
+          89: }
+          90: 
+          91: # APPS
+          92: # ------------------------------------------------------------------------------
+          93: DJANGO_APPS = [
+          94: 
+          95:     "jet.dashboard",
+          96:     "jet",
+          97:     "django.contrib.auth",
+          98:     "django.contrib.contenttypes",
+          99:     "django.contrib.sessions",
+          100:     "django.contrib.sites",
+          101:     "django.contrib.messages",
+          102:     "django.contrib.staticfiles",
+          103:     "django.contrib.admin",
+          104:     "django.forms",
+          105: ]
+          106: 
+          107: THIRD_PARTY_APPS = [
+          108:     "crispy_forms",
+          109:     "crispy_bootstrap5",
+          110:     "allauth",
+          111:     "allauth.account",
+          112:     "allauth.mfa",
+          113:     "allauth.socialaccount",
+          114:     "django_celery_beat",
+          115:     "rest_framework",
+          116:     "rest_framework.authtoken",
+          117:     "corsheaders",
+          118:     "drf_spectacular",
+          119:     "rest_framework_simplejwt",
+          120:     'rest_framework_simplejwt.token_blacklist', 
+          121:     'apscheduler',
+          122:     'django_apscheduler',
+          123:     'channels',
+          124: 
+          125: ]
+          126: 
+          127: 
+          128: LOCAL_APPS = [
+          129:     "apps.users",
+          130:     "apps.company",
+          131:     "apps.permission",
+          132:     "apps.web_settings",
+          133:     "apps.plans",
+          134:     # "apps.paper_app",
+          135:     "apps.scheduler", 
+          136:     "apps.paper_app.apps.PaperAppConfig",
+          137: 
+          138: ]
+          139: # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
+          140: INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+          141: 
+          142: # MIGRATIONS
+          143: # ------------------------------------------------------------------------------
+          144: # https://docs.djangoproject.com/en/dev/ref/settings/#migration-modules
+          145: MIGRATION_MODULES = {"sites": "apps.contrib.sites.migrations"}
+          146: 
+          147: # AUTHENTICATION
+          148: # ------------------------------------------------------------------------------
+          149: # https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
+          150: AUTHENTICATION_BACKENDS = [
+          151:     "django.contrib.auth.backends.ModelBackend",
+          152:     "allauth.account.auth_backends.AuthenticationBackend",
+          153: ]
+          154: # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
+          155: AUTH_USER_MODEL = "users.User"
+          156: # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
+          157: LOGIN_REDIRECT_URL = "users:redirect"
+          158: # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
+          159: LOGIN_URL = "account_login"
+          160: 
+          161: # PASSWORDS
+          162: # ------------------------------------------------------------------------------
+          163: # https://docs.djangoproject.com/en/dev/ref/settings/#password-hashers
+          164: PASSWORD_HASHERS = [
+          165:     # https://docs.djangoproject.com/en/dev/topics/auth/passwords/#using-argon2-with-django
+          166:     "django.contrib.auth.hashers.Argon2PasswordHasher",
+          167:     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+          168:     "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+          169:     "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+          170: ]
+          171: # https://docs.djangoproject.com/en/dev/ref/settings/#auth-password-validators
+          172: AUTH_PASSWORD_VALIDATORS = [
+          173:     {
+          174:         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+          175:     },
+          176:     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+          177:     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+          178:     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+          179: ]
+          180: CORS_ALLOWED_ORIGINS = [
+          181:     'http://localhost:3000',
+          182:       'http://192.168.10.179:8000',
+          183:       'http://127.0.0.1:5501',
+          184:       'https://acers.space',
+          185:       'https://backend.acers.space',
+          186:      'https://website.acers.space',
+          187:      'http://192.168.10.179:3000',
+          188:      "https://20.74.223.141",
+          189:      "https://20.74.223.141:8000",
+          190:      "https://20.74.223.141:3000",
+          191:     "http://20.74.223.141",
+          192:      "http://20.74.223.141:8000",
+          193:      "http://20.74.223.141:3000",
+          194:      "http://stagingf.acers.space:300",
+          195:      "http://stagingf.acers.space",
+          196:      "https://acers.space:8000",
+          197:      "http://acers.space:8000",
+          198:      "https://acers.space:8000",
+          199:      "http://40.120.108.178",
+          200:      "http://40.120.108.178:3000",
+          201:      #"http://acers.me:8000",
+          202:      #"https://acers.me:8000",
+          203:      #"http://www.acers.me:8000",
+          204:      #"https://www.acers.me:8000",
+          205:      "http://acers.me",
+          206:      "https://acers.me",
+          207:      "http://www.acers.me",
+          208:      "https://www.acers.me",
+          209:      "https://acerstest.website",
+          210:      "http://acerstest.website",
+          211:      "http://www.acerstest.website",
+          212:      "https://www.acerstest.website"
+          213: 
+          214: ]
+          215: ####cros allowed origin 
+          216: CORS_ALLOW_CREDENTIALS = True
+          217: 
+          218: # MIDDLEWARE
+          219: # ------------------------------------------------------------------------------
+          220: # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
+          221: MIDDLEWARE = [
+          222:      "corsheaders.middleware.CorsMiddleware",
+          223:     "django.middleware.security.SecurityMiddleware",
+          224:    
+          225:     "whitenoise.middleware.WhiteNoiseMiddleware",
+          226:     "django.contrib.sessions.middleware.SessionMiddleware",
+          227:     "django.middleware.locale.LocaleMiddleware",
+          228:     "django.middleware.common.CommonMiddleware",
+          229:     "django.middleware.csrf.CsrfViewMiddleware",
+          230:     "django.contrib.auth.middleware.AuthenticationMiddleware",
+          231:     "django.contrib.messages.middleware.MessageMiddleware",
+          232:     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+          233:     "allauth.account.middleware.AccountMiddleware",
+          234:     "middleware.history_log.TrackModelViewMiddleware",
+          235:     "middleware.CurrentRequestMiddleware.RequestMiddleware",
+          236:     "middleware.error_log_middleware.main.ExceptionLoggingMiddleware",
+          237:     "middleware.request_middleware.ThreadLocalMiddleware",
+          238: ]
+          239: 
+          240: # STATIC
+          241: # ------------------------------------------------------------------------------
+          242: # https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+          243: STATIC_ROOT = str(BASE_DIR / "staticfiles")
+          244: # https://docs.djangoproject.com/en/dev/ref/settings/#static-url
+          245: STATIC_URL = "/static/"
+          246: # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
+          247: STATICFILES_DIRS = [str(APPS_DIR / "static")]
+          248: # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
+          249: STATICFILES_FINDERS = [
+          250:     "django.contrib.staticfiles.finders.FileSystemFinder",
+          251:     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+          252: ]
+          253: 
+          254: # MEDIA
+          255: # ------------------------------------------------------------------------------
+          256: # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
+          257: MEDIA_ROOT = str(APPS_DIR / "media")
+          258: # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
+          259: MEDIA_URL = "/media/"
+          260: 
+          261: # TEMPLATES
+          262: # ------------------------------------------------------------------------------
+          263: # https://docs.djangoproject.com/en/dev/ref/settings/#templates
+          264: TEMPLATES = [
+          265:     {
+          266:         # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-TEMPLATES-BACKEND
+          267:         "BACKEND": "django.template.backends.django.DjangoTemplates",
+          268:         # https://docs.djangoproject.com/en/dev/ref/settings/#dirs
+          269:         "DIRS": [str(APPS_DIR / "templates")],
+          270:         # https://docs.djangoproject.com/en/dev/ref/settings/#app-dirs
+          271:         "APP_DIRS": True,
+          272:         "OPTIONS": {
+          273:             # https://docs.djangoproject.com/en/dev/ref/settings/#template-context-processors
+          274:             "context_processors": [
+          275:                 "django.template.context_processors.debug",
+          276:                 "django.template.context_processors.request",
+          277:                 "django.contrib.auth.context_processors.auth",
+          278:                 "django.template.context_processors.i18n",
+          279:                 "django.template.context_processors.media",
+          280:                 "django.template.context_processors.static",
+          281:                 "django.template.context_processors.tz",
+          282:                 "django.contrib.messages.context_processors.messages",
+          283:                 "apps.users.context_processors.allauth_settings",
+          284:             ],
+          285:         },
+          286:     },
+          287: ]
+          288: 
+          289: # https://docs.djangoproject.com/en/dev/ref/settings/#form-renderer
+          290: FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
+          291: 
+          292: # http://django-crispy-forms.readthedocs.io/en/latest/install.html#template-packs
+          293: CRISPY_TEMPLATE_PACK = "bootstrap5"
+          294: CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+          295: 
+          296: # FIXTURES
+          297: # ------------------------------------------------------------------------------
+          298: # https://docs.djangoproject.com/en/dev/ref/settings/#fixture-dirs
+          299: FIXTURE_DIRS = (str(APPS_DIR / "fixtures"),)
+          300: 
+          301: # SECURITY
+          302: # ------------------------------------------------------------------------------
+          303: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-httponly
+          304: SESSION_COOKIE_HTTPONLY = True
+          305: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-httponly
+          306: CSRF_COOKIE_HTTPONLY = True
+          307: # https://docs.djangoproject.com/en/dev/ref/settings/#x-frame-options
+          308: X_FRAME_OPTIONS = "DENY"
+          309: 
+          310: # EMAIL
+          311: # ------------------------------------------------------------------------------
+          312: # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
+          313: EMAIL_BACKEND = env(
+          314:     "DJANGO_EMAIL_BACKEND",
+          315:     default="django.core.mail.backends.smtp.EmailBackend",
+          316: )
+          317: # https://docs.djangoproject.com/en/dev/ref/settings/#email-timeout
+          318: EMAIL_TIMEOUT = 5
+          319: 
+          320: # ADMIN
+          321: # ------------------------------------------------------------------------------
+          322: # Django Admin URL.
+          323: ADMIN_URL = "admin/"
+          324: # https://docs.djangoproject.com/en/dev/ref/settings/#admins
+          325: ADMINS = [("""karthikeyan""", "karthikeyan@ompventure.com")]
+          326: # https://docs.djangoproject.com/en/dev/ref/settings/#managers
+          327: MANAGERS = ADMINS
+          328: # https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
+          329: # Force the `admin` sign in process to go through the `django-allauth` workflow
+          330: DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
+          331: 
+          332: # LOGGING
+          333: # ------------------------------------------------------------------------------
+          334: # https://docs.djangoproject.com/en/dev/ref/settings/#logging
+          335: # See https://docs.djangoproject.com/en/dev/topics/logging for
+          336: # more details on how to customize your logging configuration.
+          337: LOGGING = {
+          338:     "version": 1,
+          339:     "disable_existing_loggers": False,
+          340:     "formatters": {
+          341:         "verbose": {
+          342:             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+          343:         },
+          344:     },
+          345:     "handlers": {
+          346:         "console": {
+          347:             "level": "DEBUG",
+          348:             "class": "logging.StreamHandler",
+          349:             "formatter": "verbose",
+          350:         },
+          351:     },
+          352:     "root": {"level": "INFO", "handlers": ["console"]},
+          353: }
+          354: 
+          355: REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
+          356: REDIS_SSL = REDIS_URL.startswith("rediss://")
+          357: 
+          358: # Celery
+          359: # ------------------------------------------------------------------------------
+          360: if USE_TZ:
+          361:     # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-timezone
+          362:     CELERY_TIMEZONE = TIME_ZONE
+          363: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
+          364: CELERY_BROKER_URL = REDIS_URL
+          365: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
+          366: CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
+          367: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
+          368: CELERY_RESULT_BACKEND = REDIS_URL
+          369: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
+          370: CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
+          371: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
+          372: CELERY_RESULT_EXTENDED = True
+          373: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-always-retry
+          374: # https://github.com/celery/celery/pull/6122
+          375: CELERY_RESULT_BACKEND_ALWAYS_RETRY = True
+          376: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-max-retries
+          377: CELERY_RESULT_BACKEND_MAX_RETRIES = 10
+          378: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-accept_content
+          379: CELERY_ACCEPT_CONTENT = ["json"]
+          380: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-task_serializer
+          381: CELERY_TASK_SERIALIZER = "json"
+          382: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_serializer
+          383: CELERY_RESULT_SERIALIZER = "json"
+          384: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
+          385: # TODO: set to whatever value is adequate in your circumstances
+          386: CELERY_TASK_TIME_LIMIT = 5 * 60
+          387: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
+          388: # TODO: set to whatever value is adequate in your circumstances
+          389: CELERY_TASK_SOFT_TIME_LIMIT = 60
+          390: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
+          391: CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+          392: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
+          393: CELERY_WORKER_SEND_TASK_EVENTS = True
+          394: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std-setting-task_send_sent_event
+          395: CELERY_TASK_SEND_SENT_EVENT = True
+          396: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-hijack-root-logger
+          397: CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+          398: # django-allauth
+          399: # ------------------------------------------------------------------------------
+          400: ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
+          401: # https://docs.allauth.org/en/latest/account/configuration.html
+          402: ACCOUNT_AUTHENTICATION_METHOD = "email"
+          403: # https://docs.allauth.org/en/latest/account/configuration.html
+          404: ACCOUNT_EMAIL_REQUIRED = True
+          405: # https://docs.allauth.org/en/latest/account/configuration.html
+          406: ACCOUNT_USERNAME_REQUIRED = False
+          407: # https://docs.allauth.org/en/latest/account/configuration.html
+          408: ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+          409: # https://docs.allauth.org/en/latest/account/configuration.html
+          410: ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+          411: # https://docs.allauth.org/en/latest/account/configuration.html
+          412: ACCOUNT_ADAPTER = "apps.users.adapters.AccountAdapter"
+          413: # https://docs.allauth.org/en/latest/account/forms.html
+          414: ACCOUNT_FORMS = {"signup": "apps.users.forms.UserSignupForm"}
+          415: # https://docs.allauth.org/en/latest/socialaccount/configuration.html
+          416: SOCIALACCOUNT_ADAPTER = "apps.users.adapters.SocialAccountAdapter"
+          417: # https://docs.allauth.org/en/latest/socialaccount/configuration.html
+          418: SOCIALACCOUNT_FORMS = {"signup": "apps.users.forms.UserSocialSignupForm"}
+          419: # django-compressor
+          420: # ------------------------------------------------------------------------------
+          421: # https://django-compressor.readthedocs.io/en/latest/quickstart/#installation
+          422: INSTALLED_APPS += ["compressor"]
+          423: STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
+          424: # django-rest-framework
+          425: # -------------------------------------------------------------------------------
+          426: # django-rest-framework - https://www.django-rest-framework.org/api-guide/settings/
+          427: REST_FRAMEWORK = {
+          428:     "DEFAULT_AUTHENTICATION_CLASSES": (
+          429:         "rest_framework_simplejwt.authentication.JWTAuthentication",
+          430:     ),
+          431:     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+          432:     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+          433:     "DEFAULT_PARSER_CLASSES": [
+          434:         "rest_framework.parsers.JSONParser",
+          435:         "rest_framework.parsers.FormParser",
+          436:         "rest_framework.parsers.MultiPartParser",
+          437:     ],
+          438:     "EXCEPTION_HANDLER": "exceptions.custom_exception_handler",
+          439: }
+          440: 
+          441: # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
+          442: # CORS_URLS_REGEX = r"^/api/.*$"
+          443: 
+          444: # By Default swagger ui is available only to admin user(s). You can change permission classes to change that
+          445: # See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
+          446: SPECTACULAR_SETTINGS = {
+          447:     "TITLE": "core API",
+          448:     "DESCRIPTION": "Documentation of API endpoints of core",
+          449:     "VERSION": "1.0.0",
+          450:     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+          451:     "SCHEMA_PATH_PREFIX": "/api/",
+          452: }
+          453: # Your stuff...
+          454: # ------------------------------------------------------------------------------
+          455: 
+          456: 
+          457: #JWT Token IMplementation
+          458: 
+          459: 
+          460: SIMPLE_JWT = {
+          461:     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=55),
+          462:     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+          463:     "ROTATE_REFRESH_TOKENS": False,
+          464:     "BLACKLIST_AFTER_ROTATION": False,
+          465:     "UPDATE_LAST_LOGIN": True,
+          466: 
+          467:     "ALGORITHM": "HS256",
+          468:     "SIGNING_KEY":env("DJANGO_SECRET_KEY"),
+          469:     "VERIFYING_KEY": "",
+          470:     "AUDIENCE": None,
+          471:     "ISSUER": None,
+          472:     "JSON_ENCODER": None,
+          473:     "JWK_URL": None,
+          474:     "LEEWAY": 0,
+          475: 
+          476:     "AUTH_HEADER_TYPES": ("Bearer",),
+          477:     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+          478:     "USER_ID_FIELD": "id",
+          479:     "USER_ID_CLAIM": "user_id",
+          480:     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+          481: 
+          482:     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+          483:     "TOKEN_TYPE_CLAIM": "token_type",
+          484:     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+          485: 
+          486:     "JTI_CLAIM": "jti",
+          487: 
+          488:     "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+          489:     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=55),
+          490:     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+          491: 
+          492:     "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+          493:     "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
+          494:     "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
+          495:     "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
+          496:     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
+          497:     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
+          498: }
+          499: 
+          500: 
+          501: 
+          502: # Stripe integration
+          503: 
+          504: STRIPE_SECRET_KEY = "<redacted-stripe-test-key>"
+          505: STRIPE_PUBLISHABLE_KEY = "<redacted-api-key>"
+          506: 
+          507: stripe.api_key = STRIPE_SECRET_KEY
+          508: 
+          509: IS_PRODUCTION = env.bool("IS_PRODUCTION", False)
+
+          (End of file - total 509 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: 
+          3: # Create your models here.
+
+          (End of file - total 3 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: from utility.softdelete.softdeletemodel import SoftDeleteModel
+          3: # from apps.users.models import Country
+          4: from django.core.validators import MinValueValidator, MaxValueValidator
+          5: from django.utils.translation import gettext_lazy as _
+          6: # Create your models here.
+          7: class PricingPlan(SoftDeleteModel):
+          8:     name = models.CharField(max_length=300)
+          9:     description = models.TextField()
+          10:     price = models.DecimalField(max_digits=10, decimal_places=2)
+          11:     country  = models.ForeignKey("users.Country", on_delete=models.PROTECT)
+          12:     days = models.IntegerField()
+          13:     max_users = models.IntegerField(default=1)
+          14:     visibility = models.BooleanField(default=True)
+          15:     custom_plan = models.BooleanField(default=False)
+          16:     proration_plan = models.ForeignKey("self", on_delete=models.PROTECT, null=True, blank=True)
+          17: 
+          18:     class Meta:
+          19:         verbose_name = "PricingPlan"
+          20:         verbose_name_plural = "PricingPlan"
+          21:         ordering = ["price"]  
+          22:         indexes = [
+          23:             models.Index(fields=["name"]),  
+          24:             models.Index(fields=["price"]),
+          25:         ]
+          26: 
+          27:     def __str__(self):
+          28:         return str(self.name)
+          29: 
+          30: 
+          31: class PricingPlanPoints(SoftDeleteModel):
+          32:     plan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
+          33:     points = models.TextField(null=True)
+          34: 
+          35: 
+
+          (End of file - total 35 lines)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/models.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: 
+          3: # Create your models here.
+
+          (End of file - total 3 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: 
+          3: # Create your models here.
+
+          (End of file - total 3 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/paper_app/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: from utility.softdelete.softdeletemodel import SoftDeleteModel
+          3: from utility.abstract_model.OrganizationAbstract import AbstractOrganization
+          4: from django.core.validators import EmailValidator
+          5: from django.utils.timezone import datetime, timezone, localdate
+          6: # Create your models here.
+          7: import time
+          8: from middleware.CurrentRequestMiddleware import get_current_request
+          9: import uuid
+          10: 
+          11: class Broker(SoftDeleteModel,AbstractOrganization):
+          12:     name = models.CharField(max_length=2000)
+          13: 
+          14:     def __str__(self):
+          15:         return str(self.name)
+          16:     
+          17: 
+          18:     class Meta:
+          19:         ordering=["ordering_id"]
+          20: 
+          21:     
+          22: class Clearer(SoftDeleteModel,AbstractOrganization):
+          23:     name = models.CharField(max_length=2000)
+          24: 
+          25:     def __str__(self):
+          26:         return str(self.name)
+          27:     class Meta:
+          28:         ordering=["ordering_id"]
+          29: 
+          30: 
+          31: 
+          32: class Book(SoftDeleteModel,AbstractOrganization):
+          33:     name = models.CharField(max_length=2000)
+          34: 
+          35:     def __str__(self):
+          36:         return str(self.name)
+          37:     class Meta:
+          38:         ordering=["ordering_id"]
+          39: 
+          40: 
+          41: class Strategy(SoftDeleteModel,AbstractOrganization):
+          42:     name = models.CharField(max_length=2000)
+          43: 
+          44:     def __str__(self):
+          45:         return str(self.name)
+          46:     class Meta:
+          47:         ordering=["ordering_id"]
+          48: 
+          49: 
+          50: class Derivatives(SoftDeleteModel,AbstractOrganization):
+          51:     name = models.CharField(max_length=2000)
+          52: 
+          53:     def __str__(self):
+          54:         return str(self.name)
+          55:     class Meta:
+          56:         ordering=["ordering_id"]
+          57: 
+          58: 
+          59: 
+          60: class Holidays(SoftDeleteModel,AbstractOrganization):
+          61:     name = models.CharField(max_length=2000)
+          62:     date = models.IntegerField()
+          63: 
+          64:     def __str__(self):
+          65:         return str(self.name)
+          66:             
+          67:     class Meta:
+          68:         ordering=["ordering_id"]
+          69: 
+          70:     def set_date_from_string(self, date_str):
+          71:         """Converts a date string (dd-mm-yyyy) to epoch and stores it"""
+          72:         dt = datetime.strptime(date_str, "%d-%m-%Y")
+          73:         self.date = int(time.mktime(dt.timetuple()))  # Convert to epoch
+          74: 
+          75:     def get_formatted_date(self):
+          76:         """Returns the stored epoch as a formatted date string (dd-mm-yyyy)"""
+          77:         return datetime.utcfromtimestamp(self.date).strftime('%d-%m-%Y')
+          78: 
+          79: class ContractType(SoftDeleteModel,AbstractOrganization):
+          80:     name = models.CharField(max_length=2000)
+          81: 
+          82: 
+          83:     def __str__(self):
+          84:         return str(self.name)
+          85:     class Meta:
+          86:         ordering=["ordering_id"]
+          87: 
+          88: 
+          89: class Unit(SoftDeleteModel,AbstractOrganization):
+          90:     name = models.CharField(max_length=2000)
+          91: 
+          92:     def __str__(self):
+          93:         return str(self.name)
+          94:     class Meta:
+          95:         ordering=["ordering_id"]
+          96: 
+          97: 
+          98: 
+          99: class CounterPartyCompanies(SoftDeleteModel,AbstractOrganization):
+          100:     customer_company_name = models.CharField(max_length=2000)
+          101:     account = models.CharField(max_length=2000,null=True,blank=True)
+          102:     email = models.CharField(max_length=2000,validators=[EmailValidator(message="Not a valid email")])
+          103:     credit_limit = models.FloatField(null=True,blank=True)
+          104:     remarks = models.TextField(null=True,blank=True)
+          105: 
+          106:     def __str__(self):
+          107:         return str(self.customer_company_name)
+          108:     class Meta:
+          109:         ordering=["ordering_id"]
+          110: 
+          111: 
+          112: 
+          113: class Contract(SoftDeleteModel,AbstractOrganization):
+          114:     DERIVATIVE_CHOICES = (
+          115:         ("futures","futures"),
+          116:         ("swaps","swaps")
+          117: 
+          118:     )
+          119:     derivatives = models.CharField(max_length=2000, choices=DERIVATIVE_CHOICES)
+          120:     single_diff = models.CharField(max_length=2000)
+          121:     major_mini = models.CharField(max_length=2000)
+          122:     full_bal_month = models.CharField(max_length=2000)
+          123:     contract_name = models.CharField(max_length=2000)
+          124:     
+          125:      # Self-referential ForeignKeys
+          126:     contract1 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='contract1_set')
+          127:     contract2 = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='contract2_set')
+          128:     major_mini_connection = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='major_mini_connection_set')
+          129:     bal_month_connection = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='bal_month_connection_set')
+          130:     
+          131:     # ForeignKeys to other models
+          132:     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True)
+          133:     holiday = models.ForeignKey(Holidays, on_delete=models.SET_NULL, null=True, blank=True)
+          134:     
+          135:     tick = models.IntegerField()
+          136:     kbbl_conversion_value = models.FloatField()
+          137:     price_conversion = models.FloatField()
+          138:     f_w_months = models.IntegerField(null=True, blank=True)
+          139:     exchange_fees = models.FloatField(null=True, blank=True)
+          140:     exchange_clearance_fees = models.FloatField(null=True, blank=True)
+          141:     exchange_fees_blocked = models.FloatField(null=True, blank=True)
+          142:     exchange_clearance_fees_blocked = models.FloatField(null=True, blank=True)
+          143:     screen_fees = models.FloatField(null=True, blank=True)
+          144:     ice_clearer_eu_screen_fees = models.FloatField(null=True, blank=True)
+          145:     ice_clearer_eu_block_fee = models.FloatField(null=True, blank=True)
+          146:     # cash_settle = models.IntegerField(null=True, blank=True)
+          147:     cash_settle = models.FloatField(null=True, blank=True)
+          148:     gimfc_code = models.CharField(max_length=2000)
+          149:     physical_code = models.CharField(max_length=2000)
+          150:     logical_code = models.CharField(max_length=2000)
+          151:     symbol_code = models.CharField(max_length=2000)
+          152:     platts_code = models.CharField(max_length=2000)
+          153:     futures_equivalent_contract = models.ForeignKey('self',on_delete=models.SET_NULL,null=True,blank=True,
+          154:                                                     related_name='futures_equivalent_for',limit_choices_to={'derivatives': 'futures'})
+          155: 
+          156:     price_unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+          157: 
+          158:     def __str__(self):
+          159:         return str(self.contract_name)
+          160:     class Meta:
+          161:         ordering=["ordering_id"]
+          162: 
+          163: 
+          164: 
+          165: class ClearerRate(SoftDeleteModel,AbstractOrganization):
+          166:     # ForeignKeys to other models
+          167:     contract = models.ForeignKey(Contract,on_delete=models.CASCADE,related_name='contract_clearer_rates')
+          168:     apply_mode = models.CharField(max_length=2000)
+          169:     # ForeignKeys to other models
+          170:     clearer = models.ForeignKey(Clearer,on_delete=models.CASCADE,related_name='clearer_clearer_rates')
+          171:     # credit_limit = models.FloatField(null=True,blank=True)
+          172:     clearer_house_fees = models.FloatField()
+          173: 
+          174:     def __str__(self):
+          175:       return f"{self.clearer.name} - {self.contract.contract_name}"
+          176:     class Meta:
+          177:         ordering=["ordering_id"]
+          178: 
+          179: 
+          180: class Brokerage(SoftDeleteModel,AbstractOrganization):
+          181:     # ForeignKeys to other models
+          182:     contract = models.ForeignKey(Contract,on_delete=models.CASCADE,related_name='contract_brokerages')
+          183:     broker = models.ForeignKey(Broker,on_delete=models.CASCADE,related_name='broker_brokerages')
+          184:     apply_mode = models.CharField(max_length=2000)
+          185:     brokerage = models.FloatField()
+          186: 
+          187:     def __str__(self):
+          188:       return f"{self.broker.name} - {self.contract.contract_name}"
+          189:     class Meta:
+          190:         ordering=["ordering_id"]
+          191: 
+          192: 
+          193: 
+          194: class ClearingAccount(SoftDeleteModel,AbstractOrganization):
+          195:     name = models.CharField(max_length=2000)
+          196: 
+          197:     def __str__(self):
+          198:         return str(self.name)
+          199:     class Meta:
+          200:         ordering=["ordering_id"]
+          201: 
+          202: 
+          203: 
+          204: 
+          205: class APISettings(SoftDeleteModel,AbstractOrganization):
+          206:     company_name = models.CharField(max_length=2000)
+          207:     company_username = models.CharField(max_length=2000)
+          208:     
+          209:     # Define password field
+          210:     password = models.CharField(max_length=2000)
+          211:     
+          212:     exchange_type = models.CharField(max_length=2000)
+          213: 
+          214:     clearing_account = models.ForeignKey(ClearingAccount, on_delete=models.CASCADE, related_name='api_settings_clearing_accounts')
+          215:     clearer = models.ForeignKey(Clearer, on_delete=models.CASCADE, related_name='api_settings_clearers')
+          216:     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='api_settings_books')
+          217:     strategy = models.ForeignKey(Strategy, on_delete=models.CASCADE, related_name='api_settings_strategies')
+          218:     api_company_name = models.CharField(max_length=250, blank=True, null=True)
+          219: 
+          220:     def __str__(self):
+          221:         return f"{self.company_name} | {self.clearing_account.name} - {self.clearer.name}"
+          222: 
+          223:     class Meta:
+          224:         ordering = ["ordering_id"] 
+          225:         unique_together = (
+          226:         'company_name', 'company_username', 'password', 'exchange_type',
+          227:         'clearing_account', 'clearer', 'book', 'strategy','is_deleted'
+          228:     )
+          229: 
+          230: 
+          231: from apps.users.models import User
+          232: 
+          233: class PaperTrading(SoftDeleteModel,AbstractOrganization):
+          234:     TRADER_TYPE_CHOICES = (
+          235:         ("cleared","cleared"),
+          236:         ("internal","internal"),
+          237:         ("bilateral","bilateral"),
+          238:         
+          239:     )
+          240: 
+          241:     BUY_SELL_CHOICES = (
+          242:         ("buy","buy"),
+          243:         ("sell","sell")
+          244:     )
+          245: 
+          246:     SINGLE_DIFF_CHOICES = (
+          247:         ("single","single"),
+          248:         ("diff","diff"),
+          249:         ("diff-sub1","diff-sub1"),
+          250:         ("diff-sub2","diff-sub2"),
+          251:     )
+          252:     date = models.IntegerField()
+          253:     trader = models.ForeignKey(User, on_delete=models.CASCADE,related_name="trader")
+          254:     trader_type = models.CharField(max_length=200, choices=TRADER_TYPE_CHOICES)
+          255:     contract_type = models.ForeignKey(ContractType, on_delete=models.CASCADE)
+          256:     exec_id = models.CharField(max_length=2000, null=True, blank=True)
+          257:     leg_id = models.CharField(max_length=2000, null=True, blank=True)      
+          258:     clearer_rate = models.ForeignKey(ClearerRate, on_delete=models.CASCADE, null=True, blank=True)
+          259:     clearing_account = models.ForeignKey(ClearingAccount, on_delete=models.CASCADE, null=True, blank=True)
+          260:     quantity = models.IntegerField()
+          261:     buy_sell = models.CharField(max_length=100, choices=BUY_SELL_CHOICES)
+          262:     unit = models.ForeignKey(Unit, on_delete=models.CASCADE)
+          263:     commodity = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name="commodity")
+          264:     tick = models.FloatField()
+          265:     pricing_from = models.IntegerField(null=True,blank=True)
+          266:     pricing_to = models.IntegerField(null=True,blank=True)
+          267:     price = models.FloatField()
+          268:     approx_exec_price = models.FloatField(null=True, blank=True)
+          269:     holiday = models.ForeignKey(Holidays, on_delete=models.CASCADE)
+          270:     broker  = models.ForeignKey(Broker, on_delete=models.CASCADE)
+          271:     book = models.CharField(max_length=2000, null=True, blank=True)
+          272:     strategy =  models.CharField(max_length=2000, null=True, blank=True)
+          273:     customer_company = models.CharField(max_length=2000, null=True, blank=True)
+          274:     customer_account = models.CharField(null=True, blank=True)
+          275:     internal_strategy = models.ForeignKey(Strategy,on_delete=models.CASCADE, null=True, blank=True,related_name="internal_strategy")
+          276:     internal_book = models.ForeignKey(Book,on_delete=models.CASCADE, null=True, blank=True,related_name="internal_book")
+          277:     remarks = models.TextField(null=True, blank=True)
+          278:     derivative = models.CharField(null=True, blank=True)
+          279:     single_diff = models.CharField(max_length=200, choices=SINGLE_DIFF_CHOICES, null=True, blank=True)
+          280:     efs_code = models.CharField(null=True, blank=True)
+          281:     blocked = models.CharField(null=True, blank=True, max_length=10)
+          282:     cashsettle = models.CharField(null=True, blank=True, max_length=10)
+          283:     otc = models.CharField(null=True, blank=True, max_length=10)
+          284:     blocked_lots = models.IntegerField(null=True, blank=True)
+          285:     screen_lots = models.IntegerField(null=True, blank=True)
+          286:     cash_settle_lots = models.IntegerField(null=True, blank=True)
+          287:     otc_lots = models.IntegerField(null=True, blank=True)
+          288:     STATUS_CHOICES  = [
+          289:         ('pending', 'Pending'),
+          290:         ('committed', 'Committed'),
+          291:         ('approved', 'Approved'),
+          292:         ('validated', 'Validated'),
+          293:         ('rejected', 'Rejected'),
+          294:     ]
+          295: 
+          296:     status = models.CharField(
+          297:         max_length=20,
+          298:         choices=STATUS_CHOICES ,
+          299:         default='pending',
+          300:     ) 
+          301:     contract_expired = models.CharField(null=True, blank=True, max_length=10)
+          302:     major_mini = models.CharField(null=True, blank=True, max_length=100)
+          303:     full_bal_month = models.CharField(null=True, blank=True, max_length=100)
+          304:     major_mini_connection = models.ForeignKey(Contract, on_delete=models.CASCADE,related_name="papertrading_major_mini_connections",null=True,blank=True)
+          305:     bal_month_connection = models.ForeignKey(Contract, on_delete=models.CASCADE,related_name="papertrading_bal_month_connections",null=True,blank=True)
+          306:     parent_company =  models.CharField(null=True, blank=True, max_length=100)
+          307:     major_contract_tick = models.FloatField(null=True, blank=True)
+          308:     major_contract_conv_value = models.FloatField(null=True, blank=True)
+          309:     # spread_price = models.FloatField(null=True, blank=True)
+          310:     # spreadPrice = models.FloatField(null=True, blank=True)
+          311:     spreadPrice  =models.DecimalField(max_digits=100, decimal_places=5, null=True, blank=True)
+          312:     physical_code = models.CharField(max_length=2000,null=True, blank=True)
+          313:     symbol_code = models.CharField(max_length=2000,null=True, blank=True)
+          314:     platform = models.CharField(max_length=250, blank=True, null=True)
+          315:     file_name = models.CharField(max_length=500, null=True, blank=True)
+          316:     markup = models.DecimalField(max_digits=20, decimal_places=5, null=True, blank=True)
+          317:     optimisation = models.DecimalField(max_digits=20, decimal_places=5, null=True, blank=True)
+          318:     system_markup_ref = models.DecimalField(max_digits=20, decimal_places=5, null=True, blank=True)
+          319:     marker_tas_type = models.JSONField(blank=True, null=True)
+          320:     raw_message = models.JSONField(blank=True, null=True)
+          321:     is_TAS_MM_Updated = models.BooleanField(default=False, null=True,blank=True)   # ✅ NEW FIELD
+          322:     
+          323: 
+          324:     @property
+          325:     def formatted_date(self):
+          326:         if self.date:
+          327:             dt = datetime.fromtimestamp(int(self.date), tz=timezone.utc)
+          328:             dt_midnight = dt.replace(hour=0, minute=0, second=0, microsecond=0)
+          329:             return dt_midnight.strftime('%d-%b-%Y')
+          330:         return None
+          331:     
+          332:     @property
+          333:     def pricing_from_formatted(self):
+          334:         if self.pricing_from:
+          335:             return datetime.fromtimestamp(int(self.pricing_from)).strftime('%d-%b-%Y')
+          336:         return None
+          337:     
+          338:     @property
+          339:     def pricing_to_formatted(self):
+          340:         if self.pricing_to:
+          341:             return datetime.fromtimestamp(int(self.pricing_to)).strftime('%d-%b-%Y')
+          342:         return None
+          343: 
+          344: 
+          345: class PaperTradingCalculation(SoftDeleteModel,AbstractOrganization):
+          346:     bbl_conversion_value =models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          347:     unit_conversion = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          348:     bbl = models.DecimalField(max_digits=100, decimal_places=3, null=True, blank=True)
+          349:     kbbl = models.DecimalField(max_digits=100, decimal_places=3, null=True, blank=True)
+          350:     exchange_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          351:     # exchange_clearance_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          352:     clearing_house_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          353:     total_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          354:     total_no_days = models.IntegerField(null=True,blank=True)
+          355:     priced_days = models.IntegerField(null=True,blank=True)
+          356:     unpriced_days = models.IntegerField(null=True,blank=True)
+          357:     per_day_volume = models.FloatField(null=True,blank=True)
+          358:     priced_volume = models.FloatField(null=True,blank=True)
+          359:     unpriced_volume = models.FloatField(null=True,blank=True)
+          360:     unpriced_kbbl = models.FloatField(null=True,blank=True)
+          361:     # screen_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          362:     # eu_screen_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          363:     # eu_block_fee = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          364:     cash_settle = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          365:     brokerage = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          366:     total_volume = models.DecimalField(max_digits=100, decimal_places=2, null=True, blank=True)
+          367:     mtm = models.FloatField(null=True,blank=True)
+          368:     price_change = models.FloatField(null=True,blank=True)
+          369:     pnl = models.FloatField(null=True,blank=True)
+          370:     daily_change = models.FloatField(null=True,blank=True)
+          371: 
+          372:     mtm_yesterday = models.FloatField(null=True,blank=True)
+          373:     bilateral_pnl = models.FloatField(null=True,blank=True)
+          374:     price_conversion_value = models.FloatField(null=True,blank=True)
+          375:     converted_volume = models.FloatField(null=True,blank=True)
+          376:     ltd = models.DateField(null=True, blank=True)
+          377:     first_month = models.DateField(null=True, blank=True)
+          378:     second_month =  models.DateField(null=True, blank=True)
+          379:     first_month_days = models.IntegerField(null=True,blank=True)
+          380:     second_month_days = models.IntegerField(null=True,blank=True)
+          381:     futures_equiv_first = models.FloatField(null=True, blank=True)
+          382:     futures_equiv_second = models.FloatField(null=True, blank=True)
+          383:     futures_equiv_first_kbbl = models.FloatField(null=True, blank=True)
+          384:     futures_equiv_second_kbbl = models.FloatField(null=True, blank=True)
+          385:     net_pnl = models.FloatField(null=True, blank=True)
+          386:     # raw_message = models.JSONField(blank=True, null=True)
+          387:     papertrading = models.OneToOneField(PaperTrading, on_delete=models.CASCADE,related_name='paper_trading')
+          388: 
+          389: 
+          390: class FutureLTD(SoftDeleteModel, AbstractOrganization):
+          391:     contract_month = models.DateField(null=True, blank=True)
+          392:     ls_gas_oil_futures = models.DateField(null=True, blank=True)
+          393:     brent_crude_futures = models.DateField(null=True, blank=True)
+          394:     rbob_gasoline_futures = models.DateField(null=True, blank=True)
+          395:     heating_oil_futures = models.DateField(null=True, blank=True)
+          396:     wti_crude_futures = models.DateField(null=True, blank=True)
+          397: 
+          398:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          399:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          400: 
+          401:     class Meta:
+          402:         ordering=["ordering_id"]
+          403: 
+          404:     def __str__(self):
+          405:         return str(self.Contract_month)
+          406:     
+          407: 
+          408: class SecurityDefinitions(SoftDeleteModel,AbstractOrganization):
+          409:     market_type_name = models.CharField(max_length=2000)
+          410:     product_type = models.CharField(max_length=2000)
+          411:     hub_name = models.CharField(max_length=2000)
+          412:     lots_size = models.IntegerField()
+          413:     unit_of_measure= models.CharField(max_length=2000)
+          414:     physical_code = models.CharField(max_length=2000)
+          415:     price_unit = models.CharField(max_length=2000,null=True,blank=True)
+          416:     status = models.CharField(max_length=2000,null=True,blank=True)
+          417: 
+          418:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          419:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          420: 
+          421:     class Meta:
+          422:         ordering=["ordering_id"]
+          423: 
+          424:     def __str__(self):
+          425:         return str(self.product_name)
+          426: 
+          427: 
+          428: class API_Pending_Trades(SoftDeleteModel,AbstractOrganization):
+          429:     # ********************* id Section Begins**********************************
+          430:     Trade_id = models.CharField(max_length=250, blank=True, null=True)
+          431:     LegRefID = models.CharField(max_length=2000, null=True)
+          432:     OrderID = models.CharField(max_length=2000, null=True)
+          433:     Client_ord_ID = models.CharField(max_length=2000, null=True)
+          434:     Trade_Report_ID = models.CharField(max_length=2000, null=True)
+          435: 
+          436:     # ********************* id Section Ends**********************************
+          437: 
+          438:     # ********************** API Trade Details Starts*****************************
+          439:     date = models.CharField(max_length=100)  # 1
+          440:     TransactTime = models.CharField(max_length=100, null=True)
+          441:     trader = models.CharField(max_length=1000, null=True)  # 2
+          442:     trader_type = models.CharField(max_length=1000, null=True)
+          443:     clearer = models.CharField(max_length=100, null=True)  # 3
+          444:     parent_company = models.CharField(max_length=2000, null=True)
+          445:     book = models.CharField(max_length=1000, null=True)  # 4
+          446:     strategy = models.CharField(max_length=1000, null=True)  # 6
+          447:     derivatives = models.CharField(max_length=1000, null=True)  # 7
+          448:     volume = models.CharField(max_length=1000, null=True)  # 8
+          449:     symbol_code = models.CharField(max_length=100, null=True)
+          450:     Market_ID = models.CharField(max_length=250, blank=True, null=True)
+          451:     contract = models.CharField(max_length=100, null=True)  # 10
+          452:     start_date = models.CharField(max_length=100, null=True)  # 11
+          453:     end_date = models.CharField(max_length=100, null=True)  # 12
+          454:     price = models.CharField(max_length=100, null=True)  # 18
+          455:     holiday = models.CharField(max_length=1000, null=True)  # 14
+          456:     tick = models.CharField(max_length=2000, null=True)
+          457:     unit = models.CharField(max_length=2000, null=True)
+          458:     type = models.CharField(max_length=1000, null=True)  # 15
+          459:     broker = models.CharField(max_length=1000, null=True)  # 16
+          460:     efs_code = models.CharField(max_length=100, null=True)  # 17
+          461:     clearing_acct = models.CharField(max_length=100, null=True, blank=True)
+          462:     Blocked = models.CharField(max_length=100, null=True, blank=True)
+          463:     api_company_name = models.CharField(max_length=250, blank=True, null=True)
+          464:     exchange_type = models.CharField(max_length=250, blank=True, null=True)
+          465:     organization_name = models.CharField(max_length=250, blank=True, null=True)
+          466:     platform = models.CharField(max_length=250, blank=True, null=True)
+          467:     OrdStatus  = models.CharField(max_length=250, blank=True, null=True)
+          468:     ExecType = models.CharField(max_length=250, blank=True, null=True)
+          469:     raw_message = models.JSONField(blank=True, null=True)
+          470:     marker_tas_type = models.JSONField(blank=True, null=True)
+          471: 
+          472:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          473:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          474:     notes = models.CharField(max_length=250, blank=True, null=True)  # 18
+          475:     is_TAS_MM_Updated = models.BooleanField(default=False, null=True,blank=True)   # ✅ NEW FIELD
+          476: 
+          477:     process_status = models.CharField(max_length=20,
+          478:     choices=[
+          479:         ("pending", "Pending"),
+          480:         ("processed", "Processed"),
+          481:     ],
+          482:     default="pending",
+          483:     blank=True,)
+          484:     class Meta:
+          485:         ordering = ['-updated_at']
+          486: 
+          487:     def __str__(self):
+          488:         return str(self.Trade_id)
+          489: 
+          490: 
+          491: class APIClearingAccountTrades(SoftDeleteModel,AbstractOrganization):
+          492:     # ********************* id Section Begins**********************************
+          493:     Trade_id = models.CharField(max_length=250, blank=True, null=True)
+          494:     LegRefID = models.CharField(max_length=2000, null=True)
+          495:     OrderID = models.CharField(max_length=2000, null=True)
+          496:     Client_ord_ID = models.CharField(max_length=2000, null=True)
+          497:     Trade_Report_ID = models.CharField(max_length=2000, null=True)
+          498:     ExecID = models.CharField(max_length=250, blank=True, null=True)
+          499: 
+          500:     # ********************* id Section Ends**********************************
+          501: 
+          502:     # ********************** API Trade Details Starts*****************************
+          503: 
+          504:     date = models.CharField(max_length=100)  # 1
+          505:     TransactTime = models.CharField(max_length=100, null=True, blank=True)
+          506:     trader = models.CharField(max_length=1000, null=True)  # 2
+          507:     trader_type = models.CharField(max_length=1000, null=True)
+          508:     clearer = models.CharField(max_length=100, null=True)  # 3
+          509:     parent_company = models.CharField(max_length=2000, null=True)
+          510:     book = models.CharField(max_length=1000, null=True)  # 4
+          511:     strategy = models.CharField(max_length=1000, null=True)  # 6
+          512:     SecurityID = models.CharField(max_length=1000, null=True)  # 6
+          513:     derivatives = models.CharField(max_length=1000, null=True)  # 7
+          514:     volume = models.CharField(max_length=1000, null=True)  # 8
+          515:     symbol_code = models.CharField(max_length=100, null=True)
+          516:     Market_ID = models.CharField(max_length=100, null=True)
+          517:     LastQty = models.IntegerField(null=True, blank=True)
+          518:     Side = models.IntegerField(null=True, blank=True)
+          519:     start_date = models.CharField(max_length=100, null=True)  # 11
+          520:     end_date = models.CharField(max_length=100, null=True)  # 12
+          521:     price = models.CharField(max_length=100, null=True)  # 18
+          522:     unit = models.CharField(max_length=2000, null=True)
+          523:     type = models.CharField(max_length=1000, null=True)  # 15
+          524:     broker = models.CharField(max_length=1000, null=True)  # 16
+          525:     efs_code = models.CharField(max_length=100, null=True)  # 17
+          526:     clearing_acct = models.CharField(max_length=100, null=True, blank=True)
+          527:     OrdStatus = models.CharField(max_length=100, null=True, blank=True)
+          528:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          529:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          530:     notes = models.CharField(max_length=250, blank=True, null=True)  # 18
+          531:     last_edit = models.CharField(max_length=2000, null=True)
+          532:     
+          533: 
+          534:     class Meta:
+          535:         ordering = ['-date']
+          536: 
+          537:     def __str__(self):
+          538:         return str(self.Trade_id)
+          539: 
+          540: 
+          541: class APINewContractM(SoftDeleteModel, AbstractOrganization):
+          542:     PhysicalCode = models.CharField(max_length=2000, null=True, unique=True)
+          543:     ProductName = models.CharField(max_length=2000, null=True)
+          544:     HubAlias = models.CharField(max_length=2000, null=True)
+          545:     UnderlyingSecurityDesc = models.CharField(max_length=2000, null=True)
+          546:     HubName = models.CharField(max_length=2000, null=True)
+          547:     Unit = models.CharField(max_length=2000, null=True)
+          548:     LotSize = models.IntegerField(null=True, blank=True)
+          549: 
+          550:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          551:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          552: 
+          553:     class Meta:
+          554:         ordering = ['-updated_at']
+          555: 
+          556:     def __str__(self):
+          557:         return str(self.PhysicalCode)
+          558: 
+          559: 
+          560: class APIUnknownContractTrade(SoftDeleteModel, AbstractOrganization):
+          561:     Trade_id = models.CharField(max_length=250, blank=True, null=True)
+          562:     trade_type = models.CharField(max_length=250, blank=True, null=True)
+          563:     OrderID = models.CharField(max_length=250, blank=True, null=True)
+          564:     Client_ord_ID = models.CharField(max_length=250, blank=True, null=True)
+          565:     Trade_Report_ID = models.CharField(max_length=250, blank=True, null=True)
+          566:     LegRefID = models.CharField(max_length=250, blank=True, null=True)
+          567:     date = models.CharField(max_length=100)  # 1
+          568:     TransactTime = models.CharField(max_length=100, null=True, blank=True)
+          569:     Clearer = models.CharField(max_length=100)  # 1
+          570:     Trader = models.CharField(max_length=100)  # 1
+          571:     Book = models.CharField(max_length=100)  # 1
+          572:     Strategy = models.CharField(max_length=100)  # 1
+          573:     volume = models.CharField(max_length=1000)
+          574:     symbol_code = models.CharField(max_length=100)  # 1
+          575:     start_date = models.CharField(max_length=100)  # 1
+          576:     end_date = models.CharField(max_length=100)  # 1
+          577:     price = models.CharField(max_length=100)
+          578:     type = models.CharField(max_length=250, blank=True, null=True)
+          579:     efs_code = models.CharField(max_length=250, blank=True, null=True)
+          580:     broker = models.CharField(max_length=250, blank=True, null=True)
+          581:     Market_ID = models.CharField(max_length=100)
+          582:     parent_company = models.CharField(max_length=2000, null=True)
+          583:     derivatives = models.CharField(max_length=250, blank=True, null=True)
+          584:     contract = models.CharField(max_length=250, blank=True, null=True)
+          585:     clearing_acct = models.CharField(max_length=100, null=True, blank=True)
+          586:     OrdStatus = models.CharField(max_length=100, null=True, blank=True)
+          587:     created_date = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+          588:     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+          589: 
+          590:     class Meta:
+          591:         ordering = ['-date']
+          592: 
+          593:     def __str__(self):
+          594:         return str(self.Trade_id)
+          595: 
+          596: 
+          597: 
+          598: 
+          599: class APIBrokerSettingsModel(SoftDeleteModel,AbstractOrganization):
+          600:     API_broker_name = models.CharField(max_length=100, null=True, blank=True)
+          601:     broker = models.ForeignKey(Broker,on_delete=models.SET_NULL,null=True,blank=True,related_name='api_broker_settings')    
+          602:     created_date = models.DateTimeField(auto_now_add=True)
+          603:     updated_at = models.DateTimeField(auto_now=True)
+          604: 
+          605:     class Meta:
+          606:         ordering = ['-updated_at']
+          607: 
+          608:     def __str__(self):
+          609:         return str(self.API_broker_name)
+          610:     
+          611: 
+          612: class CsvPaperTrade(SoftDeleteModel,AbstractOrganization):
+          613: 
+          614:     BUY_SELL_CHOICES = (
+          615:         ("buy","buy"),
+          616:         ("sell","sell")
+          617:     )
+          618:     date = models.DateField(null=True, blank=True)
+          619:     trader = models.CharField(max_length=100, null=True, blank=True)
+          620:     trade_type = models.CharField(max_length=50, null=True, blank=True)
+          621:     contract_type = models.CharField(max_length=50, null=True, blank=True)
+          622:     execution_id = models.CharField(max_length=100, null=True, blank=True)
+          623:     leg_id = models.CharField(max_length=2000, null=True, blank=True)      
+          624:     clearer = models.CharField(max_length=100, null=True)  #
+          625:     clearing_acct = models.CharField(max_length=100, null=True, blank=True)
+          626:     quantity = models.IntegerField()
+          627:     buy_sell = models.CharField(max_length=100, choices=BUY_SELL_CHOICES)
+          628:     contract_code = models.CharField(max_length=100, null=True, blank=True)
+          629:     pricing_from = models.DateField(null=True, blank=True)
+          630:     pricing_to = models.DateField(null=True, blank=True)
+          631:     price = models.FloatField(null=True, blank=True)
+          632:     broker = models.CharField(max_length=1000, null=True)
+          633:     book = models.CharField(max_length=1000, null=True)  # 4
+          634:     strategy = models.CharField(max_length=1000, null=True) 
+          635:     blocked = models.CharField(max_length=20, null=True, blank=True)
+          636:     cash_settle = models.CharField(max_length=20, null=True, blank=True)
+          637:     uploaded_at = models.DateTimeField(auto_now_add=True)
+          638: 
+          639:     class Meta:
+          640:         ordering = ['-uploaded_at']
+          641: 
+          642:     def __str__(self):
+          643:         return f"{self.trade_date} - {self.contract_code}"
+          644: 
+          645: 
+          646: from django.core.exceptions import ValidationError
+          647: class LegalEntityProfitShare(SoftDeleteModel,AbstractOrganization):
+          648:     book = models.ForeignKey(Book,on_delete=models.PROTECT,related_name="profit_shares",null=True,blank=True)
+          649:     profit_share_percentage = models.DecimalField(max_digits=5,decimal_places=2)  # allows up to 100.00
+          650:     effective_from = models.DateField(null=True,blank=True)
+          651:     effective_to = models.DateField(null=True,blank=True)
+          652:     active = models.BooleanField(default=True, null=True,blank=True)   # ✅ NEW FIELD
+          653:     
+          654:     created_date = models.DateTimeField(auto_now_add=True)
+          655:     updated_at = models.DateTimeField(auto_now=True)
+          656: 
+          657:     class Meta:
+          658:         ordering = ['-updated_at']
+          659: 
+          660:         constraints = [
+          661:             models.CheckConstraint(
+          662:                 check=models.Q(profit_share_percentage__gte=0) & 
+          663:                       models.Q(profit_share_percentage__lte=100),
+          664:                 name="profit_share_between_0_100"
+          665:             )
+          666:         ]
+          667: 
+          668:     def clean(self):
+          669:         # ✅ Effective To should not be before Effective From
+          670:         if self.effective_to and self.effective_to < self.effective_from:
+          671:             raise ValidationError("Effective To cannot be earlier than Effective From")
+          672: 
+          673:     def __str__(self):
+          674:         return f"{self.book} - {self.profit_share_percentage}%"
+          675: 
+          676: 
+          677: class CustomerMarkupMatrix(SoftDeleteModel, AbstractOrganization):
+          678: 
+          679:     # Customer Company → lookup from CounterPartyCompanies
+          680:     customer_company = models.ForeignKey(CounterPartyCompanies,on_delete=models.PROTECT,related_name="customer_markup_matrix")
+          681: 
+          682:     # Derivative → from Derivatives model
+          683:     derivative = models.ForeignKey(Derivatives,on_delete=models.PROTECT,related_name="customer_markup_derivatives",null=True,blank=True)
+          684: 
+          685:     # UOM → from Unit model
+          686:     uom = models.ForeignKey(Unit,on_delete=models.PROTECT,related_name="customer_markup_units")
+          687: 
+          688:     # Markup Value
+          689:     markup_value = models.DecimalField(max_digits=10,decimal_places=4)
+          690: 
+          691:     # Effective Dates
+          692:     effective_from = models.DateField()
+          693:     effective_to = models.DateField(null=True, blank=True)
+          694: 
+          695:     # Active Flag
+          696:     active = models.BooleanField(default=True)
+          697: 
+          698:     # System Fields
+          699:     created_date = models.DateTimeField(auto_now_add=True)
+          700:     updated_at = models.DateTimeField(auto_now=True)
+          701: 
+          702:     class Meta:
+          703:         ordering = ["-updated_at"]
+          704: 
+          705:         constraints = [
+          706:             models.CheckConstraint(
+          707:                 check=models.Q(markup_value__gte=0),
+          708:                 name="markup_value_non_negative"
+          709:             )
+          710:         ]
+          711: 
+          712:     def clean(self):
+          713:         # Effective To should not be before Effective From
+          714:         if self.effective_to and self.effective_to < self.effective_from:
+          715:             raise ValidationError("Effective To cannot be earlier than Effective From")
+          716: 
+          717:     def __str__(self):
+          718:         return f"{self.customer_company} - {self.derivative} - {self.uom} - {self.markup_value}"
+          719: 
+          720: 
+          721: 
+          722: class ReconContractMapping(SoftDeleteModel, AbstractOrganization):
+          723:     contract = models.ForeignKey(
+          724:         Contract,
+          725:         on_delete=models.PROTECT,
+          726:         related_name='recon_mappings'
+          727:     )
+          728: 
+          729:     broker = models.ForeignKey(
+          730:         Broker,
+          731:         on_delete=models.PROTECT,
+          732:         related_name='broker_recon_mappings'
+          733:     )
+          734: 
+          735:     external_contract_code = models.CharField(max_length=2000)
+          736: 
+          737: 
+          738: 
+          739: class ReconCustomerMapping(SoftDeleteModel, AbstractOrganization):
+          740:     customer_company = models.ForeignKey(
+          741:         CounterPartyCompanies,
+          742:         on_delete=models.PROTECT,
+          743:         related_name='recon_cus_mappings'
+          744:     )
+          745: 
+          746:     broker = models.ForeignKey(
+          747:         Broker,
+          748:         on_delete=models.PROTECT,
+          749:         related_name='recon_broker_mappings'
+          750:     )
+          751: 
+          752:     external_client_code = models.CharField(max_length=2000)
+          753: 
+          754: 
+          755: 
+          756: 
+          757: class CanonicalTrade(SoftDeleteModel, AbstractOrganization):
+          758: 
+          759:     STATUS_CHOICES = (
+          760:         ("SUCCESS", "Success"),
+          761:         ("FAILED", "Failed"),
+          762:         ("PARTIAL", "Partial"),
+          763:     )
+          764: 
+          765:     RECON_CHOICES = (
+          766:         ("MATCHED", "Matched"),
+          767:         ("PARTIAL", "Partial"),
+          768:         ("MISMATCH", "Mismatch"),
+          769:     )
+          770: 
+          771:     source_system = models.CharField(max_length=50)
+          772:     source_trade_id = models.CharField(max_length=200, null=True, blank=True)
+          773:     source_trade_date = models.CharField(max_length=200,null=True, blank=True)
+          774: 
+          775:     #  Raw fields
+          776:     source_client_value = models.CharField(max_length=200)
+          777:     source_contract_symbol = models.CharField(max_length=200,null=True, blank=True)
+          778:     source_direction_value = models.CharField(max_length=100)
+          779:     source_contract_month = models.CharField(max_length=200,null=True, blank=True)
+          780:     source_quantity_value = models.CharField(max_length=200,null=True, blank=True)
+          781:     source_price_value = models.CharField(max_length=200,null=True, blank=True)
+          782:     source_markup_value = models.CharField(max_length=200,null=True, blank=True)
+          783: 
+          784:     # Canonical fields
+          785:     trade_date = models.DateField(null=True, blank=True)
+          786:     client = models.CharField(max_length=200,null=True,blank=True)
+          787:     contract = models.CharField(max_length=200,null=True,blank=True)
+          788:     direction = models.CharField(max_length=10,null=True,blank=True)
+          789:     contract_month = models.DateField(null=True, blank=True)
+          790:     quantity = models.FloatField(null=True, blank=True)
+          791:     price = models.FloatField(null=True, blank=True)
+          792:     markup = models.FloatField(null=True, blank=True)
+          793: 
+          794:     #  Status
+          795:     canonicalisation_status = models.CharField(max_length=250, choices=STATUS_CHOICES,null=True, blank=True)
+          796:     reconciliation_status = models.CharField(max_length=50, choices=RECON_CHOICES, null=True, blank=True)
+          797:     canonicalisation_timestamp = models.DateTimeField(null=True, blank=True)
+          798:  
+          799:     break_reason = models.JSONField(default=list, blank=True)
+          800:     matched_with = models.ForeignKey(
+          801:         "self",
+          802:         on_delete=models.SET_NULL,
+          803:         null=True,
+          804:         blank=True,
+          805:         related_name="matched_pair"
+          806:     )
+          807:     reconciliation_group_id = models.UUIDField(null=True, blank=True,db_index=True)
+          808:     tick= models.FloatField(null=True, blank=True)
+          809: 
+          810: 
+          811: 
+          812: class CostType(SoftDeleteModel,AbstractOrganization):
+          813:     cost_name = models.CharField(max_length=100, unique=True)
+          814:     description = models.TextField(blank=True)
+          815:     is_active = models.BooleanField(default=True)
+          816:     created_at_over_ridden = models.DateTimeField(auto_now_add=True,null=True,blank=True)
+          817:     updated_at_over_ridden = models.DateTimeField(auto_now=True,null=True,blank=True)
+          818:     deleted_at_over_ridden = models.DateTimeField(auto_now=True,null=True,blank=True)
+          819:     
+          820:     def deactivate(self):
+          821:         self.is_active = False
+          822:         self.save()
+          823: 
+          824:     def _str_(self):
+          825:         return self.cost_name
+          826: 
+          827: 
+          828: 
+          829: 
+          830: class CostBooking(AbstractOrganization,SoftDeleteModel):
+          831: 
+          832: 
+          833: 
+          834:     STATUS_CHOICES = (
+          835:         ("PENDING", "Pending"),
+          836:         ("COMMITTED", "Committed"),
+          837:         ("APPROVED", "Approved"),
+          838:         ("REJECTED", "Rejected"))
+          839: 
+          840:     # TRADE_TYPE_CHOICES = (
+          841:     #     ("cleared", "cleared"),
+          842:     #     ("cleared", "internal"),
+          843:     #     ("cleared", "bilateral"),
+          844: 
+          845:     # )
+          846: 
+          847: 
+          848:     # Auto generated business ID
+          849:     cost_booking_id = models.CharField(max_length=40, unique=True, editable=False)
+          850: 
+          851:     # Core fields
+          852:     Booking_Type =  models.CharField(max_length=50,default="Lump Sum")
+          853:     cost_type = models.ForeignKey("CostType", on_delete=models.PROTECT)
+          854:     amount = models.DecimalField(max_digits=18, decimal_places=5)
+          855:     currency = models.CharField(max_length=10)
+          856: 
+          857:     due_date = models.DateField(null=True, blank=True)
+          858:     entry_date = models.DateField(null=True, blank=True, default=localdate)
+          859: 
+          860:     # trade_type = models.CharField( max_length=20, choices=TRADE_TYPE_CHOICES)
+          861:     book = models.ForeignKey("Book", on_delete=models.PROTECT)
+          862:     trader = models.ForeignKey(User, on_delete=models.CASCADE,related_name="+")
+          863:     strategy = models.ForeignKey("Strategy", on_delete=models.PROTECT)
+          864:     clearer = models.ForeignKey("Clearer", on_delete=models.PROTECT)
+          865:     broker = models.ForeignKey("Broker", on_delete=models.PROTECT)
+          866:     product = models.ForeignKey("Contract", on_delete=models.PROTECT)
+          867:     counterparty = models.ForeignKey("CounterPartyCompanies", on_delete=models.PROTECT,null=True,blank=True)
+          868:     requires_settlement = models.BooleanField(default=False)
+          869:     exclude_from_pnl = models.BooleanField(default=False)
+          870:     description = models.TextField(blank=True, null=True)
+          871:     status = models.CharField(
+          872:         max_length=40,
+          873:         choices=STATUS_CHOICES,
+          874:         default="PENDING"
+          875:     )
+          876: 
+          877:     # Audit fields
+          878:     created_at_over_ridden = models.DateTimeField(auto_now_add=True)
+          879:     updated_at_over_ridden = models.DateTimeField(auto_now=True)
+          880:     deleted_at_over_ridden = models.DateTimeField(auto_now=True)
+          881: 
+          882:     def save(self, *args, **kwargs):
+          883:         if not self.cost_booking_id:
+          884:             self.cost_booking_id = self.generate_cost_id()
+          885:         super().save(*args, **kwargs)
+          886: 
+          887:     def generate_cost_id(self):
+          888:         cost_type_code = "COST-"
+          889:         unique_part = uuid.uuid4().hex[:8].upper()
+          890:         return f"{cost_type_code}-{unique_part}"
+
+          (End of file - total 890 lines)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/models.py</path>
+          <type>file</type>
+          <content>
+          1: 
+          2: from typing import ClassVar
+          3: import uuid
+          4: from django.db import models
+          5: from django.utils.timezone import now
+          6: from django.contrib.auth.models import AbstractUser
+          7: from django.db.models import CharField
+          8: from django.db.models import EmailField
+          9: from django.urls import reverse
+          10: from django.utils.translation import gettext_lazy as _
+          11: from utility.softdelete.softdeletemodel import SoftDeleteModel
+          12: from django.utils.timezone import now
+          13: from .managers import UserManager
+          14: import random
+          15: from datetime import timedelta
+          16: import secrets
+          17: from apps.company.models import Organization, Usergroup
+          18: from apps.plans.models import PricingPlan
+          19: 
+          20: 
+          21: class User(AbstractUser):
+          22:     """
+          23:     Default custom user model for core.
+          24:     If adding fields that need to be filled at user signup,
+          25:     check forms.SignupForm and forms.SocialSignupForms accordingly.
+          26:     """
+          27: 
+          28:     USER_TYPE_CHOICES = (
+          29:         ("super_admin","super_admin"),
+          30:         ("organization_admin", "organization_admin"),
+          31:         ("organization_staff", "organization_staff"),
+          32:     )
+          33: 
+          34:     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False) 
+          35:     name = CharField(_("Name of User"), blank=True, max_length=255)
+          36:     first_name = None  
+          37:     last_name = None  # type: ignore[assignment]
+          38:     email = EmailField(_("email address"), unique=True)
+          39:     username = None  # type: ignore[assignment]
+          40: 
+          41:     USERNAME_FIELD = "email"
+          42:     REQUIRED_FIELDS = []
+          43: 
+          44:     objects: ClassVar[UserManager] = UserManager()
+          45:     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True)
+          46:     user_type = models.CharField(max_length=2000, choices=USER_TYPE_CHOICES, default="super_admin")
+          47:     phone_number = models.CharField(max_length=200,null=True, blank=True)
+          48:     is_user_active = models.BooleanField(default=False)
+          49:     user_group = models.ForeignKey(Usergroup,on_delete=models.SET_NULL, null=True)
+          50:     created_by = models.ForeignKey('users.User', on_delete=models.CASCADE, null=True, blank=True)
+          51:     def get_absolute_url(self) -> str:
+          52:         """Get URL for user's detail view.
+          53: 
+          54:         Returns:
+          55:             str: URL for user detail.
+          56: 
+          57:         """
+          58:         return reverse("users:detail", kwargs={"pk": self.id})
+          59:     
+          60: 
+          61: 
+          62: class OTP(SoftDeleteModel):
+          63:     otp = models.IntegerField()
+          64:     expiry_time = models.IntegerField()
+          65:     link = models.TextField()
+          66:     user = models.ForeignKey(User, on_delete=models.CASCADE)
+          67: 
+          68: 
+          69:     def save(self,*args, **kwargs):
+          70:         if not self.otp :
+          71:             self.otp = random.randint(100000,999999)
+          72:         if not self.expiry_time :
+          73:             self.expiry_time = int((now() + timedelta(minutes=3)).timestamp())
+          74:         link = self.generate_link()
+          75:         while OTP.objects.filter(link=link).exists():
+          76:             link = self.generate_link()
+          77:         self.link = link
+          78:         return super(OTP,self).save(*args, **kwargs)
+          79:     
+          80: 
+          81:     @staticmethod
+          82:     def generate_link():
+          83:         return secrets.token_hex(32)
+          84:     
+          85:     @classmethod
+          86:     def generate_password_reset_link_for(cls, user):
+          87:         expiry_time = int((now() + timedelta(minutes=15)).timestamp())
+          88:         otp_value=random.randint(100000,999999) 
+          89:         link_value = cls.generate_link()
+          90:         while OTP.objects.filter(link=link_value).exists():
+          91:             link_value = cls.generate_link()
+          92:         otp,created = OTP.objects.update_or_create(user=user,
+          93:                                                    defaults={"otp": otp_value, "expiry_time": expiry_time, "link":link_value})
+          94:                                           
+          95: 
+          96:         return (otp.otp, otp.link)
+          97:     
+          98: 
+          99:     def has_time_expired(self):
+          100:         current_time = int((now()).timestamp())
+          101:         return  current_time > self.expiry_time
+          102:     
+          103: 
+          104: class Country(SoftDeleteModel):
+          105:     country_name = models.CharField(max_length=2000)
+          106:     country_code = models.CharField(max_length=3000,null=True, blank=True)
+          107: 
+          108: 
+          109: 
+          110: 
+          111: class CountryDetails(SoftDeleteModel):
+          112:     currency_name = models.CharField(max_length=200,null=True, blank=True)
+          113:     currency_code = models.CharField(max_length=200,null=True, blank=True)
+          114:     currency_symbol = models.CharField(max_length=200,null=True, blank=True)
+          115:     usd_conversion_rate = models.IntegerField(null=True, blank=True)
+          116:     country = models.ForeignKey(Country, on_delete=models.CASCADE)
+          117:     is_default = models.BooleanField(default=False)
+          118:     is_active = models.BooleanField(default=False)
+          119: 
+          120: 
+          121: 
+          122: class PasswordRetryLimit(SoftDeleteModel):
+          123:     limit = models.IntegerField()
+          124:     def __str__(self):
+          125:         return str(self.limit)
+          126:     
+          127: 
+          128: class PaymentSessionHistory(SoftDeleteModel):
+          129:     session_id = models.CharField(max_length=255, null=True, blank=True)  # Change to CharField
+          130:     track_id = models.UUIDField(default=uuid.uuid4, editable=False)
+          131:     formdata = models.JSONField(default={})
+          132:     payment_status = models.BooleanField(default=False)
+          133:     is_created = models.BooleanField(default=False)
+          134:     errors =  models.JSONField(default={})
+          135:     plan = models.ForeignKey(PricingPlan, on_delete=models.DO_NOTHING, null=True, blank=True)
+          136:     organization = models.ForeignKey(Organization,on_delete=models.SET_NULL, null=True, blank=True )
+          137: 
+          138:     
+          139:     @classmethod
+          140:     def create(cls):
+          141:         """Creates a PaymentSessionHistory object and returns its track_id"""
+          142:         obj = cls.objects.create(session_id=None)  # Ensure it's created with a null session_id
+          143:         return obj.track_id
+          144:     
+          145: 
+          146: 
+          147: 
+          148: class LoginHistory(SoftDeleteModel):
+          149:     user = models.ForeignKey(User, on_delete=models.CASCADE)
+          150:     metadata = models.JSONField(null=True, blank=True, default=dict)
+          151:     message = models.TextField(null=True, blank=True)
+          152:     error_status = models.BooleanField(default=False)
+          153:     ip_address = models.CharField(max_length=10000, null=True, blank=True)
+          154: 
+          155: 
+          156: 
+          157: 
+          158: 
+          159: 
+          160: 
+          161: 
+          162: 
+          163: 
+          164:     
+
+          (End of file - total 164 lines)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/models.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: from utility.softdelete.softdeletemodel import SoftDeleteModel
+          3: from apps.plans.models import PricingPlan
+          4: # Create your models here.
+          5: 
+          6: 
+          7: class DefaultApps(SoftDeleteModel):
+          8:     name = models.CharField(max_length=2000)
+          9:     logo = models.TextField()
+          10: 
+          11:     def __str__(self):
+          12:         return str(self.name)
+          13:     
+          14: 
+          15: 
+          16: 
+          17: 
+          18: class PermissionTypes(SoftDeleteModel):
+          19:     create = models.BooleanField(default=True)
+          20:     read = models.BooleanField(default=True)
+          21:     update = models.BooleanField(default=True)
+          22:     delete = models.BooleanField(default=True)
+          23: 
+          24:     def __str__(self):
+          25:         return str(f" create:{self.create}, read{self.read}, update{self.update}, delete:{self.delete}")
+          26:     
+          27: 
+          28: 
+          29: class DefaultAppPermissions(SoftDeleteModel):
+          30:     apps = models.ForeignKey(DefaultApps, on_delete=models.CASCADE)
+          31:     resource = models.CharField(max_length=200)
+          32:     readable_resource_name= models.CharField(max_length=200)
+          33:     permisssions = models.ForeignKey(PermissionTypes, on_delete=models.CASCADE)
+          34: 
+          35:     def save(self, *args, **kwargs):
+          36:         if not self.permisssions:
+          37:             self.permisssions = PermissionTypes.objects.create()
+          38:         return super().save(*args, **kwargs)
+          39:     
+          40:     def __str__(self):
+          41:         return str(f"resource: {self.resource} - readable_resource_name{self.readable_resource_name}")
+          42: 
+          43: 
+          44: 
+          45: 
+          46: 
+          47: class PlanBasedAppsAndPermission(SoftDeleteModel):
+          48:     pricingplan = models.ForeignKey(PricingPlan, on_delete=models.CASCADE)
+          49:     generated_permission = models.ForeignKey(PermissionTypes, on_delete=models.PROTECT)
+          50:     subscribed_apps = models.ForeignKey(DefaultAppPermissions, on_delete=models.CASCADE)
+          51: 
+          52: 
+          53: 
+          54: 
+
+          (End of file - total 54 lines)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/models.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/models.py</path>
+          <type>file</type>
+          <content>
+          1: from django.db import models
+          2: from apps.permission.models import DefaultAppPermissions, PermissionTypes
+          3: from utility.softdelete.softdeletemodel import SoftDeleteModel
+          4: 
+          5: # from apps.users.models import Country,CountryDetails
+          6: from apps.plans.models import PricingPlan
+          7: # Create your models here.
+          8: 
+          9: 
+          10: 
+          11: class  TrailCompanyDetails(SoftDeleteModel):
+          12:     first_name = models.CharField(max_length=100)
+          13:     last_name = models.CharField(max_length=100, null=True, blank=True)
+          14:     email = models.CharField(max_length=200)
+          15:     company_name = models.TextField()
+          16:     mobile_number =models.CharField(max_length=15)
+          17: 
+          18:     class Meta:
+          19:         db_table = "trail_company"
+          20:         ordering = ['-ordering_id']
+          21:        
+          22: 
+          23: class Organization(SoftDeleteModel):
+          24:     name = models.CharField(max_length=1000)
+          25:     email = models.CharField(max_length=200)
+          26:     phone_number = models.CharField(max_length=200)
+          27:     country = models.ForeignKey("users.Country", on_delete=models.PROTECT)
+          28:     default_currency = models.ForeignKey("users.CountryDetails", on_delete=models.PROTECT)
+          29:     is_plan_active = models.BooleanField(default=False)
+          30:     is_blocked = models.BooleanField(default=False)
+          31:     is_unusal_activity = models.BooleanField(default=False)
+          32: 
+          33: 
+          34: 
+          35:     class Meta:
+          36:         db_table = "Organization"
+          37:         ordering = ['-ordering_id']
+          38: 
+          39: 
+          40: class PlanPurchaseHistory(SoftDeleteModel):
+          41:     ADMIN_APPROVE_CHOICES = (
+          42:         ("pending","pending"),
+          43:         ("rejected","rejected"),
+          44:         ("approved","approved"),
+          45:         ("system_approved", "system_approved"),
+          46:         ("custom_upgrade", "custom_upgrade"),
+          47:     )
+          48:     organization = models.ForeignKey(Organization, on_delete=models.PROTECT)
+          49:     plan = models.ForeignKey(PricingPlan, on_delete=models.PROTECT)
+          50:     purchase_date = models.IntegerField()
+          51:     expiry_date = models.IntegerField()
+          52:     is_online_purchase = models.BooleanField(default=False)
+          53:     admin_approved = models.CharField(max_length=200, choices=ADMIN_APPROVE_CHOICES, default="pending")
+          54:     notes = models.TextField(null=True, blank=True)
+          55:     class Meta:
+          56:         db_table = "Plan Purchase History"
+          57:         ordering = ['-ordering_id']
+          58: 
+          59: 
+          60: 
+          61: class Usergroup(SoftDeleteModel):
+          62:     name = models.CharField(max_length=5000)
+          63:     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
+          64:     # assigned_permission = models.ForeignKey(AssignedPermission, on_delete=models.CASCADE)
+          65:     level = models.IntegerField()
+          66:     show_same_level_data = models.BooleanField(default=True)
+          67: 
+          68:     def save(self,*args, **kwargs):
+          69:         if not self.level:
+          70:             prev_level = Usergroup.objects.filter(organization=self.organization).order_by('-level').first()
+          71:             self.level = prev_level.level + 1 if prev_level else 1
+          72:         return super().save(*args, **kwargs)
+          73: 
+          74: class AssignedPermission(SoftDeleteModel):
+          75:     user_group = models.ForeignKey(Usergroup,on_delete=models.CASCADE, null=True, blank=True)
+          76:     generated_permission = models.ForeignKey(PermissionTypes, on_delete=models.PROTECT)
+          77:     subscribed_apps = models.ForeignKey(DefaultAppPermissions, on_delete=models.CASCADE)
+          78: 
+          79: 
+          80: 
+          81: 
+          82: 
+          83: class AuditLog(models.Model):
+          84:     user = models.ForeignKey("users.User", on_delete=models.SET_NULL, null=True)
+          85:     model = models.CharField(max_length=255)
+          86:     action = models.CharField(max_length=20) 
+          87:     path = models.TextField()
+          88:     method = models.CharField(max_length=10)
+          89:     old_data = models.JSONField(null=True, blank=True)
+          90:     changes = models.JSONField(null=True, blank=True)
+          91:     new_data = models.JSONField(null=True, blank=True)
+          92:     timestamp = models.DateTimeField(auto_now_add=True)
+          93: 
+          94:     def __str__(self):
+          95:         return f"{self.user} {self.action} {self.model}"
+          96: 
+          97:     
+          98: 
+          99: 
+          100: 
+
+          (End of file - total 100 lines)
+          </content>
+    time: 7/26/2026, 6:40:19.624 AM GMT+5:30
+    response: |+
+      Let me read all the key files in parallel.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    duration: 5.924s
+    duration_ms: 5924
+  - agent: general
+    model:
+      id: ling-3.0-flash-free
+      provider: opencode
+    thinking: Now I have all the models.py files. Let me also find the abstract models, soft delete model, and the managers for users. Let me also find all migration files and views.py files, and search for raw SQL patterns.
+    thinking_duration: 219ms
+    thinking_duration_ms: 219
+    time: 7/26/2026, 6:40:25.913 AM GMT+5:30
+    response: |+
+      Now let me read the abstract models, soft delete, managers, and find all migrations and views.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

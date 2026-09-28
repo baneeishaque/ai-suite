@@ -16,7 +16,7 @@ JsonObject = dict[str, Any]
 
 
 def select_environment_key(
-    provider_name: str, environment_names: Any
+    provider_name: str, environment_names: Any, *, quiet: bool = False
 ) -> str:
     """Select the first explicit uppercase ``_KEY`` environment name."""
     if not isinstance(environment_names, list):
@@ -30,7 +30,7 @@ def select_environment_key(
         and environment_name.isupper()
         and environment_name.endswith("_KEY")
     ]
-    if len(matching_names) > 1:
+    if len(matching_names) > 1 and not quiet:
         print(
             f"Warning: provider '{provider_name}' has {len(matching_names)} "
             f"key environment names. Selected: {matching_names[0]}. "

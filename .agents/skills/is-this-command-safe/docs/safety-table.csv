@@ -15,6 +15,7 @@ cat,SAFE-WITH-QUALIFICATION,,cat <file>,"SAFE when reading files. MUTATES when u
 cd,SAFE,,n/a,Changes the shell working directory. No filesystem mutation. Builtin.
 cut,SAFE,,n/a,"Removes columns/fields from each line of input. Read-only (prints to stdout). Common flags: -d (delimiter), -f (fields). No write capability."
 diff,SAFE,,n/a,Compares files line-by-line. Output only; no files modified.
+dig,SAFE,,n/a,"DNS lookup utility (Domain Information Groper). Queries DNS resolvers and prints responses. Read-only network query tool. No filesystem mutation. Common flags: +short (concise output), -x (reverse lookup), @server (query specific nameserver), -t TYPE (record type), -f file (batch from file, read-only). Pipeline to xargs rm/sed is dangerous — general-pipeline guard catches it."
 echo,SAFE,,n/a,Prints arguments to stdout. No mutation. Builtin.
 find,SAFE-IF-PIPED,-delete; -exec rm; -exec mv; -exec sed -i,find … -print,Safe alone. Upgrade to MUTATES if any destructive flag is present.
 Format-Table,SAFE,,n/a,PowerShell formatter. Read-only output formatting; consumes pipeline input.

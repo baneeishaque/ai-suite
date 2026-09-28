@@ -405,6 +405,12 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   `docker volume create/rm`, `docker image rm`, `docker compose up/down/restart` — never a
   bare `docker *` catch-all.
 
+### `docker images`
+
+- **Verdict**: ✅ SAFE — Lists local Docker images (repository/tag/ID/created/size).
+  Read-only image listing; nothing is created/removed/pulled.
+- **Auto-approve pattern**: `docker images*` only.
+
 ***
 
 ## Linters & Analysis Tools

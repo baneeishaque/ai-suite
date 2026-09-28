@@ -1,0 +1,129 @@
+#!/usr/bin/env osascript -l JavaScript
+// swh-save.jxa — Submit SWH "Save code now" requests from Chrome via JXA.
+//
+// Usage:
+//   osascript -l JavaScript scripts/swh-save.jxa \
+//     https://github.com/baneeishaque/ai-suite \
+//     https://github.com/baneeishaque/ai-agent-rules
+//   osascript -l JavaScript scripts/swh-save.jxa --file origins.txt
+//
+// Why JXA + real Chrome instead of curl/Playwright: archive.softwareheritage.org
+// sits behind Anubis proof-of-work challenges that block headless HTTP clients.
+// Driving the user's Chrome profile reuses its Anubis clearance cookie and any
+// SWH session, so the Save POST succeeds. Pattern follows the repository's
+// existing teams-chat-nav.jxa (sibling inject resolution, tab.execute mailbox).
+//
+// Output: the inject script's JSON array (one result per origin with
+// save request id, save_request_status, save_task_status, snapshot_swhid,
+// request_url). Record the ids — they are the visit/snapshot trail.
+// Exit: 0=all origins accepted-or-already-scheduled, 1=otherwise.
+
+ObjC.import("Foundation");
+
+var SAVE_URL = "https://archive.softwareheritage.org/save/";
+var LOAD_WAIT_SECONDS = 12;
+var POLL_ROUNDS = 30;
+var ORIGINS_FILE = ".agents/skills/software-heritage/save-code-now/origins.txt";
+
+function readFile(path) {
+  var nsPath = $(path).stringByStandardizingPath;
+  var contents = $.NSString.stringWithContentsOfFileEncodingError(
+    nsPath, $.NSUTF8StringEncoding, null
+  );
+  if (contents.isNil()) throw new Error("Cannot read file: " + path);
+  return contents.js;
+}
+
+function run(argv) {
+  var origins = [];
+  var fileArg = null;
+  for (var i = 0; i < argv.length; i++) {
+    if (argv[i] === "--file" && i + 1 < argv.length) {
+      fileArg = argv[i + 1]; i++;
+    } else if (argv[i] === "--help" || argv[i] === "-h") {
+      console.log("Usage: swh-save.jxa <origin-url>... | --file <origins.txt>");
+      return "0";
+    } else if (argv[i].startsWith("--")) {
+      console.log("Warning: unknown flag " + argv[i] + " ignored");
+    } else {
+      origins.push(argv[i]);
+    }
+  }
+
+  if (fileArg) {
+    var lines = readFile(fileArg).split("\n");
+    for (var j = 0; j < lines.length; j++) {
+      var line = lines[j].trim();
+      if (line && line.charAt(0) !== "#") origins.push(line);
+    }
+  }
+  // Default: the procedure origins.
+  if (origins.length === 0) {
+    try {
+      var defaults = readFile(ORIGINS_FILE).split("\n");
+      for (var k = 0; k < defaults.length; k++) {
+        var d = defaults[k].trim();
+        if (d && d.charAt(0) !== "#") origins.push(d);
+      }
+    } catch (e) {
+      origins = [
+        "https://github.com/baneeishaque/ai-suite",
+        "https://github.com/baneeishaque/ai-agent-rules",
+      ];
+    }
+  }
+
+  var args = $.NSProcessInfo.processInfo.arguments;
+  var scriptPath = args.objectAtIndex(3).js;
+  var dir = scriptPath.substring(0, scriptPath.lastIndexOf("/"));
+  var injectJs = readFile(dir + "/swh-save-inject.js");
+  injectJs = injectJs.replace("ORIGINS_PLACEHOLDER", JSON.stringify(origins));
+
+  var chrome = Application("Google Chrome");
+  chrome.includeStandardAdditions = true;
+  chrome.activate();
+  delay(0.5);
+  chrome.openLocation(SAVE_URL);
+  delay(LOAD_WAIT_SECONDS);
+
+  var tab = chrome.windows[0].activeTab;
+  var kickoff =
+    "window.__swhSaveResult = 'PENDING';" +
+    "(" +
+    injectJs.replace(/^\(function \(\) \{/, "function __swhSave() {") +
+    ")().then(function(r){ window.__swhSaveResult = r; }," +
+    "function(e){ window.__swhSaveResult = JSON.stringify([{error:String(e)}]); });" +
+    "'STARTED';";
+  tab.execute({ javascript: kickoff });
+
+  var result = "PENDING";
+  for (var round = 0; round < POLL_ROUNDS; round++) {
+    delay(2);
+    try {
+      result = tab.execute({ javascript: "window.__swhSaveResult || 'PENDING';" });
+    } catch (e) {
+      result = "PENDING";
+    }
+    if (result && result !== "PENDING" && result !== "STARTED") break;
+  }
+
+  if (!result || result === "PENDING") {
+    console.log(JSON.stringify([{
+      error: "timed-out (Anubis PoW may still be solving; let Chrome finish, then rerun)"
+    }]));
+    return "1";
+  }
+
+  console.log(result);
+
+  try {
+    var parsed = JSON.parse(result);
+    var ok = true;
+    for (var m = 0; m < parsed.length; m++) {
+      if (parsed[m].error || parsed[m].id === null || parsed[m].id === undefined) ok = false;
+    }
+    return ok ? "0" : "1";
+  } catch (e) {
+    return "1";
+  }
+}

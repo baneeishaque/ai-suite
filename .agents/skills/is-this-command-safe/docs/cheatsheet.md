@@ -391,6 +391,22 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 
 ***
 
+***
+
+## Container Inspection
+
+### `docker ps`
+
+- **Verdict**: ✅ SAFE — Lists running Docker containers (IDs/names/status/ports/images).
+  Read-only metadata query; no container is started/stopped/modified.
+- **Auto-approve pattern**: `docker ps*` only.
+- **MUTATES**: `docker run`, `docker rm`, `docker start/stop/restart`, `docker exec`,
+  `docker pause/unpause`, `docker kill`, `docker pause`, `docker network create/rm`,
+  `docker volume create/rm`, `docker image rm`, `docker compose up/down/restart` — never a
+  bare `docker *` catch-all.
+
+***
+
 ## Linters & Analysis Tools
 
 ### `markdownlint-cli2`

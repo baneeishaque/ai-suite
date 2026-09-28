@@ -2,7 +2,7 @@
 
 Session: `ses_fcdce5e0fffe6NwqmmaY0Db0hd`
 Created: 2026-08-24
-Updated: 2026-08-27 — plan v22 (IST all times + whole-project + mise 2026.8.14 + canary slim)
+Updated: 2026-08-27 — plan v23 (diagnose 33044245135 -> Jira AES-1240/1241/1242 -> PR 715 -> merge 5cee66c2 -> canary 33051086450 5/8)
 
 - [x] [2026-08-24 11:50] Create planning artifacts (task.md, implementation-plan v1) [2026-08-24 11:50]
 - [x] [2026-08-24 11:55] Create helper script resolve-docs-path.py for docs nested layout [2026-08-24 11:55]
@@ -55,6 +55,18 @@ Updated: 2026-08-27 — plan v22 (IST all times + whole-project + mise 2026.8.14
 - [x] [2026-08-27 11:00] Update plan to v20 — canary pinned ubuntu 26 amd64/arm64 (slim 24), windows/mac arm64 & slim, wrapper + standalone verify script + max artifacts (90d), staged vs whole lint (industry both), mise wrapper vs direct verdict with 4 links [2026-08-27 11:02]
 - [x] [2026-08-27 11:30] Update plan to v21 — canary corrected ubuntu 26 amd64/arm64 (removed macos-14, slim 24), IST (Asia/Kolkata), whole-project only, latest mise 2026.8.14 pinned, standalone verify script, max artifacts (90d), mise links verdict [2026-08-27 11:32]
 - [x] [2026-08-27 11:45] Update plan to v22 — all times IST (including workflow comments, Issue & Jira History), whole-project only, latest mise 2026.8.14, canary slim/arm + standalone + max retention (90d) [2026-08-27 11:47]
+- [x] [2026-08-27 12:55] Diagnose GH run 33044245135 (lint.yml failure: --output vs >, sarif unknown, wrong json path, Node 20 warn) [2026-08-27 12:55]
+- [x] [2026-08-27 13:00] Create Jira AES-1240 Epic + AES-1241 Story + AES-1242 Subtask (key decides branch main_aes-XXXX, Relates AES-1240, relates AES-51) [2026-08-27 13:00]
+- [x] [2026-08-27 13:05] Branch main_aes-1242 from origin/main 701a6952, cherry-pick bbfb2715 (219f39ba), fix SARIF/json (redirect, rm -f, upload-sarif@v4, 1646w+0e on main) + verify 1646 [2026-08-27 13:08]
+- [x] [2026-08-27 13:08] Committed fix(ci): gate SARIF on oxlint 1.16 and freeze 1646 on main 73b09fdb (4 files) — 219f39ba + 73b09fdb ahead of origin/main [2026-08-27 13:08]
+- [x] [2026-08-27 13:08] Push main_aes-1242 -> origin, gh pr create 715 AES-1242: Lint Canary -- runner matrix (Closes AES-1242, GH permalink, Jira Relates, History IST) [2026-08-27 13:08]
+- [x] [2026-08-27 13:08] GH Lint green both: push 33050564472 2m6s + PR 33050588128 2m5s SUCCESS (SARIF gated, verify 1646) [2026-08-27 13:08]
+- [x] [2026-08-27 13:42] Squash merge PR 715 -> main 5cee66c2 (2026-08-27T07:42:41Z), fetch origin/main 701a6952..5cee66c2 [2026-08-27 13:42]
+- [x] [2026-08-27 13:42] Main push green: Lint 33050866734 2m13s + Deploy 33050866758 2m18s SUCCESS [2026-08-27 13:45]
+- [x] [2026-08-27 13:45] Dispatch lint-canary on main 33051086450 workflow_dispatch -- overall SUCCESS 5/8 green (ubuntu 26/26-arm/24-slim/macos-15/slim) + 3 windows FAIL at mise setup (windows not supported) [2026-08-27 13:45]
+- [x] [2026-08-27 13:45] AES-1242 In Progress -> Done + final comment with SHAs/runs/canary 5/8 [2026-08-27 13:45]
+- [x] [2026-08-27 13:47] Patch review/main_aes-1144 bbfb2715 (keep 1394) with same SARIF/json fixes ae4ee76b (2 files) -> push bbfb2715..ae4ee76b [2026-08-27 13:47]
+- [x] [2026-08-27 13:50] Update plan to v23 -- Diagnose -> Jira -> fix & verify -> PR 715 -> merge 5cee66c2 -> canary 33051086450 5/8 (windows mise to be fixed) -- via verbatim-superset build + task sync [2026-08-27 13:50]
 - [ ] **GATE: oxlint vs Biome** — awaiting explicit `no more activities for oxlint vs Biome` [2026-08-25 00:00]
 - [ ] Parity Step 4 (prettier vs Biome): list-different ran prematurely (1742 files, parked/unscored) — reopen after oxlint gate closes [2026-08-25 00:00]
 - [ ] Parity Steps 5–8c: eslint(type-aware) / dprint / standard+ts-standard / tsc dual-run / deno(brew) / bun(brew) — each gated [2026-08-25 00:00]

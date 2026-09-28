@@ -1,0 +1,30 @@
+---
+user:
+  text: 'Is this causing delays in my response times or does it affect my application performance? I don''t want to add any more delays to the client request. '
+  time: 7/26/2026, 6:27:15.003 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-3
+    thinking: |-
+      The user is asking about performance impact of the exception handler. Let me analyze:
+
+      1. The exception handler only runs when an EXCEPTION occurs - not on every request
+      2. It's a simple function that wraps the response data - minimal overhead
+      3. The logging is asynchronous (just logger.error call)
+      4. No additional database queries, network calls, or heavy processing
+
+      The performance impact is negligible - it only adds microseconds when an error actually occurs. On successful requests, the DRF exception handler is never even called.
+    thinking_duration: 1.472s
+    thinking_duration_ms: 1472
+    time: 7/26/2026, 6:27:15.088 AM GMT+5:30
+    response: |-
+      **No measurable impact on successful requests.** The handler only executes when an **exception actually occurs** — it's not in the normal request path.
+
+      On error responses, it adds ~microseconds (simple dict restructuring + logging). No DB queries, no network calls, no blocking I/O.
+
+      If you're concerned about the `logger.error` call, it's non-blocking — Python's logging is async by default unless you've configured a synchronous handler.
+    duration: 6.942s
+    duration_ms: 6942
+

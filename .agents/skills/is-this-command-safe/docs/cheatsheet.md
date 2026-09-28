@@ -412,6 +412,26 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   `* | *` guard to win in last-match-wins.
 - **Suggested regex**: `/^acli jira workitem (list|view|search)( .*)?$/`
 
+### `acli jira auth status`
+
+- **Verdict**: ✅ SAFE (all forms) — Atlassian CLI (Jira) auth state query.
+  Prints `✓ Authenticated`, `Site:`, `Email:`, `Authentication Type:`.
+  Read-only GET; no local file or remote Jira mutation.
+- **Why all forms are safe**: the leaf accepts **no flags except `-h`/`--help`**
+  (verified: `acli jira auth status --help` lists only `-h`). There is no
+  `--show-token` / `-t` equivalent, so unlike [`gh auth status`](#gh-auth-status)
+  there is no credential-leak flag to exclude.
+- **MUTATES siblings**: `acli jira auth login` (writes credentials),
+  `logout` (clears them), `switch` (changes the active account). These mutate
+  local credential state — scope auto-approve to the `status` leaf only, never
+  `acli jira auth *`.
+- **Redaction caveat**: output contains Tier A/B identifiers (site host and
+  account email). Per [Redaction & Portability](../../redaction-portability/SKILL.md),
+  redact before pasting into committed artifacts or session exports.
+- **Auto-approve pattern**: `acli jira auth status` (bare) or
+  `acli jira auth status *` to admit `--help`.
+- **Suggested regex**: `/^acli jira auth status( --?h(elp)?)?$/`
+
 ***
 
 ## Container Inspection

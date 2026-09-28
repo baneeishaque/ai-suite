@@ -6,7 +6,7 @@ via the `acli` CLI.
 ## Quick Reference
 
 - **Skill SSOT:** [SKILL.md](./SKILL.md)
-- **Scripts:** (none yet)
+- **Scripts:** `scripts/discover-select-options.py` (JQL-probe a single-select custom field's valid option values)
 
 ## When to Apply
 
@@ -15,6 +15,7 @@ Use this skill when:
 - Commenting GitHub PR URLs on Jira tickets
 - Automating repetitive Jira operations via `acli`
 - Standardizing Jira ticket descriptions across a project
+- Querying by, or discovering options of, a custom field (e.g. "Release Status")
 
 ## Key Standards
 

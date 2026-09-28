@@ -23,3 +23,4 @@ Use this skill when:
 - Always comment PR URLs on corresponding Jira tickets for traceability
 - Authentication must be verified before any operation
 - Description templates use Atlassian Wiki Format (h2., h3., [Link|URL])
+- **Custom fields:** `search` never returns them — fetch with `view --fields '*all'` (see SKILL.md §2.2.4a JQL and `--fields` Pitfalls). Never quote a spaced field name in `--fields` (acli strips the space → "field 'X' is not allowed"). Pass JQL as a single argv token, never a shell string.

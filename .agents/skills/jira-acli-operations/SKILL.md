@@ -145,7 +145,7 @@ acli jira workitem view AES-940
 # Custom fields
 acli jira workitem view AES-940 --fields summary,comment,description
 
-# All fields
+# All fields  (the ONLY --fields value that returns custom fields; see §2.2.4a)
 acli jira workitem view AES-940 --fields '*all'
 
 # Exclude a field
@@ -171,6 +171,8 @@ acli jira workitem search --jql "project = AES" --paginate
 acli jira workitem search --jql "project = AES" --count
 
 # With custom fields
+# NOTE: `search` never returns custom fields (see §2.2.4a). For a custom field
+# value, search by key/summary first, then `view --fields '*all'` per item.
 acli jira workitem search --jql "project = AES" --fields "key,summary,assignee"
 
 # By filter ID
@@ -186,6 +188,62 @@ acli jira workitem search --jql "project = AES" --csv
 # Limit results
 acli jira workitem search --jql "project = AES" --limit 50
 ```
+
+### 2.2.4a JQL and `--fields` Pitfalls (read before any custom-field query)
+
+These are the failure modes that silently produce **empty or wrong** results
+(and that this skill's examples do not otherwise warn about):
+
+1. **`--fields` with a space-containing name is rejected, and the error is
+   misleading.** `acli` strips the space and the parser then complains about a
+   field *name* that does not exist:
+   ```bash
+   acli jira workitem search --jql "project = AES" --fields "Release Status"
+   # ✗ Error: field 'ReleaseStatus' is not allowed
+   ```
+   **Fix:** never pass a spaced field name to `--fields`. Use `'*all'`
+   (see §2.2.3) and read the field out of the returned JSON.
+
+2. **`search` NEVER returns custom fields, even with `--fields '*all'`.** A
+   field like `Release Status` (customfield_10252) is present on the issue but
+   absent from `search` output. Filtering by its value in Python over `search`
+   results therefore matches **zero** items. You must fetch each item with
+   `view --fields '*all'` to see custom fields.
+
+3. **`*all` is the only `--fields` value that returns custom fields.** Plain
+   field lists (even `'*all'` minus one) can omit them; when you need a custom
+   field, always use `'*all'`.
+
+4. **JQL field names with spaces must be double-quoted; values containing
+   reserved words must be quoted too.** `status`, `not`, `and`, `or`, `for`,
+   `in` are reserved. Wrong quoting yields cryptic errors such as
+   *"expecting operator but got 'status'"* or *"the character 'for' is a
+   reserved jql word"*.
+   ```bash
+   # correct:
+   acli jira workitem search --jql '"Release Status" = "Ready for release"'
+   # also works (field name without spaces):
+   acli jira workitem search --jql 'Release Status = "Ready for release"'
+   ```
+
+5. **Never interpolate JQL into a shell string.** A JQL literal that itself
+   contains quotes (e.g. `"Release Status" = "Ready for release"`) is mangled by
+   shell/`f-string` quote-nesting, and the resulting error blames the *JQL*,
+   not the quoting. Pass the JQL as a single argv element — i.e. call acli via
+   a subprocess argument list
+   (`["acli","jira","workitem","search","--jql", jql, "--json"]`), exactly as
+   `jira-workitem-hierarchy-report/scripts/jira-hierarchy-report.py` does.
+
+6. **`--count` emits a human preamble, not pure JSON.** Its stdout is
+   `Number of work items in the search: <n>` — parse from the tail, do not
+   `json.loads` it.
+
+7. **`acli jira field` cannot list a field's options** (only create/update/
+   delete). To discover the valid option strings of a single-select custom
+   field, use the helper script
+   `scripts/discover-select-options.py --field "Release Status"`, which probes
+   JQL (`IS NOT EMPTY`, `= '<guess>'`, `NOT IN (...)`) and reads the exact
+   option text from a `view --fields '*all'` of a straggler.
 
 ### 2.2.5 Edit (Update Fields)
 

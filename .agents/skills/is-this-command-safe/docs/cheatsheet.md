@@ -433,6 +433,7 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 | :--- | :--- |
 | `python3 .../find-entry.py --list` | ✅ SAFE (read-only) |
 | `python3 .../batch-coverage-check.py` | ✅ SAFE (read-only) |
+| `python3 .../run-brew-upgrade.py --yes --log brew.log --debug` | ✅ SAFE (discovery+assembly only; `--outfile` variant ❌) |
 | `python3 .../edit-entry.py --help` | ✅ SAFE (help flag only) |
 | `python3 .../edit-entry.py --add …` | ❌ MUTATES (writes settings.json) |
 | `python3 .../fix-indents.py` | ❌ MUTATES (rewrites settings.py) |
@@ -510,6 +511,31 @@ bare-prefix entry for these — only onboard specific anchored pipeline shapes.
 - **Verdict**: ✅ SAFE — Lists outdated formulae/casks. Read-only.
 - **Common flag**: `--greedy` includes casks with `auto_updates` or `version :latest`.
 - **Contrast**: `brew upgrade` (with or without `--greedy`) is ❌ MUTATES.
+
+### `run-brew-upgrade.py` (skill script)
+
+- **Verdict**: ⚠️ SAFE-WITH-QUALIFICATION — Brew upgrade **orchestrator**.
+- **Why safe**: DISCOVERY + ASSEMBLY only. Runs read-only brew queries
+  (`outdated --greedy`, `leaves --installed-on-request`, `list --cask/--formula`,
+  `info --json=v2`) via subprocess **list-args (no shell)**, then **prints** the
+  assembled `brew upgrade` command string. It never executes the upgrade itself —
+  executing the printed output is a separate bash command that re-enters the
+  permission system (`* ; *` / `* && *` / `* | *` ask-guards).
+- **Flag order is irrelevant**: `--yes --log brew.log --debug` and
+  `--log brew.log --yes --debug` are equivalent to the script — a pinned
+  exact-string pattern breaks on reordering. Prefer an order-independent
+  `run-brew-upgrade.py *` allow.
+- **THE exception — `--outfile <path>`**: `open(path, "w")` truncates and
+  overwrites **any user-owned file** (e.g. `--outfile ~/.zshrc` clobbers
+  `.zshrc`). Bypasses the `* > *` guard because the redirect happens inside the
+  script. When auto-approving, ALWAYS pair the allow with a trailing ask-guard:
+  `run-brew-upgrade.py * --outfile *` → ask (placed AFTER the allow so
+  last-match-wins catches `--outfile` at any flag position).
+- **Auto-approve pattern** (opencode):
+  `python3 *.agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py *`
+  + `python3 *.agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py * --outfile *` → ask.
+- **Suggested regex**: `/^python3 .*run-brew-upgrade\.py( .*)?$/` with a separate
+  `/^python3 .*run-brew-upgrade\.py .*--outfile .*$/` → manual-approval entry.
 
 ***
 

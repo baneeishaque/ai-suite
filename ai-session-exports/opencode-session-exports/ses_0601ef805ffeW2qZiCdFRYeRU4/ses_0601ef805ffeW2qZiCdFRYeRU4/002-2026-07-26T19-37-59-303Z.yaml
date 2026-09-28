@@ -1,0 +1,58 @@
+---
+user:
+  text: /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0647386a9ffecZXd3ldmFH7IkK/ses_0647386a9ffecZXd3ldmFH7IkK.jsonl message?
+  time: 7/27/2026, 1:06:34.072 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants me to look at the first line of another JSONL session export file to find the user message.
+    thinking_duration: 396ms
+    thinking_duration_ms: 396
+    tool_calls:
+      - tool: bash
+        args:
+          command: head -1 /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0647386a9ffecZXd3ldmFH7IkK/ses_0647386a9ffecZXd3ldmFH7IkK.jsonl | python3 -c "import sys,json; d=json.loads(sys.stdin.read()); print(d.get('text',''))"
+        result: |+
+
+    time: 7/27/2026, 1:06:34.252 AM GMT+5:30
+    duration: 77.797s
+    duration_ms: 77797
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The first line didn't have a user message. Let me search for the first user message in the file.
+    thinking_duration: 537ms
+    thinking_duration_ms: 537
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 -c "
+            import json
+            with open('/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0647386a9ffecZXd3ldmFH7IkK/ses_0647386a9ffecZXd3ldmFH7IkK.jsonl') as f:
+                for line in f:
+                    d = json.loads(line)
+                    if d.get('role') == 'user' and d.get('text','').strip():
+                        print(d['text'][:1000])
+                        break
+            "
+        result: |
+          What is 7 * 7
+    time: 7/27/2026, 1:07:52.153 AM GMT+5:30
+    duration: 4.870s
+    duration_ms: 4870
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user message is "What is 7 * 7".
+    thinking_duration: 183ms
+    thinking_duration_ms: 183
+    time: 7/27/2026, 1:07:57.119 AM GMT+5:30
+    response: '"What is 7 * 7"'
+    duration: 2.064s
+    duration_ms: 2064
+

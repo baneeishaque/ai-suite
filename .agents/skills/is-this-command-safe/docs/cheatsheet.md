@@ -391,6 +391,27 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 
 ***
 
+## API & DevOps CLIs
+
+### `acli`
+
+- **Verdict**: ✅ SAFE (read-only subcommands only) — Atlassian CLI (Jira).
+  `acli jira workitem list` performs a read-only Jira REST API query (GET
+  search endpoint) listing work items. No local filesystem mutation.
+- **Common flags**: `--max <n>` (limit), `--fields <list>` (field selection),
+  `--jql "<query>"` (filter), `--json` / `--csv` (output format), `--paginate`.
+  All read-only.
+- **Other read-only forms**: `acli jira workitem view <key>` (single item GET),
+  `acli jira workitem search --jql "<query>"` (JQL query, GET). Piping search
+  output to `| head` is harmless.
+- **MUTATES**: `workitem create/edit/transition/assign/clone/archive/delete`,
+  `comment create`, `field create` — these change remote Jira state.
+- **Auto-approve pattern**: subcommand-scoped
+  `acli jira workitem list *` / `view *` / `search *` only; never a bare
+  `acli *` catch-all. The `search * | head *` form must sit AFTER the
+  `* | *` guard to win in last-match-wins.
+- **Suggested regex**: `/^acli jira workitem (list|view|search)( .*)?$/`
+
 ***
 
 ## Container Inspection

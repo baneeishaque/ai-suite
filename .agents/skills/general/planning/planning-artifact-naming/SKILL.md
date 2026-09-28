@@ -77,6 +77,9 @@ as a session ID:
 
 The full 26+ character ID MUST be used — NOT a truncated form.
 
+Artifacts carrying AI-agent session IDs (any assistant or tool) are local-only; never commit them.
+Committed documents MUST NOT reference them — explain the relevant context self-containedly (see skill-factory §2.2).
+
 ***
 
 ## 2. Artifact Types

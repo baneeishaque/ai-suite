@@ -215,6 +215,11 @@ When the user requests a durable behavior change, record it here or in the relev
 - Skill installs: place third-party / global skills in the cross-client `~/.agents/skills/<name>/SKILL.md` location (agentskills.io convention), not `~/.config/opencode/skills/`.
 - Scratch/intermediate files: never write them to temp folders (`/tmp`, `/var/folders/…`, etc.). Resolve every path via the `scratch-artifact-naming` skill script (session-scoped `<repo>/scratch/<session-id>/`) and capture command output via `repo-scratch-output-capture`; then deliberately decide each file's placement and filename — deliverables get a chosen user-facing location with a descriptive kebab-case name.
 
+- Public documents: tracked/committed files MUST NOT contain AI-agent session IDs (any assistant or
+  tool) or references to local-only artifacts (gitignored `docs/`, `scratch/`); replace such references
+  with self-contained explanations or links to public repository content. Local-only files MAY keep
+  session IDs for traceability.
+
 ## Child DOX Index
 
 - [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source

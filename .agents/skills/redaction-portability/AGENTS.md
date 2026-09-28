@@ -7,3 +7,4 @@ Refer to [SKILL.md](./SKILL.md) for the active operational protocol regarding pa
 - **Absolute Redaction**: Zero absolute `file:///` paths in finalized work.
 - **Contextual Hosting**: Docs stay with the component (e.g., `ai-agent-rules/docs/` for rule-related logs).
 - **Redaction-by-Default**: Use `[REDACTED]` for all biological/system prefixes.
+- **Session-ID Ban**: No AI-agent session IDs (any assistant or tool) in committed or published artifacts.

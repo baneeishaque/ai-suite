@@ -31,7 +31,7 @@ It exists because:
 1. AI-agent sessions naturally capture **machine-specific, identity-bearing,
    and organization-specific** strings (paths, usernames, proxy hosts,
    internal repository URLs, vendor product codenames, license keys,
-   email addresses, ticket IDs).
+   email addresses, ticket IDs, AI-agent session IDs).
 2. Those strings have a strong bias toward leaking into committed
    artifacts because agents are trained to be *faithful* to the
    transcript — fidelity is a virtue inside the working session but a
@@ -457,6 +457,7 @@ needs a per-machine substitution).
 | `<user>` | OS username on a specific machine |
 | `<author-email>` | Email of a commit author |
 | `<reviewer>` | Reviewer of a PR / commit |
+| `<session-id>` | An AI-agent session identifier (machine-local; never include in published artifacts) |
 | `[REDACTED_NAME]` | Legacy form, kept for backwards compatibility — prefer `<author>` |
 | `[REDACTED]` | Generic redaction, last resort when no specific placeholder fits |
 

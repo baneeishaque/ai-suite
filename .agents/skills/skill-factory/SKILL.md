@@ -105,6 +105,10 @@ The `SKILL.md` MUST include:
 5. **Traceability Section**: Links to permanent conversation logs. All such logs MUST be sanitised through the
    **[Redaction & Portability Skill](../redaction-portability/SKILL.md)** before being committed — see §3 of this
    document for the mandatory audit checklist.
+   AI-agent session identifiers are machine-local and MUST NOT appear in committed artifacts — reference the
+   session by date and topic. References to local-only planning documents (gitignored `docs/`) MUST NOT
+   appear in committed artifacts either — replace them with self-contained explanations or links to
+   public repository content.
 6. **Separate-File Convention (MANDATORY)**: the `Traceability` section — like `Changelog` — is information,
    not instructions, and MUST be authored directly in a sibling `TRACEABILITY.md` (respectively `CHANGELOG.md`)
    companion file, with `SKILL.md` carrying only the pointer section (`## Traceability` → `See

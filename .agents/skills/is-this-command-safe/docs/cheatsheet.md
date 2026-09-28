@@ -64,6 +64,19 @@ Verdict key: ✅ SAFE · 🟡 SAFE-IF-PIPED · ⚠️ HAS-DESTRUCTIVE-FLAGS · �
 
 ## File Search & Metadata
 
+### `file`
+
+- **Verdict**: ✅ SAFE — Read-only file-type classifier (file(1)). Reads magic
+  bytes / header, prints the type. No writes, no content dump.
+- **EXCLUDE**: `file -C` (compiles a magic file, writes `magic.mgc` → MUTATES).
+  `file -` reads stdin; `file <fifo>` can block — hangs, not damage.
+- **Auto-approve pattern** (opencode / kilo, case-sensitive `*` glob):
+  `"file *": "allow"` + `"file *-C*": "ask"` — mirror `awk`'s allow+guard pair.
+- **Gemini**: `commandRegex = '^file (?!-C)'` allow 100; add `file ` to the
+  chain-guard family.
+- **Claude**: allow `Bash(file *)`; ask `Bash(file *-C*)` (guard after allow).
+- **Copilot**: `/^file (?!-C)( .*)?$/` approve, `matchCommandLine: true`.
+
 ### `find`
 
 - **Verdict**: 🟡 SAFE-IF-PIPED

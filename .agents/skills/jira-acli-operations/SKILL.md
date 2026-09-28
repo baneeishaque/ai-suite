@@ -31,10 +31,13 @@ sprints, filters, and dashboards.
 Verify authentication before any operation:
 
 ```bash
-acli jira workitem list --max 1
+acli jira auth status
 ```
 
-Expected output: `Authenticated site: <org>.atlassian.net`
+Expected output: `✓ Authenticated` with the site name.
+
+> **Note:** `acli jira workitem list --max 1` does NOT exist in current acli
+> versions — the auth check above is the reliable form.
 
 If not authenticated, follow the [auth login](#221-login) procedure.
 

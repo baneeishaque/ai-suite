@@ -1,0 +1,215 @@
+Thoroughness: very thorough
+
+Search the skill library at /Users/dk/lab-data/ai-suite/.agents/skills/ for any skills related to Vite, CRA migration, webpack-to-vite, or build-tool migration. Also search the project at /Users/dk/lab-data/oleovista-acers/acers-web for any existing Vite-related config or documentation.
+
+Also search the web for current best practices (2025-2026) for migrating from Create React App (CRA / react-scripts 5) to Vite, specifically covering:
+- Recommended Vite plugins for CRA parity
+- Handling CRA-specific features like %PUBLIC_URL%, process.env.REACT_APP_*, CSS modules, SCSS, SVG imports, and service workers
+- Common pitfalls and their solutions
+- Migration strategies (gradual via react-app-rewired vs full cutover)
+
+Return a structured summary of findings organized by topic.
+5:13 PM
+Thought: 898ms
+The user wants me to do three things:
+
+1. Search the skill library for skills related to Vite, CRA migration, webpack-to-vite, or build-tool migration
+2. Search the project at /Users/dk/lab-data/oleovista-acers/acers-web for Vite-related config or documentation
+3. Search the web for current best practices for migrating from CRA to Vite
+
+Let me start all three searches in parallel where possible.
+│Explore Task — Search skill library for Vite/CRA
+◈Exa Web Search "migrate Create React App CRA react-scripts 5 to Vite 2025 2026 best practices guide"
+ctrl+x down view subagents
+Thought: 525ms
+Let me now search the skill library directly for Vite/CRA-related skills, as the subagent was depth-limited.
+✱Grep "(?i)(vite|create-react-app|react-scripts|webpack.to.vite|build.tool.migration)" in .agents/skills (12 matches)
+✱Glob "**/*vite*" in .agents/skills
+✱Glob "**/*vite*" in ~/lab-data/oleovista-acers/acers-web (3 matches)
+✱Glob "**/vite.config.*" in ~/lab-data/oleovista-acers/acers-web (1 match)
+Thought: 661ms
+Excellent! The acers-web project already has Vite config and a migration plan document. Let me read those files, and also check the package.json to see its current state, and read the CRA-related skill files.
+→Read ~/lab-data/oleovista-acers/acers-web/vite.config.ts
+→Read ~/lab-data/oleovista-acers/acers-web/src/vite-env.d.ts
+→Read ~/lab-data/oleovista-acers/acers-web/docs/cra-to-vite-migration-plan.md
+→Read ~/lab-data/oleovista-acers/acers-web/package.json
+→Read .agents/skills/cra-reset-mocks-test-strategy/SKILL.md
+↳ Loaded .agents/skills/cra-reset-mocks-test-strategy/AGENTS.md
+Thought: 910ms
+Now let me also check if the acers-web project has already been fully migrated (since the package.json shows Vite scripts and vite.config.ts exists). Let me also check for any existing index.html at root level, and check for remaining CRA artifacts.
+✱Glob "**/index.html" in ~/lab-data/oleovista-acers/acers-web (2 matches)
+✱Glob "**/.env*" in ~/lab-data/oleovista-acers/acers-web (1 match)
+✱Grep "(?i)(REACT_APP|react-scripts|serviceWorker)" in ~/lab-data/oleovista-acers/acers-web (25 matches)
+✱Glob "**/vitest*" in ~/lab-data/oleovista-acers/acers-web
+→Read ~/lab-data/oleovista-acers/acers-web
+Thought: 518ms
+Let me also check the root-level index.html and the remaining CRA-related files to see the migration state.
+→Read ~/lab-data/oleovista-acers/acers-web/index.html
+→Read ~/lab-data/oleovista-acers/acers-web/public/index.html
+→Read ~/lab-data/oleovista-acers/acers-web/tsconfig.json
+→Read ~/lab-data/oleovista-acers/acers-web/.env
+Thought: 559ms
+Now I have a comprehensive picture. Let me also check if the unused-dependencies-audit skill or any others have relevant Vite mentions.
+→Read .agents/skills/unused-dependencies-audit/SKILL.md [offset=135, limit=25]
+↳ Loaded .agents/skills/unused-dependencies-audit/AGENTS.md
+→Read ~/lab-data/oleovista-acers/acers-web/src/index.tsx
+Thought: 3.9s
+Now I have a comprehensive picture. Let me compile the structured summary.
+
+The key findings are:
+
+Skill Library: No dedicated Vite/CRA migration skill exists. The closest skills are:
+- cra-reset-mocks-test-strategy - about Jest mock survival under CRA's resetMocks:true
+- unused-dependencies-audit - mentions Vite plugins as a false-positive pattern
+- github-workflow-creation - mentions react-scripts CI behavior
+- mrt-component-test-strategy - references react-scripts for testing
+
+Acers-web project state: The project is in a PARTIAL migration state:
+- Already has vite.config.ts with full configuration
+- Already has root index.html with Vite-style script tag
+- Already has src/vite-env.d.ts
+- Scripts in package.json already use Vite commands
+- @vitejs/plugin-react and @tailwindcss/vite are installed as devDependencies
+- tsconfig.json already has "moduleResolution": "bundler"
+- However:
+  - react-scripts is still in dependencies (not yet uninstalled)
+  - process.env.REACT_APP_BACKEND_URL still used in 7 places across 4 files
+  - .env file still uses REACT_APP_ prefix
+  - public/index.html (CRA original) still exists alongside root index.html
+  - No vitest config yet
+  - @types/jest, @testing-library/* still in dependencies (may be needed)
+  - Has a detailed migration plan document at docs/cra-to-vite-migration-plan.md
+  - sass-loader still in dependencies (not needed by Vite)
+  - @types/webpack-env still in dependencies (not needed by Vite)
+
+So the project has a solid migration plan and has partially executed it, but hasn't completed the migration.
+Here is my comprehensive structured summary of findings.
+1. Skill Library Search Results
+No Dedicated Vite/CRA Migration Skill Exists
+The skill library at /Users/dk/lab-data/ai-suite/.agents/skills/ does not contain a dedicated skill for Vite, CRA-to-Vite migration, webpack-to-Vite, or build-tool migration. No file path matches *vite*.
+Related Skills (Tangential)
+Skill	File
+cra-reset-mocks-test-strategy	/Users/dk/lab-data/ai-suite/.agents/skills/cra-reset-mocks-test-strategy/SKILL.md
+unused-dependencies-audit	/Users/dk/lab-data/ai-suite/.agents/skills/unused-dependencies-audit/SKILL.md
+mrt-component-test-strategy	/Users/dk/lab-data/ai-suite/.agents/skills/mrt-component-test-strategy/SKILL.md
+github-workflow-creation	/Users/dk/lab-data/ai-suite/.agents/skills/github-workflow-creation/SKILL.md
+Verdict: The skill library has no direct coverage of Vite migration. A new skill would need to be created to formalize this workflow.
+2. Acers-Web Project Migration State
+Path: /Users/dk/lab-data/oleovista-acers/acers-web
+Status: PARTIAL MIGRATION (Vite config in place, CRA remnants remain)
+What Has Been Migrated (Done)
+Artifact	File
+Vite config	/Users/dk/lab-data/oleovista-acers/acers-web/vite.config.ts
+Root index.html	/Users/dk/lab-data/oleovista-acers/acers-web/index.html
+Vite env types	/Users/dk/lab-data/oleovista-acers/acers-web/src/vite-env.d.ts
+package.json scripts	package.json
+Vite devDependencies	package.json
+tsconfig.json	tsconfig.json
+Migration plan document	docs/cra-to-vite-migration-plan.md
+What Still Needs Completing (Remaining Work)
+Issue	Details
+react-scripts still in dependencies	"react-scripts": "5.0.1" at line 113 of package.json
+process.env.REACT_APP_BACKEND_URL still in source	7 occurrences across 4 files — must be converted to import.meta.env.VITE_BACKEND_URL
+.env still uses REACT_APP_ prefix	REACT_APP_BACKEND_URL=http://localhost:8000 must become VITE_BACKEND_URL=http://localhost:8000
+public/index.html (CRA original) still exists	Dual index.html files — the public/ one contains %PUBLIC_URL% and should be removed
+sass-loader still in dependencies	Not needed by Vite (Vite uses sass directly) — "sass-loader": "13.3.3"
+@types/webpack-env still in dependencies	CRA artifact — "@types/webpack-env": "1.18.8"
+No vitest config	No vitest.config.ts found — tests still point at CRA Jest
+@testing-library/* + @types/jest still in prod deps	These should be devDependencies or removed if switching to Vitest
+Service worker	CRA's manual SW registration in src/index.tsx (lines 23-33) with public/service-worker.js — Vite needs vite-plugin-pwa for build-time PWA features
+SCSS path prefixes may need cleanup	Migration plan notes ~ and /node_modules/ prefixes in SCSS @import statements
+3. Web Research: CRA-to-Vite Migration Best Practices (2025-2026)
+3.1 Why Migrate
+- CRA is officially deprecated (React team, Feb 2025). No security patches since 2023.
+- Performance gains: Cold dev server: 30-60s CRA vs 2-5s Vite. HMR: 1-3s vs <100ms.
+- Build times: 2-5x faster with Vite (esbuild dev + Rollup prod).
+- Smaller bundle sizes due to better tree-shaking from Rollup.
+3.2 Recommended Vite Plugins for CRA Parity
+Plugin	Purpose
+@vitejs/plugin-react	JSX transform, React Fast Refresh (HMR), Babel integration
+vite-tsconfig-paths	Reads tsconfig.json paths aliases automatically
+vite-plugin-svgr	SVG imports as React components (?react suffix)
+vite-plugin-pwa	Service worker + PWA (replaces CRA's workbox integration)
+@vitejs/plugin-legacy	Legacy browser support via @babel/preset-env + Terser
+vite-plugin-checker	TypeScript type checking in dev (Vite doesn't type-check by default)
+vite-plugin-html	HTML template injection for %PUBLIC_URL%-like patterns
+3.3 Handling CRA-Specific Features
+%PUBLIC_URL% in HTML
+- Action: Remove entirely. Vite resolves public/ assets from root / automatically.
+- Replace %PUBLIC_URL%/favicon.ico with /favicon.ico.
+process.env.REACT_APP_* Environment Variables
+- Action: Rename prefix REACT_APP_ to VITE_.
+- Change access pattern from process.env.REACT_APP_X to import.meta.env.VITE_X.
+- Add src/vite-env.d.ts with /// <reference types="vite/client" />.
+- For TypeScript, define ImportMetaEnv interface with typed env vars.
+CSS Modules
+- Action: No changes needed. Vite supports CSS Modules natively (.module.css / .module.scss).
+SCSS/SASS
+- Action: Install sass as a dev dependency. Vite uses it directly.
+- Remove sass-loader (not needed).
+- Fix SCSS @import paths: remove ~ prefix and /node_modules/ prefix — Vite resolves bare package names natively.
+SVG Imports as React Components
+- Action: Install vite-plugin-svgr and add to config.
+- Change import syntax from import { ReactComponent as Logo } from './logo.svg' to import Logo from './logo.svg?react'.
+Service Workers / PWA
+- Action: Manual SW registration in public/service-worker.js works as-is (files in public/ are served verbatim).
+- For build-time caching/workbox: install vite-plugin-pwa as replacement for CRA's workbox integration.
+homepage in package.json
+- Action: Vite uses base in vite.config.ts. Set base: '/your-base-path/' instead.
+Proxy Configuration
+- Action: Move from package.json "proxy" field to server.proxy in vite.config.ts.
+require() Calls
+- Action: Convert to ES import statements. Vite runs in ESM mode; require() is not available in the browser.
+3.4 Common Pitfalls and Solutions
+Pitfall
+Blank page after migration
+process.env is not defined
+require is not defined
+Absolute imports broken
+SVG components broken
+Jest tests fail
+TypeScript not type-checking
+Dynamic import() not working
+Large dependency bundle
+3.5 Migration Strategies
+Full Cutover (Recommended)
+ 1. Create backup branch
+ 2. Uninstall react-scripts, install vite + @vitejs/plugin-react
+ 3. Create vite.config.ts
+ 4. Move public/index.html to root, remove %PUBLIC_URL%, add script tag
+ 5. Update env vars (REACT_APP_ -> VITE_, process.env -> import.meta.env)
+ 6. Update tsconfig.json (moduleResolution: "bundler")
+ 7. Update SVG imports
+ 8. Update package.json scripts
+ 9. Remove CRA-only deps (react-scripts, sass-loader, @types/webpack-env, @testing-library/* if moving to Vitest)
+10. Set up Vitest (or configure Jest standalone)
+11. Test thoroughly
+Time estimate: 30-90 minutes for most projects.
+Gradual (react-app-rewired / craco)
+- Not recommended. Vite and react-scripts cannot coexist. The migration is all-or-nothing at the build-tool level.
+- Some teams do a multi-branch approach: migrate on a branch, QA in parallel, then switch.
+Fresh Scaffold + Copy Source
+- An alternative strategy: scaffold a new Vite project, then copy src/ and public/ over.
+- Cleaner but more work if there are build config customizations.
+3.6 Testing Migration (Jest -> Vitest)
+Vitest is the recommended path because it shares Vite's config, has instant startup, and a Jest-compatible API.
+Key changes:
+- jest.fn() -> vi.fn()
+- jest.mock() -> vi.mock()
+- jest.spyOn() -> vi.spyOn()
+- beforeEach/describe/it/expect all work identically
+- Add test: { globals: true, environment: 'jsdom', setupFiles: './src/setupTests.ts' } to vite.config.ts or create vitest.config.ts
+3.7 Key Reference Links
+- React blog: Sunsetting Create React App (https://react.dev/blog/2025/02/14/sunsetting-create-react-app) (Feb 2025)
+- Vite official: CRA Migration Guide (https://vite.dev/guide/migration.html#from-create-react-app)
+- MigFlow playbook: CRA-to-Vite (https://migflow.dev/playbooks/cra-to-vite)
+- PkgPulse guide: How to Migrate from CRA to Vite 2026 (https://www.pkgpulse.com/guides/how-to-migrate-create-react-app-to-vite)
+4. Summary for Acers-Web
+The acers-web project at /Users/dk/lab-data/oleovista-acers/acers-web is well into its Vite migration but not yet complete. The structural foundation is solid (vite.config.ts, root index.html, updated tsconfig, updated scripts, Vite devDependencies installed). The remaining work is largely mechanical:
+1. Uninstall react-scripts, sass-loader, @types/webpack-env
+2. Replace REACT_APP_BACKEND_URL -> VITE_BACKEND_URL in .env and across 7 source code occurrences
+3. Delete the stale public/index.html
+4. Decide on testing (configure Vitest or keep Jest), and install/move test deps to devDependencies
+5. Optionally configure vite-plugin-pwa for PWA/Service Worker parity
+The existing docs/cra-to-vite-migration-plan.md document provides an excellent, detailed roadmap to complete these steps.
+▣  Explore · DeepSeek V4 Flash Free · 1m 4s

@@ -1,0 +1,143 @@
+{
+    "cloud": true,
+    "rules": [
+        {
+            "id": 3291048,
+            "clientKey": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "name": "When a work item is unassigned and transitioned to In Progress → transition back to To Do",
+            "state": "ENABLED",
+            "description": "Never have unassigned tickets in progress. When a work item is moved into In Progress, this rule will automatically check if the work item has an assignee, if none found the work item will be moved back to To Do.",
+            "authorAccountId": "557058:38820234-7cb2-4799-a242-d90b43affd35",
+            "actor": {
+                "type": "ACCOUNT_ID",
+                "value": "557058:f58131cb-b67d-43c7-b30d-6b58d40bd077"
+            },
+            "created": 1776063983372,
+            "updated": 1776063983372,
+            "trigger": {
+                "id": "ec14fd93-c8c3-4641-a5f1-23f5fe180fbb",
+                "parentId": null,
+                "conditionParentId": null,
+                "component": "TRIGGER",
+                "type": "jira.issue.event.trigger:transitioned",
+                "value": {
+                    "eventFilters": [
+                        "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                    ],
+                    "fromStatus": [
+                        {
+                            "type": "ID",
+                            "value": "10091"
+                        }
+                    ],
+                    "toStatus": [
+                        {
+                            "type": "ID",
+                            "value": "10174"
+                        }
+                    ],
+                    "eventKey": "jira:issue_updated",
+                    "issueEvent": "issue_generic"
+                },
+                "conditions": [],
+                "children": [],
+                "schemaVersion": -1,
+                "connectionId": null,
+                "checksum": null
+            },
+            "components": [
+                {
+                    "id": "60ece2ac-2134-4007-b51b-dbf7c0c1649f",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "CONDITION",
+                    "type": "jira.user.condition",
+                    "value": {
+                        "conditions": [
+                            {
+                                "field": "assignee",
+                                "check": "USER_IS",
+                                "criteria": []
+                            }
+                        ],
+                        "operator": "AND"
+                    },
+                    "conditions": [],
+                    "children": [],
+                    "schemaVersion": 6,
+                    "connectionId": null,
+                    "checksum": null
+                },
+                {
+                    "id": "bd8d4648-76fd-49b9-baf9-372453f4525f",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "ACTION",
+                    "type": "jira.issue.transition",
+                    "value": {
+                        "operations": [],
+                        "advancedFields": null,
+                        "sendNotifications": true,
+                        "destinationStatus": {
+                            "type": "NAME",
+                            "value": "To Do"
+                        },
+                        "transitionMatch": null
+                    },
+                    "conditions": [],
+                    "children": [],
+                    "schemaVersion": 11,
+                    "connectionId": null,
+                    "checksum": null
+                }
+            ],
+            "canOtherRuleTrigger": false,
+            "notifyOnError": "EVERYERROR",
+            "projects": [],
+            "labels": [],
+            "tags": [
+                {
+                    "id": 7273771,
+                    "ruleIdUuid": "019d85a9-af0c-798a-a0d2-9a0df4b06e45",
+                    "tagType": "TEMPLATE_ID",
+                    "tagValue": "software_template_17"
+                },
+                {
+                    "id": 7273770,
+                    "ruleIdUuid": "019d85a9-af0c-798a-a0d2-9a0df4b06e45",
+                    "tagType": "SAMPLE_RULE",
+                    "tagValue": "software"
+                },
+                {
+                    "id": 7273769,
+                    "ruleIdUuid": "019d85a9-af0c-798a-a0d2-9a0df4b06e45",
+                    "tagType": "CREATION_TYPE",
+                    "tagValue": "USER"
+                }
+            ],
+            "ruleScope": {
+                "resources": [
+                    "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                ]
+            },
+            "ruleHome": {
+                "ruleLifecycleHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                },
+                "ruleBillingHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                }
+            },
+            "writeAccessType": "OWNER_ONLY",
+            "collaborators": [],
+            "billingType": "NORMAL",
+            "idUuid": "019d85a9-af0c-798a-a0d2-9a0df4b06e45",
+            "partitionId": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "checksum": {
+                "version": 3,
+                "value": "d865d12590bfa75d0fff397678ffba04cb3ff73638e0a29db351846d8fabcda4"
+            },
+            "currentVersionId": null
+        }
+    ]
+}

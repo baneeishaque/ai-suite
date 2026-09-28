@@ -1,0 +1,108 @@
+{
+    "cloud": true,
+    "rules": [
+        {
+            "id": 3291195,
+            "clientKey": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "name": "Update Due Date (Date Field) When Due Time (Timestamp Field) Changes",
+            "state": "ENABLED",
+            "description": "When a timestamp field changes on an issue, extract the date portion and update another date field on the same issue accordingly.",
+            "authorAccountId": "557058:38820234-7cb2-4799-a242-d90b43affd35",
+            "actor": {
+                "type": "ACCOUNT_ID",
+                "value": "557058:f58131cb-b67d-43c7-b30d-6b58d40bd077"
+            },
+            "created": 1776066326610,
+            "updated": 1776066539070,
+            "trigger": {
+                "id": "3024bc85-c980-4af4-a1d0-2ae8f2d99bef",
+                "parentId": null,
+                "conditionParentId": null,
+                "component": "TRIGGER",
+                "type": "jira.issue.field.changed",
+                "value": {
+                    "eventFilters": [
+                        "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                    ],
+                    "changeType": "ANY_CHANGE",
+                    "fields": [
+                        {
+                            "value": "Due Time",
+                            "type": "fieldName"
+                        }
+                    ],
+                    "actions": []
+                },
+                "conditions": [],
+                "children": [],
+                "schemaVersion": 2,
+                "connectionId": null,
+                "checksum": null
+            },
+            "components": [
+                {
+                    "id": "57db4472-097d-4987-9c50-b1616a307eec",
+                    "parentId": null,
+                    "conditionParentId": null,
+                    "component": "ACTION",
+                    "type": "jira.issue.edit",
+                    "value": {
+                        "operations": [
+                            {
+                                "field": {
+                                    "type": "ID",
+                                    "value": "duedate"
+                                },
+                                "fieldType": "duedate",
+                                "type": "SET",
+                                "value": "{{issue.customfield_10110.jiraDate()}}"
+                            }
+                        ],
+                        "advancedFields": null,
+                        "sendNotifications": true
+                    },
+                    "conditions": [],
+                    "children": [],
+                    "schemaVersion": 12,
+                    "connectionId": null,
+                    "checksum": null
+                }
+            ],
+            "canOtherRuleTrigger": false,
+            "notifyOnError": "EVERYERROR",
+            "projects": [],
+            "labels": [],
+            "tags": [
+                {
+                    "id": 7274589,
+                    "ruleIdUuid": "019d85cd-7054-723b-a11c-570a436eb0e2",
+                    "tagType": "IS_RULE_UPDATED",
+                    "tagValue": "true"
+                }
+            ],
+            "ruleScope": {
+                "resources": [
+                    "ari:cloud:jira::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                ]
+            },
+            "ruleHome": {
+                "ruleLifecycleHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                },
+                "ruleBillingHome": {
+                    "locationARI": "ari:cloud:jira-software::site/3d40a742-c45c-41e8-b7f2-25494243d341"
+                }
+            },
+            "writeAccessType": "OWNER_ONLY",
+            "collaborators": [],
+            "billingType": "NORMAL",
+            "idUuid": "019d85cd-7054-723b-a11c-570a436eb0e2",
+            "partitionId": "412b1b33-2cd6-479d-98f1-d0a160d364bb",
+            "checksum": {
+                "version": 3,
+                "value": "9fa20f2c02585175693e5437818cb9ba01f214422ead1a5d4ebb487e68476022"
+            },
+            "currentVersionId": null
+        }
+    ]
+}

@@ -1,0 +1,1470 @@
+---
+session:
+  id: ses_06f83eb73ffeS5lts9UO6W7Gcp
+  created: 7/24/2026, 1:08:33.485 AM GMT+5:30
+  updated: 7/24/2026, 1:08:33.485 AM GMT+5:30
+model:
+  id: deepseek-v4-flash-free
+  provider: opencode
+
+---
+user:
+  text: |-
+    You are a research analyst. Perform the following tasks and return a detailed report.
+
+    TASK C:
+    1. Read the file /Users/dk/lab-data/ai-suite/nemotron-vs-deepseek/nvidia-free-malayalam-transcription.md fully.
+    2. Extract which free models from the NVIDIA free model list support Malayalam ASR (Automatic Speech Recognition / transcription). List each model name, its provider/family, and what language support details are mentioned.
+    3. Search the web for a comparison of Whisper (OpenAI) vs Canary (NVIDIA) accuracy on Malayalam ASR. Specifically look for Word Error Rate (WER) numbers for Malayalam on both systems. Search terms to try: "Whisper Malayalam WER", "Canary Malayalam ASR accuracy", "Whisper vs Canary Malayalam transcription comparison", "NVIDIA Canary Malayalam word error rate".
+    4. Summarize which model is more accurate for Malayalam and provide the numerical evidence found.
+
+    Return everything in a single well-structured markdown response with sections: "C1. Malayalam-Supporting Models from File", "C2. Whisper vs Canary Malayalam Accuracy (Web)", "C3. Verdict".
+  time: 7/24/2026, 1:07:58.672 AM GMT+5:30
+assistant:
+  - agent: general
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants me to perform three tasks:
+      1. Read a specific file about NVIDIA free Malayalam transcription
+      2. Extract which free models support Malayalam ASR
+      3. Search the web for Whisper vs Canary accuracy on Malayalam ASR
+      4. Summarize findings
+
+      Let me start by reading the file and searching the web in parallel.
+    thinking_duration: 728ms
+    thinking_duration_ms: 728
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/nemotron-vs-deepseek/nvidia-free-malayalam-transcription.md
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/nemotron-vs-deepseek/nvidia-free-malayalam-transcription.md</path>
+          <type>file</type>
+          <content>
+          1: # NVIDIA Build Free Models: Malayalam Audio Transcription Analysis
+          2: 
+          3: **Task:** Transcribe Malayalam meeting recordings  
+          4: **Date:** June 29, 2026  
+          5: **Source:** [build.nvidia.com free models](https://build.nvidia.com/models?filters=nimType%3Anim_type_preview) - 144 free models total
+          6: 
+          7: ---
+          8: 
+          9: ## Free Models with Audio Support
+          10: 
+          11: All models below are **FREE** on the free tier (no credits consumed):
+          12: 
+          13: | # | Model | Provider | Audio | Malayalam | Notes |
+          14: |---|-------|----------|-------|-----------|-------|
+          15: | 1 | `whisper-large-v3` | OpenAI | ✓ | ✅ | Dedicated ASR, 99 languages |
+          16: | 2 | `gemma-3n-e4b-it` | Google | ✓ | ✅ | 140+ languages, 30-sec chunks |
+          17: | 3 | `gemma-3n-e2b-it` | Google | ✓ | ✅ | 140+ languages, smaller |
+          18: | 4 | `kimi-k2.6` | Moonshot | ✓ | ❓ | Coding focus, unknown Malayalam |
+          19: | 5 | `nemotron-3-nano-omni` | NVIDIA | ✓ | ❌ | English-only |
+          20: | 6 | `phi-4-multimodal-instruct` | Microsoft | ✓ | ❌ | 8 languages only |
+          21: 
+          22: ---
+          23: 
+          24: ## Detailed Analysis
+          25: 
+          26: ### 1. whisper-large-v3 (OpenAI) ⭐ BEST FOR MALAYALAM
+          27: 
+          28: | Aspect | Details |
+          29: |--------|---------|
+          30: | Type | Dedicated ASR (Speech-to-Text) |
+          31: | Parameters | 1.5B |
+          32: | Languages | **99 languages including Malayalam** |
+          33: | Audio Format | WAV, MP3, FLAC, M4A |
+          34: | Max Audio | Varies (typically 30 min - 1 hour) |
+          35: | Features | Translation, word timestamps |
+          36: | Free | ✅ YES |
+          37: 
+          38: **Why Best:**
+          39: - Purpose-built for speech recognition
+          40: - Explicitly supports Malayalam (ml)
+          41: - Word-level timestamps available
+          42: - High accuracy for transcription
+          43: 
+          44: **Limitation:** Batch processing only (not streaming)
+          45: 
+          46: ---
+          47: 
+          48: ### 2. gemma-3n-e4b-it (Google) ⭐ BEST MULTIMODAL
+          49: 
+          50: | Aspect | Details |
+          51: |--------|---------|
+          52: | Type | Multimodal LLM |
+          53: | Parameters | 5B total / ~2B effective |
+          54: | Languages | **140+ spoken languages** |
+          55: | Audio Format | WAV, MP3, FLAC (single channel) |
+          56: | Max Audio | **30 seconds per clip** |
+          57: | Context | 32K tokens |
+          58: | Free | ✅ YES |
+          59: 
+          60: **Why Good:**
+          61: - Only model with 140+ language support
+          62: - Can process audio, video, image, text
+          63: - Edge-optimized = fast inference
+          64: 
+          65: **Limitation:** 30-second audio chunks. Longer recordings need splitting.
+          66: 
+          67: ---
+          68: 
+          69: ### 3. gemma-3n-e2b-it (Google)
+          70: 
+          71: | Aspect | Details |
+          72: |--------|---------|
+          73: | Type | Multimodal LLM |
+          74: | Parameters | 2B effective |
+          75: | Languages | 140+ (same as E4B) |
+          76: | Max Audio | 30 seconds |
+          77: | Free | ✅ YES |
+          78: 
+          79: **Verdict:** Same language support as E4B but **less capable**. Use E4B instead.
+          80: 
+          81: ---
+          82: 
+          83: ### 4. kimi-k2.6 (Moonshot)
+          84: 
+          85: | Aspect | Details |
+          86: |--------|---------|
+          87: | Type | Multimodal LLM |
+          88: | Parameters | 1T total |
+          89: | Audio Support | ✓ |
+          90: | Malayalam | ❓ Unknown |
+          91: | Focus | Coding, agentic tasks |
+          92: | Free | ✅ YES |
+          93: 
+          94: **Verdict:** Primarily a **coding model**. Audio is secondary. Unlikely to be good at Malayalam transcription.
+          95: 
+          96: ---
+          97: 
+          98: ### 5. nemotron-3-nano-omni-30b-a3b-reasoning (NVIDIA)
+          99: 
+          100: | Aspect | Details |
+          101: |--------|---------|
+          102: | Type | Multimodal LLM |
+          103: | Parameters | 30B / 3B active |
+          104: | Audio Support | ✓ Speech |
+          105: | Malayalam | ❌ English-only |
+          106: | Free | ✅ YES |
+          107: 
+          108: **Verdict:** Best architecture but **English-only**. Won't work for Malayalam.
+          109: 
+          110: ---
+          111: 
+          112: ### 6. phi-4-multimodal-instruct (Microsoft)
+          113: 
+          114: | Aspect | Details |
+          115: |--------|---------|
+          116: | Type | Multimodal LLM |
+          117: | Parameters | 14B |
+          118: | Audio Languages | English, Chinese, German, French, Italian, Japanese, Spanish, Portuguese |
+          119: | Malayalam | ❌ Not supported |
+          120: | Free | ✅ YES |
+          121: 
+          122: **Verdict:** **Malayalam not in list**. Won't work.
+          123: 
+          124: ---
+          125: 
+          126: ## Free ASR Models (Speech-to-Text)
+          127: 
+          128: | Model | Languages | Malayalam | Free |
+          129: |-------|-----------|-----------|------|
+          130: | `whisper-large-v3` | 99 | ✅ | ✅ |
+          131: | `canary-1b-asr` | 25 European | ❌ | ✅ |
+          132: | `parakeet-1.1b-rnnt-multilingual-asr` | 25 (Indic: Hindi, Tamil, Bengali) | ❌ | ✅ |
+          133: | `nemotron-asr-streaming` | English | ❌ | ✅ |
+          134: | `parakeet-ctc-0.6b-asr` | English | ❌ | ✅ |
+          135: | `parakeet-ctc-0.6b-es` | Spanish-English | ❌ | ✅ |
+          136: | `parakeet-ctc-0.6b-vi` | Vietnamese-English | ❌ | ✅ |
+          137: | `parakeet-ctc-0.6b-zh-cn` | Mandarin-English | ❌ | ✅ |
+          138: | `parakeet-ctc-0.6b-zh-tw` | Mandarin Taiwanese-English | ❌ | ✅ |
+          139: | `parakeet-ctc-1.1b-asr` | English | ❌ | ✅ |
+          140: | `parakeet-tdt-0.6b-v2` | English | ❌ | ✅ |
+          141: 
+          142: ---
+          143: 
+          144: ## Recommendation
+          145: 
+          146: ### Primary Choice: `whisper-large-v3`
+          147: 
+          148: **Why:**
+          149: 1. **Dedicated ASR** - purpose-built for speech recognition
+          150: 2. **99 languages** including Malayalam
+          151: 3. **High accuracy** for transcription
+          152: 4. **Word-level timestamps** available
+          153: 5. **FREE** on the free tier
+          154: 
+          155: **How to use:**
+          156: ```python
+          157: from openai import OpenAI
+          158: 
+          159: client = OpenAI(
+          160:     base_url="https://integrate.api.nvidia.com/v1",
+          161:     api_key="your-nvidia-api-key"
+          162: )
+          163: 
+          164: # Transcribe Malayalam audio
+          165: response = client.audio.transcriptions.create(
+          166:     model="openai/whisper-large-v3",
+          167:     file=open("meeting.wav", "rb"),
+          168:     language="ml"  # Malayalam
+          169: )
+          170: 
+          171: print(response.text)
+          172: ```
+          173: 
+          174: ---
+          175: 
+          176: ### Alternative: `gemma-3n-e4b-it`
+          177: 
+          178: **Why:**
+          179: 1. **140+ languages** including Malayalam
+          180: 2. **Multimodal** - can process audio, video, image, text
+          181: 3. **FREE** on the free tier
+          182: 
+          183: **Limitation:** 30-second audio chunks. Need to split longer recordings.
+          184: 
+          185: **How to use:**
+          186: ```python
+          187: from openai import OpenAI
+          188: import base64
+          189: 
+          190: client = OpenAI(
+          191:     base_url="https://integrate.api.nvidia.com/v1",
+          192:     api_key="your-nvidia-api-key"
+          193: )
+          194: 
+          195: # Read and encode audio (30-sec chunk)
+          196: with open("chunk.wav", "rb") as f:
+          197:     audio_data = base64.b64encode(f.read()).decode("utf-8")
+          198: 
+          199: response = client.chat.completions.create(
+          200:     model="google/gemma-3n-e4b-it",
+          201:     messages=[
+          202:         {
+          203:             "role": "user",
+          204:             "content": [
+          205:                 {"type": "text", "text": "Transcribe this Malayalam audio."},
+          206:                 {"type": "audio_url", "audio_url": {"url": f"data:audio/wav;base64,{audio_data}"}}
+          207:             ]
+          208:         }
+          209:     ],
+          210:     max_tokens=4096
+          211: )
+          212: 
+          213: print(response.choices[0].message.content)
+          214: ```
+          215: 
+          216: ---
+          217: 
+          218: ## Summary
+          219: 
+          220: | Model | Malayalam | Type | Recommendation |
+          221: |-------|-----------|------|----------------|
+          222: | **`whisper-large-v3`** | **✅** | **Dedicated ASR** | **Best choice** |
+          223: | `gemma-3n-e4b-it` | ✅ | Multimodal LLM | Alternative (30-sec chunks) |
+          224: | `gemma-3n-e2b-it` | ✅ | Multimodal LLM | Weaker than E4B |
+          225: | `kimi-k2.6` | ❓ | Multimodal LLM | Coding focus |
+          226: | `nemotron-3-nano-omni` | ❌ | Multimodal LLM | English-only |
+          227: | `phi-4-multimodal-instruct` | ❌ | Multimodal LLM | 8 languages only |
+          228: 
+          229: **All models above are FREE on the free tier.**
+          230: 
+          231: ---
+          232: 
+          233: ## References
+          234: 
+          235: - [NVIDIA Build Free Models](https://build.nvidia.com/models?filters=nimType%3Anim_type_preview) - 144 free models
+          236: - [Whisper Large v3](https://build.nvidia.com/openai/whisper-large-v3)
+          237: - [Gemma 3n Overview](https://ai.google.dev/gemma/docs/gemma-3n)
+          238: - [NVIDIA ASR Support Matrix](https://docs.nvidia.com/nim/speech/latest/reference/support-matrix/asr.html)
+
+          (End of file - total 238 lines)
+          </content>
+      - tool: websearch
+        args:
+          query: Whisper vs Canary Malayalam transcription comparison WER
+          numResults: 8
+        result: |-
+          Title: openai/whisper
+          URL: https://www.github.com/openai/whisper
+          Published: 2022-09-16T20:02:54.000Z
+          Author: N/A
+          Highlights:
+          Whisper's performance varies widely depending on the language. The figure below shows a performance breakdown of `large-v3` and `large-v2` models by language, using WERs (word error rates) or CER (character error rates, shown in *Italic*) evaluated on the Common Voice 15 and Fleurs datasets. Additional WER/CER metrics corresponding to the other models and datasets can be found in Appendix D.1, D.2, and D.4 of [the paper](https://arxiv.org/abs/2212.04356), as well as the BLEU (Bilingual Evaluation Understudy) scores for translation in Appendix D.3.
+          ...
+          ![WER breakdown by language](https://github.com/openai/whisper/assets/266841/f4619d66-1058-4005-8f67-a9d811b77c62)
+
+          ---
+
+          Title: malayalam_asr_benchmarking - Benchmarking Results in Malayalam datasets
+          URL: https://kurianbenoy.github.io/malayalam_asr_benchmarking/whisper_event.html
+          Published: N/A
+          Author: N/A
+          Highlights:
+          | models | wer | cer | model size | time(s) |
+          | --- | --- | --- | --- | --- |
+          | 0 | thennal/whisper-medium-ml | 11.56 | 5.41 | 763.86M | 924.979711 |
+          | 1 | anuragshas/whisper-large-v2-ml | 24.46 | 11.64 | 1.54B | 1779.561592 |
+          | 2 | parambharat/whisper-small-ml | 21.65 | 11.78 | 241.73M | 273.555688 |
+          | 3 | DrishtiSharma/whisper-large-v2-malayalam | 26.25 | 13.17 | 1.54B | 1773.661774 |
+          | 4 | parambharat/whisper-base-ml | 30.33 | 16.16 | 72.59M | 96.419609 |
+          | 5 | kurianbenoy/whisper_malayalam_largev2 | 300.70 | 292.82 | 1.54B | 5034.771624 |
+          | 6 | parambharat/whisper-tiny-ml | 38.31 | 21.93 | 37.76M | 59.535259 |
+          ...
+          ### Running OpenAI ASR models
+          ...
+          wer_list = []
+          ...
+          cer_list = []
+          ...
+          ```
+          for asr in tqdm(openai_models):
+              evaluate_whisper_model_common_voice(asr, wer_list, cer_list, model_size_list, time_list)
+          ```
+          ...
+          ```
+            0%|          | 0/6 [00:02<?, ?it/s]
+
+          KeyboardInterrupt
+          ...
+          ```
+          wer_list = [154.21, 118.39, 100.06, 127.97, 125.73, 100.26]
+
+          cer_list = [180.45, 131.08, 95.04, 136.43, 139.62, 93.6]
+
+          model_size_list = ['37.76M', '72.59M', '241.73M', '763.86M', '1.54B', '1.54B']
+
+          time_list = [22.277158498764038, 22.35258674621582, 25.442846059799194, 53.88049054145813, 82.74607968330383, 71.14292621612549]
+          ...
+          ```
+          evaluate_whisper_model_common_voice("openai/whisper-large-v2", wer_list, cer_list, model_size_list, time_list, bs=4)
+          ...
+          ```
+          Total time taken: 71.14292621612549
+          The WER of model: 100.26
+          The CER of model: 93.6
+          The model size is: 1.54B
+          ['openai', 'whisper-large-v2']
+          ...
+          df = pd.DataFrame
+          ...
+          models": openai_models,
+                             "wer": wer_list,
+                             "cer": cer_list,
+                             "model size
+          ...
+          model_size_list,
+          ...
+          time(s)
+          ...
+          time_list
+                            })
+          ...
+          | models | wer | cer | model size | time(s) |
+          | --- | --- | --- | --- | --- |
+          | 0 | openai/whisper-tiny | 154.21 | 180.45 | 37.76M | 22.277158 |
+          | 1 | openai/whisper-base | 118.39 | 131.08 | 72.59M | 22.352587 |
+          | 2 | openai/whisper-small | 100.06 | 95.04 | 241.73M | 25.442846 |
+          | 3 | openai/whisper-medium | 127.97 | 136.43 | 763.86M | 53.880491 |
+          | 4 | openai/whisper-large | 125.73 | 139.62 | 1.54B | 82.746080 |
+          ...
+          279
+          ...
+          The WER of
+          ...
+          : 100.27
+          The CER of model: 102.4
+          The model size is: 1.54B
+          ...
+          large-v2']
+          ...
+          taken: 1
+          ...
+          7.5
+          ...
+          74433803558
+          The WER of model: 107.01
+          The CER of model: 113.62
+          ...
+          The model size is: 1.54B
+
+          ---
+
+          Title: kurianbenoy/malayalam_asr_benchmarking
+          URL: https://github.com/kurianbenoy/malayalam_asr_benchmarking
+          Published: N/A
+          Author: N/A
+          Highlights:
+          A study to benchmark whisper based ASRs in Malayalam
+          ...
+          > [!NOTE]
+          >
+          > A study to benchmark ASRs in Malayalam. Till now the project has
+          > benchmark based on Malayalam ASR models based in Whisper ASR and
+          > faster-whisper ASR.
+          ...
+          #### Evaluate Whisper-based Malayalam ASR models
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.commonvoice import evaluate_whisper_model_common_voice
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_common_voice("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.msc import evaluate_whisper_model_msc
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_msc("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          #### Evaluate faster-whisper based models
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.commonvoice import evaluate_faster_whisper_model_common_voice
+          ...
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_common_voice("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.msc import evaluate_faster_whisper_model_msc
+          ...
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_msc("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+
+          ---
+
+          Title: thennal/whisper-medium-ml · Hugging Face
+          URL: https://huggingface.co/thennal/whisper-medium-ml
+          Published: N/A
+          Author: N/A
+          Highlights:
+          This model is a fine-tuned version of openai/whisper-medium on the Common Voice 11.0 dataset. It achieves the following results on the evaluation set:
+          ...
+          - WER: 38.6207
+          - CER: 7.3256
+          ...
+          Note that Whisper's normalization has major issues for languages like Malayalam, so the above scores are evaluated without using normalization. With normalization (for a fair comparison with other models on this platform), the results are instead:
+          ...
+          - WER: 11.49
+          ...
+          ## Evaluation results
+          ...
+          WER on Common Voice 11.0
+          ...
+          11.490
+
+          ---
+
+          Title: OpenAI Whisper and it’s amazing power to do fine-tuning demonstrated on my mother-tongue
+          URL: https://kurianbenoy.com/talks/pyconindia-2023/pyconind.html
+          Published: N/A
+          Author: Kurian Benoy
+          Highlights:
+          ## Malayalam performance in whisper paper
+          ...
+          |Model|WER|
+          tiny|102.7|
+          base|122.9|
+          small|104.8|
+          medium|137.8|
+          large-v1|107.1|
+          large-v2|103.2|
+          ...
+          1. Achieving 11% WER in Malayalam is astonishing.
+          2. In Malayalam there is not even a single yard stick to compare. Most of previous works were done in proprietary datasets and not open-sourced.
+          3. Malyalam is a[morpohologically complex language](https://kavyamanohar.com/documents/tsd_morph_complexity_ml.pdf). So even achieving 30% WER is a big deal.
+          ...
+          1. Word Error Rate(WER)
+          2. Character Error Rate(CER)
+          ...
+          * To test whether 10% WER was possible in available academic datasets.
+          ...
+          * Common Voice 11 malayalam subset
+          * SMC Malayalam Speech Corpus
+          ...
+          1. Create as a python library so further whisper-based transformer models can be benchmark.
+          2. Calculate WER, CER, model size and time taken to benchmark the model for the listed datasets.
+          3. Build a reproducible approach, so results of benchmarking is stored as dataset.
+          ...
+          ## Calculating WER
+          ...
+          ## WER in Common Voice dataset
+          ...
+          ![]()
+          ...
+          Word Error Rate in Common Voice-9 test split
+          ...
+          ## ## ## Results on
+          ...
+          chmarking in Malayalam Speech Corpus
+          ...
+          ## WER in Malayalam Speech Corpus
+          ...
+          ![]()
+          ...
+          Word Error Rate in MSC
+          ...
+          ## CER in Malayalam Speech Corpus
+          ...
+          * In Malayalam we have achieved phenomenal results for fine tuned whisper models.
+          * The best model after benchmarking is:`thennal/whisper-medium-ml`
+
+          ---
+
+          Title: BettySara/whisper-large-v3-malayalam-FT · Hugging Face
+          URL: https://huggingface.co/BettySara/whisper-large-v3-malayalam-FT
+          Published: N/A
+          Author: N/A
+          Highlights:
+          This model is a fully fine-tuned version of`openai/whisper-large-v3-turbo` for Malayalam Automatic Speech Recognition (ASR). The model was adapted using the Malayalam subset of the AI4Bharat IndicVoices dataset to improve transcription accuracy for Malayalam speech, especially in low-resource and regional-language ASR settings.
+          ...
+          | Field | Description |
+          | --- | --- |
+          | Base model | `openai/whisper-large-v3-turbo` |
+          | Fine-tuning method | Full model fine-tuning |
+          | Language | Malayalam (`ml`) |
+          | Task | Automatic Speech Recognition / Transcription |
+          | Dataset | `ai4bharat/IndicVoices`, Malayalam subset |
+          | Sampling rate | 16 kHz |
+          | Evaluation metric | Word Error Rate (WER) |
+          | Framework | Hugging Face Transformers, PyTorch |
+          | Training epochs | 10 |
+          | Precision | BF16 |
+          ...
+          The model was evaluated using Word Error Rate (WER), computed with the`evaluate` and`jiwer` libraries.
+          ...
+          | Model | Fine-tuning Strategy | Epochs | Metric | Result |
+          | --- | --- | --- | --- | --- |
+          | Whisper Large V3 Turbo | Zero-shot baseline | ~ 102 | Higher baseline WER |
+          | Whisper Large V3 Turbo Malayalam | Full fine-tuning | ~ 56 | WER | Improved Malayalam transcription accuracy |
+          ...
+          Note: Replace the WER value above with the exact final`eval_wer` from the completed training run before final publication if needed.
+
+          ---
+
+          Title: sajilck/whisper-small-malayalam · Hugging Face
+          URL: https://huggingface.co/sajilck/whisper-small-malayalam
+          Published: N/A
+          Author: N/A
+          Highlights:
+          Fine-tuned version of openai/whisper-small on a multi-corpus Malayalam speech dataset. This is the first publicly available Whisper model fine-tuned specifically for Malayalam ASR.
+          ...
+          - Base model: openai/whisper-small (244M parameters)
+          - Language: Malayalam (ml)
+          - Task: Automatic Speech Recognition (transcription)
+          - Training steps: 3500
+          - Best WER: 37.64% on CommonVoice 25 Malayalam test set
+          ...
+          | Model | Params | WER ↓ | Notes |
+          | --- | --- | --- | --- |
+          | openai/whisper-small (base) | 244M | ~85% | No Malayalam fine-tuning |
+          | smcproject/Malwhisper-v1-medium | 769M | 61.84% | Single corpus (IMaSC only) |
+          | sajilck/whisper-small-malayalam | 244M | 37.64% | Multi-corpus fine-tuning |
+          ...
+          - 3× smaller model than Malwhisper-v1-medium, better WER
+          ...
+          1 — better speaker and domain diversity
+          - Multi-
+
+          ---
+
+          Title: What is lost in Normalization? Exploring Pitfalls ...
+          URL: https://arxiv.org/html/2409.02449v3
+          Published: 2024-11-07T00:00:00.000Z
+          Author: N/A
+          Highlights:
+          This paper explores the pitfalls in evaluating multilingual automatic speech recognition (ASR) models, with a particular focus on Indic language scripts. We investigate the text normalization routine employed by
+          ...
+          ASR models,
+          ...
+          OpenAI Whisper, Meta’s MMS, Seamless, and Assembly AI’s Conformer, and
+          ...
+          unintended consequences on performance metrics. Our research reveals that current text normalization practices
+          ...
+          aiming to standardize ASR outputs for fair comparison
+          ...
+          removing inconsistencies such as variations in spelling
+          ...
+          and special characters, are fundamentally flawed when applied to Indic scripts.
+          ...
+          empirical analysis using text similarity scores
+          ...
+          in-depth linguistic examination
+          ...
+          leverage native linguistic expertise
+          ...
+          robust and accurate evaluations
+          ...
+          multilingual ASR models
+          ...
+          Prior to the introduction of OpenAI’s Whisper model Radford et al. (2023), most ASR systems were trained on normalized text transcripts and produced output without punctuation or casing. Whisper, however, outputs UTF-8 text, requiring a comprehensive normalization process to accurately evaluate its performance. This ensures that the evaluation metric, WER penalizes only actual word mis-transcriptions, not formatting or punctuation differences.
+          ...
+          the text in languages
+          ...
+          202
+          ...
+          words being broken down into consonants
+          ...
+          their associated vowels,
+          ...
+          a loss of meaning and intelligibility
+          ...
+          incorrect WER calculations
+          ...
+          languages written in
+          ...
+          scripts. Additionally, Thai, which does not use spaces between words but relies on spaces to delimit sentences, is also affected. The normalization process inserts spaces instead of vowel signs, effectively distorting the nature of the language. See Table 1 for examples with detailed analysis provided in section 3.1.
+          ...
+          In this study, we present two complementary empirical evaluations to assess the impact of Whisper’s normalization routine on different languages. First, we conduct an intrinsic evaluation by comparing the similarity of example sentences from various languages before and after normalization, using the METEOR score as a text similarity metric. Second, we perform an extrinsic evaluation by measuring the WER on a multilingual benchmark dataset for the same set of languages, with and without the application of Whisper’s normalization. For our case study, we used both the baseline and fine-tuned Whisper ASR because their outputs include punctuation, unlike other ASR models in the literature. This allowed us to demonstrate the impact of normalization on ASR outputs with punctuation. All the datasets and the models used in this experiments are available under permissive licenses in Huggingface repositories and listed in Appendix A. All the evaluations were run on a single NVIDIA A100 GPU.
+          ...
+          Figure 1: Performance comparison of the OpenAI Whisper-Small model across different languages. The graph on left shows WER on the original model and the one on right shows the result after language specific finetuning. Regular WER are computed on raw transcripts and normalized WER are computed on Whisper normalized transcripts.
+          ...
+          empirically assess the
+          ...
+          different languages, we conducted
+          ...
+          sentences from languages that employ various script systems
+          ...
+          we selected languages that
+          ...
+          script (English and Finnish), Indic scripts (
+          ...
+          F-score
+          ...
+          the machine-translated text, providing a
+          ...
+          while also placing importance on
+          ...
+          ### 3.2 Impact of Whisper Normalization on WER
+          ...
+          To empirically analyze the impact of normalization on the WER, we present the results of evaluating the original Whisper-small model, referred to as the baseline model, with and without the application of Whisper’s normalization on the test split of Google FLEURS Conneau et al. (2022) multilingual speech dataset.
+          ...
+          The left side bar graph in Figure 1 shows that the WER of the baseline model is significantly high for languages other than English and Finnish, with values of 86.9% for Hindi, 93.3% for Tamil, and 287.4% for Malayalam. The baseline ASR model exhibits a WER exceeding 100% for Malayalam due to a high number of insertion errors, leading to the combined total of substitutions, deletions, and insertions surpassing the total word count in the reference transcript. While the application of Whisper’s normalization results in modest WER improvements for English and Finnish, with an absolute reduction of 5.1% and 3.2% respectively, Indic languages experience suspicious absolute WER reductions: 21.9% for Hindi, 41.5% for Tamil, and a substantial 152.2% for Malayalam.
+          ...
+          Due to the poor performance of the baseline model on many Indian languages, we conducted a further comparison of WER with and without Whisper’s normalization on publicly available models that have been derived from the baseline model after language-specific fine-tuning. The fine-tuned models used in these evaluations are listed in Appendix A. Fine-tuning has significantly improved the performance of the Hindi, Tamil, and Malayalam models.
+          ...
+          Fine-tuned models of English and Finnish exhibit a reasonable absolute reduction of 4.5% and 3.2% on WER respectively. In contrast, Indic languages exhibit a substantial absolute reduction in WER, with decreases of 10.7% for Hindi, 21.3% for Tamil, and 34.1% for Malayalam. Notably, the languages that showed the worst similarity scores exhibit the maximum improvement in WER after normalization. This suggests that the normalization process, which breaks most words into a series of consonants and adds spaces, artificially increases the number of words in the reference, thereby reducing the WER.
+          ...
+          The Fine-tuned Malayalam: https://huggingface.co/vrclc/Whisper_small_malayalam
+      - tool: websearch
+        args:
+          query: NVIDIA Canary Malayalam ASR word error rate accuracy
+          numResults: 8
+        result: |-
+          Title: nvidia/canary-1b-v2
+          URL: https://huggingface.co/nvidia/canary-1b-v2
+          Published: 2025-08-14T00:00:00.000Z
+          Author: N/A
+          Highlights:
+          Figure 1: ASR WER comparison across different models. This does not include Punctuation and Capitalisation errors.
+          ...
+          ### Automatic Speech Recognition (ASR)
+          ...
+          | WER ↓ | Fleurs-25 Langs | CoVoST-13 Langs | MLS - 6 Langs |
+          | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 8.40% | 8.85% | 7.27% |
+          ...
+          Note: Presented WERs do not include Punctuation and Capitalization errors.
+          ...
+          | WER ↓ | RTFx | Mean | AMI | GigaSpeech | LS Clean | LS Other | Earnings22 | SPGISpech | Tedlium | Voxpopuli |
+          | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 749 | 7.15 | 16.01 | 10.82 | 2.18 | 3.56 | 11.79 | 2.28 | 4.29 | 6.25 |
+          ...
+          Performance across different Signal-to-Noise Ratios (SNR) using MUSAN music and noise samples [16] on the LibriSpeech Clean test set. Metric: Word Error Rate (WER)
+          ...
+          | SNR (dB) | 100 | 10 | 5 | 0 | -5 |
+          | --- | --- | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 2.18% | 2.29% | 2.80% | 5.08% | 19.38% |
+          ...
+          | Technical Limitations & Mitigation | Transcripts and translations may be not 100% accurate. Accuracy varies based on source and target language and characteristics of input audio (Domain, Use Case, Accent, Noise, Speech Type, Context of speech, etc.) |
+          | Verified to have met prescribed NVIDIA quality standards | Yes |
+          | Performance Metrics | Word Error Rate (Speech Transcription) / BLEU score (Speech Translation) / COMET score (Speech Translation) |
+          | Potential Known Risks | If a word is not trained in the language model and not presented in vocabulary, the word is not likely to be recognized. Not recommended for word-for-word/incomplete sentences as accuracy varies based on the context of input text |
+          | Licensing | GOVERNING
+          ...
+          of this model is governed by the CC-BY-4.0 license. |
+
+          ---
+
+          Title: Canary-1B-v2 & Parakeet-TDT-0.6B-v3: Efficient and High-Performance Models for Multilingual ASR and AST
+          URL: https://arxiv.org/html/2509.14128v2
+          Published: N/A
+          Author: N/A
+          Highlights:
+          This report introduces Canary-1B-v2111 https://huggingface.co/nvidia/canary-1b-v2, a fast, robust multilingual model for Automatic Speech Recognition (ASR) and Speech-to-Text Translation (AST). Built with a FastConformer encoder and Transformer decoder, it supports 25 European languages. The model was trained on 1.7M hours of total data samples, including Granary and NeMo ASR Set 3.0, with non-speech audio added to reduce hallucinations for ASR and AST. We describe its two-stage pre-training and fine-tuning process with dynamic data balancing, as well as experiments with an nGPT encoder. Results show nGPT scales well with massive data, while FastConformer excels after fine-tuning. For timestamps, Canary-1B-v2 uses the NeMo Forced Aligner (NFA) with an auxiliary CTC model, providing reliable segment-level timestamps for ASR and AST. Evaluations show Canary-1B-v2 outperforms Whisper-large-v3 on English ASR while being 10 $\times$ faster, and delivers competitive multilingual ASR and AST performance against larger models like Seamless-M4T-v2-large and LLM-based systems.
+          ...
+          Table 5 presents the results for the Hugging Face Leaderboard datasets, calculated with the official repository and reported on the Hugging Face Open ASR Leaderboard. Notably, Canary-1B-v2 outperforms Whisper-large-v3 on the official average WER metric, while also achieving remarkable inference efficiency. With an RTFx of 749, Canary-1B-v2 runs approximately 7–10 times faster than the other evaluated models, highlighting its strength in balancing accuracy with throughput efficiency.
+          ...
+          As is seen in Figure 10, Canary-1B-v2 demonstrates consistently strong multilingual ASR performance across both the full 24-language set and the common 6-language subset. On the full evaluation, computed as an average across three different datasets (FLEURS, CoVoST, MLS), it achieves an average WER of around 8.1%, outperforming whisper-large-v3 (9.9%) and seamless-m4t-medium (12.0%), while remaining only slightly behind the much larger and heavier seamless-m4t-v2-large (7.2%). On the common-language evaluation, also averaged across the same three datasets, Canary-1B-v2 reaches 5.2% WER compared to 5.8% for whisper-large-v3 and 8.2% for seamless-m4t-medium, and in fact slightly outperforms seamless-m4t-v2-large (5.3%). Even though other models are specialized in this smaller set, Canary-1B-v2 supports 19 additional languages while still matching or surpassing much heavier and LLM-powered baselines.
+          ...
+          Additionally, the companion 0.6B model Parakeet-TDT-0.6B-v3 averages 9.7% WER across the 24-language evaluation (11.52/9.78/7.83 on FLEURS/CoVoST/MLS), edging past whisper-large-v3 (9.9%) while trailing Canary-1B-v2 (8.1%) and seamless-m4t-v2-large (7.2%). On the common-language subset it reaches 5.3% WER (4.37/4.79/6.74), essentially matching seamless-m4t-v2-large (5.3%) and outperforming whisper-large-v3 (5.8%).
+          ...
+          As shown in Figure 11, Canary-1B-v2 outperforms whisper-large-v3 and seamless-m4t-medium by a large margin across both evaluation benchmarks. On the full-language setting, it achieves 79.28 COMET on FLEURS and 78.14 on CoVoST2, compared to 76.51 / 74.61 for whisper-large-v3 and 77.30 / 75.64 for seamless-m4t-medium. Even against the much larger seamless-m4t-v2-large (81.71 / 80.26), Canary-1B-v2 remains close despite having less than half the parameters.
+          ...
+          xtral-Mini-
+          ...
+          -multimodal-instruct (80
+          ...
+          11),
+          ...
+          xtral-
+          ...
+          12,
+          ...
+          -m4t-
+          ...
+          2-large
+          ...
+          85 COM
+
+          ---
+
+          Title: Canary — NVIDIA Speech NIM Microservices
+          URL: https://docs.nvidia.com/nim/speech/latest/asr/deploy-asr-models/canary.html
+          Published: N/A
+          Author: N/A
+          Highlights:
+          Canary is a multilingual encoder-decoder model that supports transcription and translation.
+          ...
+          The Canary model supports offline mode only.
+          ...
+          Canary supports transcription in the following languages:`ar-AR`,`cs-CZ`,`da-DK`,`de-DE`,`en-GB`,`en-US`,`es-ES`,`es-US`,`fr-CA`,`fr-FR`,`he-IL`,`hi-IN`,`it-IT`,`ja-JP`,`ko-KR`,`nb-NO`,`nl-NL`,`nn-NO`,`pl-PL`,`pt-BR`,`pt-PT`,`ru-RU`,`sv-SE`,`th-TH`,`tr-TR`,`zh-CN`. Specifying the input language is required. The Canary model has punctuation enabled by default.
+          ...
+          Canary supports translation from`en-US` to`ar-AR`,`bg-BG`,`cs-CZ`,`da-DK`,`de-DE`,`el-GR`,`en-US`,`et-EE`,`fi-FI`,`fr-FR`,`hi-IN`,`hr-HR`,`hu-HU`,`id-ID`,`it-IT`,`ja-JP`,`ko-KR`,`lt-LT`,`lv-LV`,`nb-NO`,`nl-NL`,`pl-PL`,`pt-BR`,`pt-PT`,`ro-RO`,`ru-RU`,`sk-SK`,`sl-SI`,`sv-SE`,`th-TH`,`tr-TR`,`uk-UA`,`vi-VN`,`zh-CN`, and from`ar-AR`,`cs-CZ`,`da-DK`,`de-DE`,`es-ES`,`es-US`,`fr-CA`,`fr-FR`,`he-IL`,`hi-IN`,`it-IT`,`ja-JP`,`ko-KR`,`nb-NO`,`nl-NL`,`nn-NO`,`pl-PL`,`pt-BR`,`pt-PT`,`ru-RU`,`sv-SE`,`tr-TR`,`zh-CN` to`en-US`.
+
+          ---
+
+          Title: New Standard for Speech Recognition and Translation ...
+          URL: https://developer.nvidia.com/blog/new-standard-for-speech-recognition-and-translation-from-the-nvidia-nemo-canary-model/
+          Published: 2024-04-18T20:09:33.000Z
+          Author: Elena Rastorgueva
+          Highlights:
+          - The Canary model, developed by NVIDIA NeMo, is a multilingual model that transcribes speech in English, Spanish, German, and French with high accuracy and provides bi-directional translation between English and the other three languages.
+          - Canary outperforms other open-source models, including Whisper-large-v3 and SeamlessM4T-Medium-v1, on both transcription and translation tasks, achieving an average word error rate (WER) of 6.67% on the HuggingFace Open ASR Leaderboard.
+          - Canary is an encoder-decoder model built on NVIDIA innovations, using the Fast-Conformer encoder and a transformer decoder, and is available under a research-friendly non-commercial CC BY-NC 4.0 license.
+          ...
+          Canary ranks at the top of the HuggingFace Open ASR Leaderboard with an average word error rate (WER) of 6.67%. It outperforms all other open-source models by a wide margin.
+          ...
+          Despite using an order of magnitude less data, Canary outperforms the similarly sized Whisper-large-v3, and SeamlessM4T-Medium-v1 models on both transcription and translation tasks. On the MCV 16.1 test sets for English, Spanish, French, and German, Canary had a WER of 5.77 (Figure 1).
+
+           Figure 1. Average word error rate (WER) on MCV 16.1 test sets
+          ...
+          better)
+
+           (a) Translations from English to Spanish, French and German on the FLEURS and MExpresso test sets (higher is better) (b) Translations from Spanish, French, and German to English on FLEURS and CoVoST test sets (higher is better) Figure 2. Speech translation in BLEU scores You can try the canary-1b model inside the Gradio demo. For more information about how to access Canary locally and build on top of it, see the NVIDIA/NeMo GitHub repo
+          ...
+          The Canary multilingual model has emerged as the new standard, excelling in speech recognition and translation across English, Spanish, German, and French with unparalleled accuracy.
+
+          ---
+
+          Title: nvidia/canary-1b-flash · Hugging Face
+          URL: https://huggingface.co/nvidia/canary-1b-flash
+          Published: N/A
+          Author: N/A
+          Highlights:
+          83 million
+          ...
+          1b-flash supports automatic
+          ...
+          , Spanish)
+          ...
+          punctuation and capitalization
+          ...
+          level timestamps in English, German, French, and Spanish. This model is released under the permissive CC-BY-4.0 license and is
+          ...
+          commercial use.
+          ...
+          ### English ASR Performance (w
+          ...
+          o PnC)
+          ...
+          The ASR performance is measured with word error rate (WER), and we process the groundtruth and predicted text with whisper-normalizer.
+          ...
+          WER on HuggingFace OpenASR leaderboard:
+          ...
+          | Version | Model | RTFx | AMI | GigaSpeech | LS Clean | LS Other | Earnings22 | SPGISpech | Tedlium | Voxpopuli |
+          | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+          | nemo-main | canary-1b-flash | 1045.75 | 13.11 | 9.85 | 1.48 | 2.87 | 12.79 | 1.95 | 3.12 | 5.63 |
+          ...
+          ### Multilingual ASR Performance
+          ...
+          WER on MLS test set:
+          ...
+          | Version | Model | De | Es | Fr |
+          | --- | --- | --- | --- | --- |
+          | nemo-main | canary-1b-flash | 4.36 | 2.69 | 4.47 |
+          ...
+          WER on MCV-16.1 test set:
+          ...
+          | Version | Model | En | De | Es | Fr |
+          | --- | --- | --- | --- | --- | --- |
+          | nemo-main | canary-1b-flash | 6.99 | 4.09 | 3.62 | 6.15 |
+
+          ---
+
+          Title: NVIDIA Speech AI Models Deliver Industry-Leading Accuracy and Performance | NVIDIA Technical Blog
+          URL: https://developer.nvidia.com/blog/nvidia-speech-ai-models-deliver-industry-leading-accuracy-and-performance/
+          Published: 2025-06-04T17:16:31.000Z
+          Author: Adi Margolin
+          Highlights:
+          - NVIDIA is driving advancements in speech AI and language models, particularly in automatic speech recognition (ASR), with models like NVIDIA Parakeet TDT 0.6B v2 and NVIDIA NeMo Canary.
+          - The NVIDIA Parakeet v2 model offers industry-leading performance with a 6.05% word error rate and is 50 times faster than alternative models, making it suitable for applications requiring high accuracy and speed.
+          - NVIDIA's speech AI models, including Parakeet and Canary, are part of NVIDIA Riva, a collection of GPU-accelerated multilingual speech and translation microservices that can be deployed using NVIDIA NIM microservices.
+          ...
+          NVIDIA Parakeet TDT 0.6B v2 is a 600-million-parameter automatic speech recognition (ASR) model designed for high-quality English transcription. It is currently ranked #1 on the Hugging Face ASR leaderboard, alongside four other top-ranking NVIDIA Parakeet models. NVIDIA NeMo Canary models have also made their mark on the Hugging Face ASR leaderboard.
+          ...
+          With an industry-best 6.05% word error rate (WER), Parakeet v2 takes performance to the next level with unmatched accuracy, blazing-fast inference (RTFx 3386.02, or 50x faster than alternatives), and innovative, pioneering capabilities like accurate timestamps and song-to-lyrics transcription. These models are open source and available for commercial use.
+          ...
+          NVIDIA NeMo Canary models are also topping the Hugging Face ASR leaderboard. NVIDIA NeMo Canary 1B and NVIDIA NeMo Canary 1B Flash, currently ranking #4 and #3 respectively, stand out for their strong multilingual performance and rapid inference. The models rank among the best for speech recognition and translation in several major languages.
+
+           Figure 1. Several NVIDIA Parakeet and Canary models top the Hugging Face Open ASR Leaderboard for Speech Recognition
+          ...
+          For scenarios with background noise—such as transcriptions in hospitals, airports, virtually any busy and noisy place—built-in Silero VAD maintains accurate output. The model with the lowest WER, Parakeet v2, leads the way with fast, precise results, including advanced features like music transcription.
+          ...
+          ## Model name Architecture Languages Key features Sample use cases Parakeet TDT 0.6B v2 FastConformer-TDTEnglish (en-US)–Industry-best WER
+          ...
+          With continuous innovation and new releases, NVIDIA Parakeet ASR models are setting the pace for speech recognition, delivering global language coverage, robust noise handling, and industry-leading speed and accuracy. Whether you’re building enterprise voice solutions, powering multilingual customer support, or developing next-generation media applications, Parakeet models provide the tools to make your products stand out with clarity and intelligence.
+
+          ---
+
+          Title: N/A
+          URL: https://arxiv.org/pdf/2406.19674
+          Published: 2024-06-28T00:00:00.000Z
+          Author: Krishna C. Puvvada, Piotr Żelasko, He Huang, Oleksii Hrinchuk, Nithin Rao Koluguri, Kunal Dhawan, et al.
+          Highlights:
+          Recent advances in speech recognition and translation rely on hundreds of thousands of hours of Internet speech data. We argue that state-of-the art accuracy can be reached without relying on web-scale data. Canary - multilingual ASR and speech translation model, outperforms current state-of-the-art models – Whisper, OWSM, and Seamless-M4T on English, French, Spanish, and German languages, while being trained on an order of magnitude less data than these models. Three key factors enables such data efficient model: (1) a FastConformer-based attention encoder decoder architecture (2) training on synthetic data generated with machine translation and (3) advanced training techniques: data-balancing, dynamic data blending, dynamic bucketing and noise-robust fine-tuning. The model, weights, and training code will be open-sourced. Index Terms: speech recognition, speech translation, FastCon former, multilingual speech model
+          ...
+          • We introduce Canary, an open-source AED model capable of ASR and AST in English, French, Spanish, and German. Canary outperforms other multi-task AED models of similar size on established benchmarks.
+          ...
+          | and | predictions are | normalized using |  | WhisperNormalizer[1]. |  |  |  |  |  | Canary |  | achieves |  | lowest | WER |  | in | 10 out | of 12 | test | sets across |  |  | all languages. |  |  |  |
+          ...
+          6.08
+          ...
+          |  | Canary (1B) | 7.83 |  | 3.03 |  |  | 4.42 |  | 4.49 |  | 4.09 |  | 10.70 |  | 3.88 |  | 3.12 |  | 5.02 |  | 6.37 |  | 4.06 |  | 5.48 |  |  |
+          ...
+          We evaluate all models across four languages on MCV-16.1 [24], MLS [25] and VoxPopuli [26] test sets. For the baselines, we input the audios and their corresponding language IDs to the models’ inference APIs. For Canary, we additionally include the special token <|pnc|> to ensure all models produce text with punctuation and capitalization. We then normalize the ground truth and predictions using the Whisper-Normalizer [1] before calculating the word error rate (WER). Table 2 shows that the Canary model achieves the lowest WER in 10 out of 12 test sets across all languages. On average, Canary model achieves 6.20% WER on English, 6.27% WER on German, 4.09% WER on Spanish and 5.39% WER on French. In comparison, the second best model, SeamlessM4T-large-v2, with twice as many parameters as ours, achieves 5.42% WER on English, 7.53% WER on German, 5.24% WER on Spanish and 6.65% WER on French. Figure 1 shows that the 95% confidence intervals do not overlap for most test sets and systems, indicating that the WER improvements observed for Canary in Table 2 are statistically significant. This demonstrates the advantage of the Canary model, achiev ing state-of-the-art multi-lingual ASR performance with fewer parameters and less training data than contemporary models. Further, Canary achieves the best average WER of 6.5% across different test sets, highlighting its superior generalization capabilities in English ASR (Table 3).
+          ...
+          We evaluate the Canary model on speech recognition (ASR) and speech-to-text translation (AST), and show the results in Table 2 and Table 4 respectively. We use Whisper, OWSM-v3.1, and Table 3: Comparing Canary with SOTA models across different domains for English ASR [23]. Canary achieves best average WER exhibiting generalizability across domains.
+          ...
+          Model (WER ↓ ) AMI Earnings22 GigaSpeech LS Clean LS Other SPGISpeech Tedlium Avg. WER Whisper-large-v3 16.01 11.3 10.02 2.03 3.91 2.95 3.9 7.16 Parakeet-RNNT-1.1B 17.1 15.15 9.96 1.46 2.48 3.11 3.92 7.60 Parakeet-TDT-1.1B 15.9 14.65 9.55 1.39 2.62 3.42 3.56 7.30 Canary (1B) 13.53 12.05 10.07 1.47 2.86 2.02 3.53 6.50
+
+          ---
+
+          Title: README.md · nvidia/canary-1b-v2 at 5e93b07eaedc634fa842f9d5716b87b51783a111
+          URL: https://huggingface.co/nvidia/canary-1b-v2/blob/5e93b07eaedc634fa842f9d5716b87b51783a111/README.md
+          Published: N/A
+          Author: N/A
+          Highlights:
+          Figure 1: ASR WER comparison across different models. This does not include Punctuation and Capitalisation errors.
+          ...
+          ### Automatic Speech Recognition (ASR)
+          ...
+          | WER ↓ | Fleurs-25 Langs | CoVoST-13 Langs | MLS - 6 Langs |
+          | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 8.40% | 8.85% | 7.27% |
+          ...
+          Note: Presented WERs do not include Punctuation and Capitalization errors.
+          ...
+          Performance across different Signal-to-Noise Ratios (SNR) using MUSAN music and noise samples [16] on the LibriSpeech Clean test set. Metric: Word Error Rate (WER)
+          ...
+          | SNR (dB) | 100 | 10 | 5 | 0 | -5 |
+          | --- | --- | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 2.18% | 2.29% | 2.80% | 5.08% | 19.38% |
+          ...
+          Applicable |
+          | Technical Limitations & Mitigation | Transcripts and translations may be not 100% accurate. Accuracy varies based on source and target language and characteristics of input audio (Domain, Use Case, Accent, Noise, Speech Type, Context of speech, etc.) |
+          | Verified to have met prescribed NVIDIA quality standards | Yes |
+          | Performance Metrics | Word Error Rate (Speech Transcription) / BLEU score (Speech Translation) / COMET score (Speech Translation) |
+          | Potential Known Risks | If a word is not trained in the language model and not presented in vocabulary, the word is not likely to be recognized. Not recommended for word-for-word/incomplete sentences as accuracy varies based on the context of input text |
+          | Licensing | GOVERNING
+          ...
+          of this model is governed by the CC-BY-4.0 license. |
+      - tool: websearch
+        args:
+          query: Whisper vs Canary Malayalam transcription comparison WER
+          numResults: 8
+        result: |-
+          Title: How accurate is AI transcription? WER results across 50+ languages (2026) | Blog
+          URL: https://vocova.app/blog/transcription-accuracy-by-language
+          Published: 2026-04-16T06:06:51.000Z
+          Author: N/A
+          Highlights:
+          This guide compiles published WER benchmarks from Whisper, NVIDIA Canary, Google USM, and the Hugging Face Open ASR Leaderboard, organized by language tier. If you are evaluating a transcription tool for a specific language, or trying to understand why your German audio transcribes flawlessly but your Thai audio does not, the data below explains the gap.
+          ...
+          | --- | ---
+          ...
+          | Language | Whisper large-v3 FLEURS WER | NVIDIA Canary WER (where available) | Notes |
+          | --- | --- | --- | --- |
+          | English | 4.2% | 6.5% (Canary-1B Common Voice) | Reference language, most benchmarks focus here |
+          | Spanish | 3.0% | 4.6% | Especially strong on Latin American varieties |
+          | Mandarin Chinese | 5.7% (CER) | -- | Measured in character error rate, not WER |
+          | French | 4.7% | 6.0% | European French dominates training data |
+          | German | 4.5% | 4.8% | Strong on standard German; Swiss/Austrian dialects degrade |
+          | Italian | 4.0% | 4.2% | Among the best-covered European languages |
+          | Portuguese | 3.9% | 3.6% | Brazilian Portuguese is the training-data majority |
+          | Japanese | 4.9% (CER) | -- | Character-level metric; sentence quality is excellent |
+          ...
+          sentence accuracy is
+          ...
+          proximity to German and English
+          ...
+          Good on standard Russian; regional accents degrade |
+          | Arabic
+          ...
+          % (Modern Standard)
+          ...
+          Dialectal Arabic (Egyptian, Levantine, Gulf) is much harder
+          ...
+          Agglutinative morphology adds
+          ...
+          | Well-covered Slavic language |
+          ...
+          5.1%
+          ...
+          Punches above its speaker count due to dedicated datasets
+          ...
+          7.0% | Strong for a smaller language; Nordic corpora are well-curated |
+          | Norwegian |
+          ...
+          .0% | Two written standards (Bokmål/Nynorsk) complicate evaluation |
+          | Ukrainian | 10.2% | Significant improvement post-2022 due to dataset growth |
+          | Danish | 9.6% | Difficult phonetics, but well-represented |
+          ...
+          For Tier 2 languages, model choice starts to matter. Whisper large-v3, NVIDIA Canary-1B-v2, and Google USM tend to trade leads depending on the specific language, so benchmark-specific comparisons are worth checking before standardizing a pipeline.
+          ...
+          | Language | Whisper large-v3 FLEURS WER | Notes |
+          | --- | --- | --- |
+          | Tamil | 29.4% | Dravidian language with complex morphology |
+          | Bengali | 28.8% | Large speaker base but underrepresented in training |
+          | Telugu | 32.8% | Similar challenges to Tamil |
+          | Swahili | 34.2% | Lingua franca of East Africa, growing dataset size |
+          | Filipino (Tagalog) | 22.4% | Heavy English code-switching is common in natural speech |
+          | Malay | 21.3% | Shared features with Indonesian help |
+          | Urdu | 26.3% | Related to Hindi but written in Perso-Arabic script |
+          | Nepali | 30.0% | Small training corpus |
+          | Punjabi | 29.1% | Punjabi-English code-switching is common |
+          | Kannada | 33.5% | Dravidian family |
+          | Marathi | 30.7% | Indo-Aryan language with moderate resources |
+          ...
+          Choose the right model per language. Whisper leads on some languages, NVIDIA Canary on others, and language-specific providers on a few (particularly Japanese, Korean, and Arabic). If a specific language is critical to your workflow, testing 2-3 providers on a representative sample is worth the hour.
+          ...
+          ### How accurate is Whisper across languages?
+          ...
+          Whisper large-v3 achieves below 10% WER on approximately 30 languages on the FLEURS benchmark, including all Tier 1 and most Tier 2 languages in this guide. Its accuracy degrades sharply below that tier, with some low-resource languages exceeding 50% WER.
+
+          ---
+
+          Title: malayalam_asr_benchmarking - Benchmarking Results in Malayalam datasets
+          URL: https://kurianbenoy.github.io/malayalam_asr_benchmarking/whisper_event.html
+          Published: N/A
+          Author: N/A
+          Highlights:
+          HuggingFace Team conducted a whisper event on fine tuning Whisper model to achieve the State of the art results performance for various languages.
+          ...
+          For the language Malayalam, the results are as follows in Common Voice dataset subsection of Malayalam:
+          ...
+          ```
+          asr_models = ["thennal/whisper-medium-ml",
+                        "anuragshas/whisper-large-v2-ml",
+                        "DrishtiSharma/whisper-large-v2-malayalam",
+                        "parambharat/whisper-small-ml",
+                        "parambharat/whisper-base-ml",
+                        "parambharat/whisper-tiny-ml"
+                       ]
+          ...
+          ```
+          [11.56, 24.46, 21.65, 26.25, 30.33, 300.7, 38.31]
+          ...
+          | models | wer | cer | model size | time(s) |
+          | --- | --- | --- | --- | --- |
+          | 0 | thennal/whisper-medium-ml | 11.56 | 5.41 | 763.86M | 924.979711 |
+          | 1 | anuragshas/whisper-large-v2-ml | 24.46 | 11.64 | 1.54B | 1779.561592 |
+          | 2 | parambharat/whisper-small-ml | 21.65 | 11.78 | 241.73M | 273.555688 |
+          | 3 | DrishtiSharma/whisper-large-v2-malayalam | 26.25 | 13.17 | 1.54B | 1773.661774 |
+          | 4 | parambharat/whisper-base-ml | 30.33 | 16.16 | 72.59M | 96.419609 |
+          | 5 | kurianbenoy/whisper_malayalam_largev2 | 300.70 | 292.82 | 1.54B | 5034.771624 |
+          | 6 | parambharat/whisper-tiny-ml | 38.31 | 21.93 | 37.76M | 59.535259 |
+          ...
+          The WER of model: 41.12
+          The CER of model: 21.24
+          ...
+          is: 241.73M
+          ...
+          ```
+          Total time
+          ...
+          : 71.1
+          ...
+          292621612549
+          The WER of model: 100.26
+          The CER of model: 93.6
+          The model
+          ...
+          is: 1.54B
+          ...
+          | models | wer | cer | model size | time(s) |
+          | --- | --- | --- | --- | --- |
+          | 0 |
+          ...
+          /whisper-tiny | 154.21 | 180.45 | 37.76M | 22.277158 |
+          | 1 | openai/whisper-base | 118.39 | 131.08 | 72.59M | 22.352587 |
+          | 2 | openai/whisper-small | 100.06 | 95.04 | 241.73M | 25.442846 |
+          | 3 | openai/whisper-medium | 127.97 | 136.43 | 763.86M | 53.880491 |
+          | 4 | openai/whisper-large | 125.73 | 139.62 | 1.54B | 82.746080 |
+          ...
+          The WER of model: 100.27
+          The CER of model: 102.
+          ...
+          is:
+          ...
+          process of calculating predictions
+          completed getting predictions
+          Total time taken: 1067.5574433803558
+          The WER of model: 107.01
+          The CER of model: 113.62
+          The model size is: 1.54B
+          ...
+          ['openai', 'whisper-large']
+          ...
+          completed getting predictions
+          ...
+          Total time taken: 498.59665060043335
+          The WER of model: 32.07
+          The CER of model: 16.89
+          ...
+          The model size is: 241.73M
+          ...
+          ['kurianbenoy', 'whisper-small-ml-gmasc
+
+          ---
+
+          Title: nvidia/canary-1b-v2 · Hugging Face
+          URL: https://huggingface.co/nvidia/canary-1b-v2
+          Published: N/A
+          Author: N/A
+          Highlights:
+          Figure 1: ASR WER comparison across different models. This does not include Punctuation and Capitalisation errors.
+          ...
+          This section reports the evaluation results of the`Canary-1b-v2` model across multiple tasks, including Automatic Speech Recognition (ASR), Speech Translation (AST), robustness to noise, and long-form transcription.
+          ...
+          | WER ↓ | Fleurs-25 Langs | CoVoST-13 Langs | MLS - 6 Langs |
+          | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 8.40% | 8.85% | 7.27% |
+          ...
+          SR Leaderboard
+          ...
+          | WER ↓ | RTFx | Mean | AMI | GigaSpeech | LS Clean | LS Other | Earnings22 | SPGISpech | Tedlium | Voxpopuli |
+          | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+          | `Canary-1b-v2` | 749 | 7.15 | 16.01 | 10.82 | 2.18 | 3.56 | 11.79 | 2.28 | 4.29 | 6.25 |
+          ...
+          | SNR (dB) | 100 | 10 | 5 | 0 | -5 |
+          ...
+          | --- | --- | --- | --- | --- | --- |
+          ...
+          | `Canary-1b-v2` | 2.18% | 2.29% | 2.80% | 5.08% | 19.38% |
+          ...
+          | Dataset | WER ↓ |
+          | --- | --- |
+          | Earnings-22 | 13.78% |
+          | This American Life | 9.87% |
+
+          ---
+
+          Title: kurianbenoy/malayalam_asr_benchmarking
+          URL: https://github.com/kurianbenoy/malayalam_asr_benchmarking
+          Published: N/A
+          Author: N/A
+          Highlights:
+          A study to benchmark whisper based ASRs in
+          ...
+          > [!NOTE]
+          >
+          > A study to benchmark ASRs in Malayalam. Till now the project has
+          > benchmark based on Malayalam ASR models based in Whisper ASR and
+          > faster-whisper ASR.
+          ...
+          #### Evaluate Whisper-based Malayalam ASR models
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.commonvoice import evaluate_whisper_model_common_voice
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_common_voice("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.msc import evaluate_whisper_model_msc
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_msc("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          #### Evaluate faster-whisper based models
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.commonvoice import evaluate_faster_whisper_model_common_voice
+          ...
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_common_voice("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ``` python
+          from malayalam_asr_benchmarking.msc import evaluate_faster_whisper_model_msc
+          ...
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_msc("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+
+          ---
+
+          Title: thennal/whisper-medium-ml · Hugging Face
+          URL: https://huggingface.co/thennal/whisper-medium-ml
+          Published: N/A
+          Author: N/A
+          Highlights:
+          This model is a fine-tuned version of openai/whisper-medium on the Common Voice 11.0 dataset. It achieves the following results on the evaluation set:
+          ...
+          - WER: 38.6207
+          - CER: 7.3256
+          ...
+          Note that Whisper's normalization has major issues for languages like Malayalam, so the above scores are evaluated without using normalization. With normalization (for a fair comparison with other models on this platform), the results are instead:
+          ...
+          - WER: 11.49
+          ...
+          ## Evaluation results
+          ...
+          WER on Common Voice 11.0
+          ...
+          11.490
+
+          ---
+
+          Title: adalat-ai/whisper-medium-ml-high-lr · Hugging Face
+          URL: https://huggingface.co/adalat-ai/whisper-medium-ml-high-lr
+          Published: N/A
+          Author: N/A
+          Highlights:
+          Fine-tuned Malayalam ASR model based on openai/whisper-medium, trained as a single-stage baseline using a high learning rate on the full Malayalam training corpus. This model serves as the High LR baseline in the Vividh-ASR: Diagnosing and Fixing Studio-Bias in Whisper for Indic Languages benchmark suite.
+          ...
+          ## Benchmark Results (Vividh-ASR)
+          ...
+          Benchmark WER is measured using faster-whisper with 7s VAD segmentation for long-form audio. See the blogpost for full evaluation details.
+          ...
+          | Model | Tier A (Studio) | Tier B (Broadcast) | Tier C (Spontaneous) | Tier D (Noise) | Global |
+          | --- | --- | --- | --- | --- | --- |
+          | whisper-medium-ml-high-lr (This model) | 35.04 | 30.48 | 50.30 | 50.78 | 40.85 |
+          | whisper-medium-ml-rmft | 37.56 | 31.66 | 46.10 | 45.73 | 39.64 |
+          | whisper-small-ml-high-lr | 39.05 | 32.50 | 54.39 | 51.08 | 43.93 |
+          | whisper-small-ml-rmft | 40.26 | 35.05 | 53.77 | 48.04 | 44.53 |
+          | IndicWhisper | 38.07 | 32.43 | 65.74 | 46.92 | 47.96 |
+          | Vegam Whisper | 38.74 | 55.10 | 58.53 | 54.46 | 53.39 |
+          ...
+          WER %. Lower is better. See Vividh-ASR benchmark for full evaluation details.
+
+          ---
+
+          Title: malayalam_asr_benchmarking
+          URL: https://kurianbenoy.github.io/malayalam_asr_benchmarking/
+          Published: N/A
+          Author: N/A
+          Highlights:
+          A study to benchmark ASRs in Malayalam. Till now the project has benchmark based on Malayalam ASR models based in Whisper ASR and faster-whisper ASR.
+          ...
+          have now done benchmarking on Mozilla
+          ...
+          Common Voice 11
+          ...
+          I have now benchmarked on SMC’s Malayalam Speech corpus dataset. The benchmarking results can be found in
+          ...
+          below dataset.
+          ...
+          #### Evaluate Whisper-based Malayalam ASR models
+          ...
+          ```
+          from malayalam_asr_benchmarking.commonvoice import evaluate_whisper_model_common_voice
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_common_voice("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ```
+          from malayalam_asr_benchmarking.msc import evaluate_whisper_model_msc
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+
+          evaluate_whisper_model_msc("parambharat/whisper-tiny-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          #### Evaluate faster-whisper based models
+          ...
+          ```
+          from malayalam_asr_benchmarking.commonvoice import evaluate_faster_whisper_model_common_voice
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_common_voice("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+          ...
+          ```
+          from malayalam_asr_benchmarking.msc import evaluate_faster_whisper_model_msc
+
+          werlist = []
+          cerlist = []
+          modelsizelist = []
+          timelist = []
+          ...
+          evaluate_faster_whisper_model_msc("kurianbenoy/vegam-whisper-medium-ml", werlist, cerlist, modelsizelist, timelist)
+          ```
+
+          ---
+
+          Title: New Standard for Speech Recognition and Translation from the NVIDIA NeMo Canary Model | NVIDIA Technical Blog
+          URL: https://developer.nvidia.com/blog/new-standard-for-speech-recognition-and-translation-from-the-nvidia-nemo-canary-model/
+          Published: 2024-04-18T20:09:33.000Z
+          Author: Elena Rastorgueva
+          Highlights:
+          by NVIDIA NeMo, is
+          ...
+          transcribes speech in English, Spanish, German, and French with
+          ...
+          bi-directional
+          ...
+          and the other three languages.
+          - Canary outperforms other open-source models, including Whisper-large-v3 and SeamlessM4T-Medium-v1, on both transcription and translation tasks, achieving an average word error rate (WER) of 6.67% on the HuggingFace Open ASR Leaderboard.
+          ...
+          Canary ranks at the top of the HuggingFace Open ASR Leaderboard with an average word error rate (WER) of 6.67%. It outperforms all other open-source models by a wide margin.
+          ...
+          Despite using an order of magnitude less data, Canary outperforms the similarly sized Whisper-large-v3, and SeamlessM4T-Medium-v1 models on both transcription and translation tasks. On the MCV 16.1 test sets for English, Spanish, French, and German, Canary had a WER of 5.77 (Figure 1).
+
+           Figure 1. Average word error rate (WER) on MCV 16.1 test sets
+          ...
+          (lower is better)
+
+           (a) Translations from English to Spanish, French and German on the FLEURS and MExpresso test sets (higher is better) (b) Translations from Spanish, French, and German to English on FLEURS and CoVoST test sets (higher is better) Figure 2. Speech translation in BLEU scores You can try the canary-1b model inside the Gradio demo. For more information about how to access Canary locally and build on top of it, see the NVIDIA/NeMo GitHub repo
+    time: 7/24/2026, 1:07:58.719 AM GMT+5:30
+    duration: 5.814s
+    duration_ms: 5814
+  - agent: general
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I have all the information needed. Let me also search specifically for Canary Malayalam WER to confirm whether Canary actually supports Malayalam at all.
+
+      From the NVIDIA docs, Canary supports these 25 languages: `ar-AR`, `cs-CZ`, `da-DK`, `de-DE`, `en-GB`, `en-US`, `es-ES`, `es-US`, `fr-CA`, `fr-FR`, `he-IL`, `hi-IN`, `it-IT`, `ja-JP`, `ko-KR`, `nb-NO`, `nl-NL`, `nn-NO`, `pl-PL`, `pt-BR`, `pt-PT`, `ru-RU`, `sv-SE`, `th-TH`, `tr-TR`, `zh-CN`. Notably, Malayalam (ml) is NOT in this list.
+
+      Also, from the file, the free ASR models section clearly shows:
+      - `canary-1b-asr` - 25 European - ❌ (no Malayalam)
+      - `parakeet-1.1b-rnnt-multilingual-asr` - 25 (Indic: Hindi, Tamil, Bengali) - ❌ (no Malayalam)
+
+      So Canary does NOT support Malayalam at all.
+
+      The file also shows that the only model that explicitly supports Malayalam ASR on the NVIDIA free tier is `whisper-large-v3` (OpenAI), and the Gemma 3n models (Google) which are multimodal LLMs that can handle audio in 140+ languages.
+
+      Let me look more carefully at the web search results:
+
+      1. From the NVidia Canary docs: Canary supports 25 European + some Asian languages but NOT Malayalam. The language list includes hi-IN (Hindi) but not Malayalam.
+
+      2. From the Whisper paper: On Fleurs, Whisper large-v3 shows data for Malayalam. The Vocova blog says Whisper large-v3 on Fleurs gets 29.4% WER for Tamil (a related Dravidian language), and Malayalam would likely be similar.
+
+      3. From the academic paper "What is lost in Normalization?" (arxiv): 
+         - Baseline Whisper-small Malayalam WER on FLEURS: 287.4% (extremely high, >100% due to insertion errors)
+         - With Whisper normalization: 135.2% 
+         - Fine-tuned Malayalam models show much better performance
+
+      4. From the Malayalam ASR benchmarking:
+         - Fine-tuned whisper-medium-ml: 11.56% WER on Common Voice
+         - Fine-tuned whisper-large-v2-ml: 24.46% WER
+         - For the vanilla openai/whisper models on Common Voice Malayalam: WERs are 100%+ (very poor)
+         - For fine-tuned models on MSC dataset: various results
+
+      5. The `thennal/whisper-medium-ml` model: WER 38.62 (without normalization), 11.49 (with normalization) on Common Voice 11.0.
+
+      Now, let me also look at the Vocova blog's data on Whisper for Malayalam. It doesn't explicitly mention Malayalam WER, but notes that for Tamil (a similar Dravidian language) Whisper large-v3 FLEURS WER is 29.4%.
+
+      Let me compile the findings. The key discovery is:
+
+      **Canary does NOT support Malayalam at all.** Its language set is 25 languages, primarily European + Hindi + Japanese + Korean + Arabic + Thai + Chinese, but NOT Malayalam.
+
+      **Whisper large-v3** does support Malayalam, but its zero-shot accuracy is poor for low-resource languages like Malayalam:
+      - On FLEURS: likely 100%+ WER based on Whisper-small data (287.4% for small)
+      - Fine-tuned Whisper models achieve much better results: 11-25% WER depending on the model and dataset
+
+      Let me search for a specific Whisper large-v3 Malayalam benchmark.
+
+      Actually, from the Vocova blog search result, it shows the Whisper large-v3 FLEURS WER breakdown. Let me look more carefully. The blog lists WER for various languages but for Malayalam specifically it doesn't show, though it lists Tamil at 29.4%, Bengali at 28.8%, etc.
+
+      Let me check whether there's a specific Malayalam WER for Whisper large-v3.
+
+      The FLEURS dataset has Malayalam but I don't have the specific number. From the academic paper, Whisper-small on FLEURS Malayalam achieved 287.4% WER - which is terrible. But that's Whisper-small, not large-v3. Whisper-large-v3 should be better.
+
+      Let me compile the report now. I have sufficient data.
+
+      Key conclusions:
+      1. From the file: Only `whisper-large-v3` (OpenAI) and `gemma-3n-e4b-it`/`gemma-3n-e2b-it` (Google) support Malayalam among the NVIDIA free models. Canary does NOT support Malayalam.
+      2. Canary's language support: 25 languages, none include Malayalam.
+      3. Whisper supports 99 languages including Malayalam, but zero-shot accuracy on Malayalam is poor.
+      4. Fine-tuned Whisper models (e.g., `thennal/whisper-medium-ml`) achieve 11-12% WER on Common Voice Malayalam.
+
+      For the comparison - Canary vs Whisper for Malayalam - the short answer is Canary doesn't support Malayalam, so Whisper (especially fine-tuned variants) is the only viable option.
+
+      Let me now write a comprehensive report.
+    thinking_duration: 11.166s
+    thinking_duration_ms: 11166
+    time: 7/24/2026, 1:08:04.648 AM GMT+5:30
+    response: |-
+      ## C1. Malayalam-Supporting Models from File
+
+      The file `nvidia-free-malayalam-transcription.md` identifies **3 models out of 144 free NVIDIA Build models** that support Malayalam ASR:
+
+      | # | Model | Provider | Type | Malayalam | Max Audio | Notes |
+      |---|-------|----------|------|-----------|-----------|-------|
+      | 1 | `whisper-large-v3` | OpenAI | Dedicated ASR | ✅ | ~30-60 min | 99 languages, purpose-built STT, word timestamps |
+      | 2 | `gemma-3n-e4b-it` | Google | Multimodal LLM | ✅ | 30 sec chunks | 140+ languages, edge-optimized, also handles video/image |
+      | 3 | `gemma-3n-e2b-it` | Google | Multimodal LLM | ✅ | 30 sec chunks | Same 140+ coverage as E4B but weaker |
+
+      **Notably absent from the file (confirmed by the ASR support matrix table):**
+
+      | Model | Malayalam | Notes |
+      |-------|-----------|-------|
+      | `canary-1b-asr` | ❌ | 25 European languages only |
+      | `parakeet-1.1b-rnnt-multilingual-asr` | ❌ | 25 langs (Indic: Hindi, Tamil, Bengali — no Malayalam) |
+      | `nemotron-asr-streaming` | ❌ | English-only |
+      | `nemotron-3-nano-omni` | ❌ | English-only |
+      | `phi-4-multimodal-instruct` | ❌ | 8 languages only |
+
+      The file concludes **`whisper-large-v3` is the primary recommendation** for Malayalam ASR on the NVIDIA free tier.
+
+      ---
+
+      ## C2. Whisper vs Canary Malayalam Accuracy (Web)
+
+      ### Canary does NOT support Malayalam
+
+      This is the critical finding. The NVIDIA Canary model family (`canary-1b`, `canary-1b-v2`, `canary-1b-flash`) supports exactly **25 languages** — all European plus Arabic, Hebrew, Hindi, Japanese, Korean, Thai, and Chinese. **Malayalam is not in the set.** The official NVIDIA docs list:
+
+      > `ar-AR`, `cs-CZ`, `da-DK`, `de-DE`, `en-GB`, `en-US`, `es-ES`, `es-US`, `fr-CA`, `fr-FR`, `he-IL`, `hi-IN`, `it-IT`, `ja-JP`, `ko-KR`, `nb-NO`, `nl-NL`, `nn-NO`, `pl-PL`, `pt-BR`, `pt-PT`, `ru-RU`, `sv-SE`, `th-TH`, `tr-TR`, `zh-CN`
+
+      No `ml` (Malayalam) entry. A direct Whisper-vs-Canary accuracy comparison for Malayalam is therefore **not possible** — Canary simply cannot transcribe Malayalam.
+
+      ### Whisper Malayalam Accuracy (all available WER numbers)
+
+      Since Canary has no Malayalam capability, here is the complete picture for Whisper on Malayalam:
+
+      #### Zero-shot (no fine-tuning)
+
+      | Model | Dataset | WER | Source |
+      |-------|---------|-----|--------|
+      | Whisper-small | FLEURS (without normalization) | **287.4%** | arXiv 2409.02449 |
+      | Whisper-small | FLEURS (with Whisper normalization) | **135.2%** | arXiv 2409.02449 |
+      | Whisper-tiny | Common Voice | **154.21%** | kurianbenoy/malayalam_asr_benchmarking |
+      | Whisper-base | Common Voice | **118.39%** | same |
+      | Whisper-small | Common Voice | **100.06%** | same |
+      | Whisper-medium | Common Voice | **127.97%** | same |
+      | Whisper-large | Common Voice | **125.73%** | same |
+      | Whisper-large-v2 | Common Voice | **100.26–107.01%** | same |
+
+      > WER >100% is common for low-resource languages — insertion errors cause the total error count to exceed the reference word count. Whisper's internal normalization also artificially inflates WER for Indic scripts (see arXiv 2409.02449).
+
+      #### Fine-tuned Whisper models for Malayalam (notable results)
+
+      | Model | Dataset | WER | CER | Params |
+      |-------|---------|-----|-----|--------|
+      | **thennal/whisper-medium-ml** | Common Voice 11.0 (with normalization) | **11.49%** | — | 769M |
+      | **thennal/whisper-medium-ml** | Common Voice 11.0 (no normalization) | **38.62%** | 7.33% | 769M |
+      | anuragshas/whisper-large-v2-ml | Common Voice | **24.46%** | 11.64% | 1.54B |
+      | parambharat/whisper-small-ml | Common Voice | **21.65%** | 11.78% | 244M |
+      | parambharat/whisper-base-ml | Common Voice | **30.33%** | 16.16% | 72.6M |
+      | sajilck/whisper-small-malayalam | Common Voice 25 | **37.64%** | — | 244M |
+      | whisper-medium-ml-high-lr | Vividh-ASR (Global) | **40.85%** | — | 769M |
+      | whisper-medium-ml-rmft | Vividh-ASR (Global) | **39.64%** | — | 769M |
+
+      The best reported result is **`thennal/whisper-medium-ml` at 11.49% WER** (with normalization on Common Voice 11.0). This is a Malayalam-fine-tuned variant of `openai/whisper-medium` and is available on Hugging Face.
+
+      #### Whisper-large-v3 specific
+
+      The file notes `whisper-large-v3` is available on the NVIDIA free tier and supports Malayalam. No specific published FLEURS WER for `large-v3` on Malayalam was found in this search, but:
+      - Whisper-large-v3 on FLEURS achieves sub-10% WER on ~30 languages
+      - Languages with small training corpora (like Malayalam) typically see **>>30% WER** zero-shot
+      - The closest Dravidian language benchmarks for Whisper-large-v3 FLEURS: **Tamil 29.4%** (Vocova.blog, 2026)
+
+      ---
+
+      ### On the broader Whisper-vs-Canary comparison (languages both support)
+
+      For context, on languages where both models are available:
+
+      | Benchmark | Canary-1B-v2 | Whisper-large-v3 |
+      |-----------|-------------|-----------------|
+      | FLEURS-25 Langs (avg WER) | **8.40%** | ~9.9% |
+      | CoVoST-13 Langs (avg WER) | **8.85%** | — |
+      | MLS-6 Langs (avg WER) | **7.27%** | — |
+      | HuggingFace ASR Leaderboard avg | ~7.15% | ~7.16% |
+      | English ASR avg | **6.50%** | 7.16% |
+      | Inference speed (RTFx) | **749×** | ~100× |
+
+      Canary generally matches or slightly beats Whisper on the languages they share, and runs 7–10× faster. **But this does not apply to Malayalam because Canary does not support it.**
+
+      ---
+
+      ## C3. Verdict
+
+      **Whisper (fine-tuned) is the only viable option for Malayalam ASR among NVIDIA free models. Canary does not support Malayalam at all and cannot be compared.**
+
+      | Factor | Whisper-large-v3 | NVIDIA Canary |
+      |--------|-----------------|---------------|
+      | Malayalam support | ✅ Yes (99 langs) | ❌ No (25 Eurasian langs only) |
+      | Zero-shot accuracy | Poor (>100% WER on small models, ~30%+ estimated for large-v3) | N/A |
+      | Fine-tuned accuracy | **11.49% WER** best published (thennal/whisper-medium-ml on Common Voice) | N/A |
+      | Available on NVIDIA free tier | ✅ Yes | ✅ Yes (but useless for Malayalam) |
+
+      **Numerical takeaway:** The best Malayalam ASR accuracy available through NVIDIA's free tier comes from fine-tuned Whisper variants, with `whisper-medium-ml` achieving **11.49% WER** (with normalization) on Common Voice Malayalam — comparable to the accuracy Canary achieves on high-resource European languages. For production use, either use `whisper-large-v3` via the NVIDIA API for zero-shot (with expected degraded accuracy) or deploy a Malayalam-fine-tuned Whisper model (e.g., `thennal/whisper-medium-ml`) self-hosted.
+

@@ -1,0 +1,2489 @@
+---
+session:
+  id: ses_065876d95ffeZsarlVWmCM9vTl
+  created: 7/25/2026, 11:40:20.907 PM GMT+5:30
+  updated: 7/25/2026, 11:41:29.734 PM GMT+5:30
+model:
+  id: deepseek-v4-flash-free
+  provider: opencode
+title: Atomic commit preview session-tracker.yaml
+
+---
+user:
+  text: commit the changes in /Users/dk/lab-data/ai-suite/session-tracker.yaml. strictly & deeply follow /Users/dk/lab-data/ai-suite/ai-agent-rules/git-atomic-commit-construction-rules.md instructions & /Users/dk/lab-data/ai-suite/.agents/skills/git-atomic-commit-construction/SKILL.md instructions. give me complete arranged commits preview. must contain complete hunk previews. we need maximum atomic commits. write commit preview file - use artifact naming skill for path.
+  time: 7/25/2026, 11:40:20.933 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants me to commit changes in session-tracker.yaml following the git-atomic-commit-construction rules and skill. Let me start by:
+
+      1. Reading the relevant rules and skill files
+      2. Understanding the current state of the file
+      3. Planning the atomic commits
+
+      Let me begin by reading the necessary files.
+    thinking_duration: 658ms
+    thinking_duration_ms: 658
+    tool_calls:
+      - tool: skill
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/ai-agent-rules/git-atomic-commit-construction-rules.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: title: Git Atomic Commit Construction
+          3: description: Authoritative protocol for analyzing, grouping, and arranging
+          4:     changes into logical, independent atomic units before execution.
+          5: category: Git & Repository Management
+          6: ---
+          7: 
+          8: 
+          9: # Git Atomic Commit Construction Rules
+          10: 
+          11: This document defines the mandatory protocol for creating "Arranged Commits"—
+          12: logical, independent, and atomic units of change. This approach ensures
+          13: high-quality history and minimizes regression risks.
+          14: 
+          15: **Prerequisite**: All actions must first adhere to the context and pre-check
+          16: protocols defined in [git-operation-rules.md](./git-operation-rules.md).
+          17: 
+          18: ***
+          19: 
+          20: ## 0. Section 0: Environment & Working Directory Management
+          21: 
+          22: Before performing any phase, the agent MUST establish reliable working directory handling.
+          23: 
+          24: - **Working Directory Targeting (CRITICAL)**: When executing git commands across
+          25:   one or more repositories, use `git -C <path> <command>` exclusively for reliability.
+          26:   
+          27:   ```bash
+          28:   # Recommended pattern for absolute paths
+          29:   git -C /workspaces/repo-name status
+          30:   git -C /workspaces/repo-name diff HEAD
+          31:   ```
+          32: 
+          33: - **Why `git -C` is mandatory**: Shell-level `cd` commands do not persist working
+          34:   directory state across stateless or multi-invocation execution environments
+          35:   (including tool chains, CI systems, and agent frameworks). Using `git -C` ensures
+          36:   every git command executes in the correct repository context regardless of how
+          37:   invocations are orchestrated.
+          38: 
+          39: - **Multi-Repository Workflows**: When analyzing or committing changes across
+          40:   multiple repositories in sequence, always use `git -C` with explicit absolute
+          41:   paths to prevent cross-repository contamination:
+          42:   
+          43:   ```bash
+          44:   git -C /repo1 status --porcelain
+          45:   git -C /repo2 status --porcelain
+          46:   git -C /repo1 add file.txt  # Executes only in /repo1
+          47:   ```
+          48: 
+          49: - **Audit Trail Clarity**: Using `git -C /absolute/path` makes command intent
+          50:   explicit in logs and transcripts, eliminating ambiguity about which repository
+          51:   is being operated on.
+          52: 
+          53: ***
+          54: 
+          55: ## 1. Phase 1: Repository State & Branch Verification
+          56: 
+          57: Before any staging or commit operations, the agent MUST verify the repository's health and branch state.
+          58: 
+          59: - **Active Branch Mandate**: The agent MUST NOT commit to a "detached HEAD" state (common in submodules).
+          60: - **Branch Checkout**: If in a detached state, the agent MUST explicitly check out the appropriate branch (usually the default branch, e.g., `main`) before proceeding.
+          61: - **Upstream Synchronization**: The agent MUST ensure the local branch is synchronized with its upstream (e.g., via `git pull`) to avoid conflicts during the push phase.
+          62: - **Build Tool Permissions**: The agent MUST ensure that necessary build tools (e.g., `gradlew`) have appropriate execute permissions before starting the commit process.
+          63: 
+          64: ***
+          65: 
+          66: ## 2. Phase 2: Deep Change Analysis
+          67: 
+          68: Before staging any files, the agent MUST perform a dependency analysis of all
+          69: modifications.
+          70: 
+          71: - **Complete Scope (Critical)**: The analysis MUST cover ALL three change
+          72:   categories — **staged**, **unstaged**, AND **untracked** — as a single
+          73:   unified inventory from the very first step. Untracked files are first-class
+          74:   members of the change scope, not a secondary check. Failing to include
+          75:   untracked files in the initial analysis leads to incomplete commit plans and
+          76:   files discovered only after execution.
+          77: - **Shared Identifiers**: Group changes that modify the same functions,
+          78:   classes, or constants across different files.
+          79: - **Cross-File References**: If file A depends on a change in file B (e.g., an
+          80:   import or a link), they MUST be part of the same atomic commit.
+          81: - **Untracked File Discovery**: The agent MUST include untracked files
+          82:   reported by `git status` in the initial change inventory. They MUST appear
+          83:   in the same file table and grouping analysis as staged and unstaged changes.
+          84: - **Implicit Tracking**: Any untracked file not excluded by `.gitignore` is a
+          85:   candidate for version control to ensure project completeness.
+          86: - **Mandatory Confirmation**: The agent MUST NOT stage or commit untracked
+          87:   files without explicit user confirmation, especially in repositories with
+          88:   minimal or default `.gitignore` files, to avoid accidentally committing
+          89:   private credentials, large binaries, or environment-specific files.
+          90: - **Categorical Alignment**: Group changes by their architectural layer (e.g.,
+          91:   UI, Logic, Docs) unless they are functionally coupled.
+          92: - **Workflow-First Priority**: If changes involve CI/CD workflows (GitHub
+          93:   Actions, scripts), the agent **MUST** fix, test, and verify the workflow
+          94:   functionality *before* arranging or executing commits. Functional stability
+          95:   of the CI pipeline takes precedence over documentation or stylistic
+          96:   refinements.
+          97: 
+          98: ***
+          99: 
+          100: ## 3. Phase 3: Logical Grouping (Arrangement)
+          101: 
+          102: The agent must "arrange" the detected changes into a proposed sequence of
+          103: commits.
+          104: 
+          105: - **Independence**: Each commit should be able to stand alone. If the
+          106:   repository were checked out at that commit, it should still build/function
+          107:   (or at least be logically coherent).
+          108: 
+          109: ### 2.5 Core Mandates & Process Discipline
+          110: 
+          111: To ensure absolute precision and user control, the agent MUST adhere to these foundational mandates:
+          112: 
+          113: - **Renaming & Reference Integrity (CRITICAL)**: When a file or symbol is
+          114:   renamed or moved, the agent MUST stage both the old file (deletion/move source)
+          115:   and the new file (addition/move target) together. ALL internal and external
+          116:   references to that name (links, CI workflows, imports, configuration pointers)
+          117:   MUST be updated within the SAME atomic commit.
+          118: - **Relocation Integrity (CRITICAL)**: When moving files between directories
+          119:   or repositories, the agent MUST update all internal relative paths within the
+          120:   moved files AND update all external references in the codebase within the
+          121:   SAME atomic commit.
+          122: - **Automated Commit Prohibition (GLOBAL)**: The agent MUST NOT automatically
+          123:   commit changes after performing any task (fixing errors, refactoring, moving
+          124:   files) unless explicitly instructed by the user for that specific action.
+          125: - **Staging Discipline & Git Status Analysis**: The agent MUST run `git status`
+          126:   before every staging action and analyze the output (including user-staged
+          127:   files). Only planned files/hunks for the CURRENT atomic unit should be staged.
+          128: - **Serial Execution & Command Isolation**: Commits must be executed one by one.
+          129:   Chaining commands (e.g., `&&`) is FORBIDDEN unless explicitly said by the user.
+          130:   **Rationale**: chaining suppresses the user's opportunity to inspect intermediate
+          131:   state (`git status`, `git diff`) and abort or amend before the next action fires.
+          132: - **Single-Linter Isolation**: Changes related to different linters (e.g.,
+          133:   Harper vs. Pylint) MUST NOT be clubbed. Rationale: They serve different
+          134:   technical purposes and should be committed separately to ensure maximum
+          135:   atomicity and ease of review.
+          136: - **Script Execution Prohibition**: The agent MUST NOT run any scripts during
+          137:   commit preparation unless explicitly authorized.
+          138: 
+          139: - **Atomic Principle**: Never commit half of a logical change. If a file
+          140:   contains two unrelated changes, use **Hunk-Based Staging**.
+          141: - **Buildable State Priority**: While atomicity is the goal, maintaining a
+          142:   buildable repository takes precedence. If a core infrastructure change
+          143:   (e.g., a signature change in a shared helper) breaks all consumers, the
+          144:   refactor and the resulting fixes in consumer files MUST be consolidated
+          145:   into a single commit. This prevents "broken" points in history.
+          146: - **The Commit Preview (Mandatory Verbose Display)**:
+          147:     - Present the proposed "Arranged Commits" to the user for approval using a
+          148:     structured format that provides **maximum details**.
+          149:     - For files with mixed concerns requiring hunk-based staging, the preview
+          150:     **MUST** include the specific **git hunks (diff blocks)** and a file
+          151:     preview for each logical unit.
+          152:     - Format:
+          153: 
+          154:     ````markdown
+          155:     ## Arranged Commits Preview
+          156: 
+          157:     ### Commit 1: [type](scope): [title]
+          158:     - **Files**: [file1.md], [file2.md]
+          159:     - **Message**:
+          160:       ```bash
+          161:       [type](scope): [title]
+          162: 
+          163:       [Body line 1]
+          164:       [Body line 2]
+          165:       ...
+          166:       ```
+          167:     - **Hunks/Preview**:
+          168:       ```diff
+          169:       [Show actual hunks for this commit]
+          170:       ```
+          171: 
+          172:     ### Commit 2: [type](scope): [title]
+          173:     - **Files**: [file3.md]
+          174:     - **Message**:
+          175:       ```bash
+          176:       [type](scope): [title]
+          177: 
+          178:       [Body line 1]
+          179:       ...
+          180:       ```
+          181:     ---
+          182:     Please say "start" to begin the sequential execution of these atomic
+          183:     commits.
+          184:     ````
+          185: 
+          186: - **Commit Authorization**: The agent **MUST NOT** proceed with any commit
+          187:   execution until the user explicitly says **"start"**. Other triggers like
+          188:   "commit" or "go" are insufficient; strict authorization ensures the user
+          189:   has reviewed the verbose preview.
+          190: 
+          191: ### 3.1 Interleaving Mandate (Artifact + Registry Registration)
+          192: 
+          193: Whenever a commit introduces or renames an artifact **and** a shared index /
+          194: registry file (e.g., root `AGENTS.md` skills table, `.gitmodules`, CI
+          195: workflow manifests) needs a corresponding row or entry for that artifact,
+          196: the registry hunk MUST be **staged in the same commit** as the artifact
+          197: itself — never batched into a separate "registration" commit at the end.
+          198: 
+          199: This applies equally to:
+          200: 
+          201: - **New skills**: the root `AGENTS.md` row for the skill belongs in the
+          202:   same commit as the skill's `SKILL.md` / `scripts/` files.
+          203: - **Submodule pointer advances**: the `.gitmodules` URL change and any root
+          204:   `AGENTS.md` row referencing the submodule belong in the same commit as
+          205:   the submodule sync (per §7.2).
+          206: - **Any artifact with a shared index entry**: treat the index row as part of
+          207:   the artifact's definition, not as metadata to be collected last.
+          208: 
+          209: Procedure for artifact commits when the registry file has mixed hunks (some
+          210: for this artifact, some unrelated):
+          211: 
+          212: 1. Identify the exact hunk(s) in the registry file that reference this
+          213:    artifact.
+          214: 2. Use `git add -p <registry-file>` to stage only those hunks alongside the
+          215:    artifact files.
+          216: 3. Leave unrelated hunks unstaged; they belong to their own artifact's commit
+          217:    or a later dedicated session.
+          218: 
+          219: Forbidden anti-pattern: "commit all artifacts first, then one final commit
+          220: registers them all in AGENTS.md" — this destroys per-feature traceability
+          221: and makes individual commits incomplete (the skill exists but is not
+          222: discoverable until a later commit).
+          223: 
+          224: ### 3.2 Batch-by-Batch Authorization (Long Sequences)
+          225: 
+          226: When the Arranged Commits sequence exceeds **5 commits**, the agent MUST
+          227: split the preview into **batches of at most 5 commits** and request a
+          228: separate `"start"` (or `"start batch N"`) per batch:
+          229: 
+          230: - Each batch preview is presented in full (§3 verbose format) before the
+          231:   agent executes any commit in that batch.
+          232: - After each batch is executed, the agent MUST emit a one-line summary
+          233:   (`Batch N committed: SHA1, SHA2, …`) and then present the **next**
+          234:   batch's preview.
+          235: - The user MAY abort, reorder, or modify subsequent batches between
+          236:   authorizations — the agent MUST NOT pre-stage files for batches that have
+          237:   not yet been authorized.
+          238: - The first batch MUST also include a top-level **Master Plan Table** with
+          239:   one row per planned commit (`# | type(scope): title | files | batch`) so
+          240:   the user has a single-pane view before authorizing batch 1.
+          241: 
+          242: ### 3.3 Pre-Execution Safety Stash (Mandatory for Multi-Commit Sequences)
+          243: 
+          244: Before executing any commit sequence of two or more commits (including any
+          245: batch governed by §3.2), the agent MUST capture a verifiable safety snapshot
+          246: of the full working-tree state — tracked modifications, staged hunks, AND
+          247: untracked files — and immediately re-apply it so the planned execution can
+          248: proceed against an unchanged tree. The snapshot persists until end-of-session
+          249: verification proves every planned change reached HEAD.
+          250: 
+          251: - **Why**: The Step-by-Step Execution mandate (§10) and the hunk-staging
+          252:   discipline (§4) generate transient intermediate states where a mistaken
+          253:   `git checkout`, `git reset`, IDE crash, or interrupted rebase can silently
+          254:   discard hand-assembled changes. A retained stash is the cheapest and
+          255:   highest-fidelity rollback primitive available.
+          256: - **What**: A single `git stash push -u -m "<descriptive-message>"` followed
+          257:   by an immediate `git stash apply` (NOT `pop`) preserves the snapshot AND
+          258:   restores the working tree in a single atomic primitive.
+          259: - **When**: Captured AFTER the Arranged Commit Preview is authorized and
+          260:   BEFORE the first commit of the sequence executes. Released ONLY after the
+          261:   end-of-session apply-back verification proves a clean no-op.
+          262: 
+          263: Delegation: the operational protocol (snapshot message conventions,
+          264: apply-not-pop discipline, no-op verification, gated drop, recovery paths
+          265: for IDE file-locks during apply) is owned by the
+          266: **Git Pre-Execution Safety Stash Skill** (`git-pre-execution-safety-stash`)
+          267: in the parent repository's skills tree. The skill MUST be invoked at the
+          268: start of every qualifying sequence and verified at end-of-session.
+          269: Pre-existing stashes of unclear origin discovered during inventory MUST
+          270: be classified via the **Git Stash Triage Skill** (`git-stash-triage`)
+          271: before the safety stash is pushed, to prevent stash-stack confusion.
+          272: 
+          273: > **If the immediate `git stash apply` fails** due to live editor
+          274: > conflicts (VS Code, Copilot, Eclipse, IntelliJ rewriting files between
+          275: > push and apply), do NOT retry — delegate to the [**Selective File
+          276: > Extraction from Stash (Phase 1g)**](https://github.com/baneeishaque/ai-suite/blob/a405f52/.agents/skills/git-pre-execution-safety-stash/SKILL.md#1g--stash-apply-conflict-recovery-via-selective-file-extraction)
+          277: > recovery path in the `git-pre-execution-safety-stash` skill. This path
+          278: > extracts per-commit files individually from the intact `stash@{0}`
+          279: > entry, working through the approved commit plan one commit at a time,
+          280: > without ever re-applying the full stash.
+          281: 
+          282: The URL above is SHA-pinned to parent commit `a405f52` so the link
+          283: resolves even in a standalone submodule clone. See the
+          284: [`redaction-portability` skill §0.2](https://github.com/baneeishaque/ai-suite/blob/a405f52/.agents/skills/redaction-portability/SKILL.md#02-submoduleparent-url-references--the-standalone-clone-gap)
+          285: for the three-option decision framework (relative path / SHA-pinned URL
+          286: / branch-pinned URL).
+          287: 
+          288: ***
+          289: 
+          290: ## 4. Phase 4: Interactive Hunk-Based Staging
+          291: 
+          292: When a file contains mixed concerns, the agent MUST use interactive staging
+          293: tools.
+          294: 
+          295: - **Command**: `git add -p <file>`
+          296: - **Philosophy (Chunk Committing)**: Also known as "hunk-based staging". This
+          297:   is the mandatory method for ensuring no "unrelated noise" or "piggybacked"
+          298:   style fixes leak into functional commits. Every modified line must be
+          299:   evaluated: "Does this line belong to the *current* atomic goal?"
+          300: - **Hunk-by-Hunk Execution**: During interactive staging, the agent MUST
+          301:   evaluate and respond to each hunk individually (`y`, `n`, `s`, etc.). Do
+          302:   not batch responses. This ensures each decision is deliberate and minimizes
+          303:   the risk of staging unrelated changes.
+          304: - **Granular Hygiene**: If a grammatical fix is discovered while implementing
+          305:   a feature, it MUST be staged and committed separately (either before or
+          306:   after) unless it is part of the same logical chunk. Continuous use of
+          307:   `git add -p` ensures high-quality, noise-free history.
+          308: - **Verification**: Run `git diff --cached` after staging each chunk to
+          309:   guarantee strictly atomic contents.
+          310: 
+          311: ### 4.3 Hunk-Stage Backup Cleanup (Sidecar Discipline)
+          312: 
+          313: When the agent uses any hunk-staging path that produces a sidecar backup
+          314: file on disk — most commonly `git add -p` interrupted mid-flow, the
+          315: in-editor `e` (edit-hunk) action, or programmatic `git apply` with a
+          316: manually authored patch — the agent MUST treat every `<file>.orig`,
+          317: `<file>.bak`, `<file>.full.bak`, `<file>.rej`, `<file>.staging-tmp`, and
+          318: similar sidecar as a Phase-4 artifact that MUST be disposed of before the
+          319: commit lands, never absorbed into it.
+          320: 
+          321: Mandatory protocol:
+          322: 
+          323: 1. **Detect** after each `git add -p` session and after any `e`/`apply`
+          324:    action: `git status --short` MUST show no untracked file whose name
+          325:    ends in `.orig`, `.bak`, `.full.bak`, `.rej`, `.staging-tmp`, or any
+          326:    organization-specific sidecar suffix.
+          327: 2. **Classify** every detected sidecar:
+          328:    - **Recoverable** — the sidecar holds content the agent or the user
+          329:      still needs (e.g., a rejected hunk that needs manual re-application,
+          330:      or a `.full.bak` produced because the previous staging attempt was
+          331:      aborted mid-edit). Move it OUT of the working tree (e.g., to
+          332:      `<workspace-root>/../scratch/` or a personal-sandbox branch) before
+          333:      proceeding.
+          334:    - **Disposable** — the sidecar duplicates a state already represented
+          335:      in the index, HEAD, or another branch. Delete it directly.
+          336: 3. **Verify** before committing: re-run `git status --short` and confirm
+          337:    zero sidecar matches. Sidecars MUST NOT be added to `.gitignore` as
+          338:    a substitute for cleanup — that hides the symptom and lets the next
+          339:    session re-encounter the same disposal decision blind.
+          340: 4. **NEVER `git add` a sidecar** "to clean up history later". The commit
+          341:    is the disposal decision; once a sidecar reaches the index, the only
+          342:    safe recovery is `git reset HEAD -- <sidecar>` followed by the
+          343:    classification above.
+          344: 
+          345: This rule composes with [§3.3 Pre-Execution Safety Stash](#33-pre-execution-safety-stash-mandatory-for-multi-commit-sequences):
+          346: the safety stash captures the pre-execution working tree once; the sidecar
+          347: cleanup happens per `add -p` invocation inside that window.
+          348: 
+          349: ***
+          350: 
+          351: ## 5. Phase 5: Formatting and Structural Partitioning
+          352: 
+          353: To prevent stylistic or structural changes from obscuring functional history,
+          354: the agent MUST explicitly partition these modifications into distinct
+          355: non-functional commits.
+          356: 
+          357: ### 4.1 Formatting & Stylistic Consolidation
+          358: 
+          359: - **Target**: Purely aesthetic changes such as indentation fixes, white-space
+          360:   adjustment, or Markdown header-level corrections.
+          361: - **Rule**: If multiple files require these adjustments, they MUST be clubbed
+          362:   into a single, dedicated "formatting-only" commit (Commit type: `style`).
+          363: 
+          364: ***
+          365: 
+          366: ### 4.2 Structural Refactor Isolation
+          367: 
+          368: - **Target**: Functional-preserving reorganizations such as alphabetical
+          369:   reordering of methods, variables, or constants.
+          370: - **Rule**: These changes MUST be isolated into dedicated commits (Commit type:
+          371:   `refactor`). Unlike formatting, large structural reorders should typically
+          372:   be committed on a per-file or per-logical-group basis to ensure the "move"
+          373:   history is clear.
+          374: - **Zero Mixture**: Never mix formatting (Phase 4.1) with structural refactors
+          375:   (Phase 4.2) or functional logic (Phase 2) in the same commit. Use
+          376:   `git add -p` or Intermediate State Synthesis to ensure absolute
+          377:   partitioning.
+          378: 
+          379: ***
+          380: 
+          381: ## 6. Phase 6: Configuration Coupling
+          382: 
+          383: Tool configurations and metadata must be atomically linked to the documentation
+          384: or code they support.
+          385: 
+          386: - **Functional Pairing**: Updates to `.vscode/settings.json` (e.g., cSpell
+          387:   words), `.lintrc`, or other configuration files MUST be staged and
+          388:   committed alongside the functional changes that necessitate them.
+          389: - **IDE Project Files**: Shared IDE configuration files (e.g., `.idea/` core
+          390:   XMLs or `.vscode/` shared settings) that establish the project structure,
+          391:   SDKs, or common tooling MUST be tracked and committed to ensure environment
+          392:   parity. Workspace-specific or personal settings (e.g., `workspace.xml`) MUST
+          393:   remain ignored.
+          394: - **Example**: If adding a new rule file introduces new technical terms, the
+          395:   cSpell update for those terms MUST be part of the same atomic unit as the
+          396:   rule file addition.
+          397: 
+          398: ***
+          399: 
+          400: ## 7. Phase 7: Submodule Synchronization Protocol
+          401: 
+          402: When managing submodules, the main repository's history must remain descriptive
+          403: and clear.
+          404: 
+          405: - **Synchronized Commits**: Every functional update in a submodule requiring a
+          406:   pointer update in the main repo MUST be coupled with its relevant main-repo
+          407:   configuration changes (e.g., CI scripts or IDE settings).
+          408: - **Orchestration**: Delegate metadata extraction to the
+          409:   `git_submodule_commit_details` skill to ensure zero-omission fidelity.
+          410: - **Commit Message Generation**: All submodule sync commits MUST follow the
+          411:   strict formatting, chronological ordering, and metadata requirements defined in
+          412:   [git-commit-message-rules.md#5-submodule-sync-commits-parent-repository](./git-commit-message-rules.md#5-submodule-sync-commits-parent-repository).
+          413: - **Submodule History Integrity**: Before updating a submodule pointer in the
+          414:   parent repository, the changes *within* the submodule MUST be committed
+          415:   according to these exact atomic construction rules. A "dirty" or
+          416:   uncommitted submodule state is prohibited during a parent-repo sync.
+          417: 
+          418: ***
+          419: 
+          420: ### 7.1 Ordering & Priority (CRITICAL)
+          421: 
+          422: - **Submodule-First Discipline**: When a submodule has pending commits (either
+          423:   staged, unstaged, or untracked), the agent MUST handle ALL submodule commits
+          424:   BEFORE proceeding to any parent-repository work. Submodule work takes
+          425:   absolute priority.
+          426: - **Parent Sync Trigger**: ONLY after the submodule's working tree is clean and
+          427:   all submodule commits are finalized does the agent check the parent repository
+          428:   for a stale submodule pointer. If the parent's recorded SHA differs from the
+          429:   submodule's HEAD, the parent sync commit becomes the **next atomic unit**.
+          430: 
+          431: ***
+          432: 
+          433: ### 7.2 Parent-Side Change Grouping
+          434: 
+          435: - **Related Parent Changes CAN be Grouped**: If the parent repository contains
+          436:   unstaged changes that are **directly related to the submodule update** (e.g.,
+          437:   adding skill implementation code for a newly committed rule, updating CI
+          438:   workflows that reference the submodule, or documentation that describes the
+          439:   submodule's new behavior), these changes MAY be combined with the submodule
+          440:   SHA sync commit into a single atomic unit.
+          441:     - The combined commit MUST clearly document BOTH the submodule pointer advance
+          442:     AND the parent-side functional changes in the commit body.
+          443:     - The commit message MUST explain the coupling rationale: e.g., "Skill
+          444:     implementation for the newly mandated rule" or "CI update to support
+          445:     submodule's new behavior."
+          446: - **Unrelated Parent Changes MUST be Separate**: If the parent repository has
+          447:   changes unrelated to the submodule update (e.g., fixing a typo in an unrelated
+          448:   README, updating a different skill), these MUST be staged and committed
+          449:   **after** the submodule sync commit completes, as a separate atomic unit.
+          450: 
+          451: ***
+          452: 
+          453: ### 7.3 Automatic Parent Sync Offer (MANDATORY)
+          454: 
+          455: Immediately after successfully committing ANY change to a submodule repository,
+          456: the agent MUST:
+          457: 
+          458: 1. **Check parent state** — If the submodule is nested inside a parent Git repo,
+          459:    run `git -C <parent-path> status` to verify the submodule entry shows
+          460:    `modified: <submodule-name> (new commits)`.
+          461: 2. **Present arranged commit preview** — Show the parent sync commit using the
+          462:    full arranged commits format (§4) BEFORE the user has a chance to say
+          463:    anything else.
+          464:    - If parent-side related changes exist, group them with the SHA update as
+          465:      described in §7.2.
+          466: 3. **Prompt explicitly**: "The parent repository needs a submodule SHA update.
+          467:    Execute sync?" (or equivalent directive).
+          468: 4. **On "yes"** — Execute the parent sync commit **immediately** without
+          469:    re-preview.
+          470: 5. **On "no" or ambiguous** — Do NOT commit. Await explicit user directive.
+          471: 6. **Do not proceed** to unrelated tasks until the parent sync matter is
+          472:    resolved (either committed or explicitly deferred by user).
+          473: 
+          474: ***
+          475: 
+          476: ## 8. Phase 8: Handling Generated Files vs. User Customization
+          477: 
+          478: When a file (e.g., `.gitignore`) contains both standard API-generated content
+          479: (e.g., from gitignore.io) and user-defined custom rules, these MUST be split
+          480: into separate commits.
+          481: 
+          482: - **Commit A (The Foundation)**: Commit **only** the standard, API-generated
+          483:   portion first.
+          484: - **Methodology**: Back up the full file, overwrite with the exact API content
+          485:   (or equivalent standard sections), and commit.
+          486: - **Rationale**: Establishes a clean, reproducible baseline.
+          487: - **Commit B (The Customization)**: Commit the user-defined sections (patches/
+          488:   custom rules) in a subsequent commit.
+          489: - **Rationale**: Clearly distinguishes between "standard boilerplate" and
+          490:   "project-specific logic".
+          491: - **Handling Modifications**: If the user has altered the API-generated
+          492:   portion, these alterations must also be separated from the raw API import
+          493:   if possible, or documented clearly as user-patches on top of the base.
+          494: 
+          495: ***
+          496: 
+          497: ## 9. Phase 9: Commit Message Quality Standards
+          498: 
+          499: - **Specificity Over Genericity**: Avoid generic titles like `os-specific`.
+          500:   Instead, list the specific components: `add linux, macos, and windows
+          501:   gitignore rules`.
+          502: - **Anti-Repetition**: The commit body MUST NOT merely rephrase the title.
+          503: - **Bad**: Title: `add vscode gitignore rules`. Body: `Add VisualStudioCode
+          504:   exclusion rules`.
+          505: - **Good**: Title: `add vscode gitignore rules`. Body: `Sourced from
+          506:   gitignore.io to exclude editor artifacts`.
+          507: - **Context Enrichment**: Ensure it explains the 'Why' behind the changes,
+          508:   especially for architectural or security-related decisions.
+          509: - **Reflecting Atomic Logic**: The commit body MUST explicitly state the
+          510:   rationale for grouping these specific changes together. If multiple files
+          511:   are involved, explain their functional coupling (e.g., "Updates both the
+          512:   API endpoint and the matching UI handler to ensure type safety for the new
+          513:   status field").
+          514: - **Constraint Documentation**: Mention any specific constraints or external
+          515:   dependencies that influenced the atomic grouping (e.g., "Includes the
+          516:   shared utility class to satisfy the compile-time dependency in the main
+          517:   logic").
+          518: - **Contextual Accuracy**: Ensure terms usage is precise (e.g., "Supabase
+          519:   project-specific" instead of generic "project-specific").
+          520: - **Body/Diff Congruence**: The commit message body **MUST** be a complete and
+          521:   accurate human-readable summary of all changes presented in the `Hunks/
+          522:   Preview` section of the commit plan. It is the AI's primary responsibility
+          523:   to make it easy for the user to confirm that the textual description
+          524:   perfectly matches the code modifications. Any discrepancy identified by the
+          525:   user requires an immediate and corrected preview.
+          526: 
+          527: ***
+          528: 
+          529: ## 10. Phase 10: Execution & Verification
+          530: 
+          531: - **Step-by-Step**: Execute commits one-by-one according to the approved
+          532:   arrangement.
+          533: - **History Refinement**: If existing commits need to be split or refined
+          534:   (e.g., to fix non-atomic changes), follow the **[Git History Refinement
+          535:   Rules](./git-history-refinement-rules.md)**.
+          536: - **Unstaged Changes During Rebase**: If rebase fails due to unstaged changes,
+          537:   use the stash workflow (see git-operation-rules.md Section 3).
+          538: - **Pull Before Push**: Always `git pull` (or `git pull --rebase` upon explicit
+          539:   approval) before pushing to incorporate latest remote changes.
+          540: - **Recovery**: If a mistake is made during staging, use `git reset <file>` to
+          541:   unstage, or `git checkout -p` to selectively discard. **WARNING**: Never
+          542:   use `git reset --hard` for synchronization; always prefer `git pull`.
+          543: - **Opaque Content Analysis**: For files flagged as binary or large assets
+          544:   (LFS), the agent MUST verify the internal consistency of the commit by
+          545:   inspecting the file contents (e.g., via `cat -v` or hex dump) to ensure the
+          546:   commit message accurately reflects the data being stored.
+          547: 
+          548: ***
+          549: 
+          550: ## 11. Phase 11: Logic-Documentation Alignment (Compass)
+          551: 
+          552: Imagine a compass where each cardinal direction is a logical area of the
+          553: codebase.
+          554: 
+          555: - **North**: Architectural/Schema changes.
+          556: - **East**: Logic/Feature implementation.
+          557: - **West**: Testing/Verification.
+          558: - **South**: Documentation/Refinement.
+          559: 
+          560: A high-quality commit history moves clearly through these directions without
+          561: "spinning" (mixing logic and documentation in one commit).
+          562: 
+          563: ***
+          564: 
+          565: ### 10.1 External Tool Asset Granularity (e.g., Postman)
+          566: 
+          567: When versioning assets for external tools (Postman, Insomnia, DBeaver), maximize
+          568: granularity by separating concerns:
+          569: 
+          570: - **Environments**: Changes to endpoints, variables, or credentials.
+          571: - **Collections**: Logical groupings of requests, tests, or scripts.
+          572: - **Data Tables**: CSV/JSON templates used for bulk-run or validation testing.
+          573: 
+          574: Never group these into a single generic `test(tooling)` commit if they serve
+          575: distinct purposes.
+          576: 
+          577: ***
+          578: 
+          579: ## 12. Phase 12: Source Logic & Generated Files
+          580: 
+          581: When working with repositories that use code generation, templates, or CI/CD
+          582: automation, the agent MUST distinguish between source logic and generated
+          583: output.
+          584: 
+          585: ### 11.1 Update the Source, Not the Output
+          586: 
+          587: - **Rule**: Never manually edit generated files. Always update the source logic
+          588:   (templates, scripts, CI/CD workflows) that produces them.
+          589: - **Examples**:
+          590:     - `README.md` generated from `templates/README.md.template` -> Edit the
+          591:     template, not `README.md`
+          592:     - `agent-rules.md` generated by `scripts/sync_rules.py` -> Edit the script
+          593:     or source metadata, not `agent-rules.md`
+          594:     - Build artifacts, compiled code, or auto-formatted files -> Edit source
+          595:     code or configuration
+          596: 
+          597: ***
+          598: 
+          599: ### 11.2 Identify Synchronization Mechanisms
+          600: 
+          601: Before making changes, the agent MUST:
+          602: 
+          603: 1. **Detect Generation**: Check for comments like `<!-- AUTO-GENERATED -->`,
+          604:   build scripts, or CI/CD workflows that regenerate files.
+          605: 2. **Locate Source**: Identify the template, script, or configuration that
+          606:   produces the generated file.
+          607: 3. **Document Sync**: Note in commit messages if manual synchronization is
+          608:   required (e.g., "Run `npm run build` to regenerate").
+          609: 
+          610: ***
+          611: 
+          612: ### 11.3 CI/CD Managed File Exclusion
+          613: 
+          614: Files managed by CI/CD automation MUST be excluded from manual edits during
+          615: history refinement or atomic commit construction.
+          616: 
+          617: - **Exclusion List**: Maintain an explicit list of CI/CD managed files (e.g.,
+          618:   `README.md`, `agent-rules.md`).
+          619: - **Grep Exclusions**: When verifying link updates, use `--exclude` flags for
+          620:   these files:
+          621: 
+          622:   ```bash
+          623:   grep -r "old-name.md" . --exclude-dir=.git --exclude=README.md \
+          624:     --exclude=agent-rules.md
+          625:   ```
+          626: 
+          627: - **Commit Verification**: Before committing, run `git diff --cached` and verify
+          628:   no CI/CD managed files are staged unless the commit explicitly targets the
+          629:   source logic that generates them.
+          630: 
+          631: ***
+          632: 
+          633: ## 13. Phase 13: User-Requested Coupling & Deviations
+          634: 
+          635: The agent must strictly follow the atomic protocols defined above. However, if
+          636: the user explicitly requests to couple unrelated changes or deviate from the
+          637: rules, the following protocol applies:
+          638: 
+          639: - **Warn First**: If a request violates the Independence (Phase 2) or
+          640:     Configuration Coupling (Phase 5) rules, the agent MUST explicitly warn the
+          641:     user: "This coupling technically violates Rule [X] because [reason]."
+          642: - **Explicit Override**: The agent accepts the coupling ONLY if the user
+          643:     re-confirms or explicitly approves the deviation after the warning.
+          644: - **Documentation**: The deviation rationale MUST be documented in the commit
+          645:     message body (e.g., "Coupled with IDE updates per user request for atomic
+          646:     convenience").
+          647: 
+          648: ***
+          649: 
+          650: ## 13. Phase 13: Intermediate State Synthesis
+          651: 
+          652: When a file contains interleaved changes or massive structural reorders (e.g.,
+          653: 50+ lines moved) mixed with functional fixes, hunk-based staging
+          654: (`git add -p`) may become unreliable or impossible to isolate.
+          655: 
+          656: - **The Synthesis Strategy**: The agent SHOULD NOT rely solely on interactive
+          657:   staging for high-complexity overlaps. Instead, it MUST:
+          658:   1. **De-construct**: Manually edit the file (or use selective undo/revert)
+          659:     to match the current atomic goal BEFORE staging.
+          660:   2. **Stage & Commit**: Stage the "synthesized" intermediate version that
+          661:     contains ONLY the intended logical unit.
+          662:   3. **Iterate**: Repeat for the remaining changes until the working
+          663:     directory is clean.
+          664: - **Rationale**: Guarantees that even high-entropy working states can be
+          665:   refactored into a pristine, industrial-grade commit history.
+          666: 
+          667: ***
+          668: 
+          669: ## 14. Related Conversations & Traceability
+          670: 
+          671: - **API Refactoring & Postman Granularity**:
+          672:   [2026-02-11 Atomic Commit Refinement](./docs/conversations/2026-02-11-atomic-commit-refinement.md)
+          673: - **Rule Standardization**: [2026-02-11 Rule Refinement Session]
+          674: 
+          675: ***
+          676: 
+          677: ## 15. Phase 15: Guardrail Against "Predictive Planning"
+          678: 
+          679: The agent must never "commit" in a plan to what will be changed in the future.
+          680: Commit construction is a Real-Time Analysis task. The implementation plan serves
+          681: only as a roadmap for the **Protocol** of commitment, not the **Content** of the
+          682: commits themselves. Logic for commit construction must be synthesized from
+          683: Real-Time Analysis, never mocked in a plan.
+
+          (End of file - total 683 lines)
+          </content>
+      - tool: skill
+        args:
+          name: git-atomic-commit-construction
+        result: |-
+          <skill_content name="git-atomic-commit-construction">
+          # Skill: git-atomic-commit-construction
+
+          # Git Atomic Commit Construction Skill
+
+          > **Skill ID:** `git-atomic-commit-construction`
+          > **Version:** 1.0.0
+          > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+
+          ## Description
+
+          Construct high-quality, atomic Git commits from a set of working-tree
+          changes. This skill covers the full lifecycle: environment validation,
+          change analysis, logical grouping, hunk-based staging, formatting
+          isolation, commit message quality, execution with user authorization,
+          and post-commit verification.
+
+          Every commit produced by this skill is independent, logically coherent,
+          and buildable. Mixed concerns are never committed together. Formatting
+          is separated from logic. Configuration is coupled to its functional
+          change. The user retains full control via mandatory preview and explicit
+          "start" authorization.
+
+          ## Source Rules
+
+          This skill distills and operationalizes the following rule files:
+
+          | Rule File | Scope Incorporated |
+          |---|---|
+          | [`git-atomic-commit-construction-rules.md`](../../../ai-agent-rules/git-atomic-commit-construction-rules.md) | All 15 phases (primary source) |
+          | [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md) | Phase -1, 0, 1 (environment, repo context, change detection) and Sections 2–4 (commit/push/stash protocols) |
+
+          For history refinement (splitting existing commits), see the
+          [`git_history_refinement`](../git-history-refinement/SKILL.md) skill.
+          For complex multi-branch rebasing, see the
+          [`git_rebase`](../git-rebase-standardization/SKILL.md) skill.
+
+          ## Prerequisites
+
+          | Requirement | Minimum |
+          |---|---|
+          | VCS | Git 2.x+ |
+          | Shell | PowerShell 5.1+ or Bash 4+ |
+          | Access | Write access to the project repository |
+          | Auth | GitHub CLI authenticated (if pushing to GitHub) |
+
+          ## When to Apply
+
+          Apply this skill when:
+
+          - A user asks to "commit changes," "arrange commits," or "stage and commit"
+          - `git status` shows staged, unstaged, or untracked modifications
+          - Multiple unrelated changes exist in the working tree and need separation
+          - A user asks to review what should be committed
+          - **After ANY submodule commit is executed, the skill AUTOMATICALLY checks for
+            and offers the parent repository submodule SHA update (if applicable) and
+            executes it upon user "yes" — no separate user request needed**
+
+          Do NOT apply when:
+
+          - The user asks to refine or split **existing** commits — use
+            [`git_history_refinement`](../git-history-refinement/SKILL.md) instead
+          - The user asks to rebase branches — use
+            [`git_rebase`](../git-rebase-standardization/SKILL.md) instead
+          - The request is a simple single-file, single-concern commit with no
+            mixed changes (a lightweight commit suffices without the full protocol)
+          - The files being committed are **personal-only** and should NOT reach the
+            team's `origin` — route the commit to a personal sandbox branch via
+            [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)
+            (this skill still applies to the commit itself, but the destination
+            remote/branch changes)
+
+          **Push Policy (GLOBAL)**: The agent MUST NEVER execute `git push` automatically.
+          After any commit(s), the agent MAY OFFER to push (e.g., "Push to remote?") but
+          MUST WAIT for explicit user approval. Only push when the user explicitly says
+          "yes", "push", or issues a direct `git push` command. No exceptions.
+
+          ---
+
+          ## Step-by-Step Procedure
+
+          ### Step 0 — Environment & Repository Context
+
+          Before any Git commands, validate the environment and establish context.
+
+          #### 0a — Authenticate Services
+
+          Verify authentication for required services:
+
+          ```powershell
+          gh auth status        # GitHub CLI
+          ```
+
+          If authentication is missing, guide the user through login.
+
+          #### 0b — Identify the Target Repository
+
+          Determine the correct repository from the user's request and file paths.
+
+          - **Nested repositories:** If changes are in a sub-directory that is its
+            own Git project, use `PAGER=cat git -C` to execute `PAGER=cat git` commands in that repository.
+          - **Ambiguity:** If multiple repositories exist in the workspace and the
+            target is unclear, ask the user for clarification.
+
+          #### 0c — Working Directory Persistence (Critical)
+
+          When working with `git` commands, use `git -C <path>` for reliable directory targeting:
+
+          ```powershell
+          # Recommended: git -C with absolute path
+          git -C /path/to/repo status
+          git -C /path/to/repo diff HEAD
+
+          # Why this matters: Shell `cd` commands do not persist across tool invocations
+          # in stateless execution environments. Using git -C ensures consistent behavior
+          # across all command chains and multi-step workflows.
+
+          # Pattern for multi-repo work:
+          git -C /repo1 status
+          git -C /repo2 status
+          git -C /repo1 add file.txt
+          ```
+
+          **When `cd` alone is insufficient:**
+
+          - In tools/environments where `cd` doesn't persist state across invocations
+          - When working with multiple repositories in sequence
+          - For clarity in tool-generated scripts and audit trails
+
+          **Legacy pattern (avoid):**
+
+          ```powershell
+          # ❌ May not reliably persist across invocations
+          cd /path/to/repo; git status
+          ```
+
+          **Preferred pattern:**
+
+          ```powershell
+          # ✅ Reliable and explicit
+          git -C /path/to/repo status
+          ```
+
+          #### 0d — Verify Build Tool Permissions
+
+          Ensure build tools have execute permissions:
+
+          ```bash
+          chmod +x gradlew      # Gradle wrapper example
+          ```
+
+          #### 0e — Active Branch Verification (Critical)
+
+          The agent MUST ensure the repository is not in a "detached HEAD" state before committing.
+
+          1. **Check Current Branch**: Run `git branch --show-current`.
+          2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST
+             identify and checkout the appropriate branch (usually the default branch,
+             e.g., `main`) before proceeding.
+          3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts.
+
+          #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
+
+          When the upcoming commit touches files in a repository this session has not
+          previously edited — especially when two cloned-locally repos share a name
+          prefix or suffix — invoke the
+          [`canonical-source-vs-workflow-repo-audit`](../canonical-source-vs-workflow-repo-audit/SKILL.md)
+          audit BEFORE the first edit:
+
+          ```bash
+          python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
+          ```
+
+          If the verdict is `workflow` or `mirror`, STOP and locate the canonical
+          source repo. If the verdict is `unknown`, ask the user. Skipping this
+          audit risks landing the work in a repo whose changes never reach the
+          canonical artifact (real-world precedent: Account-Ledger-Server vs
+          Account-Ledger-Server-PHP, May 2026)
+
+          ---
+
+          ### Step 1 — Deep Change Analysis
+
+          Perform a dependency analysis of ALL modifications before staging
+          anything.
+
+          #### 1a — Detect All Changes
+
+          Use `git status` to discover staged, unstaged, and untracked changes:
+
+          ```powershell
+          git status
+          ```
+
+          **Complete Scope (Critical):** The analysis MUST cover ALL three change
+          categories — **staged**, **unstaged**, AND **untracked** — as a single
+          unified inventory from the very first step. Untracked files are
+          first-class members of the change scope, not a secondary check.
+          Failing to include untracked files in the initial analysis leads to
+          incomplete commit plans and files discovered only after execution.
+
+          **Untracked files:** Any untracked file not excluded by `.gitignore` is
+          a candidate for version control. The agent **MUST NOT** stage untracked
+          files without explicit user confirmation to avoid committing credentials,
+          large binaries, or environment-specific files. When an untracked file's
+          origin is unclear (cross-repo scratch, tool dump, captured diff), invoke
+          the [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md)
+          skill to classify and dispose of it before continuing the inventory.
+
+          #### 1b — Use `git ls-files` as Source of Truth
+
+          For rename or restructuring operations, `git ls-files` is the
+          authoritative list of tracked files — not `Get-ChildItem` or `find`,
+          which include git-ignored content:
+
+          ```powershell
+          git ls-files
+          ```
+
+          #### 1c — Read `.gitignore` for Tracked vs Ignored
+
+          Read `.gitignore` carefully, paying special attention to **negation
+          patterns** (`!`) that re-include specific files inside ignored
+          directories:
+
+          ```gitignore
+          # Example: directory ignored, but .zip files are tracked
+          pevers/*
+          !pevers/*.zip
+          ```
+
+          #### 1d — Analyze Change Dependencies
+
+          - **Shared Identifiers:** Group changes that modify the same functions,
+            classes, or constants across different files.
+          - **Cross-File References:** If file A depends on a change in file B
+            (e.g., an import, a link, a `.gitignore` pattern), they MUST be in
+            the same atomic commit.
+          - **Categorical Alignment:** Group changes by architectural layer (UI,
+            Logic, Docs) unless they are functionally coupled.
+
+          #### 1e — Workflow-First Priority
+
+          If changes involve CI/CD workflows (GitHub Actions, scripts), the agent
+          **MUST** fix, test, and verify workflow functionality **BEFORE** arranging
+          or executing commits. Pipeline stability takes precedence over
+          documentation or stylistic refinements.
+
+          #### 1f — Present Complete Inventory
+
+          List **ALL changes** — staged, unstaged, AND untracked (not just
+          violations or modifications to already-tracked files) — with their
+          status. This gives the user full visibility and ensures no file is
+          analyzed as an afterthought:
+
+          | # | File | Status | Action |
+          |---|---|---|---|
+          | 1 | `.gitignore` | Modified | 🔄 Update |
+          | 2 | `src/main.java` | Modified | 🔄 Stage |
+          | 3 | `README.md` | Untracked | ❓ Confirm with user |
+
+          ---
+
+          ### 1g — Redaction Pre-Check (Sensitive Content Audit)
+
+          Before any staging or logical grouping, audit all **new/untracked** and
+          **modified** files for content that must be redacted per the
+          [redaction-portability](../redaction-portability/SKILL.md) skill — especially
+          prose-heavy files like skill `SKILL.md`, rule docs, and conversation logs.
+
+          **Scan for:**
+
+          1. **Organization-specific Jira ticket IDs** (e.g., `PROJ-1234`) — replace with
+             `<TICKET-ID>` or `<TICKET-ID-PROJ>`.
+          2. **Internal repository URLs** (e.g., `github.com/<org>/<repo>`) — replace
+             `<org>/<repo>` with `<ORG>/<REPO>`.
+          3. **Cross-repo relative links** — `../` chains that escape the current repo's
+             root into a sibling directory (no `.gitmodules` registration). Run the
+             [detect-cross-repo-links.py](../redaction-portability/scripts/detect-cross-repo-links.py)
+             script from the redaction-portability skill.
+          4. **Literal organization names, internal codenames, hostnames, and usernames**
+             in prose — replace with canonical placeholders (`<corp>`, `<author>`, etc.).
+          5. **Project-specific skill names / paths** in base-published skills (e.g., a
+             composer row in a base skill referencing a project-specific skill in a
+             different repo).
+
+          **When to run this audit:**
+
+          - **Immediately after Step 1f** (Complete Inventory) — you have the full file
+            list, and no work has been wasted on grouping or staging content that will
+            need post-hoc redaction.
+          - **Any time a new file is added** to the working tree mid-session (e.g.,
+            skill-factory generation, conversation export).
+
+          **Remediation workflow:**
+
+          1. Read each flagged file, identify the violating strings.
+          2. Apply canonical placeholders per
+             [redaction-portability §2](../redaction-portability/SKILL.md#2-canonical-placeholder-vocabulary).
+          3. If the violation is a cross-repo link: either delete the link entirely or
+             replace with a name-only reference (see redaction-portability repair rules).
+          4. Re-run the audit to confirm zero remaining violations.
+          5. Only then proceed to Step 2 (Logical Grouping).
+
+          The redaction-portability skill **MUST** be cited as a dependency in any commit
+          that touches skill or rule files, so downstream tooling knows to invoke the
+          same audit.
+
+          ---
+
+          ### Step 2 — Logical Grouping (Arrangement)
+
+          Arrange detected changes into a proposed sequence of commits.
+
+          #### 2a — Independence Principle
+
+          Each commit must stand alone. If the repository were checked out at
+          that commit, it should still build/function (or be logically coherent).
+
+          #### 2b — Atomic Principle
+
+          Never commit half of a logical change. If a file contains two unrelated
+          changes, use **hunk-based staging** (Step 3).
+
+          #### 2c — Buildable State Priority
+
+          While atomicity is the goal, maintaining a buildable repository takes
+          precedence. If a core infrastructure change (e.g., a signature change in
+          a shared helper) breaks all consumers, the refactor and the resulting
+          fixes in consumer files MUST be consolidated into a single commit.
+
+          #### 2d — The Commit Preview (Mandatory Verbose Display)
+
+          Present the proposed "Arranged Commits" using a structured format with
+          **maximum detail**. For files with mixed concerns requiring hunk-based
+          staging, the preview **MUST** include the specific git hunks.
+
+          **Mandates for writing the preview:**
+
+          1. **`@@` Header Verification** — Before writing any `@@ -N,M +N,M @@` line,
+             run `git diff --unified=3 -- <file>` and copy the exact range header from
+             the actual output. Never estimate or compute from memory — wrong headers
+             make the preview useless for verification.
+
+          2. **Fence Collision Handling** — When a diff hunk contains lines that are
+             themselves triple-backtick fenced code blocks (` ```text`, ` ```bash`,
+             and their closing ` ``` `), wrap the diff in **`~~~diff`** / **`~~~`**
+             instead of ` ```diff ` / ` ``` `. Backtick fences inside a backtick-fenced
+             block terminate the outer block prematurely, breaking the markdown preview.
+             The tilde fence (`~~~`) is only closed by another `~~~`, so inner backtick
+             blocks survive as literal content.
+
+          3. **No Content Truncation** — All hunks MUST be shown in full. Lines of
+             context MUST NOT be replaced with `...` or any other truncation marker.
+             If the combined diff is too large for one conversation message, split the
+             preview across batches ($2g) and present one batch at a time.
+
+          4. **Preview Artifact** — Write the full preview to
+             `scratch/commit-preview.md` (use
+             [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
+             to ensure `scratch/` exists and is gitignored). The user can then refer to
+             specific line numbers when giving feedback. Present the summary in the
+             conversation as well.
+
+          Template:
+
+          ````markdown
+          ## Arranged Commits Preview
+
+          ### Commit 1: [type](scope): [title]
+          - **Files**: [file1.md], [file2.md]
+          - **Message**:
+            ```
+            [type](scope): [title]
+
+            [Body line 1]
+            [Body line 2]
+            ```
+          - **Hunks/Preview**:
+            ```diff
+            [Show actual hunks for this commit — use ~~~diff/~~~ if hunks contain ```
+            ]
+            ```
+
+          ### Commit 2: [type](scope): [title]
+          - **Files**: [file3.md]
+          - **Message**:
+            ```
+            [type](scope): [title]
+
+            [Body line 1]
+            ```
+          ---
+          Please say "start" to begin the sequential execution of these atomic
+          commits.
+          ````
+
+          #### 2d.1 — Iterative Preview Fixup
+
+          After presenting the commit preview, the user may give feedback by line
+          number (e.g., "check line 98 — still broken"). Feedbacks typically
+          point to one of these issues in the preview:
+
+          - Wrong `@@` header (fix by verifying against actual `git diff`)
+          - Truncated content with `...` (restore full hunk)
+          - Nested fenced code blocks breaking markdown (switch to `~~~diff`/`~~~`)
+          - Missing context lines around changes (include the default 3-line context)
+
+          Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
+          Loop until the user confirms the preview is correct. Do NOT begin execution
+          until the user says "start".
+
+          #### 2e — Commit Authorization
+
+          The agent **MUST NOT** proceed with any commit execution until the user
+          explicitly says **"start"**. Other triggers like "commit" or "go" are
+          insufficient.
+
+          #### 2f — Interleaving Mandate (Artifact + Registry Registration)
+
+          Whenever a commit introduces or renames an artifact **and** a shared index /
+          registry file (e.g., root `AGENTS.md` skills table, `.gitmodules`, CI
+          workflow manifests) needs a corresponding row or entry for that artifact, the
+          registry hunk MUST be **staged in the same commit** as the artifact itself —
+          never batched into a separate "registration" commit at the end. This applies to:
+
+          - **New skills**: root `AGENTS.md` row for the skill → same commit as the skill
+            `SKILL.md` / `scripts/` files.
+          - **Submodule syncs**: `.gitmodules` URL change and any root `AGENTS.md` row
+            referencing the submodule → same commit as the submodule pointer advance.
+          - **Any artifact with a shared index entry**: treat the index row as part of the
+            artifact's definition, not as metadata to collect last.
+
+          When the registry file contains mixed hunks (some for this artifact, some
+          unrelated): use `git add -p <registry>` to stage only the relevant hunk(s)
+          alongside the artifact files; leave unrelated hunks unstaged for their own commits.
+
+          **When `git add -p` hunk boundaries don't align with row boundaries** (e.g.,
+          two session rows land in the same hunk as an out-of-scope row), use the
+          [`agents-md-stage-row.py`](../git-hunk-staging-primitives/scripts/agents-md-stage-row.py) script instead:
+
+          ```bash
+          # Dry-run: preview alphabetical position
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+              --row "| My Skill | [path](path) | description |" \
+              --dry-run
+
+          # Stage exactly one row (default --mode staged: reads HEAD:AGENTS.md,
+          # inserts row, updates index; working tree is NOT touched)
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+              --row "| My Skill | [path](path) | description |"
+          ```
+
+          In default `--mode staged`, the script reads `HEAD:AGENTS.md` (not the working
+          tree), inserts the row at the alphabetically correct position, writes a new
+          blob via `git hash-object -w`, and updates the index via
+          `git update-index --cacheinfo` — so only the new row is staged while all other
+          working-tree changes remain unstaged.
+
+          The script also supports `--mode worktree` for the skill-factory registration
+          case (AGENTS.md is clean and you just want the row written to the working tree
+          for ordinary `git status` review and `git add`). See
+          [`skill-factory/SKILL.md` §2.4](../skill-factory/SKILL.md) for the registration
+          workflow.
+
+          Forbidden anti-pattern: "commit all artifacts first, then one final commit
+          registers them all in AGENTS.md" — this makes individual commits incomplete
+          (skill exists but is not discoverable) and destroys per-feature traceability.
+
+          See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-artifact--registry-registration).
+
+          #### 2f.1 — Deferred Cross-Reference Hunk Pattern
+
+          When two new artifacts (X and Y) ship in **separate commits B and C**, and one or
+          both files already contain a "Related Skills" / index row referencing the OTHER
+          artifact in the working tree, the cross-reference row must be deferred to whichever
+          commit lands the artifact it points to. Concretely: commit B (introduces X) MUST
+          NOT carry a row that references Y — Y does not yet exist in the tree, and the row
+          would dangle until commit C lands.
+
+          Three viable techniques, in order of preference:
+
+          1. **`stage-file-excluding-lines.py`** (preferred — no working-tree mutation): write
+             a blob equal to the working tree minus the deferred row(s), stage it directly
+             via `git update-index --cacheinfo`, leave the working tree untouched. The
+             deferred rows are picked up cleanly by `git add <file>` for commit C.
+
+             ```bash
+             python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+                 --file .agents/skills/X/SKILL.md \
+                 --exclude "../Y/SKILL.md" \
+                 --dry-run
+
+             python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+                 --file .agents/skills/X/SKILL.md \
+                 --exclude "../Y/SKILL.md"
+             ```
+
+             When the deferred row belongs to a larger block (section header + table +
+             trailing blank), append **`--blank-context 1`** to also strip the contiguous
+             blank line after each match so no orphaned section header remains in the
+             staged blob:
+
+             ```bash
+             python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+                 --file .agents/skills/cra-reset-mocks-test-strategy/SKILL.md \
+                 --exclude "## Composition" \
+                 --exclude "Composition Mechanism" \
+                 --exclude "mrt-component-test-strategy" \
+                 --exclude "--- | ---" \
+                 --blank-context 1
+             ```
+
+          2. **Temporary edit + restore** (when the script is unavailable): edit the file to
+             remove the deferred row, `git add` it, commit B, then re-insert the row in the
+             working tree for commit C. Higher risk of forgetting the restore step; use only
+             as a fallback.
+
+          3. **`git add -p`** (when hunk boundaries align with row boundaries): split the
+             hunk interactively. Often fails because Markdown table rows pack multiple
+             logical entries into a single hunk; falls back to technique 1 or 2.
+
+          **Forbidden anti-pattern**: staging the deferred row in commit B "to keep the file
+          self-consistent" — the row points to an artifact that does not yet exist at
+          commit B, breaking checkout-at-B build/lint and destroying per-commit
+          traceability.
+
+          #### 2g — Batch-by-Batch Authorization (Long Sequences)
+
+          When the Arranged Commits sequence exceeds **5 commits**, split the preview
+          into batches of at most 5 commits and request a separate `"start"` per batch:
+
+          1. Present each batch in the full §2d verbose format before executing any
+             commit in that batch.
+          2. After each batch executes, emit a one-line summary `Batch N committed:
+             SHA1, SHA2, …` and present the next batch's preview.
+          3. The user MAY abort, reorder, or modify subsequent batches between
+             authorizations — do NOT pre-stage files for batches that have not yet
+             been authorized.
+          4. The first batch MUST include a top-level **Master Plan Table**
+             (`# | type(scope): title | files | batch`) so the user has a single-pane
+             view before authorizing batch 1.
+
+          See [Atomic Commit Construction Rules §3.2](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#32-batch-by-batch-authorization-long-sequences).
+
+          #### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+
+          Before executing the first commit of any sequence of two or more commits
+          (including any batch governed by §2g), capture an apply-not-pop safety
+          snapshot of the full working-tree state (tracked modifications, staged
+          hunks, AND untracked files) and re-apply it immediately so execution
+          proceeds against an unchanged tree. The snapshot persists across the
+          entire sequence and is verified-then-dropped only at end-of-session.
+
+          Delegate the full three-phase protocol (Snapshot → Hold → Verify-and-
+          Release) to [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md):
+
+          - **Phase 1 — Snapshot** before the first commit: classify any
+            pre-existing stashes via [`git-stash-triage`](../git-stash-triage/SKILL.md),
+            push with `git stash push -u -m "safety: ..."`, immediately
+            `git stash apply` (NEVER `pop`), verify parity.
+            > **If `git stash apply` fails** due to live editor conflicts (VS Code,
+            > Copilot, Eclipse, IntelliJ rewriting files between push and apply),
+            > do NOT retry — follow the [Selective File Extraction from Stash
+            > (Phase 1g)](../git-pre-execution-safety-stash/SKILL.md#1g--stash-apply-conflict-recovery-via-selective-file-extraction)
+            > recovery path in `git-pre-execution-safety-stash`.
+          - **Phase 2 — Hold** across the sequence: never drop, pop, or clear the
+            `safety:` entry mid-sequence; re-verify presence at batch boundaries.
+          - **Phase 3 — Verify-and-Release** after the final commit: `git stash
+            apply` again, confirm the apply is a clean no-op against HEAD, then
+            ask the user explicitly before `git stash drop` per
+            [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md).
+
+          See [Atomic Commit Construction Rules §3.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#33-pre-execution-safety-stash-mandatory-for-multi-commit-sequences).
+
+          ---
+
+          ### Step 3 — Interactive Hunk-Based Staging
+
+          When a file contains mixed concerns, use interactive staging to
+          partition changes.
+
+          #### 3a — Command
+
+          ```powershell
+          git add -p <file>
+          ```
+
+          #### 3b — Hunk-by-Hunk Evaluation
+
+          During interactive staging, evaluate and respond to each hunk
+          individually (`y`, `n`, `s`, etc.). Do NOT batch responses. Every
+          modified line must be evaluated: "Does this line belong to the
+          *current* atomic goal?"
+
+          #### 3c — Granular Hygiene
+
+          If a grammatical fix is discovered while implementing a feature, it
+          MUST be staged and committed separately unless it is part of the same
+          logical chunk.
+
+          #### 3d — Verification After Staging
+
+          After staging each chunk, verify strictly atomic contents:
+
+          ```powershell
+          git diff --cached
+          ```
+
+          #### 3e — Discard Rejected Noise
+
+          After accepting the desired hunks and rejecting noise, discard the
+          rejected changes from the working tree if they are unintentional:
+
+          ```powershell
+          git checkout -- <file>
+          ```
+
+          #### 3f — Mixed-Concern Noise Handling Workflow
+
+          When a file contains both functional changes AND unrelated noise
+          (invisible characters, spurious whitespace, trailing `\r` differences),
+          follow this workflow:
+
+          1. **Attempt to fix the noise in the editor** — remove the spurious
+             whitespace or extra blank lines directly. This may resolve it.
+          2. **Re-check the diff** — run `git diff <file>`. If the noise persists
+             (e.g., invisible character differences that the editor cannot show),
+             fall back to hunk-based staging.
+          3. **Stage only functional hunks** — run `git add -p <file>`, accepting
+             (`y`) only the hunks that belong to the current atomic goal and
+             rejecting (`n`) the noise hunks.
+          4. **Discard the remaining noise** — run `git checkout -- <file>` to
+             revert the rejected noise from the working tree. This preserves the
+             staged functional changes.
+          5. **Verify staged state is clean** — run `git diff --cached <file>` to
+             confirm only functional changes are staged, then run `git status` to
+             confirm no unstaged changes remain.
+
+          **PowerShell caveat:** Piping input to `git add -p` is unreliable in
+          PowerShell (standard pipe methods like `echo`, `Write-Output`, and
+          string joins often fail to register). Preferred workaround:
+
+          - Accept the functional hunks manually or in a sequence where piping
+            works, then use `git checkout -- <file>` to discard whatever noise
+            remains unstaged.
+
+          #### 3g — Post-Edit Indent Verification & Repair
+
+          Markdown edits can silently shift continuation-line indent on unrelated
+          lines near the edit site (common when tools re-emit fenced blocks or
+          when an edit operation touches adjacent lines). A `git diff` that shows
+          the correct content at the wrong indent is incomplete — staging it
+          propagates whitespace drift into the commit.
+
+          Delegate detection and repair to the
+          [`list-indent-consistency`](../general/list-indent-consistency/SKILL.md)
+          base skill.
+
+          **Acceptance criterion:** run `detect-list-indent-drift.py` on the affected
+          file(s); the script MUST exit 0 before `git add` is run.
+
+          See also: Common Pitfalls — `Indent drift after markdown edit silently staged`.
+
+          #### 3h — IDE Artifact Bulk Discard
+
+          IDE tooling (VS Code Java Language Server, Eclipse, IntelliJ) often
+          auto-modifies project metadata files across **many** sub-projects at
+          once — for example, adding `<filteredResources>` blocks to every
+          Eclipse `.project` file. These changes **may** be noise — but some
+          projects intentionally track IDE metadata for reproducible workspace
+          setup. The agent **MUST NOT** assume these are discardable.
+
+          **Detection pattern:**
+
+          - `git diff --stat` shows a large number of identical-looking changes
+            (e.g., 50+ `.project` files each with exactly +11 lines)
+          - The diff content is the same boilerplate repeated per file
+          - The change was not initiated by the developer
+
+          **Common IDE artifact files to watch for:**
+
+          | Pattern | Source |
+          |---|---|
+          | `**/.project` | Eclipse / VS Code Java Language Server |
+          | `**/.classpath` | Eclipse JDT |
+          | `**/.settings/**` | Eclipse workspace preferences |
+          | `**/*.iml` | IntelliJ IDEA module files |
+          | `**/.idea/**` | IntelliJ IDEA project files |
+
+          **Tracked vs Untracked Pre-Check (Critical):**
+
+          Before discarding anything, the agent **MUST** distinguish between
+          **tracked** (version-controlled) and **untracked** (new/generated)
+          files in the affected area. This is critical because directories
+          like `.settings/` often contain a **mix** of tracked files (e.g.,
+          `org.eclipse.jdt.core.prefs` committed by the team) and untracked
+          files (e.g., `org.eclipse.m2e.core.prefs` auto-generated by the
+          JDT Language Server).
+
+          ```powershell
+          # List tracked files under .settings/
+          git ls-files .settings/
+
+          # List untracked files under .settings/
+          git ls-files --others --exclude-standard .settings/
+
+          # For modified tracked files, show what changed
+          git diff --stat HEAD -- .settings/
+          ```
+
+          **⚠️ Never bulk-delete a directory that contains tracked files.**
+          Using `Remove-Item ".settings" -Recurse -Force` when the directory
+          contains tracked files will cause those files to appear as deleted
+          in `git status`, requiring immediate restoration via
+          `git checkout -- <file>`. Instead, remove only the specific
+          untracked files.
+
+          **JDT Language Server + m2e Auto-Injection:**
+
+          When the JDT Language Server detects a `pom.xml`, it automatically
+          imports the project as Maven-managed and injects:
+
+          - `org.eclipse.m2e.core.maven2Builder` into `.project` `<buildSpec>`
+          - `org.eclipse.m2e.core.maven2Nature` into `.project` `<natures>`
+          - `.settings/org.eclipse.m2e.core.prefs` (untracked)
+          - `.settings/org.eclipse.core.resources.prefs` (untracked)
+
+          These are **not** from the VS Code Maven extension
+          (`vscjava.vscode-maven`) — that extension provides the UI only.
+          The `.project` modifications come from the **Eclipse JDT Language
+          Server** (`eclipse.jdt.ls`) which bundles **m2e** internally.
+
+          **Mandatory User Confirmation Workflow:**
+
+          The agent **MUST** present suspected noise to the user and obtain
+          explicit confirmation before discarding. Never silently discard
+          changes to IDE metadata files — the project may rely on them.
+
+          1. **Present the suspected noise** — Show the user a categorized
+             summary separating modified tracked files from untracked files,
+             and include the proposed discard steps:
+
+             ````markdown
+             ## Suspected IDE Artifact Noise
+
+             ### Modified Tracked Files
+             | File | Change | Source |
+             |---|---|---|
+             | `.project` | +17 lines (Maven builder/nature + filteredResources) | JDT LS / m2e auto-import |
+
+             ### Untracked Files (IDE-generated)
+             | File | Content | Source |
+             |---|---|---|
+             | `.settings/org.eclipse.m2e.core.prefs` | m2e workspace config | JDT LS m2e import |
+             | `.settings/org.eclipse.core.resources.prefs` | Encoding `Cp1252` | Eclipse workspace |
+             | `.gitignore` | `/bin/` | Possibly auto-generated |
+
+             ### Already-Tracked Files (will NOT be touched)
+             | File | Status |
+             |---|---|
+             | `.settings/org.eclipse.jdt.core.prefs` | ✅ Tracked, unchanged — preserved |
+
+             **Proposed discard steps:**
+             ```powershell
+             # 1. Revert modified tracked file
+             git checkout -- .project
+
+             # 2. Remove specific untracked files (NOT the whole directory)
+             Remove-Item ".settings/org.eclipse.m2e.core.prefs" -Force
+             Remove-Item ".settings/org.eclipse.core.resources.prefs" -Force
+             Remove-Item ".gitignore" -Force
+
+             # 3. Verify
+             git status --short
+             ```
+
+             **⚠️ Warning:** `.settings/org.eclipse.jdt.core.prefs` is tracked
+             and will be preserved. The discard targets only IDE-generated noise.
+
+             Should I discard these changes? (yes / no / inspect further)
+             ````
+
+          2. **Act on user feedback:**
+             - **"yes" / "discard"** — Execute the proposed discard steps
+               **exactly as presented**, then verify with `git status --short`.
+             - **"no" / "keep"** — Leave the changes in the working tree.
+               They may be staged as a separate commit (e.g.,
+               `chore: update Eclipse project metadata`) or left for later.
+             - **"inspect further"** — Show full diffs for additional files
+               so the user can distinguish intentional changes from noise.
+             - **Partial discard** — If the user identifies some files as
+               intentional and others as noise, discard only the confirmed
+               noise files individually.
+
+          3. **Post-discard verification:**
+
+             ```powershell
+             git status --short
+             git diff --stat HEAD
+             ```
+
+             If any tracked file appears as deleted (accidentally removed),
+             restore it immediately:
+
+             ```powershell
+             git checkout -- <accidentally-deleted-file>
+             ```
+
+          **Prevention:** Add IDE artifact patterns to `.gitignore` if the
+          project does not require IDE metadata to be version-controlled. If
+          the project *does* track them, coordinate with the team on which
+          metadata files are shared vs personal before discarding.
+
+          #### 3h — Hunk-Stage Backup Cleanup (Sidecar Discipline)
+
+          Every `git add -p` session, every in-editor `e` (edit-hunk) action,
+          and every programmatic `git apply` with a manually authored patch
+          may leave a sidecar file on disk: `<file>.orig`, `<file>.bak`,
+          `<file>.full.bak`, `<file>.rej`, `<file>.staging-tmp`, etc. These
+          sidecars MUST be detected and disposed of before the commit lands,
+          never absorbed into it.
+
+          Four-step protocol (Detect → Classify → Verify → Never-`add`):
+
+          1. **Detect** after each `git add -p` and after any `e`/`apply`:
+
+             ```powershell
+             git status --short | Select-String -Pattern '\.(orig|bak|full\.bak|rej|staging-tmp)$'
+             ```
+
+             The output MUST be empty before the commit.
+
+          2. **Classify** every detected sidecar:
+             - **Recoverable** — content the agent or user still needs (e.g., a
+               `.rej` requiring manual re-application, or a `.full.bak` from
+               an aborted edit). Move it OUT of the working tree (e.g., to
+               `<workspace-root>/../scratch/` or a personal-sandbox branch).
+             - **Disposable** — content already represented in the index, HEAD,
+               or another branch. Delete directly.
+
+          3. **Verify** before committing: re-run the §3h detect command and
+             confirm zero matches. Sidecars MUST NOT be added to `.gitignore`
+             as a substitute for cleanup — that hides the symptom and lets the
+             next session re-encounter the same disposal decision blind.
+
+          4. **NEVER `git add` a sidecar** "to clean up history later". The
+             commit itself is the disposal decision; once a sidecar reaches the
+             index, the only safe recovery is `git reset HEAD -- <sidecar>`
+             followed by the classification above.
+
+          This rule composes with §2h (Pre-Execution Safety Stash): the safety
+          stash captures the pre-execution working tree once; the sidecar
+          cleanup happens per `add -p` invocation inside that window.
+
+          See [Atomic Commit Construction Rules §4.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#43-hunk-stage-backup-cleanup-sidecar-discipline).
+
+          #### 3i — Selective Hunk Extraction via Diff Patching
+
+          When `git add -p` hunk boundaries don't align with the logical boundary
+          (common in Markdown table rows, contiguous prose sections, or adjacent
+          list items), and the complementary `stage-file-excluding-lines.py` (§2f.1)
+          is the wrong tool because you want to stage ONLY the matching content
+          (rather than exclude it), use the `stage-hunk-from-diff.py` script:
+
+          This script reads the file's diff, parses it into hunks, keeps only
+          hunks whose content matches one or more `--match` / `--match-regex`
+          patterns, and stages them via `git apply --cached`. Non-matching hunks
+          remain unstaged; the working tree is never modified.
+
+          ```bash
+          # Dry-run: preview matched hunks without staging
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+              --file .agents/skills/foo/SKILL.md \
+              --match "blockquote" \
+              --check
+
+          # Stage only hunks containing a specific substring:
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+              --file .agents/skills/foo/SKILL.md \
+              --match "Phase 1g"
+
+          # Stage hunks matching ANY of multiple patterns:
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+              --file .agents/skills/foo/SKILL.md \
+              --match "stash-apply" \
+              --match "live editor"
+
+          # Stage hunks from a regex pattern:
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+              --file .agents/skills/foo/SKILL.md \
+              --match-regex "Phase\s+1[g-h]"
+
+          # Stage hunks from the staged diff (--cached) instead of the working tree:
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+              --file .agents/skills/foo/SKILL.md \
+              --match "submodule" \
+              --cached
+          ```
+
+          **How it works:**
+
+          1. Runs `git diff [--cached] -- <file>` to capture the full patch.
+          2. Parses the unified diff into a header (before the first `@@`) and a
+             list of hunks (each `@@ ... @@` block with its context and changes).
+          3. For each hunk, checks whether ANY of the `--match` substrings or
+             `--match-regex` patterns appear anywhere in the hunk text (context
+             lines, old lines, AND new lines).
+          4. Reconstructs a filtered patch from the header + matching hunks only.
+          5. Runs `git apply --cached` with the filtered patch to stage exactly
+             those hunks into the index. Non-matching hunks remain unstaged.
+
+          **Complementary primitives (delegated to base skill `git-hunk-staging-primitives`):**
+
+          | Script | Action | Used in |
+          |---|---|---|
+          | `stage-hunk-from-diff.py` | Stage ONLY matching hunks | §3i (this section) |
+          | `stage-file-excluding-lines.py` | Stage file MINUS matching lines | §2f.1 |
+          | `agents-md-stage-row.py` | Stage exactly one AGENTS.md row | §2f |
+          | `stage-head-synthesize.py` | Stage HEAD with substitutions | §13 |
+          | `stage-specific-hunks.py` | Stage specific hunk indices | §3i.1, §13 |
+          | `git add -p` | Interactive hunk-by-hunk staging | §3a–§3f |
+
+          **Edge cases:**
+
+          - **Zero hunks matched:** exits with error. Use `--check` to preview.
+          - **File has no diff:** exits with error (nothing to extract).
+          - **Filtered patch wouldn't apply:** `--check` reveals the issue.
+            Common causes: the index has drifted from HEAD (e.g., some changes
+            already staged for this file). Use `--cached` to target staged
+            changes, or commit/reset the existing staged content first.
+
+          **See also:** `stage-hunk-from-diff.py --help` for full argument docs.
+
+          #### 3i.1 — Adjacent-Lines Isolation (git add -p Split Failure Fallback)
+
+          When `git add -p` presents a single hunk with multiple adjacent
+          added or deleted lines and `s` (split) returns "Sorry, cannot split
+          this hunk," the lines are too close (no intervening context line) for
+          Git's hunk-split algorithm. `stage-hunk-from-diff.py` (§3i) stages
+          the ENTIRE hunk when ANY line matches your filter — it cannot isolate
+          individual adjacent lines within a hunk.
+
+          **Preferred fallback:** `stage-file-excluding-lines.py` (§2f.1) stages
+          the file with the unwanted line(s) EXCLUDED, leaving the working tree
+          untouched. The excluded line stays on disk and is picked up cleanly by
+          `git add <file>` in the next commit.
+
+          **Example — two adjacent additions, each needs its own commit:**
+
+          ```bash
+          # Commit 1: stage the file minus the second addition
+          python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+              --file <file> \
+              --exclude "<content-of-second-line>"
+
+          git commit …   # only the first line change is committed
+
+          # Commit 2: HEAD now has the first line; working tree still has both.
+          # git add sees only the second line as a delta from HEAD:
+          git add <file>
+          git commit …   # only the second line change is committed
+          ```
+
+          **How it works** (re-stated for this use case, SSOT is §2f.1):
+
+          1. Reads the CURRENT working-tree version of `<file>`.
+          2. Removes every line matching `--exclude`.
+          3. Writes the result as a new blob via `git hash-object -w`.
+          4. Updates the index entry via `git update-index --cacheinfo`.
+          5. Working tree is never modified — the excluded line persists on disk.
+
+          **Why prefer this over manual editing (Intermediate State Synthesis,
+          §13):**
+
+          - Zero working-tree mutation — no risk of forgetting the restore step.
+          - The index blob is computed from the exact working-tree content
+            (minus matched lines) — no accidental whitespace drift from a
+            manual copy.
+          - Audit trail: the script logs the excluded line content + blob SHA
+            to stderr.
+
+          **When manual editing is still appropriate (fallback to §13):**
+
+          - The script is unavailable (no `.agents/` tree, or Python not on PATH).
+          - Lines to exclude span multiple non-adjacent positions (one
+            `--exclude` call handles one line; for scattered exclusions, manual
+            may be faster).
+
+          ---
+
+          ### Step 4 — Formatting & Structural Partitioning
+
+          Stylistic and structural changes MUST be explicitly separated from
+          functional commits.
+
+          #### 4a — Formatting & Stylistic Consolidation
+
+          **Target:** Purely aesthetic changes — indentation, whitespace,
+          Markdown header-level corrections, single blank line adjustments.
+
+          **Rule:** If multiple files require these adjustments, club them into a
+          single dedicated commit. Commit type: `style`.
+
+          **Trivial hunks:** A single blank-line insertion or removal (e.g.,
+          missing blank line before a code block in a skill doc) is a
+          formatting-only change. Use `git add -p` to isolate that hunk from any
+          functional changes in the same file, then commit it separately as a
+          `style:` commit. See
+          [`separate-content-from-formatting-commits`](../separate-content-from-formatting-commits/SKILL.md)
+          for complex cases (pervasive reformatting mixed with content changes).
+
+          #### 4b — Structural Refactor Isolation
+
+          **Target:** Functional-preserving reorganizations — alphabetical
+          reordering of methods, variables, or constants.
+
+          **Rule:** Isolate into dedicated commits. Commit type: `refactor`.
+          Large structural reorders should be committed per-file or
+          per-logical-group for clear "move" history.
+
+          #### 4c — Zero Mixture
+
+          Never mix formatting (4a) with structural refactors (4b) or functional
+          logic (Step 2). Use `git add -p` or Intermediate State Synthesis
+          (Step 12) to ensure absolute partitioning.
+
+          ---
+
+          ### Step 5 — Configuration Coupling
+
+          Tool configurations and metadata MUST be atomically linked to the code
+          they support.
+
+          - **Functional Pairing:** Updates to `.vscode/settings.json` (e.g.,
+            cSpell words), `.lintrc`, or other config files MUST be staged and
+            committed alongside the functional changes that necessitate them.
+          - **IDE Project Files:** Shared IDE config files (`.idea/` core XMLs,
+            `.vscode/` shared settings) that establish project structure MUST be
+            tracked. Personal settings (e.g., `workspace.xml`) MUST remain ignored.
+          - **Example:** If adding a new rule file introduces technical terms, the
+            cSpell update for those terms MUST be part of the same atomic unit.
+
+          ---
+
+          ### Step 6 — Submodule Synchronization Protocol
+
+          When managing submodules, the main repository's history must remain descriptive and clear.
+
+          - **Submodule-First Discipline**: All submodule commits MUST be completed
+            BEFORE handling any parent-repository work. Submodule work is highest
+            priority; parent sync follows immediately after.
+          - **Synchronized Commits**: Every functional update in a submodule requiring a
+            pointer update in the main repo MUST be coupled with its relevant main-repo
+            configuration changes (e.g., CI scripts or IDE settings).
+          - **Orchestration**: Delegate metadata extraction to the
+            **[Git Submodule Commit Details](../git-submodule-commit-details/SKILL.md)**
+            skill to ensure zero-omission fidelity.
+          - **Commit Message Generation**: All submodule sync commits MUST follow the
+            strict formatting, chronological ordering, and metadata requirements defined in
+            **[Submodule Sync Commits](../../../ai-agent-rules/git-commit-message-rules.md#5-submodule-sync-commits-parent-repository)**.
+          - **Submodule History Integrity**: Before updating a submodule pointer in the
+            parent repository, the changes *within* the submodule MUST be committed
+            according to these exact atomic construction rules. A "dirty" or
+            uncommitted submodule state is prohibited during a parent-repo sync.
+
+          ### Step 7 — Parent Sync Offer & Change Grouping
+
+          Immediately after finalizing all submodule commits, the agent MUST evaluate the
+          parent repository.
+
+          #### 7a — Parent State Analysis
+
+          1. Check if the containing parent repo exists and tracks current dir as submodule.
+          2. Verify parent's recorded SHA differs from submodule HEAD → stale pointer confirmed.
+
+          #### 7b — Related Parent Changes Detection
+
+          - **Inventory parent changes**: Run `git -C <parent-path> status` to list all
+            modified/untracked files in the parent.
+          - **Determine coupling**: Are any parent changes **directly related** to the
+            submodule commit (e.g., implementing the rule just added, updating CI to use
+            the new submodule feature, docs that reference the new behavior)?
+              - **Yes** → Group with the submodule SHA sync in a **single unified commit**.
+              - **No** → Keep parent sync minimal (SHA-only), commit related changes
+              separately afterward.
+
+          #### 7c — Arranged Commit Preview
+
+          Present the parent sync commit using full arranged commit format (§4). Include
+          both the submodule SHA delta and any grouped parent-side changes in the message body.
+
+          #### 7d — Execution Prompt
+
+          ```text
+          The parent repository needs a submodule SHA update. Execute sync?
+          ```
+
+          - On **"yes"** → Execute the presented commit immediately.
+          - On **"no"** or ambiguous → Do NOT commit; await explicit directive.
+          - **Never auto-push** — push offers come AFTER commit execution, never before.
+
+          #### 7e — Post-Sync Cleanup
+
+          If parent-side unrelated changes were detected but NOT grouped, they remain in
+          the parent working tree as separate atomic units. Arrange and commit them
+          independently following the standard protocol.
+
+          ---
+
+          ### Step 8 — Generated vs Custom File Splitting
+
+          When a file contains both standard API-generated content (e.g., from
+          gitignore.io) and user-defined custom rules, split into separate commits.
+
+          - **Commit A (Foundation):** Commit only the standard, API-generated
+            portion first. Back up the full file, overwrite with the exact API
+            content, and commit. This establishes a clean, reproducible baseline.
+          - **Commit B (Customization):** Commit the user-defined sections in a
+            subsequent commit. This clearly distinguishes "standard boilerplate"
+            from "project-specific logic."
+          - **User Modifications:** If the user has altered the API-generated
+            portion, separate those alterations from the raw API import if
+            possible, or document clearly as user-patches.
+
+          ---
+
+          ### Step 9 — Commit Message Quality Standards
+
+          Every commit message MUST meet these quality requirements:
+
+          | Requirement | Detail |
+          |---|---|
+          | **Specificity** | Avoid generic titles. List specific components (e.g., `add linux, macos, and windows gitignore rules` not `os-specific`) |
+          | **Anti-Repetition** | The body MUST NOT merely rephrase the title |
+          | **Context Enrichment** | Explain the 'Why' — especially for architectural or security decisions |
+          | **Atomic Rationale** | The body MUST state WHY these specific changes are grouped together. If multiple files, explain their functional coupling |
+          | **Constraint Documentation** | Mention constraints or external dependencies that influenced grouping |
+          | **Contextual Accuracy** | Use precise terms (e.g., "Supabase project-specific" not generic "project-specific") |
+          | **Body/Diff Congruence** | The message body MUST be a complete, accurate summary of ALL changes in the staged hunks. Any discrepancy requires an immediate corrected preview |
+
+          ---
+
+          ### Step 10 — Execution & Verification
+
+          #### 9a — Step-by-Step Execution
+
+          Execute commits one-by-one according to the approved arrangement.
+          **Chaining commands (e.g., `git add . && git commit`) is FORBIDDEN.**
+          Each command MUST be issued as a separate step so the user can inspect
+          intermediate state (`git status`, diff, preview) before authorizing the
+          next action. Chaining suppresses this verification window.
+
+          #### 9b — Recovery
+
+          If a mistake is made during staging:
+
+          - **Unstage:** `git reset <file>`
+          - **Selective discard:** `git checkout -p`
+          - **WARNING:** Never use `git reset --hard` for synchronization.
+            Always prefer `git pull`.
+
+          #### 9c — Pull Before Push
+
+          Always `git pull` (or `git pull --rebase` upon explicit approval) before
+          pushing to incorporate latest remote changes.
+
+          #### 9d — Opaque Content Analysis
+
+          For files flagged as binary or large assets (LFS), verify internal
+          consistency by inspecting file contents (e.g., `cat -v` or hex dump) to
+          ensure the commit message accurately reflects the data being stored.
+
+          #### 9e — History Refinement Delegation
+
+          If existing commits need to be split or refined (e.g., to fix non-atomic
+          changes), delegate to the
+          [`git_history_refinement`](../git-history-refinement/SKILL.md) skill.
+
+          #### 9f — Stash Workflow for Rebase
+
+          If rebase fails due to unstaged changes:
+
+          ```powershell
+          git stash push -m "Descriptive message"
+          git pull --rebase origin <branch>
+          git stash pop
+          ```
+
+          If `git stash pop` creates conflicts, resolve manually, then:
+
+          ```bash
+          PAGER=cat git add <resolved-files>
+          PAGER=cat git stash drop
+          ```
+
+          > **Stash preservation rule:** `git stash drop`/`pop`/`clear` are destructive and require explicit per-stash user
+          > authorization — even inside a "cleanup" batch. See
+          > [`git-operation-rules.md` §5 — Stash Preservation](../../../ai-agent-rules/git-operation-rules.md) for the
+          > Inventory → Inspect → Authorize → Act protocol and recovery window. For triage of pre-existing stashes whose
+          > origin is unclear (Bucket A/B/C/D classification, hang-free inspection, apply-not-pop), use
+          > [`git-stash-triage`](../git-stash-triage/SKILL.md).
+          >
+          > **Stash provenance note:** Before applying or popping a stash, consider checking its origin commit to understand
+          > what state it was created from. Use the [`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md) base skill:
+          > `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}` outputs the commit hash and subject
+          > that was HEAD when the stash was created.
+
+          #### 9g — Corrupted Rebase State Recovery
+
+          If `git rebase --continue` or `git rebase --abort` fails with
+          `warning: could not read '.git/rebase-merge/head-name'`, the
+          `.git/rebase-merge` directory is likely empty or corrupted.
+
+          **Diagnostic:**
+
+          ```powershell
+          Test-Path ".git/rebase-merge"           # True = directory exists
+          Get-ChildItem ".git/rebase-merge"       # Empty = corrupted state
+          ```
+
+          **Resolution:**
+
+          1. **Verify staged changes are intact** — run `PAGER=cat git diff --cached` to
+             confirm your staged work is preserved.
+          2. **Remove the corrupted directory:**
+
+             ```powershell
+             Remove-Item ".git/rebase-merge" -Recurse -Force
+             ```
+
+          3. **Verify clean state** — run `PAGER=cat git status` to confirm the rebase
+             state indicator is gone.
+          4. **Commit directly** — since the rebase state is cleared, use a
+             normal `PAGER=cat git commit` with the planned message instead of
+             `PAGER=cat git rebase --continue`.
+
+          #### 9h — Pre-Existing Staged Content Handling
+
+          Before staging files for a new commit, check whether the index already
+          contains staged changes from a prior operation (previous commit,
+
+          ...18195 bytes truncated...
+
+          The tool call succeeded but the output was truncated. Full output saved to: /Users/dk/.local/share/opencode/tool-output/tool_f9a78a6d3001rbaHYuVpp8zPfm
+          Use the Task tool to have explore agent process this file with Grep and Read (with offset/limit). Do NOT read the full file yourself - delegate to save context.
+      - tool: bash
+        args:
+          command: git status --short session-tracker.yaml
+        result: |2
+           M session-tracker.yaml
+      - tool: bash
+        args:
+          command: git diff session-tracker.yaml
+        result: |
+          diff --git a/session-tracker.yaml b/session-tracker.yaml
+          index 06b7c3e..9ab2417 100644
+          --- a/session-tracker.yaml
+          +++ b/session-tracker.yaml
+          @@ -2720,6 +2720,75 @@ session_tracker:
+               - id: 27
+                 title: use C in python for better performance - ensure the compatibility with existing python modules, and ensure the compatibility with existing python scripts - also ensure project compatibility with python after replace
+           
+          +    - id: 28
+          +      title: use C++ in python for better performance - ensure the compatibility with existing python modules, and ensure the compatibility with existing python scripts - also ensure project compatibility with python after replace
+          +
+          +    - id: 29
+          +      title: use Rust in python for better performance - ensure the compatibility with existing python modules, and ensure the compatibility with existing python scripts - also ensure project compatibility with python after replace
+          +
+          +    - id: 30
+          +      title: use C in node for better performance - ensure the compatibility with existing node modules, and ensure the compatibility with existing node scripts - also ensure project compatibility with node after replace
+          +
+          +    - id: 31
+          +      title: use C++ in node for better performance - ensure the compatibility with existing node modules, and ensure the compatibility with existing node scripts - also ensure project compatibility with node after replace
+          +
+          +    - id: 32
+          +      title: use Rust in node for better performance - ensure the compatibility with existing node modules, and ensure the compatibility with existing node scripts - also ensure project compatibility with node after replace
+          +
+          +    - id: 33
+          +      title: use C in deno for better performance - ensure the compatibility with existing deno modules, and ensure the compatibility with existing deno scripts - also ensure project compatibility with deno after replace
+          +
+          +    - id: 34
+          +      title: use C++ in deno for better performance - ensure the compatibility with existing deno modules, and ensure the compatibility with existing deno scripts - also ensure project compatibility with deno after replace
+          +
+          +    - id: 35
+          +      title: use Rust in deno for better performance - ensure the compatibility with existing deno modules, and ensure the compatibility with existing deno scripts - also ensure project compatibility with deno after replace
+          +
+          +    - id: 36
+          +      title: use C in bun for better performance - ensure the compatibility with existing bun modules, and ensure the compatibility with existing bun scripts - also ensure project compatibility with bun after replace
+          +
+          +    - id: 37
+          +      title: use C++ in bun for better performance - ensure the compatibility with existing bun modules, and ensure the compatibility with existing bun scripts - also ensure project compatibility with bun after replace
+          +
+          +    - id: 38
+          +      title: use Rust in bun for better performance - ensure the compatibility with existing bun modules, and ensure the compatibility with existing bun scripts - also ensure project compatibility with bun after replace
+          +
+          +    - id: 39
+          +      session: 06f83ff23ffeYjeyy3E2ujgeJ5
+          +      title: transform gist ai prompts for commit from txt to yaml
+          +      references:
+          +        - paths:
+          +            - path: ai-suite/gists-ai-prompts/commit.txt
+          +            - path: ai-suite/gists-ai-prompts/commit.yaml
+          +            - path: ai-suite/gists-ai-prompts/prompt.py
+          +      tasks:
+          +        - id: L0T1
+          +          title: transform remaining txt contents
+          +
+          +        - id: L0T2
+          +          title: use current folder in prompts
+          +
+          +        - id: L0T3
+          +          title: use files passed via. command line args in prompts
+          +
+          +        - id: L0T4
+          +          title: use folders passed via. command line args in prompts
+          +
+          +        - id: L0T5
+          +          title: use relative paths passed via. command line args in prompts
+          +
+          +        - id: L0T6
+          +          title: use absolute paths passed via. command line args in prompts
+          +
+          +        - id: L0T7
+          +          title: compose support for tags
+          +
+          +        - id: L0T8
+          +          title: add_on is optional if prefix is there
+          +
+          +    - id: 40
+          +      title: check for automatic accept of ripgrep commands for ai tools
+          +
+             backlog:
+           
+               - id: R1
+    time: 7/25/2026, 11:40:21.134 PM GMT+5:30
+    duration: 5.559s
+    duration_ms: 5559
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me analyze the changes. The diff shows additions to `session-tracker.yaml` with multiple new entries. Let me understand the grouping:
+
+      1. **IDs 28-38**: These are repetitive "use X in Y for better performance" items — 11 items covering:
+         - C / C++ / Rust in python
+         - C / C++ / Rust in node
+         - C / C++ / Rust in deno
+         - C / C++ / Rust in bun (wait, that's 4×3=12, let me count: 28-38 = 11 items)
+         - Let me recount: 28 (C python), 29 (C++ python), 30 (Rust python) - that's 3
+         - 31 (C node), 32 (C++ node), 33 (Rust node) - that's 3 more = 6
+         - 34 (C deno), 35 (C++ deno), 36 (Rust deno) - that's 3 more = 9
+         - 37 (C bun), 38 (C++ bun) - that's 2 more = 11
+         - Wait, 30 is Rust python, 31 is C node. Let me recount from the diff:
+           - 28: C in python
+           - 29: C++ in python
+           - 30: Rust in python
+           - 31: C in node
+           - 32: C++ in node
+           - 33: Rust in node
+           - 34: C in deno
+           - 35: C++ in deno
+           - 36: Rust in deno
+           - 37: C in bun
+           - 38: C++ in bun
+           - Wait, no Rust in bun? Let me check the diff again... I see: 37: C in bun, 38: C++ in bun, no Rust in bun. So 11 items total.
+
+         Wait, I need to re-count carefully:
+         - 28: C in python
+         - 29: C++ in python
+         - 30: Rust in python
+         - 31: C in node
+         - 32: C++ in node
+         - 33: Rust in node
+         - 34: C in deno
+         - 35: C++ in deno
+         - 36: Rust in deno
+         - 37: C in bun
+         - 38: C++ in bun
+
+         That's only 11. No Rust in bun. OK so these are 11 entries.
+
+      2. **ID 39**: A complex entry with session, title, references, and 8 tasks about transforming gist AI prompts for commit.
+
+      3. **ID 40**: A single title entry about checking for automatic accept of ripgrep commands.
+
+      Let me think about how to group these atomically:
+
+      The rules say:
+      - Each commit should be independent and logically coherent
+      - Group by architectural layer
+      - Never commit half of a logical change
+      - Use hunk-based staging when needed
+
+      Given that this is a YAML file with session tracker entries, each ID could potentially be its own commit since they're logically independent. But the repetitive 28-38 items could be grouped by language/runtime or by pattern.
+
+      Let me think about the best atomic grouping:
+
+      Option A: Maximum atomicity - each ID is its own commit (13 commits - too many, would need batching)
+      Option B: Group by logical theme:
+        1. "use X in python for better performance" entries (IDs 28-30) - 3 related items
+        2. "use X in node for better performance" entries (IDs 31-33) - 3 related items
+        3. "use X in deno for better performance" entries (IDs 34-36) - 3 related items
+        4. "use X in bun for better performance" entries (IDs 37-38) - 2 related items
+        5. Transform gist AI prompts commit (ID 39) - complex item
+        6. Check for automatic accept of ripgrep commands (ID 40) - single item
+
+      Wait, but the performance items are all basically the same pattern - "use X in Y for better performance" - they're truly independent entries. Let me reconsider.
+
+      Actually, looking more carefully at IDs 28-38, they're all the same template repeated with different language/runtime combinations. They could be grouped by runtime (python, node, deno, bun) since each group is about optimizing a specific runtime. Or they could be committed individually.
+
+      Let me go with grouping by runtime since those are thematically related:
+
+      1. **Commit 1**: python performance entries (IDs 28-30)
+      2. **Commit 2**: node performance entries (IDs 31-33)
+      3. **Commit 3**: deno performance entries (IDs 34-36)
+      4. **Commit 4**: bun performance entries (IDs 37-38)
+      5. **Commit 5**: transform gist ai prompts (ID 39)
+      6. **Commit 6**: automatic accept of ripgrep commands (ID 40)
+
+      That's 6 commits - more than 5, so we need batching.
+
+      Actually wait, let me re-read the rules. The maximum atomicity principle says to maximize atomicity. Let me think about what's truly independent:
+
+      Each session entry ID in a YAML tracker is independent - they don't functionally depend on each other. So maximum atomicity would be each entry its own commit. But that's 13 commits across 3 batches.
+
+      However, the `style` consolidation rule says formatting changes should be grouped. These are not formatting changes - they're content additions.
+
+      Let me reconsider. The user said "maximum atomic commits." Let me go with runtime-grouped:
+
+      Actually, I think the cleanest grouping is:
+      - Performance-optimization entries by runtime (since they share the same concern)
+      - Complex ID 39 as its own commit
+      - Simple ID 40 as its own commit
+
+      Let me also check for the planning-artifact-naming skill to figure out the preview file path.
+
+      Actually, the user asked me to use the "artifact naming skill" for the path. Let me look at the planning-artifact-naming skill.
+
+      Let me check the skill.
+    thinking_duration: 11.106s
+    thinking_duration_ms: 11106
+    tool_calls:
+      - tool: bash
+        args: {}
+        result: 'File not found: /Users/dk/lab-data/ai-suite/.agents/skills/planning-artifact-naming/SKILL.md'
+      - tool: bash
+        args:
+          command: git log --oneline -5 -- session-tracker.yaml
+        result: |
+          02f7f03 refactor(session-tracker): renumber L0T9-L0T23 to L0T7-L0T21 after L0T1-L0T6 consolidation
+          078959d feat(session-tracker): restructure session 4 L0T1-L0T5 with status, notes, and sub-tasks
+          a8a5240 refactor(session-tracker): add Session Z follow-up tasks and delete obsolete sessions V/3
+          724220e refactor(session-tracker): normalize task IDs in ses_0de2809a and restructure ses_0dd353c
+          5857904 feat(session-tracker): add backlog item 27 (use C in python for performance)
+    time: 7/25/2026, 11:40:26.778 PM GMT+5:30
+    duration: 14.346s
+    duration_ms: 14346
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The planning-artifact-naming skill file doesn't exist at that path. Let me find it.
+    thinking_duration: 406ms
+    thinking_duration_ms: 406
+    tool_calls:
+      - tool: grep
+        args: {}
+        result: No files found
+      - tool: grep
+        args:
+          pattern: planning-artifact-naming
+          include: AGENTS.md
+        result: |
+          Found 1 matches
+          /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-lifecycle/AGENTS.md:
+            Line 23: - [`planning-artifact-naming`](../planning-artifact-naming/SKILL.md) —
+    time: 7/25/2026, 11:40:41.211 PM GMT+5:30
+    duration: 2.713s
+    duration_ms: 2713
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me find the actual path of the planning-artifact-naming skill.
+    thinking_duration: 187ms
+    thinking_duration_ms: 187
+    tool_calls:
+      - tool: glob
+        args:
+          pattern: '**/planning-artifact-naming*/SKILL.md'
+        result: No files found
+    time: 7/25/2026, 11:40:44.037 PM GMT+5:30
+    duration: 2.422s
+    duration_ms: 2422
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Hmm, the skill seems to not exist as an actual file on disk. Let me look at the AGENTS.md for its entry.
+    thinking_duration: 595ms
+    thinking_duration_ms: 595
+    tool_calls:
+      - tool: grep
+        args:
+          pattern: planning-artifact-naming
+          path: /Users/dk/lab-data/ai-suite
+          include: '*.md'
+        result: "Found 100 matches (more matches available)\n/Users/dk/lab-data/ai-suite/AGENTS-legacy.md:\n  Line 304: | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/09f9761ecffe2D5nkN819pOAV0/09f9761ecffe2D5nkN819pOAV0-2.md:\n  Line 76: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 392:  .../general/planning-artifact-naming/SKILL.md      |     4 +\n\n  Line 2586: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 3276:  | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n  Line 3839: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 4649: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 6502:  | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/09f9761ecffe2D5nkN819pOAV0/09f9761ecffe2D5nkN819pOAV0.md:\n  Line 82: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 398:  .../general/planning-artifact-naming/SKILL.md      |     4 +\n\n  Line 2592: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 3282:  | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n  Line 3845: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c1d09aacffehMxzFP6YJNoAhC/0c1d09aacffehMxzFP6YJNoAhC-7.md:\n  Line 15309:   \"name\": \"planning-artifact-naming\"\n\n  Line 15315: <skill_content name=\"planning-artifact-naming\">\n\n  Line 15316: # Skill: planning-artifact-naming\n\n  Line 15460: Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming\n\n  Line 15465: <file>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md</file>\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c1d09aacffehMxzFP6YJNoAhC/0c1d09aacffehMxzFP6YJNoAhC-8.md:\n  Line 8820:   \"name\": \"planning-artifact-naming\"\n\n  Line 8826: <skill_content name=\"planning-artifact-naming\">\n\n  Line 8827: # Skill: planning-artifact-naming\n\n  Line 8971: Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming\n\n  Line 8976: <file>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md</file>\n\n  Line 9386: The merged file looks correct. Now I need to save this as a planning artifact with the proper naming convention. According to the planning-artifact-naming skill:\n\n  Line 9492: The file has been created successfully with v2 version. The walkthrough is now extracted and saved with the proper naming convention per the planning-artifact-naming skill.\n\n  Line 9548: Now let me verify the naming convention is correct per the planning-artifact-naming skill:\n\n  Line 9630: 14. I read the planning-artifact-naming skill. It defines: `docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md`\n\n  Line 9688: - planning-artifact-naming skill: docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md\n\n  Line 9723: - planning-artifact-naming skill formula: `docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md`\n\n  Line 10209: Let me reconsider the naming. The planning-artifact-naming skill has artifact types. For a raw merged session export, what artifact type fits? Options: \"walkthrough\", \"session\", \"session-merged\", \"transcript\". The user called it a \"complete session file\". \n\n  Line 10362: Let me reconsider the planning-artifact-naming skill artifact types. The skill defines artifact types like: task, implementation-plan, commit-preview, walkthrough, sub-plan. \"walkthrough\" is specifically the human-documented walkthrough. A raw merged session export is different.\n\n  Line 10364: What naming should I use? The user said earlier in the summary: \"Copy merged session file to docs/ with proper naming\". And the planning-artifact-naming skill. For a merged session file, a sensible artifact type would be \"session-merged\" or \"session\". \n\n  Line 10536: Let me think about whether to use the planning-artifact-naming skill for naming. The user wants a \"complete maximum detailed workflow\" doc. This is a workflow/implementation-plan doc. \n\n  Line 10584:       \"content\": \"Save the workflow doc with proper naming (planning-artifact-naming convention)\",\n\n  Line 10611:     \"content\": \"Save the workflow doc with proper naming (planning-artifact-naming convention)\",\n\n\n/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md:\n  Line 2: name: planning-artifact-naming\n\n\n/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-lifecycle/AGENTS.md:\n  Line 23: - [`planning-artifact-naming`](../planning-artifact-naming/SKILL.md) —\n\n\n/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-lifecycle/SKILL.md:\n  Line 20: [`planning-artifact-naming`](../planning-artifact-naming/SKILL.md)\n\n  Line 43: [`planning-artifact-naming` §2.1](../planning-artifact-naming/SKILL.md#21-registered-types):\n\n  Line 59:    [`planning-artifact-naming` §1](../planning-artifact-naming/SKILL.md#1-formula):\n\n  Line 140:   [`planning-artifact-naming`](../planning-artifact-naming/SKILL.md).\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c1d09aacffehMxzFP6YJNoAhC/0c1d09aacffehMxzFP6YJNoAhC-9.md:\n  Line 7245:   \"name\": \"planning-artifact-naming\"\n\n  Line 7251: <skill_content name=\"planning-artifact-naming\">\n\n  Line 7252: # Skill: planning-artifact-naming\n\n  Line 7396: Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming\n\n  Line 7401: <file>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md</file>\n\n  Line 7811: The merged file looks correct. Now I need to save this as a planning artifact with the proper naming convention. According to the planning-artifact-naming skill:\n\n  Line 7917: The file has been created successfully with v2 version. The walkthrough is now extracted and saved with the proper naming convention per the planning-artifact-naming skill.\n\n  Line 7973: Now let me verify the naming convention is correct per the planning-artifact-naming skill:\n\n  Line 8055: 14. I read the planning-artifact-naming skill. It defines: `docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md`\n\n  Line 8113: - planning-artifact-naming skill: docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md\n\n  Line 8148: - planning-artifact-naming skill formula: `docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md`\n\n  Line 8634: Let me reconsider the naming. The planning-artifact-naming skill has artifact types. For a raw merged session export, what artifact type fits? Options: \"walkthrough\", \"session\", \"session-merged\", \"transcript\". The user called it a \"complete session file\". \n\n  Line 8787: Let me reconsider the planning-artifact-naming skill artifact types. The skill defines artifact types like: task, implementation-plan, commit-preview, walkthrough, sub-plan. \"walkthrough\" is specifically the human-documented walkthrough. A raw merged session export is different.\n\n  Line 8789: What naming should I use? The user said earlier in the summary: \"Copy merged session file to docs/ with proper naming\". And the planning-artifact-naming skill. For a merged session file, a sensible artifact type would be \"session-merged\" or \"session\". \n\n  Line 8961: Let me think about whether to use the planning-artifact-naming skill for naming. The user wants a \"complete maximum detailed workflow\" doc. This is a workflow/implementation-plan doc. \n\n  Line 9009:       \"content\": \"Save the workflow doc with proper naming (planning-artifact-naming convention)\",\n\n  Line 9036:     \"content\": \"Save the workflow doc with proper naming (planning-artifact-naming convention)\",\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c1d09aacffehMxzFP6YJNoAhC/0c1d09aacffehMxzFP6YJNoAhC-18.md:\n  Line 11782:  M .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c2d7b1e4ffeQSPP5UOTlpWzTS/0c2d7b1e4ffeQSPP5UOTlpWzTS-2.md:\n  Line 1694: The user wants me to use the planning-artifact-naming skill for the commit preview. Let me load that skill first, then produce the properly named artifact.\n\n  Line 1701:   \"name\": \"planning-artifact-naming\"\n\n  Line 1707: <skill_content name=\"planning-artifact-naming\">\n\n  Line 1708: # Skill: planning-artifact-naming\n\n  Line 1852: Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming\n\n  Line 1857: <file>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md</file>\n\n  Line 3269: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 4130: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/07568f752ffe1gL7GvX0mbUk38/07568f752ffe1gL7GvX0mbUk38-2.md:\n  Line 8737: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c2d7b1e4ffeQSPP5UOTlpWzTS/0c2d7b1e4ffeQSPP5UOTlpWzTS-11.md:\n  Line 1009:  .../general/planning-artifact-naming/SKILL.md      |   4 +\n\n  Line 5255:  M .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0dd374af6ffe02JHq06EQ89B48/0dd374af6ffe02JHq06EQ89B48-22.md:\n  Line 570:   \"name\": \"planning-artifact-naming\"\n\n  Line 576: Skill \"planning-artifact-naming\" not found. Available skills: agents-md-recovery-from-session, android-feature-to-shared-kotlin-lib, antigravity-version-checker, archive-size-preflight-and-extract, bash-multiline-to-single-line, brew-upgrade-command-assembly, brew-upgrade-workflow, browser-network-interception, canonical-source-vs-workflow-repo-audit, claude-config-change-gate, claude-session-exporter, code-explanation, command-autoapprove-onboarding, copilot-activity-history-split, copilot-chat-history-analysis, cra-reset-mocks-test-strategy, customize-opencode, db-backup-bracketing-protocol, deleted-files-audit, dev-env-private-config-symlink, directory-tree-audit, eclipse-launch-stdout-capture, eclipse-pde-jdk-migration, eclipse-pde-telemetry-resilience, env-example-creation, ffmpeg-filler-generator, ffmpeg-lossless-concat, ffmpeg-lossless-split, file-glob-sort-by-regex-capture, fnmatch-content-guard-pattern, folder-comparison, gh-pr-edit, gh-repo-create, gh-repo-edit-metadata, git-absorbed-branch-decommission, git-alias-preflight, git-apply-patch-cleanup, git-atomic-commit-construction, git-branch-promotion, git-clean-filter-renormalize-backfill, git-commit-comparison-audit, git-commit-details-audit, git-commit-edit, git-commit-identity-rewrite, git-commit-message-bulk-reword, git-commit-message-delivery, git-commit-message-reword, git-commit-metadata-extraction, git-cross-ref-file-parity, git-cross-repo-cherry-pick, git-dependent-branch-restack-cascade, git-divergence-audit, git-drop-commit-with-divergent-recreation, git-feature-branch-atomic-commit, git-github-auth-fallback, git-global-hook-bootstrap, git-history-refinement, git-jq-pretty-json-filter, git-lfs-selective-clone, git-operation-blocking-hooks, git-parallel-branch-decommission, git-personal-content-extraction, git-personal-sandbox-remote, git-personal-sandbox-restack, git-personal-team-branch-workflow, git-post-gitignore-untrack, git-pre-execution-safety-stash, git-rebase-standardization, git-ref-co...\n  Line 585: The planning-artifact-naming skill exists in the AGENTS.md table but when I try to load it, it says \"Skill not found\". Let me look at it directly. Actually, it's listed as a general skill, so the path would be `.agents/skills/general/planning-artifact-naming/SKILL.md`.\n\n  Line 589: | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n  Line 592: So it's at `.agents/skills/general/planning-artifact-naming/SKILL.md`. Let me read it for naming conventions.\n\n  Line 599:   \"filePath\": \"/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md\"\n\n  Line 605: <path>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md</path>\n\n  Line 609: 2: name: planning-artifact-naming\n\n  Line 763: Instructions from: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md\n\n  Line 889: Also, I see some existing plans in `docs/implementation-plans/` use a simpler format without session IDs (just date + description). But the planning-artifact-naming skill says to use the full convention. Let me follow the official convention.\n\n  Line 1120:   \"content\": \"# [Session Skills Cross-Reference & Documentation Fix] (v1)\\n\\n## Rule Compliance Reference\\n- [AI Agent Planning Rules](../ai-agent-rules/ai-agent-planning-rules.md)\\n- [Skill Factory SKILL.md](../.agents/skills/skill-factory/SKILL.md)\\n- [Planning Artifact Naming SKILL.md](../.agents/skills/general/planning-artifact-naming/SKILL.md)\\n- [Markdown Generation SKILL.md](../.agents/skills/markdown-generation/SKILL.md)\\n- [Skill Cross-Reference Audit SKILL.md](../.agents/skills/general/skill-cross-reference-audit/SKILL.md)\\n\\n---\\n\\n## 1. Goal Description\\n\\nUpdate all 11 session-export skills (5 base extractors + 3 single-purpose composers + 2 multi-source composers + 1 AGENTS.md recovery composer) to satisfy skill-factory §2.0 section structure, correct all cross-reference errors detected by `skill-cross-reference-audit`, register missing skills in root AGENTS.md, and fix markdownlint violations.\\n\\n---\\n\\n## 2. Current State\\n\\n### 2.1 Skills Inventory\\n\\n**L1 Base Extractors (6):**\\n| Skill | Status |\\n|---|---|\\n| `opencode-session-write-extractor` | Missing `## Composition Rationale`, missing `## Related Skills` |\\n| `opencode-session-edit-extractor` | Missing `## Composition Rationale`, missing `## Related Skills` |\\n| `opencode-session-bash-block-extractor` | Complete (`## Composition Rationale`, `## Related Skills`, `## Composition by Higher-Level Skills` all present) |\\n| `opencode-session-bash-file-ops-classifier` | Complete (has all sections, including `## Supersession`) |\\n| `opencode-session-bash-write-extractor` | Missing `## Composition Rationale`, missing `## Related Skills`, has `## Supersession` |\\n| `opencode-session-diff-extractor` | Missing `## Composition Rationale`, missing `## Related Skills` |\\n\\n**L3 Composers (5):**\\n| Skill | Status |\\n|---|---|\\n| `file-recovery-from-session` | Non-standard `## Composition` heading (should be `## Composition Rationale` + `## Composition by Lower-Level Skills`) |\\n| `edit-application-from-sessi...\n  Line 2964: - Must plan first per planning rules §2, write plan to disk per `planning-artifact-naming` skill, then implement\n\n  Line 3560: 301: | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n  Line 8030: - Must plan first per planning rules §2, write plan to disk per `planning-artifact-naming` skill, then implement\n\n  Line 10016: 302: | Planning Artifact Naming | [`.agents/skills/general/planning-artifact-naming/SKILL.md`](.agents/skills/general/planning-artifact-naming/SKILL.md) | Convention for naming planning artifacts (task, impl-plan, commit-preview) with opencode session identity for traceability and machine-readable sort order |\n\n  Line 12464: 6: - [Planning Artifact Naming SKILL.md](../.agents/skills/general/planning-artifact-naming/SKILL.md)\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0c2d7b1e4ffeQSPP5UOTlpWzTS/0c2d7b1e4ffeQSPP5UOTlpWzTS-6.md:\n  Line 199: 1. Apply planning-artifact-naming skill to create commit preview in docs/ with the arranged commit split.\n\n  Line 245: 1. Apply planning-artifact-naming skill to create commit preview in docs/ with the arranged commit split and full hunk previews.\n\n  Line 479: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 3927:  M .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 5295: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 5763: M\t.agents/skills/general/planning-artifact-naming/SKILL.md\n\n  Line 6830: \tmodified:   .agents/skills/general/planning-artifact-naming/SKILL.md\n\n\n/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/0dd374af6ffe02JHq06EQ89B48/0dd374af6ffe02JHq06EQ89B48-16.md:\n  Line 1237: 3. Follow naming conventions from planning-artifact-naming skill\n\n  Line 2645: Let me also check what the planning-artifact-naming skill says about file naming.\n\n  Line 2652:   \"filePath\": \"/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md\"\n\n  Line 2658: <path>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md</path>\n\n  Line 2662: 2: name: planning-artifact-naming\n\n  Line 2816: Instructions from: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md\n\n  Line 3012:   \"content\": \"# [Session Bash File Ops Extractor Suite] (v1)\\n\\n## Rule Compliance Reference\\n\\n- [`ai-agent-planning-rules.md`](../../ai-agent-rules/ai-agent-planning-rules.md) — Planning protocol,\\n  versioning, SSOT integrity\\n- [`skill-factory/SKILL.md`](../../.agents/skills/skill-factory/SKILL.md) — Layering decision (§2.0),\\n  SKILL.md composition (§2.2), AGENTS.md bridge (§2.3), registration (§2.4), post-drafting checklist (§3)\\n- [`planning-artifact-naming/SKILL.md`](../../.agents/skills/general/planning-artifact-naming/SKILL.md) — Naming\\n  convention for all artifacts\\n- [`script-over-instruction-decomposition/SKILL.md`](../../.agents/skills/script-over-instruction-decomposition/SKILL.md)\\n  — Tier classification for all procedural steps\\n\\n## Problem\\n\\n`opencode-session-bash-write-extractor` only handles `cat >/>>` heredoc file\\nwrites. It cannot detect or report `rm`, `cp`, `mv`, `git rm`, or `git mv`\\noperations from `Tool: bash` blocks. No skill currently provides a\\ncomprehensive view of ALL file operations that occurred during an OpenCode\\nsession.\\n\\n## Architecture (3-Layer)\\n\\n### Layer 1 — Base: `opencode-session-bash-block-extractor` (NEW)\\n\\n- **Purpose**: Extract raw `Tool: bash` command strings from session markdown\\n- **Input**: Session markdown file\\n- **Output**: JSONL `{\\\"command\\\": \\\"cat > /path << 'EOF'\\\\n...\\\\nEOF\\\"}`\\n- **Contract**: One JSONL line per `Tool: bash` block found\\n- **Domain**: Agnostic (just finds bash blocks, no classification)\\n- **Reuse**: Any bash-analysis composer calls this first\\n\\n**Script**: `scripts/extract-bash-blocks.py` (Tier-1 Python)\\n- Regex: `\\\\*\\\\*Tool: bash\\\\*\\\\*...\\\\*\\\\*Input:\\\\*\\\\*\\\\n\\\\`\\\\`\\\\`json\\\\n({.*?})\\\\n\\\\`\\\\`\\\\``\\n- Exits: 0=found, 1=no blocks, 2=parse error, 3=file not found\\n\\n### Layer 2 — Base: `opencode-session-bash-file-ops-classifier` (NEW)\\n\\n- **Purpose**: Classify bash command strings into file operation types\\n- **Input**: JSONL from Layer 1 (stdin or `--input` file)\\n- **Output**...\n\n(Results truncated. Consider using a more specific path or pattern.)"
+    time: 7/25/2026, 11:40:46.541 PM GMT+5:30
+    duration: 4.728s
+    duration_ms: 4728
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: So the skill file exists at `.agents/skills/general/planning-artifact-naming/SKILL.md`. Let me read it.
+    thinking_duration: 418ms
+    thinking_duration_ms: 418
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: planning-artifact-naming
+          3: description: >-
+          4:   Convention for naming planning artifacts (task, implementation-plan,
+          5:   commit-preview, walkthrough, sub-plan) with opencode session identity
+          6:   for traceability and machine-readable sort order.
+          7: category: General
+          8: ---
+          9: 
+          10: # Planning Artifact Naming Convention (v1)
+          11: 
+          12: This skill defines the naming convention for all planning artifacts
+          13: generated during AI-agent sessions. The convention embeds session
+          14: identity (human-readable name + machine-readable ID) directly into
+          15: each filename, ensuring artifacts are self-traceable to their source
+          16: conversation and sort chronologically at the filesystem level.
+          17: 
+          18: The convention was established during an OpenCode config preservation
+          19: session and generalised here for reuse across all agent workflows.
+          20: 
+          21: ***
+          22: 
+          23: ## 1. Formula
+          24: 
+          25: ```text
+          26: docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md
+          27: ```
+          28: 
+          29: All planning artifacts MUST be stored under `docs/` in the main
+          30: repository (per
+          31: [Traceability Portability Mandate](../../../../ai-agent-rules/ai-rule-standardization-rules.md)).
+          32: 
+          33: ### 1.1 Part Reference
+          34: 
+          35: | Part | Required | Format | Example |
+          36: | :--- | :--- | :--- | :--- |
+          37: | `date` | Always | `YYYY-MM-DD` | `2026-07-03` |
+          38: | `session-id` | Always | Full opencode session ID (without `ses_` prefix) | `0dd0a9769ffe9VhJz3qA3VnZNV` |
+          39: | `session-name-slug` | Always | Kebab-case of the opencode session name | `opencode-config-versioning-preservation` |
+          40: | `artifact-type` | Always | Kebab-case type identifier | `implementation-plan` |
+          41: | `version` | Versioned only | `v<integer>` | `v3` |
+          42: | Extension | Always | `.md` | `.md` |
+          43: 
+          44: ### 1.2 Separator Rule
+          45: 
+          46: - **Underscore** (`_`) separates every top-level part.
+          47: - **Hyphen** (`-`) is used only WITHIN a part (date-separator,
+          48: session-name-slug, artifact-type).
+          49: 
+          50: Correct:
+          51: 
+          52: ```text
+          53: 2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_implementation-plan_v3.md
+          54: ```
+          55: 
+          56: Incorrect (hyphen between parts — ambiguous boundaries):
+          57: 
+          58: ```text
+          59: 2026-07-03-0dd0a9769ffe9VhJz3qA3VnZNV-opencode-config-versioning-preservation-implementation-plan-v3.md
+          60: ```
+          61: 
+          62: Incorrect (truncated ID, missing date, missing name):
+          63: 
+          64: ```text
+          65: ses_0dd0a9_task.md
+          66: ```
+          67: 
+          68: ### 1.3 `ses_` Prefix Handling
+          69: 
+          70: The opencode session ID natively starts with `ses_` (e.g.,
+          71: `ses_0dd0a9769ffe9VhJz3qA3VnZNV`). The `ses_` prefix MUST be omitted
+          72: from the filename because the filename context already identifies it
+          73: as a session ID:
+          74: 
+          75: - Correct: `0dd0a9769ffe9VhJz3qA3VnZNV`
+          76: - Incorrect: `ses_0dd0a9769ffe9VhJz3qA3VnZNV`
+          77: 
+          78: The full 26+ character ID MUST be used — NOT a truncated form.
+          79: 
+          80: ***
+          81: 
+          82: ## 2. Artifact Types
+          83: 
+          84: ### 2.1 Registered Types
+          85: 
+          86: | Artifact Type | Versioned? | Purpose |
+          87: | :--- | :--- | :--- |
+          88: | `task` | No (live checklist) | Track progress of the current session's objectives |
+          89: | `implementation-plan` | Yes | Detailed step-by-step plan for executing a goal |
+          90: | `commit-preview` | Yes | Preview of commits to be executed |
+          91: | `walkthrough` | Yes | Post-execution record of steps taken and decisions made |
+          92: | `skill-creation-plan` | Yes | Sub-plan for creating a new skill |
+          93: | `skill-documentation-plan` | Yes | Sub-plan for enriching existing skills |
+          94: | `audit-log` | Yes | Record of an audit or inspection |
+          95: | `summary` | Yes | Session summary or retrospective |
+          96: 
+          97: New artifact types MAY be added as workflows evolve; each new type
+          98: MUST be registered here.
+          99: 
+          100: ### 2.2 Versioning Rules
+          101: 
+          102: 1. NEW artifacts start at `v1`.
+          103: 2. When content is updated, increment the version: `v1` → `v2` → `v3`.
+          104: 3. OLD versions are NEVER overwritten or deleted. The old file remains
+          105:    alongside the new one.
+          106: 4. For `task` (unversioned), the file is edited in place — it is a live
+          107:    checklist, not a historical record.
+          108: 5. Different artifact types have INDEPENDENT version counters — an
+          109:    implementation-plan at v3 and its corresponding commit-preview at v2
+          110:    is valid.
+          111: 
+          112: ***
+          113: 
+          114: ## 3. Examples
+          115: 
+          116: The following files were created during the originating session and
+          117: serve as canonical examples:
+          118: 
+          119: ```text
+          120: docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_task.md
+          121: docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_implementation-plan_v3.md
+          122: docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_commit-preview_v2.md
+          123: docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_skill-documentation-plan_v1.md
+          124: ```
+          125: 
+          126: All four share the same session identity (date + session-id +
+          127: session-name-slug) and differ only in artifact-type and version.
+          128: 
+          129: ***
+          130: 
+          131: ## 4. Related Skills
+          132: 
+          133: - [`skill-factory`](../../skill-factory/SKILL.md) — Consumes this naming
+          134:   convention when generating planning artifacts for new skills.
+          135: - [`markdown-generation`](../../markdown-generation/SKILL.md) — Markdown
+          136:   formatting standards that generated artifacts must obey.
+          137: - [`planning-artifact-lifecycle`](../planning-artifact-lifecycle/SKILL.md) —
+          138:   Lifecycle management for planning artifacts (versioning triggers, CAM §7.1
+          139:   enforcement, deletion protocol). Companion base skill that covers *how to
+          140:   manage* artifacts once named.
+          141: 
+          142: ***
+          143: 
+          144: ## 5. Traceability
+          145: 
+          146: - Created: 2026-07-03
+          147: - Source: OpenCode config versioning & preservation session
+          148:   (`0dd0a9769ffe9VhJz3qA3VnZNV`). The convention was iteratively refined
+          149:   through conversation: underscore separators, omission of `ses_` prefix,
+          150:   date prefix for task files, independent versioning for artifact types.
+
+          (End of file - total 150 lines)
+          </content>
+
+          <system-reminder>
+          Instructions from: /Users/dk/lab-data/ai-suite/.agents/skills/general/planning-artifact-naming/AGENTS.md
+          # Planning Artifact Naming — Companion Bridge
+
+          ## Purpose
+
+          This file is the companion bridge for non-skill-aware agent runtimes.
+          The operational SSOT lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          When creating any planning artifact file (task tracker, implementation
+          plan, commit preview, walkthrough, sub-plan, audit log). Also when
+          reviewing existing artifacts and needing to identify their source
+          session.
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full naming convention, part
+          reference table, separator rules, versioning rules, and registered
+          artifact types. Do NOT create any planning artifact without first
+          loading `SKILL.md` — this bridge is intentionally non-actionable.
+
+          ## Cross-References
+
+          - [`skill-factory`](../../skill-factory/SKILL.md) — Consumes this
+            convention when generating planning artifacts for new skills.
+          - [`markdown-generation`](../../markdown-generation/SKILL.md) — Markdown
+            formatting standards.
+
+          </system-reminder>
+    time: 7/25/2026, 11:40:51.364 PM GMT+5:30
+    duration: 3.126s
+    duration_ms: 3126
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now I need to determine the session ID and session name slug for the naming convention. Let me check the current session's info.
+    thinking_duration: 491ms
+    thinking_duration_ms: 491
+    tool_calls:
+      - tool: bash
+        args:
+          command: echo "OPENER_SESSION_ID=$OPENER_SESSION_ID"
+        result: |
+          OPENER_SESSION_ID=
+      - tool: bash
+        args:
+          command: git rev-parse HEAD
+        result: |
+          02f7f03ed4bec079ea5503972b1ec6a6f04481c1
+    time: 7/25/2026, 11:40:54.576 PM GMT+5:30
+    duration: 3.244s
+    duration_ms: 3244
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: No session ID is set. Let me check if there's an opencode session file or other way to get the session identity. Let me also check the current date and see if there's an opencode session running.
+    thinking_duration: 405ms
+    thinking_duration_ms: 405
+    tool_calls:
+      - tool: bash
+        args:
+          command: echo $OPENCODE_SESSION_ID; echo $OPENCODE_SESSION_NAME
+        result: |+
+
+
+      - tool: bash
+        args:
+          command: ls /Users/dk/.local/share/opencode/sessions/ 2>/dev/null | tail -3
+        result: (no output)
+      - tool: bash
+        args:
+          command: date +%Y-%m-%d
+        result: The user rejected permission to use this specific tool call.
+    time: 7/25/2026, 11:40:57.903 PM GMT+5:30
+    duration: 31.741s
+    duration_ms: 31741
+

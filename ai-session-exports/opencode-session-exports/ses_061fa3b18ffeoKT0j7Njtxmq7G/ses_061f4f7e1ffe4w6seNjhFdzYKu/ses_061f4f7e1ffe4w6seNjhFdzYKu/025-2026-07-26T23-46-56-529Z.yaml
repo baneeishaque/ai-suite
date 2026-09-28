@@ -1,0 +1,478 @@
+---
+user:
+  text: 'considefr /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_061fa3b18ffeoKT0j7Njtxmq7G & /Users/dk/lab-data/ai-suite/.opencode/logs/ses_061fa3b18ffeoKT0j7Njtxmq7G: instead of just skipping - can we match the pairs & print the match - so, only unmatched pairs need to be care manually.'
+  time: 7/27/2026, 5:16:28.313 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants the script to compare what's in the logs vs what's in the exports for each session, showing what's matched and what's missing. This way, only the unmatched differences need manual attention.
+
+      For `ses_061fa3b1`:
+      - Logs: `ses_061fa3b1.jsonl`, `ses_061fa3b1.state.json`, `ses_061fa3b1.turns.jsonl`, and a turn dir `ses_061fa3b1/` with YAML files
+      - Exports: whatever exists in the export dir
+
+      The user wants to see a diff/comparison showing which files match between logs and exports, so it's clear what's backed up and what isn't.
+
+      Let me think about how to implement this. I should add a "comparison" display that shows:
+      - For each session, which log files are already backed up (matched) and which are only in logs
+      - For parent sessions, also check the child files
+
+      I could add this as part of the tree view, or as a separate section. Maybe a per-file comparison view.
+
+      Actually, I think the user wants it in the tree view or after it. Let me think about the format:
+
+      ```
+      ses_061fa3b1:
+        ✓ ses_061fa3b1.jsonl → export/ses_061fa3b1/ses_061fa3b1.jsonl
+        ✓ ses_061fa3b1.state.json → ...
+        ✓ ses_061fa3b1.turns.jsonl → ...
+        ✓ ses_061fa3b1/ (dir) → ...
+        MISSING: ses_061fa3b1.yaml → NOT in export
+      ```
+
+      Or simpler — just show which ones match and which don't as part of the tree view.
+
+      Actually, the user said "instead of just skipping - can we match the pairs & print the match - so, only unmatched pairs need to be care manually." So they want a comparison report that shows matched pairs, making it obvious which files need attention.
+
+      Let me add this to the script. I'll create a function that compares logs vs exports for each session and prints a summary. I'll integrate it into the tree view or add it as a separate section.
+
+      Let me think about the best approach:
+
+      1. For each session (including children), compare files in logs vs files in exports
+      2. For each log file, check if the same-named file exists in exports
+      3. For dirs, check if the dir exists in exports
+      4. Print a comparison table
+
+      I'll modify the tree view section to also show matched/unmatched status. Or better, add a separate section after the tree view that shows the comparison.
+
+      Let me read the current script state and make the changes.
+
+      Actually, this is a more involved change. Let me plan:
+
+      1. Add a function `compare_session(sid, files, turn_dir, dest)` that returns matched/missing info
+      2. In the tree view loop, call this function and show results
+
+      Or simpler: in the existing loop, check each file against the export dir and append status indicators.
+
+      Let me read the current code and figure out where to add this.
+    thinking_duration: 6.921s
+    thinking_duration_ms: 6921
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/scripts/session-backup.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """Backup opencode sessions: copy active sessions, move dead sessions from logs to exports."""
+          3: 
+          4: import re
+          5: import shutil
+          6: import sqlite3
+          7: import subprocess
+          8: import sys
+          9: from pathlib import Path
+          10: 
+          11: 
+          12: def trash(path):
+          13:     subprocess.run(["trash", str(path)], capture_output=True)
+          14: 
+          15: WORK_DIR = Path(__file__).resolve().parent.parent
+          16: LOG_DIR = WORK_DIR / ".opencode" / "logs"
+          17: EXPORT_DIR = WORK_DIR / "ai-session-exports" / "opencode-session-exports"
+          18: DB_PATH = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+          19: 
+          20: DRY_RUN = "--dry-run" in sys.argv
+          21: 
+          22: 
+          23: def log(msg=""):
+          24:     print(msg)
+          25: 
+          26: 
+          27: def fmt_size(n: int) -> str:
+          28:     if n > 1_000_000:
+          29:         return f"{n/1_000_000:.1f}MB"
+          30:     if n > 1_000:
+          31:         return f"{n/1_000:.0f}KB"
+          32:     return f"{n}B"
+          33: 
+          34: 
+          35: def active_session_ids() -> set[str]:
+          36:     if not DB_PATH.exists():
+          37:         log(f"WARNING: DB not found at {DB_PATH}")
+          38:         return set()
+          39:     conn = sqlite3.connect(str(DB_PATH))
+          40:     cur = conn.cursor()
+          41:     cur.execute("SELECT id FROM session")
+          42:     ids = {row[0] for row in cur.fetchall()}
+          43:     conn.close()
+          44:     log(f"DB: {len(ids)} active sessions")
+          45:     return ids
+          46: 
+          47: 
+          48: def scan_logs():
+          49:     files: dict[str, list[Path]] = {}
+          50:     dirs: dict[str, Path] = {}
+          51:     for entry in LOG_DIR.iterdir():
+          52:         name = entry.name
+          53:         if entry.is_file():
+          54:             if not name.startswith("ses_"):
+          55:                 continue
+          56:             sid = name.split(".", 1)[0]
+          57:             if sid.endswith(".turns"):
+          58:                 sid = sid[:-6]
+          59:             files.setdefault(sid, []).append(entry)
+          60:         elif entry.is_dir() and name.startswith("ses_"):
+          61:             dirs[name] = entry
+          62:     for sid in list(dirs.keys()):
+          63:         if sid not in files:
+          64:             files[sid] = []
+          65:     return files, dirs
+          66: 
+          67: 
+          68: def find_sub_agents(files: dict[str, list[Path]]) -> dict[str, set[str]]:
+          69:     import json as _json
+          70:     parent_map: dict[str, str] = {}
+          71:     for sid, paths in files.items():
+          72:         jsonl = None
+          73:         for p in paths:
+          74:             if p.suffix == ".jsonl" and not p.name.endswith(".turns.jsonl"):
+          75:                 jsonl = p
+          76:                 break
+          77:         if not jsonl:
+          78:             continue
+          79:         try:
+          80:             text = jsonl.read_text(errors="replace")
+          81:         except Exception:
+          82:             continue
+          83:         try:
+          84:             for line in text.splitlines():
+          85:                 if '"session.sub_created"' not in line:
+          86:                     continue
+          87:                 try:
+          88:                     obj = _json.loads(line)
+          89:                 except Exception:
+          90:                     continue
+          91:                 if obj.get("type") == "session.sub_created":
+          92:                     child = obj.get("sessionID")
+          93:                     if child and child != sid:
+          94:                         parent_map[child] = sid
+          95:         except Exception:
+          96:             continue
+          97:     children: dict[str, set[str]] = {}
+          98:     for child, parent in parent_map.items():
+          99:         children.setdefault(parent, set()).add(child)
+          100:     return children
+          101: 
+          102: 
+          103: def backup():
+          104:     active = active_session_ids()
+          105:     session_files, session_dirs = scan_logs()
+          106:     sub_agents = find_sub_agents(session_files)
+          107: 
+          108:     skipped_children: set[str] = set()
+          109:     for children in sub_agents.values():
+          110:         skipped_children.update(children)
+          111: 
+          112:     log(f"Scanned: {len(session_files)} sessions ({len(sub_agents)} parents, {len(skipped_children)} sub-agents)\n")
+          113: 
+          114:     log("Tree view:")
+          115:     for sid in sorted(session_files):
+          116:         if sid in skipped_children:
+          117:             continue
+          118:         is_active = sid in active
+          119:         action = "COPY" if is_active else "MOVE"
+          120:         children = sub_agents.get(sid, set())
+          121:         files = session_files[sid]
+          122:         turn_dir = session_dirs.get(sid)
+          123:         label = sid
+          124:         parts = [f"  [{action}] {label}"]
+          125:         parts.append(f"({len(files)} files)")
+          126:         if turn_dir:
+          127:             parts.append("[+dir]")
+          128:         if children:
+          129:             parts.append(f"← {len(children)} sub")
+          130:         log(" ".join(parts))
+          131:         for child in sorted(children):
+          132:             cf = session_files.get(child, [])
+          133:             cd = session_dirs.get(child)
+          134:             cl = child
+          135:             cp = [f"  │  └─ {cl}"]
+          136:             cp.append(f"({len(cf)} files)")
+          137:             if cd:
+          138:                 cp.append("[+dir]")
+          139:             log(" ".join(cp))
+          140:     log("")
+          141: 
+          142:     counts = {"copied": 0, "moved": 0, "errors": 0}
+          143:     total_bytes = 0
+          144: 
+          145:     for sid in sorted(session_files.keys()):
+          146:         if sid in skipped_children:
+          147:             continue
+          148: 
+          149:         is_active = sid in active
+          150:         action = "COPY" if is_active else "MOVE"
+          151:         children = sub_agents.get(sid, set())
+          152: 
+          153:         files = session_files[sid]
+          154:         turn_dir = session_dirs.get(sid)
+          155:         dest = EXPORT_DIR / sid
+          156: 
+          157:         if DRY_RUN:
+          158:             continue
+          159: 
+          160:         try:
+          161:             dest.mkdir(parents=True, exist_ok=True)
+          162:             file_ops = []
+          163: 
+          164:             for src in files:
+          165:                 dst = dest / src.name
+          166:                 if dst.exists():
+          167:                     file_ops.append(f"{src.name} (exists)")
+          168:                     if not is_active:
+          169:                         trash(str(src))
+          170:                     continue
+          171:                 total_bytes += src.stat().st_size
+          172:                 if is_active:
+          173:                     shutil.copy2(src, dst)
+          174:                 else:
+          175:                     shutil.move(str(src), str(dst))
+          176:                 file_ops.append(src.name)
+          177: 
+          178:             if turn_dir:
+          179:                 dst_turn = dest / turn_dir.name
+          180:                 if dst_turn.exists():
+          181:                     for f in turn_dir.iterdir():
+          182:                         d = dst_turn / f.name
+          183:                         if not d.exists():
+          184:                             total_bytes += f.stat().st_size
+          185:                             shutil.move(str(f), str(d))
+          186:                             file_ops.append(f"{turn_dir.name}/{f.name}")
+          187:                     try:
+          188:                         turn_dir.rmdir()
+          189:                     except OSError:
+          190:                         pass
+          191:                 else:
+          192:                     sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+          193:                     total_bytes += sz
+          194:                     if is_active:
+          195:                         shutil.copytree(str(turn_dir), str(dst_turn))
+          196:                     else:
+          197:                         shutil.move(str(turn_dir), str(dst_turn))
+          198:                     file_ops.append(f"{turn_dir.name}/")
+          199: 
+          200:             for child in sorted(children):
+          201:                 child_dest = dest / child
+          202:                 child_dest.mkdir(parents=True, exist_ok=True)
+          203:                 child_files = session_files.get(child, [])
+          204:                 child_turn = session_dirs.get(child)
+          205:                 for src in child_files:
+          206:                     cd = child_dest / src.name
+          207:                     if cd.exists():
+          208:                         if not is_active:
+          209:                             trash(str(src))
+          210:                         continue
+          211:                     total_bytes += src.stat().st_size
+          212:                     if is_active:
+          213:                         shutil.copy2(src, cd)
+          214:                     else:
+          215:                         shutil.move(str(src), str(cd))
+          216:                 if child_turn:
+          217:                     cd_turn = child_dest / child_turn.name
+          218:                     if cd_turn.exists():
+          219:                         for f in child_turn.iterdir():
+          220:                             d = cd_turn / f.name
+          221:                             if not d.exists():
+          222:                                 total_bytes += f.stat().st_size
+          223:                                 shutil.move(str(f), str(d))
+          224:                         try:
+          225:                             child_turn.rmdir()
+          226:                         except OSError:
+          227:                             pass
+          228:                     else:
+          229:                         sz = sum(f.stat().st_size for f in child_turn.rglob("*") if f.is_file())
+          230:                         total_bytes += sz
+          231:                         if is_active:
+          232:                             shutil.copytree(str(child_turn), str(cd_turn))
+          233:                         else:
+          234:                             shutil.move(str(child_turn), str(cd_turn))
+          235:                 file_ops.append(f"  sub: {child}/")
+          236: 
+          237:             turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+          238:             child_info = f" +{len(children)} sub" if children else ""
+          239:             log(f"  [{action}] {sid}  ({len(files)} files{turn_info}{child_info})")
+          240:             for op in file_ops:
+          241:                 log(f"    {op}")
+          242: 
+          243:             counts["copied" if is_active else "moved"] += 1
+          244: 
+          245:         except Exception as e:
+          246:             log(f"    ERROR [{sid}]: {e}")
+          247:             counts["errors"] += 1
+          248: 
+          249:     log(f"\n{'='*60}")
+          250:     log(f"  Copied (active):         {counts['copied']}")
+          251:     log(f"  Moved (dead):            {counts['moved']}")
+          252:     log(f"  Errors:                  {counts['errors']}")
+          253:     if not DRY_RUN:
+          254:         log(f"  Total data transferred:  {fmt_size(total_bytes)}")
+          255:     log(f"{'='*60}")
+          256: 
+          257: 
+          258: if __name__ == "__main__":
+          259:     backup()
+
+          (End of file - total 259 lines)
+          </content>
+    time: 7/27/2026, 5:16:29.266 AM GMT+5:30
+    duration: 10.628s
+    duration_ms: 10628
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to add a comparison display that shows for each session (and its children) which log files match export files and which don't. The user wants to see pairs — matched files are OK, unmatched need attention.
+
+      I'll add this to the tree view section. After each session line, I'll show a per-file comparison:
+
+      ```
+        [COPY] ses_061fa3b1  (3 files) [+dir] ← 2 sub
+          ✓ ses_061fa3b1.jsonl           → export has it
+          ✓ ses_061fa3b1.state.json      → export has it
+          ✓ ses_061fa3b1.turns.jsonl     → export has it
+          ✓ ses_061fa3b1/ (dir)          → export has it
+        │  └─ ses_061b5d22  (1 files) [+dir]
+          ✓ ses_061b5d22.jsonl           → export has it
+          ✗ ses_061b5d22/ (dir)          → MISSING in export
+      ```
+
+      Wait, but for files that exist in both, there's also the question of content differences (size, timestamp). But the user asked about "matching pairs" — I think just showing which files exist in both sides is sufficient.
+
+      Let me implement a `compare_logs_exports` function and integrate it into the tree view.
+
+      Actually, rather than over-engineer it, I'll add a simple comparison display in the tree view loop. For each session (and child), I'll check each log file against the export dir and show ✓ or ✗.
+
+      Let me modify the tree view section.
+    thinking_duration: 3.368s
+    thinking_duration_ms: 3368
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                log("Tree view:")
+                for sid in sorted(session_files):
+                    if sid in skipped_children:
+                        continue
+                    is_active = sid in active
+                    action = "COPY" if is_active else "MOVE"
+                    children = sub_agents.get(sid, set())
+                    files = session_files[sid]
+                    turn_dir = session_dirs.get(sid)
+                    label = sid
+                    parts = [f"  [{action}] {label}"]
+                    parts.append(f"({len(files)} files)")
+                    if turn_dir:
+                        parts.append("[+dir]")
+                    if children:
+                        parts.append(f"← {len(children)} sub")
+                    log(" ".join(parts))
+                    for child in sorted(children):
+                        cf = session_files.get(child, [])
+                        cd = session_dirs.get(child)
+                        cl = child
+                        cp = [f"  │  └─ {cl}"]
+                        cp.append(f"({len(cf)} files)")
+                        if cd:
+                            cp.append("[+dir]")
+                        log(" ".join(cp))
+                log("")
+          newString: |2-
+                log("Tree view:")
+                for sid in sorted(session_files):
+                    if sid in skipped_children:
+                        continue
+                    is_active = sid in active
+                    action = "COPY" if is_active else "MOVE"
+                    children = sub_agents.get(sid, set())
+                    files = session_files[sid]
+                    turn_dir = session_dirs.get(sid)
+                    dest = EXPORT_DIR / sid
+                    label = sid
+                    parts = [f"  [{action}] {label}"]
+                    parts.append(f"({len(files)} files)")
+                    if turn_dir:
+                        parts.append("[+dir]")
+                    if children:
+                        parts.append(f"← {len(children)} sub")
+
+                    # Compare logs vs exports for this session
+                    matched = []
+                    missing = []
+                    for f in files:
+                        if (dest / f.name).exists():
+                            matched.append(f.name)
+                        else:
+                            missing.append(f.name)
+                    if turn_dir:
+                        if (dest / turn_dir.name).exists():
+                            matched.append(f"{turn_dir.name}/")
+                        else:
+                            missing.append(f"{turn_dir.name}/")
+                    if matched:
+                        parts.append(f"  ✓{len(matched)}")
+                    if missing:
+                        parts.append(f"  ✗{len(missing)}")
+                    log(" ".join(parts))
+                    if missing:
+                        for m in missing:
+                            log(f"    ✗ {m}  → not in export")
+                    if matched:
+                        for m in matched:
+                            log(f"    ✓ {m}  → backed up")
+
+                    for child in sorted(children):
+                        cf = session_files.get(child, [])
+                        cd = session_dirs.get(child)
+                        cl = child
+                        cp = [f"  │  └─ {cl}"]
+                        cp.append(f"({len(cf)} files)")
+                        if cd:
+                            cp.append("[+dir]")
+                        cdest = dest / child
+                        cmatched = []
+                        cmissing = []
+                        for f in cf:
+                            if (cdest / f.name).exists():
+                                cmatched.append(f.name)
+                            else:
+                                cmissing.append(f.name)
+                        if cd:
+                            if (cdest / cd.name).exists():
+                                cmatched.append(f"{cd.name}/")
+                            else:
+                                cmissing.append(f"{cd.name}/")
+                        if cmatched:
+                            cp.append(f"  ✓{len(cmatched)}")
+                        if cmissing:
+                            cp.append(f"  ✗{len(cmissing)}")
+                        log(" ".join(cp))
+                        if cmissing:
+                            for m in cmissing:
+                                log(f"      ✗ {m}  → not in export")
+                        if cmatched:
+                            for m in cmatched:
+                                log(f"      ✓ {m}  → backed up")
+                log("")
+        result: The user rejected permission to use this specific tool call.
+    time: 7/27/2026, 5:16:40.723 AM GMT+5:30
+    duration: 15.537s
+    duration_ms: 15537
+

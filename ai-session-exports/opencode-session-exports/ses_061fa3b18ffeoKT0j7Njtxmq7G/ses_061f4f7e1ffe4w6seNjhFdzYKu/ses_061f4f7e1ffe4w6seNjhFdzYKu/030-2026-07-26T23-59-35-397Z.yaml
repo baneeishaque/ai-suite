@@ -1,0 +1,581 @@
+---
+user:
+  text: turns & jsonls will of course not matched completely. but, they are updated - so, we have to ensure the log ones are superset. in that case it is updated. otherwise serious error
+  time: 7/27/2026, 5:27:57.855 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants me to change the MISMATCH logic for `.jsonl` and `.turns.jsonl` files specifically. Instead of treating any SHA-256 difference as a MISMATCH/error, I should:
+
+      1. For `.jsonl` and `.turns.jsonl` files: check if the log version is a superset of the export version (i.e., the export file's content is a prefix of the log file's content). If so, mark it as "updated" (not an error).
+      2. If the log version is NOT a superset (e.g., the export has content that doesn't appear in the log, or they diverged), then THAT is a serious error.
+      3. For other file types (`.yaml`, `.state.json`): keep the strict SHA-256 match as before.
+
+      For JSONL files, being a superset means the log file starts with all the lines of the export file, then has more lines appended. I can check this by comparing line by line — the export lines should be a prefix of the log lines.
+
+      For `.jsonl` specifically:
+      - Read both files as lines
+      - Check that `export_lines` is a prefix of `log_lines` (i.e., `log_lines[:len(export_lines)] == export_lines`)
+
+      For `.turns.jsonl` same logic.
+
+      This is a simple check. Let me implement it.
+
+      Actually, I should think about this more carefully. The `.jsonl` files are line-delimited JSON. If the export has N lines and the log has N+M lines, then I check that the first N lines of log match export's N lines exactly. That's straightforward.
+
+      Let me modify the file_match function to handle this. Or maybe I should add a separate check in the per-file loop for jsonl files.
+
+      Let me re-read the relevant section of the script to see how file_match is used.
+    thinking_duration: 3.610s
+    thinking_duration_ms: 3610
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/scripts/session-backup.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """Backup opencode sessions: copy active sessions, move dead sessions from logs to exports."""
+          3: 
+          4: import hashlib
+          5: import re
+          6: import shutil
+          7: import sqlite3
+          8: import subprocess
+          9: import sys
+          10: from pathlib import Path
+          11: 
+          12: 
+          13: def file_match(src: Path, dst: Path) -> bool | None:
+          14:     """Return True if files match, False if mismatch, None if dst missing."""
+          15:     if not dst.exists():
+          16:         return None
+          17:     try:
+          18:         return (
+          19:             hashlib.file_digest(src.open("rb"), "sha256").hexdigest()
+          20:             == hashlib.file_digest(dst.open("rb"), "sha256").hexdigest()
+          21:         )
+          22:     except Exception:
+          23:         return False
+          24: 
+          25: 
+          26: def trash(path):
+          27:     subprocess.run(["trash", str(path)], capture_output=True)
+          28: 
+          29: WORK_DIR = Path(__file__).resolve().parent.parent
+          30: LOG_DIR = WORK_DIR / ".opencode" / "logs"
+          31: EXPORT_DIR = WORK_DIR / "ai-session-exports" / "opencode-session-exports"
+          32: DB_PATH = Path.home() / ".local" / "share" / "opencode" / "opencode.db"
+          33: 
+          34: DRY_RUN = "--dry-run" in sys.argv
+          35: 
+          36: 
+          37: def log(msg=""):
+          38:     print(msg)
+          39: 
+          40: 
+          41: def fmt_size(n: int) -> str:
+          42:     if n > 1_000_000:
+          43:         return f"{n/1_000_000:.1f}MB"
+          44:     if n > 1_000:
+          45:         return f"{n/1_000:.0f}KB"
+          46:     return f"{n}B"
+          47: 
+          48: 
+          49: def active_session_ids() -> set[str]:
+          50:     if not DB_PATH.exists():
+          51:         log(f"WARNING: DB not found at {DB_PATH}")
+          52:         return set()
+          53:     conn = sqlite3.connect(str(DB_PATH))
+          54:     cur = conn.cursor()
+          55:     cur.execute("SELECT id FROM session")
+          56:     ids = {row[0] for row in cur.fetchall()}
+          57:     conn.close()
+          58:     log(f"DB: {len(ids)} active sessions")
+          59:     return ids
+          60: 
+          61: 
+          62: def scan_logs():
+          63:     files: dict[str, list[Path]] = {}
+          64:     dirs: dict[str, Path] = {}
+          65:     for entry in LOG_DIR.iterdir():
+          66:         name = entry.name
+          67:         if entry.is_file():
+          68:             if not name.startswith("ses_"):
+          69:                 continue
+          70:             sid = name.split(".", 1)[0]
+          71:             if sid.endswith(".turns"):
+          72:                 sid = sid[:-6]
+          73:             files.setdefault(sid, []).append(entry)
+          74:         elif entry.is_dir() and name.startswith("ses_"):
+          75:             dirs[name] = entry
+          76:     for sid in list(dirs.keys()):
+          77:         if sid not in files:
+          78:             files[sid] = []
+          79:     return files, dirs
+          80: 
+          81: 
+          82: def find_sub_agents(files: dict[str, list[Path]]) -> dict[str, set[str]]:
+          83:     import json as _json
+          84:     parent_map: dict[str, str] = {}
+          85:     for sid, paths in files.items():
+          86:         jsonl = None
+          87:         for p in paths:
+          88:             if p.suffix == ".jsonl" and not p.name.endswith(".turns.jsonl"):
+          89:                 jsonl = p
+          90:                 break
+          91:         if not jsonl:
+          92:             continue
+          93:         try:
+          94:             text = jsonl.read_text(errors="replace")
+          95:         except Exception:
+          96:             continue
+          97:         try:
+          98:             for line in text.splitlines():
+          99:                 if '"session.sub_created"' not in line:
+          100:                     continue
+          101:                 try:
+          102:                     obj = _json.loads(line)
+          103:                 except Exception:
+          104:                     continue
+          105:                 if obj.get("type") == "session.sub_created":
+          106:                     child = obj.get("sessionID")
+          107:                     if child and child != sid:
+          108:                         parent_map[child] = sid
+          109:         except Exception:
+          110:             continue
+          111:     children: dict[str, set[str]] = {}
+          112:     for child, parent in parent_map.items():
+          113:         children.setdefault(parent, set()).add(child)
+          114:     return children
+          115: 
+          116: 
+          117: def backup():
+          118:     active = active_session_ids()
+          119:     session_files, session_dirs = scan_logs()
+          120:     sub_agents = find_sub_agents(session_files)
+          121: 
+          122:     skipped_children: set[str] = set()
+          123:     for children in sub_agents.values():
+          124:         skipped_children.update(children)
+          125: 
+          126:     log(f"Scanned: {len(session_files)} sessions ({len(sub_agents)} parents, {len(skipped_children)} sub-agents)\n")
+          127: 
+          128:     log("Tree view:")
+          129:     for sid in sorted(session_files):
+          130:         if sid in skipped_children:
+          131:             continue
+          132:         is_active = sid in active
+          133:         action = "COPY" if is_active else "MOVE"
+          134:         children = sub_agents.get(sid, set())
+          135:         files = session_files[sid]
+          136:         turn_dir = session_dirs.get(sid)
+          137:         label = sid
+          138:         parts = [f"  [{action}] {label}"]
+          139:         parts.append(f"({len(files)} files)")
+          140:         if turn_dir:
+          141:             parts.append("[+dir]")
+          142:         if children:
+          143:             parts.append(f"← {len(children)} sub")
+          144:         log(" ".join(parts))
+          145:         for child in sorted(children):
+          146:             cf = session_files.get(child, [])
+          147:             cd = session_dirs.get(child)
+          148:             cl = child
+          149:             cp = [f"  │  └─ {cl}"]
+          150:             cp.append(f"({len(cf)} files)")
+          151:             if cd:
+          152:                 cp.append("[+dir]")
+          153:             log(" ".join(cp))
+          154:     log("")
+          155: 
+          156:     counts = {"copied": 0, "moved": 0, "errors": 0}
+          157:     total_bytes = 0
+          158: 
+          159:     for sid in sorted(session_files.keys()):
+          160:         if sid in skipped_children:
+          161:             continue
+          162: 
+          163:         is_active = sid in active
+          164:         action = "COPY" if is_active else "MOVE"
+          165:         children = sub_agents.get(sid, set())
+          166: 
+          167:         files = session_files[sid]
+          168:         turn_dir = session_dirs.get(sid)
+          169:         dest = EXPORT_DIR / sid
+          170: 
+          171:         try:
+          172:             if not DRY_RUN:
+          173:                 dest.mkdir(parents=True, exist_ok=True)
+          174:             file_ops = []
+          175: 
+          176:             for src in files:
+          177:                 dst = dest / src.name
+          178:                 match = file_match(src, dst)
+          179:                 if match is True:
+          180:                     file_ops.append(f"{src.name} ✓ matched")
+          181:                     if not is_active and not DRY_RUN:
+          182:                         trash(str(src))
+          183:                     continue
+          184:                 elif match is False:
+          185:                     msg = f"{src.name} ✗ MISMATCH (log vs export differ)"
+          186:                     file_ops.append(msg)
+          187:                     counts["errors"] += 1
+          188:                     continue
+          189:                 total_bytes += src.stat().st_size
+          190:                 if not DRY_RUN:
+          191:                     if is_active:
+          192:                         shutil.copy2(src, dst)
+          193:                     else:
+          194:                         shutil.move(str(src), str(dst))
+          195:                 file_ops.append(f"{src.name} → new to export")
+          196: 
+          197:             if turn_dir:
+          198:                 dst_turn = dest / turn_dir.name
+          199:                 if dst_turn.exists():
+          200:                     for f in turn_dir.iterdir():
+          201:                         d = dst_turn / f.name
+          202:                         dm = file_match(f, d)
+          203:                         if dm is True:
+          204:                             file_ops.append(f"{turn_dir.name}/{f.name} ✓ matched")
+          205:                         elif dm is False:
+          206:                             msg = f"{turn_dir.name}/{f.name} ✗ MISMATCH"
+          207:                             file_ops.append(msg)
+          208:                             counts["errors"] += 1
+          209:                         else:
+          210:                             total_bytes += f.stat().st_size
+          211:                             if not DRY_RUN:
+          212:                                 if is_active:
+          213:                                     shutil.copy2(f, d)
+          214:                                 else:
+          215:                                     shutil.move(str(f), str(d))
+          216:                             file_ops.append(f"{turn_dir.name}/{f.name} → new to export")
+          217:                     if not is_active and not DRY_RUN:
+          218:                         remaining = list(turn_dir.iterdir())
+          219:                         if not remaining:
+          220:                             try:
+          221:                                 turn_dir.rmdir()
+          222:                             except OSError:
+          223:                                 pass
+          224:                 else:
+          225:                     sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+          226:                     total_bytes += sz
+          227:                     if not DRY_RUN:
+          228:                         if is_active:
+          229:                             shutil.copytree(str(turn_dir), str(dst_turn))
+          230:                         else:
+          231:                             shutil.move(str(turn_dir), str(dst_turn))
+          232:                     file_ops.append(f"{turn_dir.name}/ → new to export")
+          233: 
+          234:             for child in sorted(children):
+          235:                 child_dest = dest / child
+          236:                 if not DRY_RUN:
+          237:                     child_dest.mkdir(parents=True, exist_ok=True)
+          238:                 child_files = session_files.get(child, [])
+          239:                 child_turn = session_dirs.get(child)
+          240:                 for src in child_files:
+          241:                     cd = child_dest / src.name
+          242:                     cm = file_match(src, cd)
+          243:                     if cm is True:
+          244:                         file_ops.append(f"  sub: {child}/{src.name} ✓ matched")
+          245:                         if not is_active and not DRY_RUN:
+          246:                             trash(str(src))
+          247:                         continue
+          248:                     elif cm is False:
+          249:                         msg = f"  sub: {child}/{src.name} ✗ MISMATCH"
+          250:                         file_ops.append(msg)
+          251:                         counts["errors"] += 1
+          252:                         continue
+          253:                     total_bytes += src.stat().st_size
+          254:                     if not DRY_RUN:
+          255:                         if is_active:
+          256:                             shutil.copy2(src, cd)
+          257:                         else:
+          258:                             shutil.move(str(src), str(cd))
+          259:                 if child_turn:
+          260:                     cd_turn = child_dest / child_turn.name
+          261:                     if cd_turn.exists():
+          262:                         for f in child_turn.iterdir():
+          263:                             d = cd_turn / f.name
+          264:                             cm = file_match(f, d)
+          265:                             if cm is True:
+          266:                                 file_ops.append(f"  sub: {child}/{child_turn.name}/{f.name} ✓ matched")
+          267:                             elif cm is False:
+          268:                                 msg = f"  sub: {child}/{child_turn.name}/{f.name} ✗ MISMATCH"
+          269:                                 file_ops.append(msg)
+          270:                                 counts["errors"] += 1
+          271:                             else:
+          272:                                 total_bytes += f.stat().st_size
+          273:                                 if not DRY_RUN:
+          274:                                     if is_active:
+          275:                                         shutil.copy2(f, d)
+          276:                                     else:
+          277:                                         shutil.move(str(f), str(d))
+          278:                                 file_ops.append(f"  sub: {child}/{child_turn.name}/{f.name} → new to export")
+          279:                         if not is_active and not DRY_RUN:
+          280:                             remaining = list(child_turn.iterdir())
+          281:                             if not remaining:
+          282:                                 try:
+          283:                                     child_turn.rmdir()
+          284:                                 except OSError:
+          285:                                     pass
+          286:                     else:
+          287:                         sz = sum(f.stat().st_size for f in child_turn.rglob("*") if f.is_file())
+          288:                         total_bytes += sz
+          289:                         if not DRY_RUN:
+          290:                             if is_active:
+          291:                                 shutil.copytree(str(child_turn), str(cd_turn))
+          292:                             else:
+          293:                                 shutil.move(str(child_turn), str(cd_turn))
+          294:                         file_ops.append(f"  sub: {child}/{child_turn.name}/ → new to export")
+          295: 
+          296:             turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+          297:             child_info = f" +{len(children)} sub" if children else ""
+          298:             log(f"  [{action}] {sid}  ({len(files)} files{turn_info}{child_info})")
+          299:             for op in file_ops:
+          300:                 log(f"    {op}")
+          301: 
+          302:             counts["copied" if is_active else "moved"] += 1
+          303: 
+          304:         except Exception as e:
+          305:             log(f"    ERROR [{sid}]: {e}")
+          306:             counts["errors"] += 1
+          307: 
+          308:     log(f"\n{'='*60}")
+          309:     log(f"  Copied (active):         {counts['copied']}")
+          310:     log(f"  Moved (dead):            {counts['moved']}")
+          311:     log(f"  Errors:                  {counts['errors']}")
+          312:     if not DRY_RUN:
+          313:         log(f"  Total data transferred:  {fmt_size(total_bytes)}")
+          314:     log(f"{'='*60}")
+          315: 
+          316: 
+          317: if __name__ == "__main__":
+          318:     backup()
+
+          (End of file - total 318 lines)
+          </content>
+    time: 7/27/2026, 5:27:59.103 AM GMT+5:30
+    duration: 6.648s
+    duration_ms: 6648
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I understand the full picture. The user wants me to modify the `file_match` function (or the logic around it) so that for `.jsonl` and `.turns.jsonl` files, instead of a strict SHA-256 comparison, we check if the log version is a superset of the export version (prefix check). If it is, mark as "updated". If not (they diverged), then it's a genuine error.
+
+      Let me modify this. I need to:
+
+      1. Add a function to check if one file is a superset of another (for JSONL files - check lines)
+      2. In the match logic, for `.jsonl` and `.turns.jsonl` files that don't match by SHA-256, do the superset check
+      3. If superset = True, mark as "updated" (not an error)
+      4. If superset = False, mark as "✗ MISMATCH" (error)
+
+      Let me also check what the `.yaml` and `.state.json` files look like - do they get appended to as well? The user specifically said "turns & jsonls" so I'll only do this for those two file types.
+
+      For the superset check on JSONL files:
+      - Read both files line by line
+      - Check that the export lines are a prefix of the log lines (first N lines of log == all lines of export)
+      - This handles the append-only growth pattern
+
+      Actually, I should be careful about memory for very large files. But these are session logs, likely manageable. Let me use a streaming approach to be safe: read export lines, read same number of log lines, compare, then verify log has at least as many lines.
+
+      Actually, simplest approach: read export, read log, check `log_lines[:len(export_lines)] == export_lines`.
+
+      Let me implement this in a helper function and update the three places where mismatches are flagged.
+
+      I'll add a function `jsonl_superset_check(src, dst)` and call it when we get `file_match == False` for `.jsonl` or `.turns.jsonl` files.
+
+      Wait, I also need to handle this for child sub-agent files too. There are 3 places where MISMATCH is flagged:
+      1. Line 184-188: main session files
+      2. Line 205-208: turn dir YAML files (but these aren't jsonl, so no change needed)
+      3. Line 248-252: sub-agent files
+      4. Line 267-270: sub-agent turn dir files (again not jsonl)
+
+      So the main change is in the `file_match` call sites for `.jsonl` and `.turns.jsonl` files. 
+
+      Actually, the cleanest approach is to add the JSONL superset check logic directly into `file_match` or add a wrapper. But `file_match` returns bool | None, and I need a third state "updated". I could:
+      1. Make `file_match` return a string status: "match", "mismatch", "updated", "new"
+      2. Or add a separate function for the JSONL check and handle it at the call site
+
+      I think option 2 is cleaner. Let me add a function `is_jsonl_superset(src, dst)` that returns True if dst is a prefix of src. Then at each call site where we have a False match for jsonl files, we call this.
+
+      Let me modify the code:
+    thinking_duration: 6.888s
+    thinking_duration_ms: 6888
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            def file_match(src: Path, dst: Path) -> bool | None:
+                """Return True if files match, False if mismatch, None if dst missing."""
+                if not dst.exists():
+                    return None
+                try:
+                    return (
+                        hashlib.file_digest(src.open("rb"), "sha256").hexdigest()
+                        == hashlib.file_digest(dst.open("rb"), "sha256").hexdigest()
+                    )
+                except Exception:
+                    return False
+          newString: |-
+            def file_match(src: Path, dst: Path) -> bool | None:
+                """Return True if files match, False if mismatch, None if dst missing."""
+                if not dst.exists():
+                    return None
+                try:
+                    return (
+                        hashlib.file_digest(src.open("rb"), "sha256").hexdigest()
+                        == hashlib.file_digest(dst.open("rb"), "sha256").hexdigest()
+                    )
+                except Exception:
+                    return False
+
+
+            def jsonl_is_updated(src: Path, dst: Path) -> bool:
+                """Check if src .jsonl is a superset of dst (export is a prefix of log)."""
+                try:
+                    src_lines = src.read_text(errors="replace").splitlines(keepends=True)
+                    dst_lines = dst.read_text(errors="replace").splitlines(keepends=True)
+                    if len(src_lines) < len(dst_lines):
+                        return False
+                    return src_lines[:len(dst_lines)] == dst_lines
+                except Exception:
+                    return False
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:28:07.413 AM GMT+5:30
+    duration: 44.119s
+    duration_ms: 44119
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to update the three places where MISMATCH is checked for `.jsonl` and `.turns.jsonl` files:
+
+      1. Main session files (line ~184-188)
+      2. Sub-agent files (line ~248-252)
+      3. Turn dir files (line ~205-208 and line ~267-270) - these are .yaml files, not jsonl, so no change needed
+
+      Let me update the first one - the main session file matching. I need to add a check: if match is False AND the file ends with .jsonl (but not .state.json or .yaml), try the superset check.
+
+      Wait, actually all `.jsonl` files should be checked. The main `.jsonl` and `.turns.jsonl`. Let me also check if `.state.json` could grow... it probably shouldn't, it's a state snapshot. I'll only do this for `.jsonl` files (both main jsonl and turns.jsonl).
+
+      Let me update the three MISMATCH locations.
+    thinking_duration: 1.937s
+    thinking_duration_ms: 1937
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                            elif match is False:
+                                msg = f"{src.name} ✗ MISMATCH (log vs export differ)"
+                                file_ops.append(msg)
+                                counts["errors"] += 1
+                                continue
+                            total_bytes += src.stat().st_size
+          newString: |2-
+                            elif match is False:
+                                if src.suffix == ".jsonl" and jsonl_is_updated(src, dst):
+                                    file_ops.append(f"{src.name} ✓ updated (log is superset of export)")
+                                else:
+                                    file_ops.append(f"{src.name} ✗ MISMATCH (log vs export differ)")
+                                    counts["errors"] += 1
+                                continue
+                            total_bytes += src.stat().st_size
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:28:53.258 AM GMT+5:30
+    response: 'Now update the three MISMATCH checks to use `jsonl_is_updated` for jsonl files:'
+    duration: 16.643s
+    duration_ms: 16643
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now update the sub-agent file MISMATCH check:'
+    thinking_duration: 294ms
+    thinking_duration_ms: 294
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                                elif cm is False:
+                                    msg = f"  sub: {child}/{src.name} ✗ MISMATCH"
+                                    file_ops.append(msg)
+                                    counts["errors"] += 1
+                                    continue
+          newString: |2-
+                                elif cm is False:
+                                    if src.suffix == ".jsonl" and jsonl_is_updated(src, cd):
+                                        file_ops.append(f"  sub: {child}/{src.name} ✓ updated (log is superset of export)")
+                                    else:
+                                        file_ops.append(f"  sub: {child}/{src.name} ✗ MISMATCH")
+                                        counts["errors"] += 1
+                                    continue
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:29:11.618 AM GMT+5:30
+    duration: 9.341s
+    duration_ms: 9341
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now let me run dry run to verify:'
+    thinking_duration: 155ms
+    thinking_duration_ms: 155
+    tool_calls:
+      - tool: bash
+        args:
+          command: trash /Users/dk/lab-data/ai-suite/scripts/__pycache__/session-backup.cpython-311.pyc 2>/dev/null; python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py --dry-run 2>&1 | tail -30
+        result: |2
+            [COPY] ses_066a352e0ffeH7q95mDstfVUCy  (4 files)
+              ses_066a352e0ffeH7q95mDstfVUCy.turns.jsonl ✓ matched
+              ses_066a352e0ffeH7q95mDstfVUCy.yaml ✓ matched
+              ses_066a352e0ffeH7q95mDstfVUCy.jsonl ✓ matched
+              ses_066a352e0ffeH7q95mDstfVUCy.state.json ✓ matched
+            [COPY] ses_06f0e08c7ffe02YvE97ycNXD5w  (4 files +2 sub)
+              ses_06f0e08c7ffe02YvE97ycNXD5w.turns.jsonl ✓ matched
+              ses_06f0e08c7ffe02YvE97ycNXD5w.yaml ✓ matched
+              ses_06f0e08c7ffe02YvE97ycNXD5w.jsonl ✓ matched
+              ses_06f0e08c7ffe02YvE97ycNXD5w.state.json ✓ matched
+                sub: ses_06ee287bfffelyHq3L1oUPM9zH/ses_06ee287bfffelyHq3L1oUPM9zH.yaml ✓ matched
+                sub: ses_06ee287bfffelyHq3L1oUPM9zH/ses_06ee287bfffelyHq3L1oUPM9zH.jsonl ✓ matched
+                sub: ses_06ef1977fffexNBgiGpWy6geRh/ses_06ef1977fffexNBgiGpWy6geRh.jsonl ✓ matched
+                sub: ses_06ef1977fffexNBgiGpWy6geRh/ses_06ef1977fffexNBgiGpWy6geRh.yaml ✓ matched
+            [COPY] ses_07568f752ffe1gL7GvX0mbUk38  (3 files +dir ses_07568f752ffe1gL7GvX0mbUk38)
+              ses_07568f752ffe1gL7GvX0mbUk38.jsonl ✓ updated (log is superset of export)
+              ses_07568f752ffe1gL7GvX0mbUk38.turns.jsonl ✓ updated (log is superset of export)
+              ses_07568f752ffe1gL7GvX0mbUk38.yaml ✓ matched
+              ses_07568f752ffe1gL7GvX0mbUk38/ → new to export
+            [COPY] ses_0c2d7b1e4ffeQSPP5UOTlpWzTS  (4 files)
+              ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.jsonl ✓ matched
+              ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.state.json ✓ matched
+              ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.yaml ✓ matched
+              ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.turns.jsonl ✓ matched
+
+          ============================================================
+            Copied (active):         11
+            Moved (dead):            0
+            Errors:                  0
+          ============================================================
+    time: 7/27/2026, 5:29:22.693 AM GMT+5:30
+    duration: 5.864s
+    duration_ms: 5864
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/27/2026, 5:29:30.269 AM GMT+5:30
+    response: 6 old MISMATCHES now correctly show as `✓ updated (log is superset of export)`. Zero errors. Ready for actual backup or further changes.
+    duration: 2.528s
+    duration_ms: 2528
+

@@ -1,0 +1,905 @@
+---
+user:
+  text: 'yes'
+  time: 7/26/2026, 9:24:14.149 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me build the script. I need to understand the folderization rules clearly:
+
+      For each session in `.opencode/logs/`:
+      1. Identify all files belonging to the session:
+         - `ses_XXXX.jsonl`
+         - `ses_XXXX.state.json`
+         - `ses_XXXX.turns.jsonl`
+         - `ses_XXXX.yaml`
+         - Directory `ses_XXXX/` (containing numbered YAML turn files - format 3)
+
+      2. For ACTIVE sessions (in DB):
+         - COPY all files to `ai-session-exports/opencode-session-exports/ses_XXXX/`
+         
+      3. For DEAD sessions (not in DB):
+         - MOVE all files to `ai-session-exports/opencode-session-exports/ses_XXXX/`
+
+      4. Handle edge cases:
+         - Sub-agent sessions (ses_0640716* etc.) — they're inside parent session dirs in exports
+         - Sessions already partially in exports — skip or merge
+         - Sessions with only .yaml and no .jsonl (like ses_070e9ba6d*)
+
+      Wait, let me think about the folderization more carefully based on the existing patterns I observed in the exports directory:
+
+      Looking at existing exports:
+      - `ses_06407a17bffelHVDAKOst5lVcY/` → contains numbered YAML files AND sub-agent session dirs
+      - `ses_06ecd4f1fffeb1suxXdeFE7Oi1/` → contains .jsonl, .state.json, .turns.jsonl, .yaml directly inside
+      - `ses_06f8b778bffeuZEymLhziNESzq/` → contains .jsonl, .yaml for multiple sessions
+
+      And the user said:
+      - Format 1 & 2: create a folder in exports with session name and put files there
+      - Format 3: just move the folder to exports
+
+      So the folder structure in exports is just:
+      ```
+      ses_XXXX/
+      ├── ses_XXXX.jsonl         (if format 1 or 2)
+      ├── ses_XXXX.state.json    (if format 2)
+      ├── ses_XXXX.turns.jsonl   (if format 2)
+      ├── ses_XXXX.yaml          (if format 1 or 2)
+      └── ses_XXXX/              (if format 3 - the turn YAML dir) 
+          ├── 001-*.yaml
+          ├── 002-*.yaml
+          └── ...
+      ```
+
+      Wait, but the user said "folderization happens only when we export, or move" - so the turn YAML directory (`ses_XXXX/` inside logs) stays as a directory inside the exports folder.
+
+      Actually, looking at the patterns more carefully:
+
+      In exports `ses_06407a17bffelHVDAKOst5lVcY/`:
+      ```
+      000-header-2026-07-26T01-09-33-444Z.yaml
+      001-2026-07-26T01-14-01-572Z.yaml
+      ses_064071695ffeA7Tv0MsQvwoywT/   (sub-agent dir)
+      ses_06407217effeo6rjy91FA0xCq2/   (sub-agent dir)
+      ...
+      ```
+
+      These are numbered YAML files + sub-agent session dirs. This is combining log and export data. The numbered YAML files (000-header-*, 001-*) are turn-by-turn exports from the logger plugin's format 3.
+
+      In exports `ses_06ecd4f1fffeb1suxXdeFE7Oi1/`:
+      ```
+      ses_06ecd4f1fffeb1suxXdeFE7Oi1.jsonl
+      ses_06ecd4f1fffeb1suxXdeFE7Oi1.state.json
+      ses_06ecd4f1fffeb1suxXdeFE7Oi1.turns.jsonl
+      ses_06ecd4f1fffeb1suxXdeFE7Oi1.yaml
+      ```
+      This is the combined format (all formats merged into one folder).
+
+      I think the cleanest approach is:
+      1. Create `ses_XXXX/` in exports
+      2. Copy/move all files belonging to that session into it (jsonl, state.json, turns.jsonl, yaml, and the turn directory)
+      3. Handle sub-agent sessions separately
+
+      Let me also think about what "all files belonging to a session" means:
+      - The primary session files: `ses_XXXX.jsonl`, `ses_XXXX.state.json`, `ses_XXXX.turns.jsonl`, `ses_XXXX.yaml`
+      - The turn directory: `ses_XXXX/` (containing the numbered YAML files)
+
+      The tricky part is that `ses_XXXX/` could be:
+      a. Inside `.opencode/logs/` (format 3 from the logger plugin)
+      b. Already in exports (if previously exported)
+
+      Let me build a Python script that handles all this.
+
+      Actually, I should include sub-agent sessions too. Looking at the DEAD sessions:
+      - `ses_064071695ffeA7Tv0MsQvwoywT` — sub-agent of `ses_06407a17bffelHVDAKOst5lVcY`
+      - `ses_06407217effeo6rjy91FA0xCq2` — sub-agent of same
+      - `ses_0640729f1ffe55byb48s7ucx2k` — sub-agent of same
+      - `ses_0640733fdffea7mTgmsd8ljO1i` — sub-agent of same
+
+      These should go into the parent session's folder in exports.
+
+      How do I determine parent-child relationships? Looking at the plugin code:
+      - Sub-agent sessions start via `task` tool calls
+      - The `session.sub_created` event logs them
+      - But we can't easily determine this from just the file listings
+
+      Actually, looking at the existing export structure `ses_06407a17bffelHVDAKOst5lVcY/`, it already contains those sub-agent directories. So if `ses_06407a17bffelHVDAKOst5lVcY` is being moved/copied, its sub-agents should go with it.
+
+      But some sub-agents might exist independently. Let me think about this differently — the sub-agent sessions have their own `.jsonl` files in `.opencode/logs/` but no turn directory (format 3). So they'd be handled like format 1 sessions and put into their own session dir... but that feels wrong if they're part of a parent session.
+
+      Actually, looking at the logs more carefully, I notice that sub-agent sessions like `ses_064071695ffeA7Tv0MsQvwoywT` have ONLY a `.jsonl` file (no state, no turns, no yaml, no directory). So they're partial logs.
+
+      I think the best approach is:
+      1. For each session in `.opencode/logs/`:
+         - Check if it has a parent by looking for its ID inside a parent's turn YAML files (too complex)
+         - OR just treat each as its own session
+         
+      Actually, let me simplify. The parent-child relationship can be determined from the actual existing export structure (sub-agent dirs inside parent dir). But for the script, let me just handle each session independently and put each into its own `ses_XXXX/` folder in exports. The user can manually reorganize sub-agents later if needed.
+
+      Wait, actually, I already know that `ses_0640716*`, `ses_0640721*`, `ses_0640729*`, `ses_0640733*` are sub-agents of `ses_06407a1*` because:
+      - They're in the `ses_06407a17bffelHVDAKOst5lVcY/` export directory already
+      - They have no turn directory, state, or yaml in logs — just .jsonl
+
+      So when I move/copy `ses_06407a1*`, I should also include its sub-agents. But I think it's simpler to just move all files into individual session dirs in exports, and the existing structure already handles the grouping if needed.
+
+      Actually, let me just build a clean script. Here's my plan:
+
+      1. Query the DB to get the list of active session IDs
+      2. Read `.opencode/logs/` to find all session files
+      3. Classify each session as ACTIVE (in DB) or DEAD (not in DB)
+      4. For each session:
+         a. Create `exports-dir/ses_XXXX/` (or use existing if already there)
+         b. ACTIVE: Copy files, DEAD: Move files
+         c. Files to handle: `.jsonl`, `.state.json`, `.turns.jsonl`, `.yaml`, directory `ses_XXXX/`
+      5. Handle sub-agent sessions — group with parent or put in own dir
+
+      Let me also check what sessions already exist in exports to avoid overwriting.
+
+      OK let me just write the script now.
+    thinking_duration: 16.344s
+    thinking_duration_ms: 16344
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - priority: high
+              content: Understand current folderization patterns in exports dir (what goes inside session dirs)
+              status: completed
+            - priority: high
+              content: Check plugin TS files for session formats
+              status: completed
+            - priority: high
+              content: Explore opencode-logger.ts plugin for format 4
+              status: completed
+            - priority: high
+              content: Explore opencode CLI config/DB at configurations-private to understand active vs dead detection
+              status: completed
+            - priority: high
+              content: Build the session folderization script
+              status: in_progress
+            - priority: medium
+              content: Plan future interval/backup automation
+              status: pending
+        result: |-
+          [
+            {
+              "content": "Understand current folderization patterns in exports dir (what goes inside session dirs)",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Check plugin TS files for session formats",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Explore opencode-logger.ts plugin for format 4",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Explore opencode CLI config/DB at configurations-private to understand active vs dead detection",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Build the session folderization script",
+              "status": "in_progress",
+              "priority": "high"
+            },
+            {
+              "content": "Plan future interval/backup automation",
+              "status": "pending",
+              "priority": "medium"
+            }
+          ]
+    time: 7/26/2026, 9:24:14.723 PM GMT+5:30
+    duration: 19.944s
+    duration_ms: 19944
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me check what sessions already exist in exports to avoid overwriting existing data.
+    thinking_duration: 496ms
+    thinking_duration_ms: 496
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            ls -d /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_*/ | sed 's|.*/||' | sort > /tmp/existing-export-dirs.txt
+            echo "=== Session dirs already in exports ==="
+            cat /tmp/existing-export-dirs.txt
+            echo
+            echo "Count: $(wc -l < /tmp/existing-export-dirs.txt)"
+        result: |
+          === Session dirs already in exports ===
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          Count:       15
+    time: 7/26/2026, 9:24:35.297 PM GMT+5:30
+    duration: 8.037s
+    duration_ms: 8037
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The output seems empty but the count is 15. This is probably due to the ls listing the full paths but the sed extracting the directory names wrongly. Let me fix the command.
+    thinking_duration: 774ms
+    thinking_duration_ms: 774
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls -d /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_*
+        result: |
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_064183376ffe4Z7UgJF4x9cOJJ
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06425c47fffeR0qe3iAa1YejNR
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0643334caffeDB7BkQXLkgkNKt
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06ecd4f1fffeb1suxXdeFE7Oi1
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06f8b778bffeuZEymLhziNESzq
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06f9fec85ffeft3eksdD6QrbDQ
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_070ea4154ffeKXx2QO1aCi9iRi
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0714e70c1ffeqmI3UgJIF4wN5w
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0715941efffeIUIpNUVuk28xlE
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0716bd2bcffeIU6eCuy1KmcBbi
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_0718af643ffeyhgH9kN9Fs9hc9
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_071a9f1a6ffegZLBpq54xAw0r6
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_071b41cd7ffewhXdF26VvfPCoA
+          /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_071d87c04ffe69WbJ1AYQ8qFbp
+    time: 7/26/2026, 9:24:43.976 PM GMT+5:30
+    duration: 4.633s
+    duration_ms: 4633
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      OK so there are 15 existing session dirs in exports. Let me compare:
+
+      DEAD sessions to MOVE:
+      - ses_062267669ffeF1CMm6gcJ6J632 ← NOT in exports
+      - ses_064071695ffeA7Tv0MsQvwoywT (sub-agent) ← in exports as sub-dir of ses_06407a1*
+      - ses_06407217effeo6rjy91FA0xCq2 (sub-agent) ← same
+      - ses_0640729f1ffe55byb48s7ucx2k (sub-agent) ← same
+      - ses_0640733fdffea7mTgmsd8ljO1i (sub-agent) ← same
+      - ses_06407a17bffelHVDAKOst5lVcY ← ALREADY IN EXPORTS (dir exists)
+      - ses_064183376ffe4Z7UgJF4x9cOJJ ← ALREADY IN EXPORTS
+      - ses_06425c47fffeR0qe3iAa1YejNR ← ALREADY IN EXPORTS
+      - ses_0643334caffeDB7BkQXLkgkNKt ← ALREADY IN EXPORTS
+      - ses_0647386a9ffecZXd3ldmFH7IkK ← NOT in exports
+      - ses_070bc0b55ffe9wXZ6RXtEpBZD0 ← NOT in exports
+      - ses_070ea4154ffeKXx2QO1aCi9iRi ← ALREADY IN EXPORTS
+
+      ACTIVE sessions to COPY:
+      - ses_061b5d223ffeG0Sej6B7Ot8EkP ← NOT in exports
+      - ses_061f4f7e1ffe4w6seNjhFdzYKu ← NOT in exports
+      - ses_061fa3b18ffeoKT0j7Njtxmq7G ← NOT in exports
+      - ses_062161f22ffeviKjkMIhovs6JV ← NOT in exports
+      - ses_065773a95ffe40RCFWCnkiUsoh ← NOT in exports
+      - ses_06584e9f3ffeA7HZBiBmGpY6Hx ← NOT in exports
+      - ses_065876d95ffeZsarlVWmCM9vTl ← NOT in exports
+      - ses_06593fec8ffeZ3JiISm465vzrO ← NOT in exports
+      - ses_066a352e0ffeH7q95mDstfVUCy ← NOT in exports
+      - ses_06ee287bfffelyHq3L1oUPM9zH ← NOT in exports
+      - ses_06ef1977fffexNBgiGpWy6geRh ← NOT in exports
+      - ses_06f0e08c7ffe02YvE97ycNXD5w ← NOT in exports
+      - ses_07568f752ffe1gL7GvX0mbUk38 ← NOT in exports
+      - ses_0c2d7b1e4ffeQSPP5UOTlpWzTS ← NOT in exports
+
+      Now I should build the script. Let me think about the design:
+
+      1. The script needs to:
+         - Read the opencode DB to get active sessions
+         - Scan `.opencode/logs/` for all session files
+         - Classify each session as ACTIVE or DEAD
+         - Either COPY (ACTIVE) or MOVE (DEAD) files to exports
+         - Handle all formats:
+           a. `.jsonl` + `.yaml` → both go into session dir
+           b. `.jsonl` + `.yaml` + `.state.json` + `.turns.jsonl` → all go into session dir
+           c. Directory `ses_XXXX/` (turn YAML files) → move entire directory into session dir
+         - For sessions whose exports dir already exists, merge (don't overwrite unless newer)
+
+      2. Edge cases:
+         - Sessions with only `.yaml` and no `.jsonl` (ses_070e9ba6*)
+         - Sub-agent sessions that have `.jsonl` but live inside parent's dir
+         - Sessions where all log files were previously moved but the turn dir remains
+
+      Let me write this as a Python script that's reusable and handles all cases.
+
+      Actually, let me think about what "sub-agent" means here. From the plugin code:
+      - `session.sub_created` event fires for sub-agents
+      - Sub-agents are separate sessions but are children of a main session
+      - Their log entries go into the PARENT's JSONL (`writeJSONL(sid, ...)` where `sid` is the parent's ID)
+      - So sub-agents don't have their OWN `.jsonl` files — wait, actually they do because looking at the logs, `ses_064071695ffeA7Tv0MsQvwoywT.jsonl` exists.
+
+      Hmm, actually looking at the plugin code again:
+      ```
+      case "session.created": {
+         const info = p?.info
+         if (!info?.id) break
+         if (sid) {
+           // Sub-agent session — don't overwrite main session state
+           writeJSONL(sid, { timestamp: now, sessionID: info.id, type: "session.sub_created" })
+           break
+         }
+         initSession(info.id as string, info)
+         ...
+      }
+      ```
+
+      So `sid` is the main session ID. When a sub-agent session is created (while `sid` is already set), it writes a "session.sub_created" entry to the PARENT's JSONL, but does NOT initialize the sub-agent session state. So sub-agent sessions don't get their own `.state.json` or `.turns.jsonl` files.
+
+      But looking at the logs, sub-agents DO have their own `.jsonl` files:
+      - `ses_064071695ffeA7Tv0MsQvwoywT.jsonl` - this exists in logs
+
+      This means some other mechanism creates these JSONLs. Actually... wait, maybe these `.jsonl` files are sub-agent JSONLs that were written by `writeJSONL`. Let me look at the `writeJSONL` function — it writes to `${sid}.jsonl` where `sid` is the session ID.
+
+      Looking at the `message.part.updated` handler, it uses `ses = mi?.sessionID ?? sid` — so for sub-agent messages, `message.sessionID` would be the sub-agent's ID, not the main session's. So `writeJSONL(ses, entry)` would write to the sub-agent's `.jsonl` file!
+
+      That explains the sub-agent `.jsonl` files. They have incomplete data (just message parts), no state/turns/yaml, because they're written by the same logger plugin but without the full session state initialization.
+
+      OK, so for sub-agents, their `.jsonl` files are partial logs. When the main session is moved/copied, the sub-agent data is already in the main session's JSONL (as "session.sub_created" entries). The sub-agent `.jsonl` files are supplementary.
+
+      For the script, I'll handle sub-agents separately:
+      - If a session doesn't have `.state.json` and has very few files, it's likely a sub-agent
+      - Put sub-agent files into the session export dir but they're small/partial
+
+      Actually, let me not overthink this. Let me just write the script to handle each session in logs and group its files into an export dir. Sub-agents will get their own small dirs, which is fine.
+
+      Wait, but the user treats sub-agents as part of the parent — they should go IN the parent's export dir. Looking at the existing export `ses_06407a17bffelHVDAKOst5lVcY/`, sub-agents are directories inside:
+      ```
+      ses_06407a17bffelHVDAKOst5lVcY/
+        000-header-*.yaml
+        001-*.yaml
+        ses_064071695ffeA7Tv0MsQvwoywT/
+        ses_06407217effeo6rjy91FA0xCq2/
+        ses_0640729f1ffe55byb48s7ucx2k/
+        ses_0640733fdffea7mTgmsd8ljO1i/
+      ```
+
+      So the design is:
+      1. Each session gets a dir in exports
+      2. Sub-agents (sessions that have a parent in the logs) get their dir INSIDE the parent's dir
+      3. But how do we know the parent? We'd need to check the main session's JSONL for "session.sub_created" entries
+
+      Actually, I think the simplest approach is:
+      - For each session in `.opencode/logs/`, collect all files
+      - Create the session dir in exports
+      - Put ALL files in that dir
+
+      For sub-agents, they'll just become separate small dirs. The existing sub-agent-sitting-inside-parent-dir pattern was manually created. Let me keep it simple.
+
+      Actually, let me re-read the user's folderization rules:
+      "for 1 & 2, on move: we create a folder on export folder in the name of session (sometimes with ses prefix, sometimes without prefix) - and put the files of that session"
+      "for 3, just move the folder to export folder"
+
+      So:
+      - Format 1 or 2 (jsonl+yaml or jsonl+yaml+state+turns): Create `ses_XXXX/` in exports, put files in it
+      - Format 3 (directory with YAMLs): Move the directory to exports as-is
+
+      So the session directory from logs (`ses_XXXX/` with turn YAMLs) gets moved directly into exports. And the other files (jsonl, yaml, etc.) are placed alongside it.
+
+      OK, let me build the script now.
+
+      Actually, I realize there may be one more subtlety. Some sessions in logs may NOT have a turn directory (format 3). In that case, we just create the session dir from scratch. If they DO have a turn directory, we move it in.
+
+      Let me write the script:
+
+      ```python
+      #!/usr/bin/env python3
+      """
+      Session folderization script.
+      - ACTIVE sessions (in opencode DB): COPY to exports, leave in logs
+      - DEAD sessions (not in opencode DB): MOVE to exports, remove from logs
+
+      Usage:
+        python3 scripts/session-folderize.py
+        
+      Configuration:
+        LOG_DIR = ".opencode/logs"
+        EXPORT_DIR = "ai-session-exports/opencode-session-exports"
+        DB_PATH = "/Users/dk/lab-data/configurations-private/opencode/share/opencode.db"
+        WORK_DIR = "/Users/dk/lab-data/ai-suite"
+      """
+
+      import json
+      import os
+      import shutil
+      import sqlite3
+      import sys
+      from pathlib import Path
+
+      # ── Config ──────────────────────────────────────────────────────────────────
+      WORK_DIR = Path("/Users/dk/lab-data/ai-suite")
+      LOG_DIR = WORK_DIR / ".opencode" / "logs"
+      EXPORT_DIR = WORK_DIR / "ai-session-exports" / "opencode-session-exports"
+      DB_PATH = Path("/Users/dk/lab-data/configurations-private/opencode/share/opencode.db")
+
+      DRY_RUN = "--dry-run" in sys.argv
+
+      def log(*args, **kwargs):
+          print(*args, **kwargs)
+
+      # ── Step 1: Get active sessions from DB ────────────────────────────────────
+      active_sessions = set()
+      if DB_PATH.exists():
+          conn = sqlite3.connect(str(DB_PATH))
+          cur = conn.cursor()
+          cur.execute("SELECT id FROM session")
+          active_sessions = {row[0] for row in cur.fetchall()}
+          conn.close()
+          log(f"DB: {len(active_sessions)} active sessions found")
+      else:
+          log(f"WARNING: DB not found at {DB_PATH}")
+
+      # ── Step 2: Scan logs for session files ────────────────────────────────────
+      # Each session can have:
+      #   ses_XXXX.jsonl         (format 1/2 - main log)
+      #   ses_XXXX.state.json    (format 2 - session state)
+      #   ses_XXXX.turns.jsonl   (format 2 - turns)
+      #   ses_XXXX.yaml          (format 1/2 - full YAML export)
+      #   ses_XXXX/              (format 3 - turn YAML directory)
+
+      session_files = {}  # session_id -> list of paths
+      session_dirs = {}   # session_id -> directory path (format 3)
+
+      for entry in LOG_DIR.iterdir():
+          name = entry.name
+          
+          # Match ses_XXXX.jsonl, ses_XXXX.state.json, ses_XXXX.turns.jsonl, ses_XXXX.yaml
+          if entry.is_file() and name.startswith("ses_"):
+              # Extract session ID (everything before the second dot or before .yaml/.jsonl)
+              parts = name.split(".")
+              sid = parts[0]  # e.g., "ses_XXXX"
+              
+              # Skip .turns.jsonl treated separately
+              if sid.endswith(".turns"):
+                  sid = sid.replace(".turns", "")
+              
+              if sid not in session_files:
+                  session_files[sid] = []
+              session_files[sid].append(entry)
+          
+          # Match ses_XXXX/ directory (format 3)
+          if entry.is_dir() and name.startswith("ses_"):
+              session_dirs[name] = entry
+
+      # Merge: session_dirs that also have files
+      for sid in list(session_dirs.keys()):
+          if sid not in session_files:
+              session_files[sid] = []
+
+      log(f"Scan: {len(session_files)} unique sessions found in logs")
+
+      # ── Step 3: Classify and process each session ──────────────────────────────
+      stats = {"active_copied": 0, "dead_moved": 0, "skipped": 0, "errors": 0}
+
+      for sid in sorted(session_files.keys()):
+          is_active = sid in active_sessions
+          label = "ACTIVE" if is_active else "DEAD"
+          action = "COPY" if is_active else "MOVE"
+          
+          # Destination directory
+          dest_dir = EXPORT_DIR / sid
+          files = session_files[sid]
+          turn_dir = session_dirs.get(sid)
+          
+          if dest_dir.exists():
+              log(f"  [{action}] {sid} → EXISTS, merging...")
+          else:
+              log(f"  [{action}] {sid} → {dest_dir.name}")
+          
+          if DRY_RUN:
+              continue
+          
+          try:
+              # Create destination dir
+              dest_dir.mkdir(parents=True, exist_ok=True)
+              
+              # Move/copy files
+              for src in files:
+                  dest = dest_dir / src.name
+                  if is_active:
+                      shutil.copy2(src, dest)
+                  else:
+                      shutil.move(str(src), str(dest))
+              
+              # Move/copy turn directory (format 3)
+              if turn_dir:
+                  dest_turn = dest_dir / turn_dir.name
+                  if dest_turn.exists():
+                      # Merge: move individual files from turn dir
+                      for f in turn_dir.iterdir():
+                          shutil.move(str(f), str(dest_turn / f.name))
+                      turn_dir.rmdir()
+                  else:
+                      if is_active:
+                          shutil.copytree(str(turn_dir), str(dest_turn))
+                      else:
+                          shutil.move(str(turn_dir), str(dest_turn))
+              
+              if is_active:
+                  stats["active_copied"] += 1
+              else:
+                  stats["dead_moved"] += 1
+                  
+          except Exception as e:
+              log(f"    ERROR: {e}")
+              stats["errors"] += 1
+
+      # ── Summary ─────────────────────────────────────────────────────────────────
+      log(f"\n{'='*60}")
+      log(f"  Active (copied):   {stats['active_copied']}")
+      log(f"  Dead (moved):     {stats['dead_moved']}")
+      log(f"  Skipped:          {stats['skipped']}")
+      log(f"  Errors:           {stats['errors']}")
+      log(f"{'='*60}")
+      ```
+
+      Wait, there are issues with this approach:
+
+      1. `session_files` dictionary key conflict — when I have `ses_XXXX` and `ses_XXXX.turns`, the `.turns` suffix needs to be stripped properly.
+      2. Some sessions in logs have IDs that start without `ses_` prefix but have `ses_` prefix in the DB. I need to handle mapping.
+
+      Let me look at the actual session IDs more carefully. From the logs:
+      - `ses_064071695ffeA7Tv0MsQvwoywT` — has `ses_` prefix
+      - `ses_06407217effeo6rjy91FA0xCq2` — has `ses_` prefix
+      - All sessions in logs start with `ses_`
+
+      And the DB also uses `ses_` prefix.
+
+      So the matching should be straightforward.
+
+      But wait, there's a subtle issue with `.turns.jsonl` files. If the session is called `ses_XXXX`, then `ses_XXXX.turns.jsonl` is a file for that session. The base name would be `ses_XXXX.turns`, which is different from `ses_XXXX`. I need to handle this by stripping `.turns` from the base name.
+
+      Let me rewrite the script more carefully:
+
+      ```python
+      for entry in LOG_DIR.iterdir():
+          name = entry.name
+          
+          if entry.is_file():
+              # Match: ses_XXXX.jsonl, ses_XXXX.state.json, ses_XXXX.turns.jsonl, ses_XXXX.yaml
+              if name.endswith(".jsonl"):
+                  sid = name[:-6]  # remove .jsonl
+                  if sid.endswith(".turns"):
+                      sid = sid[:-6]  # remove .turns
+              elif name.endswith(".yaml"):
+                  sid = name[:-5]  # remove .yaml
+              elif name.endswith(".state.json"):
+                  sid = name[:-11]  # remove .state.json
+              else:
+                  continue
+              session_files.setdefault(sid, []).append(entry)
+          elif entry.is_dir() and name.startswith("ses_"):
+              session_dirs[name] = entry
+      ```
+
+      Actually, this would also match files like `ses_XXXX.jsonl 15-06-36-437.jsonl` (the backup jsonl files I saw earlier with spaces in names). Let me handle those too.
+
+      Actually, looking at the logs listing above, there was one odd file:
+      `ses_071b41cd7ffewhXdF26VvfPCoA.jsonl 15-06-36-437.jsonl`
+      This has a space in the name — it's a backup copy. For our purposes, any file starting with `ses_XXXX` should be collected.
+
+      Let me simplify: for each session ID, collect ALL files that start with that session ID. This is simpler and catches all variants.
+
+      Actually, the simplest approach: for each entry in LOG_DIR:
+      - If it's a file AND starts with `ses_`:
+        - Extract session ID (everything before the first `.`)
+        - If the ID ends with `.turns`, strip `.turns`
+        - Add to session_files[sid]
+      - If it's a directory AND starts with `ses_`:
+        - Add to session_dirs[name]
+
+      But wait, files with spaces like `ses_071b41cd7ffewhXdF26VvfPCoA.jsonl 15-06-36-437.jsonl` — the base name would be `ses_071b41cd7ffewhXdF26VvfPCoA.jsonl 15-06-36-437` after removing `.jsonl`. The session ID extracted by splitting on `.` would be `ses_071b41cd7ffewhXdF26VvfPCoA` which is correct!
+
+      OK, let me finalize the script. I also need to handle the case where the export dir already has sub-agent directories inside a session dir.
+
+      For sessions that are DEAD and already have an export dir (like `ses_06407a17bffelHVDAKOst5lVcY` which is dead and already in exports), I should:
+      1. Move the files from logs into the export dir
+      2. The turn dir from logs should be merged with the export dir
+
+      For sessions that are ACTIVE and already have an export dir, I should copy missing files.
+
+      Let me also add a proper check: if a session file in logs is newer than the one in exports, update it.
+
+      Actually, `shutil.copy2` already preserves/updates timestamps. And for `shutil.move`, the source file is gone after the operation. For existing dest files, `shutil.move` will overwrite the dest with the source.
+
+      But there's a risk: if a session is ACTIVE, and the log files are newer than the export copies, we might want to update them. `shutil.copy2` would overwrite. That seems correct.
+
+      OK, let me also think about what `shutil.move` does when dest exists: it raises an error. So I need to handle this case — maybe move with overwrite by using `os.replace` or by first removing the dest.
+
+      Actually, on the same filesystem, `shutil.move` first tries `os.rename`, and if that fails (e.g., cross-device), it copies+deletes. If dest exists, on POSIX, `os.rename` will overwrite it silently. So it should be fine.
+
+      Let me write the final script.
+    thinking_duration: 37.854s
+    thinking_duration_ms: 37854
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/scripts</path>
+          <type>directory</type>
+          <entries>
+          base_sync.py
+          generate_ignores.py
+          sync_skills.py
+
+          (3 entries)
+          </entries>
+    time: 7/26/2026, 9:24:49.231 PM GMT+5:30
+    duration: 41.047s
+    duration_ms: 41047
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good, the scripts directory exists. Let me write the script as `scripts/session-folderize.py`.
+    thinking_duration: 338ms
+    thinking_duration_ms: 338
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            cat > /Users/dk/lab-data/ai-suite/scripts/session-folderize.py << 'ZZZ_UNIQUE_ZZZ'
+            #!/usr/bin/env python3
+            """Session folderization: copy active sessions, move dead sessions from logs to exports."""
+
+            import json
+            import os
+            import shutil
+            import sqlite3
+            import sys
+            from datetime import datetime
+            from pathlib import Path
+
+            WORK_DIR = Path("/Users/dk/lab-data/ai-suite")
+            LOG_DIR = WORK_DIR / ".opencode" / "logs"
+            EXPORT_DIR = WORK_DIR / "ai-session-exports" / "opencode-session-exports"
+            DB_PATH = Path("/Users/dk/lab-data/configurations-private/opencode/share/opencode.db")
+
+            DRY_RUN = "--dry-run" in sys.argv
+
+
+            def log(msg=""):
+                print(msg)
+
+
+            def fmt_size(n: int) -> str:
+                if n > 1_000_000:
+                    return f"{n/1_000_000:.1f}MB"
+                if n > 1_000:
+                    return f"{n/1_000:.0f}KB"
+                return f"{n}B"
+
+
+            def active_session_ids() -> set[str]:
+                if not DB_PATH.exists():
+                    log(f"WARNING: DB not found at {DB_PATH}")
+                    return set()
+                conn = sqlite3.connect(str(DB_PATH))
+                cur = conn.cursor()
+                cur.execute("SELECT id FROM session")
+                ids = {row[0] for row in cur.fetchall()}
+                conn.close()
+                log(f"DB: {len(ids)} active sessions")
+                return ids
+
+
+            def scan_logs():
+                files: dict[str, list[Path]] = {}
+                dirs: dict[str, Path] = {}
+                for entry in LOG_DIR.iterdir():
+                    name = entry.name
+                    if entry.is_file():
+                        if not name.startswith("ses_"):
+                            continue
+                        sid = name.split(".", 1)[0]
+                        if sid.endswith(".turns"):
+                            sid = sid[:-6]
+                        files.setdefault(sid, []).append(entry)
+                    elif entry.is_dir() and name.startswith("ses_"):
+                        dirs[name] = entry
+                # Merge dirs into files dict
+                for sid in list(dirs.keys()):
+                    if sid not in files:
+                        files[sid] = []
+                return files, dirs
+
+
+            def folderize():
+                active = active_session_ids()
+                session_files, session_dirs = scan_logs()
+                log(f"Scanned: {len(session_files)} sessions in logs\n")
+
+                counts = {"copied": 0, "moved": 0, "errors": 0, "skipped": 0}
+                total_bytes = 0
+
+                for sid in sorted(session_files.keys()):
+                    is_active = sid in active
+                    action = "COPY" if is_active else "MOVE"
+
+                    files = session_files[sid]
+                    turn_dir = session_dirs.get(sid)
+                    dest = EXPORT_DIR / sid
+
+                    if DRY_RUN:
+                        file_list = "  ".join(p.name for p in files)
+                        turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+                        log(f"  [{action}] {sid}  ({len(files)} files{turn_info})")
+                        continue
+
+                    try:
+                        dest.mkdir(parents=True, exist_ok=True)
+                        for src in files:
+                            dst = dest / src.name
+                            sz = src.stat().st_size
+                            total_bytes += sz
+                            if is_active:
+                                shutil.copy2(src, dst)
+                            else:
+                                shutil.move(str(src), str(dst))
+
+                        if turn_dir:
+                            dst_turn = dest / turn_dir.name
+                            if dst_turn.exists():
+                                for f in turn_dir.iterdir():
+                                    d = dst_turn / f.name
+                                    if not d.exists():
+                                        total_bytes += f.stat().st_size
+                                        shutil.move(str(f), str(d))
+                                try:
+                                    turn_dir.rmdir()
+                                except OSError:
+                                    pass
+                            else:
+                                if is_active:
+                                    sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+                                    total_bytes += sz
+                                    shutil.copytree(str(turn_dir), str(dst_turn))
+                                else:
+                                    sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+                                    total_bytes += sz
+                                    shutil.move(str(turn_dir), str(dst_turn))
+
+                        counts["copied" if is_active else "moved"] += 1
+
+                    except Exception as e:
+                        log(f"    ERROR [{sid}]: {e}")
+                        counts["errors"] += 1
+
+                log(f"\n{'='*60}")
+                log(f"  Copied (active):         {counts['copied']}")
+                log(f"  Moved (dead):            {counts['moved']}")
+                log(f"  Errors:                  {counts['errors']}")
+                if not DRY_RUN:
+                    log(f"  Total data transferred:  {fmt_size(total_bytes)}")
+                log(f"{'='*60}")
+
+
+            if __name__ == "__main__":
+                folderize()
+            ZZZ_UNIQUE_ZZZ
+            echo "Script written."
+        result: |
+          Script written.
+    time: 7/26/2026, 9:25:30.921 PM GMT+5:30
+    duration: 11.623s
+    duration_ms: 11623
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me do a dry run first to verify the script works correctly.
+    thinking_duration: 384ms
+    thinking_duration_ms: 384
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/session-folderize.py --dry-run
+        result: |
+          DB: 127 active sessions
+          Scanned: 27 sessions in logs
+
+            [COPY] ses_061b5d223ffeG0Sej6B7Ot8EkP  (1 files +dir ses_061b5d223ffeG0Sej6B7Ot8EkP)
+            [COPY] ses_061f4f7e1ffe4w6seNjhFdzYKu  (1 files +dir ses_061f4f7e1ffe4w6seNjhFdzYKu)
+            [COPY] ses_061fa3b18ffeoKT0j7Njtxmq7G  (3 files +dir ses_061fa3b18ffeoKT0j7Njtxmq7G)
+            [COPY] ses_062161f22ffeviKjkMIhovs6JV  (3 files +dir ses_062161f22ffeviKjkMIhovs6JV)
+            [MOVE] ses_062267669ffeF1CMm6gcJ6J632  (3 files +dir ses_062267669ffeF1CMm6gcJ6J632)
+            [MOVE] ses_064071695ffeA7Tv0MsQvwoywT  (1 files)
+            [MOVE] ses_06407217effeo6rjy91FA0xCq2  (1 files)
+            [MOVE] ses_0640729f1ffe55byb48s7ucx2k  (1 files)
+            [MOVE] ses_0640733fdffea7mTgmsd8ljO1i  (1 files)
+            [MOVE] ses_06407a17bffelHVDAKOst5lVcY  (3 files)
+            [MOVE] ses_064183376ffe4Z7UgJF4x9cOJJ  (3 files)
+            [MOVE] ses_06425c47fffeR0qe3iAa1YejNR  (3 files)
+            [MOVE] ses_0643334caffeDB7BkQXLkgkNKt  (3 files)
+            [MOVE] ses_0647386a9ffecZXd3ldmFH7IkK  (3 files)
+            [COPY] ses_065773a95ffe40RCFWCnkiUsoh  (2 files)
+            [COPY] ses_06584e9f3ffeA7HZBiBmGpY6Hx  (4 files)
+            [COPY] ses_065876d95ffeZsarlVWmCM9vTl  (4 files)
+            [COPY] ses_06593fec8ffeZ3JiISm465vzrO  (4 files)
+            [COPY] ses_066a352e0ffeH7q95mDstfVUCy  (4 files)
+            [COPY] ses_06ee287bfffelyHq3L1oUPM9zH  (2 files)
+            [COPY] ses_06ef1977fffexNBgiGpWy6geRh  (2 files)
+            [COPY] ses_06f0e08c7ffe02YvE97ycNXD5w  (4 files)
+            [MOVE] ses_070bc0b55ffe9wXZ6RXtEpBZD0  (2 files)
+            [MOVE] ses_070e9ba6dffeyXxXII0YATh6Mu  (1 files)
+            [MOVE] ses_070ea4154ffeKXx2QO1aCi9iRi  (4 files)
+            [COPY] ses_07568f752ffe1gL7GvX0mbUk38  (3 files)
+            [COPY] ses_0c2d7b1e4ffeQSPP5UOTlpWzTS  (4 files)
+
+          ============================================================
+            Copied (active):         0
+            Moved (dead):            0
+            Errors:                  0
+          ============================================================
+    time: 7/26/2026, 9:25:43.135 PM GMT+5:30
+    duration: 12.246s
+    duration_ms: 12246
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The dry run looks correct! The counts show 0 because it's a dry run. Let me verify:
+
+      1. **ACTIVE (COPY)** sessions: 14
+         - ses_061b5d2*, ses_061f4f7*, ses_061fa3b*, ses_062161f*, ses_065773a*, ses_06584e9*, ses_065876d9*, ses_06593fe*, ses_066a352*, ses_06ee287*, ses_06ef197*, ses_06f0e08*, ses_07568f7*, ses_0c2d7b1*
+
+      2. **DEAD (MOVE)** sessions: 13 (wait, earlier it was 12 — now I see ses_070e9ba6* too!)
+         - ses_0622676*, ses_0640716*, ses_0640721*, ses_0640729*, ses_0640733*, ses_06407a1*, ses_0641833*, ses_06425c4*, ses_0643334*, ses_0647386*, ses_070bc0b*, ses_070e9ba6*, ses_070ea41*
+
+      The extra one (`ses_070e9ba6dffeyXxXII0YATh6Mu`) was not in my original deduped list because it only has a `.yaml` file, no `.jsonl`. The script found it because it scans all files starting with `ses_`.
+
+      Let me now run it for real. The user said "yes" so they want me to execute. But I should present the dry run results and ask for confirmation before executing.
+
+      Actually, the user already said "yes" explicitly to building the script. Let me run it.
+
+      Wait, but the script does actual file moves. I should confirm with the user before executing it live.
+    thinking_duration: 3.595s
+    thinking_duration_ms: 3595
+    tool_calls:
+      - tool: question
+        args:
+          questions:
+            - question: Execute the folderization script now? This will COPY 14 active sessions and MOVE 13 dead sessions from .opencode/logs/ to the exports directory.
+              header: Execute folderization?
+              options:
+                - label: Yes, run it now
+                  description: Execute the script — copy active, move dead, remove dead from logs
+                - label: Dry-run first
+                  description: Show what would happen without actually moving anything (already done above, but re-run for completeness)
+        result: 'User has answered your questions: "Execute the folderization script now? This will COPY 14 active sessions and MOVE 13 dead sessions from .opencode/logs/ to the exports directory."="let me check first". You can now continue with the user''s answers in mind.'
+    time: 7/26/2026, 9:25:56.150 PM GMT+5:30
+    response: 'Dry run looks correct: 14 ACTIVE (copy) + 13 DEAD (move) sessions identified. The scan found one extra (`ses_070e9ba6*` — only a `.yaml`, no `.jsonl`). Want me to execute the actual run now?'
+    duration: 21.598s
+    duration_ms: 21598
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants to check first. Let me wait for their instructions.
+    thinking_duration: 284ms
+    thinking_duration_ms: 284
+    time: 7/26/2026, 9:26:18.371 PM GMT+5:30
+    response: Sure, take your time. The script is at `scripts/session-folderize.py` — ready to run with `--dry-run` to preview or without to execute.
+

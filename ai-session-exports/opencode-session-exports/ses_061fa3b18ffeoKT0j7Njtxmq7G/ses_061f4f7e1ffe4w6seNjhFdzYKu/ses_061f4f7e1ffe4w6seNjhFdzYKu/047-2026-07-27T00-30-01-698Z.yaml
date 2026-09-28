@@ -1,0 +1,144 @@
+---
+user:
+  text: i checked manually. three of them ditto. but different times
+  time: 7/27/2026, 5:59:44.803 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user confirmed they checked manually and the three files are identical (ditto = same content), just with different timestamps in the filenames. Now they need a fix script.
+
+      Let me write the fix script. Since all files are active sessions and still being used, I should be careful. The duplicates are:
+      - ses_061fa3b1: 3 copies of each turn (num 001-038), 2 copies of 039 = 77 dupes
+      - ses_062161f2: 2 copies of turns 001-005 = 5 dupes
+
+      I should:
+      1. Keep the file whose timestamp matches the turn.complete event
+      2. Delete the other copies (or move them somewhere)
+      3. Keep the 000-header file
+
+      Actually, the user said "what about keeping only the correct one and deleting the rest" implicitly when I asked about trashing. Let me re-read the conversation...
+
+      The user asked "why we trashing?" and I explained about the rule. They said "no, i mean is the files duplicate?" and I confirmed. Then they asked for a sample pair. Now they've confirmed "three of them ditto. but different times."
+
+      So they've confirmed the files are identical. Now they need a script to clean up. Let me write it.
+    thinking_duration: 3.076s
+    thinking_duration_ms: 3076
+    tool_calls:
+      - tool: write
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/fix-turn-numbering.py
+          content: |
+            #!/usr/bin/env python3
+            """Fix turn YAML numbering: remove duplicate turn files created by a logging plugin bug."""
+
+            import json, re, subprocess, sys
+            from pathlib import Path
+            from datetime import datetime
+
+
+            def trash(path):
+                subprocess.run(["trash", str(path)], capture_output=True)
+
+
+            def norm_ts(s):
+                date_part, rest = s.split("T", 1)
+                parts = rest.rsplit("-", 3)
+                return date_part + "T" + ":".join(parts[:2]) + ":" + parts[2] + "." + parts[3].rstrip("Z")
+
+
+            def load_turns(jsonl_path):
+                events = []
+                with open(jsonl_path) as f:
+                    for line in f:
+                        obj = json.loads(line)
+                        if obj.get("type") == "turn.complete":
+                            events.append((obj["turnIndex"], obj["timestamp"]))
+                return events
+
+
+            def fix_session(sid, log_dir, dry_run=True):
+                turn_dir = log_dir / sid
+                if not turn_dir.is_dir():
+                    print(f"  SKIP: no turn dir for {sid}")
+                    return
+
+                jsonl = log_dir / f"{sid}.jsonl"
+                if not jsonl.exists():
+                    print(f"  SKIP: no JSONL for {sid}")
+                    return
+
+                turns = load_turns(jsonl)
+                if not turns:
+                    print(f"  SKIP: no turn.complete events in JSONL")
+                    return
+
+                turn_dts = [(ti, datetime.fromisoformat(ts.rstrip("Z"))) for ti, ts in turns]
+                kept = 0
+                deleted = 0
+                rename_ops = []
+
+                for y in sorted(turn_dir.glob("*.yaml")):
+                    if y.name.startswith("000-header"):
+                        continue
+                    m = re.match(r"(\d+)-(.+)\.yaml", y.name)
+                    if not m:
+                        continue
+                    y_num = int(m.group(1))
+                    y_raw_ts = m.group(2)
+
+                    y_dt = datetime.fromisoformat(norm_ts(y_raw_ts).rstrip("Z"))
+                    best_idx = min(
+                        range(len(turn_dts)),
+                        key=lambda i: abs((y_dt - turn_dts[i][1]).total_seconds()),
+                    )
+                    ti, t_dt = turn_dts[best_idx]
+                    diff = abs((y_dt - t_dt).total_seconds())
+
+                    expected_num = ti + 1
+
+                    if diff < 2.0:
+                        kept += 1
+                        if y_num != expected_num:
+                            new_name = f"{expected_num:03d}-{y_raw_ts}.yaml"
+                            new_path = turn_dir / new_name
+                            if new_path.exists():
+                                print(f"    ERROR: {new_name} exists, cannot rename {y.name}")
+                            else:
+                                rename_ops.append((y, new_path))
+                    else:
+                        print(f"    DELETE {y.name}")
+                        if not dry_run:
+                            trash(str(y))
+                        deleted += 1
+
+                for old_path, new_path in rename_ops:
+                    if not dry_run:
+                        old_path.rename(new_path)
+                    print(f"    RENAME {old_path.name} → {new_path.name}")
+
+                print(f"  {sid}: {kept} kept, {deleted} deleted, {len(rename_ops)} renamed")
+
+
+            if __name__ == "__main__":
+                log_dir = (
+                    Path(__file__).resolve().parent.parent / ".opencode" / "logs"
+                )
+                dry_run = "--dry-run" in sys.argv
+                sids = [a for a in sys.argv[1:] if not a.startswith("--")]
+
+                if not sids:
+                    print("Usage: fix-turn-numbering.py [--dry-run] <ses_id_1> [ses_id_2 ...]")
+                    sys.exit(1)
+
+                for sid in sids:
+                    print(f"--- {sid} ---")
+                    fix_session(sid, log_dir, dry_run=dry_run)
+        result: The user rejected permission to use this specific tool call.
+    time: 7/27/2026, 5:59:46.223 AM GMT+5:30
+    response: Confirmed. Now I'll write the fix script to keep only the canonical copy (timestamp matching `turn.complete` in JSONL) and trash the rest.
+    duration: 15.229s
+    duration_ms: 15229
+

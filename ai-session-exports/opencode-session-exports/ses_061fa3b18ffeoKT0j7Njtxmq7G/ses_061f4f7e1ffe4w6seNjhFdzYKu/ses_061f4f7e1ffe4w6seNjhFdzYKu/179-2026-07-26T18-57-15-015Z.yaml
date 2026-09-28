@@ -1,0 +1,23 @@
+---
+user:
+  text: what is the algorithm?
+  time: 7/26/2026, 9:32:54.782 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user is asking me to explain the algorithm in the script. Let me give a concise summary of what it does.
+    thinking_duration: 309ms
+    thinking_duration_ms: 309
+    time: 7/26/2026, 9:32:55.571 PM GMT+5:30
+    response: |-
+      For each session in `.opencode/logs/`:
+
+      1. **Classify** — check if session ID exists in opencode's SQLite DB (`session` table). In DB = ACTIVE, not in DB = DEAD.
+      2. **Collect** — gather all files belonging to that session:
+         - `.jsonl` (main log), `.state.json`, `.turns.jsonl`, `.yaml` (export)
+         - Directory with turn-by-turn YAML files (format 3)
+      3. **Act** — ACTIVE → `shutil.copy2` (leave originals), DEAD → `shutil.move` (remove from logs)
+      4. **Folderize** — place everything into `exports/ses_XXXX/`. If the turn directory already exists there (previous backup), merge new files into it rather than overwrite.
+

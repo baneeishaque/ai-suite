@@ -1,0 +1,268 @@
+---
+user:
+  text: the files are not listed in turn order
+  time: 7/27/2026, 5:45:00.081 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is saying the files inside each session's output block are not sorted in turn order. Looking at the output from the script, the YAML files inside a session's turn dir are listed by the order they appear in `os.listdir()` / `Path.iterdir()`, which is filesystem order (not necessarily chronological). The YAML files have timestamps in their names like `001-2026-07-26T10-44-30-382Z.yaml`, so they should be sorted naturally by filename if we sort the list.
+
+      Let me look at the code. In the turn_dir section:
+
+      ```python
+      if turn_dir:
+          dst_turn = dest / turn_dir.name
+          if dst_turn.exists():
+              for f in turn_dir.iterdir():
+                  ...
+      ```
+
+      `Path.iterdir()` yields entries in arbitrary order (filesystem order). I need to sort them. Similarly for child turn dirs.
+
+      Let me fix this by sorting the iterations.
+    thinking_duration: 1.735s
+    thinking_duration_ms: 1735
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          offset: 197
+          limit: 80
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/scripts/session-backup.py</path>
+          <type>file</type>
+          <content>
+          197:                     if src.suffix == ".jsonl" and jsonl_is_updated(src, dst):
+          198:                         file_ops.append(f"{src.name} ✓ updated (log is superset of export)")
+          199:                     else:
+          200:                         file_ops.append(f"{src.name} ✗ MISMATCH (log vs export differ)")
+          201:                         counts["errors"] += 1
+          202:                     continue
+          203:                 total_bytes += src.stat().st_size
+          204:                 if not DRY_RUN:
+          205:                     if is_active:
+          206:                         shutil.copy2(src, dst)
+          207:                     else:
+          208:                         shutil.move(str(src), str(dst))
+          209:                 file_ops.append(f"{src.name} → new to export")
+          210: 
+          211:             if turn_dir:
+          212:                 dst_turn = dest / turn_dir.name
+          213:                 if dst_turn.exists():
+          214:                     for f in turn_dir.iterdir():
+          215:                         d = dst_turn / f.name
+          216:                         dm = file_match(f, d)
+          217:                         if dm is True:
+          218:                             file_ops.append(f"{turn_dir.name}/{f.name} ✓ matched")
+          219:                         elif dm is False:
+          220:                             msg = f"{turn_dir.name}/{f.name} ✗ MISMATCH"
+          221:                             file_ops.append(msg)
+          222:                             counts["errors"] += 1
+          223:                         else:
+          224:                             total_bytes += f.stat().st_size
+          225:                             if not DRY_RUN:
+          226:                                 if is_active:
+          227:                                     shutil.copy2(f, d)
+          228:                                 else:
+          229:                                     shutil.move(str(f), str(d))
+          230:                             file_ops.append(f"{turn_dir.name}/{f.name} → new to export")
+          231:                     if not is_active and not DRY_RUN:
+          232:                         remaining = list(turn_dir.iterdir())
+          233:                         if not remaining:
+          234:                             try:
+          235:                                 turn_dir.rmdir()
+          236:                             except OSError:
+          237:                                 pass
+          238:                 else:
+          239:                     sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+          240:                     total_bytes += sz
+          241:                     if not DRY_RUN:
+          242:                         if is_active:
+          243:                             shutil.copytree(str(turn_dir), str(dst_turn))
+          244:                         else:
+          245:                             shutil.move(str(turn_dir), str(dst_turn))
+          246:                     file_ops.append(f"{turn_dir.name}/ → new to export")
+          247: 
+          248:             for child in sorted(children):
+          249:                 child_dest = dest / child
+          250:                 if not DRY_RUN:
+          251:                     child_dest.mkdir(parents=True, exist_ok=True)
+          252:                 child_files = session_files.get(child, [])
+          253:                 child_turn = session_dirs.get(child)
+          254:                 for src in child_files:
+          255:                     cd = child_dest / src.name
+          256:                     cm = file_match(src, cd)
+          257:                     if cm is True:
+          258:                         file_ops.append(f"  sub: {child}/{src.name} ✓ matched")
+          259:                         if not is_active and not DRY_RUN:
+          260:                             trash(str(src))
+          261:                         continue
+          262:                     elif cm is False:
+          263:                         if src.suffix == ".jsonl" and jsonl_is_updated(src, cd):
+          264:                             file_ops.append(f"  sub: {child}/{src.name} ✓ updated (log is superset of export)")
+          265:                         else:
+          266:                             file_ops.append(f"  sub: {child}/{src.name} ✗ MISMATCH")
+          267:                             counts["errors"] += 1
+          268:                         continue
+          269:                     total_bytes += src.stat().st_size
+          270:                     if not DRY_RUN:
+          271:                         if is_active:
+          272:                             shutil.copy2(src, cd)
+          273:                         else:
+          274:                             shutil.move(str(src), str(cd))
+          275:                 if child_turn:
+          276:                     cd_turn = child_dest / child_turn.name
+
+          (Showing lines 197-276 of 334. Use offset=277 to continue.)
+          </content>
+    time: 7/27/2026, 5:45:01.415 AM GMT+5:30
+    duration: 6.621s
+    duration_ms: 6621
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      I see three places where `iterdir()` is used without sorting:
+
+      1. Line 214: `for f in turn_dir.iterdir():` — needs sorting
+      2. Line 232: `remaining = list(turn_dir.iterdir())` — this is just to check if empty, sorting not needed
+      3. Line 262 in child section (offset 277+): `for f in child_turn.iterdir():` — needs sorting
+
+      Let me fix lines 214 and the child turn one.
+    thinking_duration: 1.062s
+    thinking_duration_ms: 1062
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                            if dst_turn.exists():
+                                for f in turn_dir.iterdir():
+          newString: |2-
+                            if dst_turn.exists():
+                                for f in sorted(turn_dir.iterdir()):
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:45:10.048 AM GMT+5:30
+    response: 'Two `iterdir()` loops need sorting — main turn dirs (line 214) and child turn dirs:'
+    duration: 11.518s
+    duration_ms: 11518
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now find the child turn dir loop:'
+    thinking_duration: 250ms
+    thinking_duration_ms: 250
+    tool_calls:
+      - tool: read
+        args:
+          offset: 275
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          limit: 25
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/scripts/session-backup.py</path>
+          <type>file</type>
+          <content>
+          275:                 if child_turn:
+          276:                     cd_turn = child_dest / child_turn.name
+          277:                     if cd_turn.exists():
+          278:                         for f in child_turn.iterdir():
+          279:                             d = cd_turn / f.name
+          280:                             cm = file_match(f, d)
+          281:                             if cm is True:
+          282:                                 file_ops.append(f"  sub: {child}/{child_turn.name}/{f.name} ✓ matched")
+          283:                             elif cm is False:
+          284:                                 msg = f"  sub: {child}/{child_turn.name}/{f.name} ✗ MISMATCH"
+          285:                                 file_ops.append(msg)
+          286:                                 counts["errors"] += 1
+          287:                             else:
+          288:                                 total_bytes += f.stat().st_size
+          289:                                 if not DRY_RUN:
+          290:                                     if is_active:
+          291:                                         shutil.copy2(f, d)
+          292:                                     else:
+          293:                                         shutil.move(str(f), str(d))
+          294:                                 file_ops.append(f"  sub: {child}/{child_turn.name}/{f.name} → new to export")
+          295:                         if not is_active and not DRY_RUN:
+          296:                             remaining = list(child_turn.iterdir())
+          297:                             if not remaining:
+          298:                                 try:
+          299:                                     child_turn.rmdir()
+
+          (Showing lines 275-299 of 334. Use offset=300 to continue.)
+          </content>
+    time: 7/27/2026, 5:45:23.541 AM GMT+5:30
+    duration: 3.032s
+    duration_ms: 3032
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                                if cd_turn.exists():
+                                    for f in child_turn.iterdir():
+          newString: |2-
+                                if cd_turn.exists():
+                                    for f in sorted(child_turn.iterdir()):
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:45:28.529 AM GMT+5:30
+    duration: 6.888s
+    duration_ms: 6888
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now also sort the main session files list (line 176) and turn_dir.iterdir() for the "remaining" empty check isn't needed for sorting, just logic. But let me also check if session_files need to be sorted - they are since they come from `scan_logs` which iterates LOG_DIR, but individual file listings for a session might not be sorted. Actually, `session_files` is a dict of lists, and files are added in whatever order `iterdir()` returns. Let me sort the file list when processing too.
+
+      Let me look at line 176 area:
+    thinking_duration: 1.638s
+    thinking_duration_ms: 1638
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                        for src in files:
+                            dst = dest / src.name
+          newString: |2-
+                        for src in sorted(files):
+                            dst = dest / src.name
+        result: Edit applied successfully.
+    time: 7/27/2026, 5:45:37.302 AM GMT+5:30
+    response: 'Also sort the main session file list:'
+    duration: 8.470s
+    duration_ms: 8470
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now run dry run with sorted output:'
+    thinking_duration: 311ms
+    thinking_duration_ms: 311
+    tool_calls:
+      - tool: bash
+        args:
+          command: 'trash /Users/dk/lab-data/ai-suite/scripts/__pycache__/session-backup.cpython-311.pyc 2>/dev/null; TS=$(python3 -c "from datetime import datetime; print(datetime.now().strftime(''%Y-%m-%d_%H-%M-%S-%f'')[:-3])") && mkdir -p /Users/dk/lab-data/ai-suite/scratch/061f4f7e1ffe4w6seNjhFdzYKu && python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py --dry-run > /Users/dk/lab-data/ai-suite/scratch/061f4f7e1ffe4w6seNjhFdzYKu/session-backup-dry-run_$TS.out 2> /Users/dk/lab-data/ai-suite/scratch/061f4f7e1ffe4w6seNjhFdzYKu/session-backup-dry-run_$TS.err && echo "Exit: $?"'
+        result: |
+          Exit: 0
+    time: 7/27/2026, 5:45:47.814 AM GMT+5:30
+    duration: 12.618s
+    duration_ms: 12618
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/27/2026, 5:46:02.357 AM GMT+5:30
+    response: Sorted output captured to `scratch/061f4f7e1ffe4w6seNjhFdzYKu/session-backup-dry-run_<timestamp>.out`. Files are now listed in alphabetical (i.e., turn) order within each session block.
+    duration: 2.889s
+    duration_ms: 2889
+

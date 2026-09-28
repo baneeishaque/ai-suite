@@ -1,0 +1,888 @@
+---
+user:
+  text: soemtimes the session will be sub session of another. in that case only jsonl & yamls will be there (no state & turns jsnols). these folders must be keep under main agent session folder. main agent calls these sessions & recieves results. you can refer /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY & it's 4 sub agents.
+  time: 7/27/2026, 12:57:20.508 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants sub-agent sessions to be placed inside their parent session's export directory, not as standalone directories. Let me look at the reference example to understand the structure.
+    thinking_duration: 522ms
+    thinking_duration_ms: 522
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls -la /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/
+        result: |
+          total 2728
+          drwxr-xr-x@ 11 dk  staff     352 Jul 26 21:36 .
+          drwxr-xr-x@ 69 dk  staff    2208 Jul 26 21:36 ..
+          -rw-r--r--@  1 dk  staff     200 Jul 26 06:39 000-header-2026-07-26T01-09-33-444Z.yaml
+          -rw-r--r--@  1 dk  staff  382650 Jul 26 06:44 001-2026-07-26T01-14-01-572Z.yaml
+          drwxr-xr-x@  4 dk  staff     128 Jul 26 06:40 ses_064071695ffeA7Tv0MsQvwoywT
+          drwxr-xr-x@  4 dk  staff     128 Jul 26 06:40 ses_06407217effeo6rjy91FA0xCq2
+          drwxr-xr-x@  4 dk  staff     128 Jul 26 06:40 ses_0640729f1ffe55byb48s7ucx2k
+          drwxr-xr-x@  4 dk  staff     128 Jul 26 06:40 ses_0640733fdffea7mTgmsd8ljO1i
+          -rw-r--r--@  1 dk  staff  652037 Jul 26 06:44 ses_06407a17bffelHVDAKOst5lVcY.jsonl
+          -rw-r--r--@  1 dk  staff      38 Jul 26 06:39 ses_06407a17bffelHVDAKOst5lVcY.state.json
+          -rw-r--r--@  1 dk  staff  344301 Jul 26 06:44 ses_06407a17bffelHVDAKOst5lVcY.turns.jsonl
+      - tool: bash
+        args:
+          command: ls -la /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/ses_064071695ffeA7Tv0MsQvwoywT/
+        result: |
+          total 696
+          drwxr-xr-x@  4 dk  staff     128 Jul 26 06:40 .
+          drwxr-xr-x@ 11 dk  staff     352 Jul 26 21:36 ..
+          -rw-r--r--@  1 dk  staff     151 Jul 26 06:40 000-header-2026-07-26T01-10-15-489Z.yaml
+          -rw-r--r--@  1 dk  staff  350186 Jul 26 06:40 001-pending-2026-07-26T01-10-09-143Z.yaml
+    time: 7/27/2026, 12:57:21.654 AM GMT+5:30
+    duration: 6.814s
+    duration_ms: 6814
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I understand the pattern. The sub-agent session `ses_064071695ffeA7Tv0MsQvwoywT`:
+      - Only has a directory with YAML turn files (format 3) — no `.jsonl`, `.state.json`, `.turns.jsonl`, or `.yaml`
+      - Lives inside the parent `ses_06407a17bffelHVDAKOst5lVcY/` directory
+
+      So sub-agent sessions have:
+      1. No `.jsonl` in exports (they're inside parent's JSONL as `session.sub_created` entries)
+      2. Only format 3 (turn YAML directory)
+      3. They go INSIDE the parent session's export directory
+
+      But wait, in `.opencode/logs/`, sub-agents DO have `.jsonl` files (ses_064071695ffeA7Tv0MsQvwoywT.jsonl). These are partial logs written by the logger plugin.
+
+      So the question is: how do we determine which sessions are sub-agents of which parent?
+
+      Looking at the plugin code (`opencode-logger.ts`):
+      - When `session.created` fires while `sid` is already set → sub-agent → `writeJSONL(sid, {sessionID: info.id, type: "session.sub_created"})`
+      - This writes a "session.sub_created" entry to the PARENT's JSONL
+
+      So the parent's JSONL file contains entries like:
+      ```json
+      {"timestamp":"...", "sessionID":"ses_064071695ffeA7Tv0MsQvwoywT", "type":"session.sub_created"}
+      ```
+
+      We could scan the parent's JSONL for `session.sub_created` entries to find sub-agents.
+
+      Alternatively, sub-agents have a characteristic pattern:
+      - In logs: they have a `.jsonl` (partial) but NO `.state.json`, NO `.turns.jsonl`, NO `.yaml`
+      - They might have a turn YAML directory (format 3)
+
+      But some standalone sessions (like `ses_065773a95ffe40RCFWCnkiUsoh`) also only have `.jsonl` + `.yaml` with no state/turns, and they're NOT sub-agents. So the file pattern alone isn't enough.
+
+      A better approach:
+      1. For each session in logs that has a `.jsonl`, scan the parent's `.jsonl` for "session.sub_created" with the sub-agent's ID
+      2. But this requires O(n^2) scanning
+
+      Actually, looking at the actual data:
+      - Sub-agents from `.opencode/logs/`: ses_0640716*, ses_0640721*, ses_0640729*, ses_0640733*
+      - These were already moved to exports as standalone dirs
+      - They need to be moved INSIDE their parent (ses_06407a1*)
+
+      The parent-child relationship can be determined by:
+      1. Sub-agents have ONLY `.jsonl` (no state/turns/yaml) in logs
+      2. The parent's jsonl has "session.sub_created" entries for them
+
+      But `ses_065773a95ffe40RCFWCnkiUsoh` has `.jsonl` + `.yaml` but no state/turns — that's format 1, not a sub-agent.
+
+      Let me think of a reliable heuristic:
+      - A session is a likely sub-agent if it has ONLY a `.jsonl` file (no state, no turns, no yaml)
+      - OR if it has a `.jsonl` + a turn YAML directory but no state/turns/yaml
+
+      Actually, looking at all the sessions we processed:
+
+      Sub-agents (moved as dead, only had .jsonl):
+      - ses_064071695ffeA7Tv0MsQvwoywT — 1 file in logs (jsonl only)
+      - ses_06407217effeo6rjy91FA0xCq2 — 1 file in logs (jsonl only)
+      - ses_0640729f1ffe55byb48s7ucx2k — 1 file in logs (jsonl only)
+      - ses_0640733fdffea7mTgmsd8ljO1i — 1 file in logs (jsonl only)
+
+      Standalone (format 1, not sub-agent):
+      - ses_065773a95ffe40RCFWCnkiUsoh — 2 files (jsonl + yaml)
+      - ses_06ee287bfffelyHq3L1oUPM9zH — 2 files (jsonl + yaml)
+      - ses_06ef1977fffexNBgiGpWy6geRh — 2 files (jsonl + yaml)
+      - ses_070bc0b55ffe9wXZ6RXtEpBZD0 — 2 files (jsonl + yaml)
+
+      So the sub-agents are the ones with ONLY a .jsonl and nothing else. They're also likely DEAD (not in DB, since they don't get registered as sessions in opencode).
+
+      For detecting the PARENT of a sub-agent, I need to scan the .jsonl files of potential parents for "session.sub_created" entries referencing the sub-agent's ID. This is the only reliable way.
+
+      Actually, let me think of a simpler approach. Since:
+      1. Sub-agents have only `.jsonl` (main log was written, but no export yaml, no state, no turns)
+      2. The parent's `.jsonl` contains references to sub-agents via `session.sub_created`
+
+      I can:
+      1. For each session that has a `.jsonl`, scan its `.jsonl` for "session.sub_created" entries to find sub-agents
+      2. Group sub-agents under their parent
+
+      But this is expensive. Let me use a simpler heuristic based on the existing pattern:
+      - In the first run, the script already placed sub-agents in standalone dirs
+      - Now I need to MOVE them into their parent's dir
+
+      Let me detect parents by scanning each session's YAML files (in the turn dir) for references to sub-agent sessions. A parent's turn YAML would have tool calls with `task_session_id` referencing sub-agents.
+
+      Actually, looking at the plugin code more carefully:
+
+      ```javascript
+      case "session.created": {
+          ...
+          if (sid) {
+              // Sub-agent session — don't overwrite main session state
+              writeJSONL(sid, { timestamp: now, sessionID: info.id, type: "session.sub_created" })
+              break
+          }
+          ...
+      }
+      ```
+
+      So `session.sub_created` entries are in the PARENT's JSONL (`writeJSONL(sid, ...)` where `sid` is the parent's ID).
+
+      Also, in `turn.toFields()`:
+      ```javascript
+      if (tc.tool === "task" && typeof tc.result === "object" && tc.result !== null) {
+          const r = tc.result as Record<string, unknown>
+          if (r.sessionId) base.task_session_id = r.sessionId
+      ```
+
+      So parent turn YAMLs have tool calls with `task_session_id` pointing to sub-agents.
+
+      The approach:
+      1. For each session that has a `.jsonl` in logs, grep its `.jsonl` for "session.sub_created" and extract the sub-agent session IDs
+      2. Place sub-agents inside the parent's export dir
+
+      Let me implement this. I'll add a step before the main backup loop:
+      - Scan all `.jsonl` files for `session.sub_created` entries
+      - Build a parent→children map
+      - When processing a session, if it has children, include them in the same export dir
+      - Skip sub-agents from the main loop (they're handled by their parent)
+
+      Actually, this is getting complex. Let me think of a simpler implementation.
+
+      The simplest approach:
+      1. Scan all JSONL files for "session.sub_created" entries → build `{child_id: parent_id}` map
+      2. When processing in the main loop, if a session is a child, move it INSIDE the parent's dir
+      3. If the parent doesn't exist in the current run, create the parent dir just for the child
+
+      Let me implement this.
+    thinking_duration: 15.069s
+    thinking_duration_ms: 15069
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            def scan_logs():
+                files: dict[str, list[Path]] = {}
+                dirs: dict[str, Path] = {}
+                for entry in LOG_DIR.iterdir():
+                    name = entry.name
+                    if entry.is_file():
+                        if not name.startswith("ses_"):
+                            continue
+                        sid = name.split(".", 1)[0]
+                        if sid.endswith(".turns"):
+                            sid = sid[:-6]
+                        files.setdefault(sid, []).append(entry)
+                    elif entry.is_dir() and name.startswith("ses_"):
+                        dirs[name] = entry
+                for sid in list(dirs.keys()):
+                    if sid not in files:
+                        files[sid] = []
+                return files, dirs
+          newString: |-
+            def scan_logs():
+                files: dict[str, list[Path]] = {}
+                dirs: dict[str, Path] = {}
+                for entry in LOG_DIR.iterdir():
+                    name = entry.name
+                    if entry.is_file():
+                        if not name.startswith("ses_"):
+                            continue
+                        sid = name.split(".", 1)[0]
+                        if sid.endswith(".turns"):
+                            sid = sid[:-6]
+                        files.setdefault(sid, []).append(entry)
+                    elif entry.is_dir() and name.startswith("ses_"):
+                        dirs[name] = entry
+                for sid in list(dirs.keys()):
+                    if sid not in files:
+                        files[sid] = []
+                return files, dirs
+
+
+            def find_sub_agents(files: dict[str, list[Path]]) -> dict[str, set[str]]:
+                parent_map: dict[str, str] = {}
+                for sid, paths in files.items():
+                    jsonl = None
+                    for p in paths:
+                        if p.suffix == ".jsonl" and not p.name.endswith(".turns.jsonl"):
+                            jsonl = p
+                            break
+                    if not jsonl:
+                        continue
+                    try:
+                        text = jsonl.read_text(errors="replace")
+                    except Exception:
+                        continue
+                    import re
+                    for m in re.finditer(r'"sessionID"\s*:\s*"([^"]+)"', text):
+                        child = m.group(1)
+                        if child != sid and child.startswith("ses_"):
+                            prev = f'"type"\s*:\s*"session\.sub_created".*?"sessionID"\s*:\s*"{child}"'
+                            if re.search(prev, text):
+                                parent_map[child] = sid
+                children: dict[str, set[str]] = {}
+                for child, parent in parent_map.items():
+                    children.setdefault(parent, set()).add(child)
+                return children
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:57:29.209 AM GMT+5:30
+    duration: 35.607s
+    duration_ms: 35607
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to integrate the sub-agent handling into the backup function. When a session has children, I should:
+      1. Create/use the parent's export dir
+      2. Move the children's files into subdirs inside the parent's dir
+      3. Skip those children from the main loop (they're handled by the parent)
+
+      Let me also be careful: the sub-agent might be in logs AND NOT in the parent's file list. But from the scan, sub-agents DO have their own entries in the `files` dict. I need to remove them from the main loop and handle them inside the parent's processing.
+
+      Let me rewrite the backup function to handle this.
+    thinking_duration: 1.859s
+    thinking_duration_ms: 1859
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            import shutil
+            import sqlite3
+            import subprocess
+            import sys
+            from pathlib import Path
+          newString: |-
+            import os
+            import re
+            import shutil
+            import sqlite3
+            import subprocess
+            import sys
+            from pathlib import Path
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:58:05.510 AM GMT+5:30
+    duration: 9.422s
+    duration_ms: 9422
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now update the backup function to use sub_agents:'
+    thinking_duration: 383ms
+    thinking_duration_ms: 383
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            def backup():
+                active = active_session_ids()
+                session_files, session_dirs = scan_logs()
+                log(f"Scanned: {len(session_files)} sessions in logs\n")
+
+                counts = {"copied": 0, "moved": 0, "errors": 0}
+                total_bytes = 0
+
+                for sid in sorted(session_files.keys()):
+                    is_active = sid in active
+                    action = "COPY" if is_active else "MOVE"
+
+                    files = session_files[sid]
+                    turn_dir = session_dirs.get(sid)
+                    dest = EXPORT_DIR / sid
+
+                    if DRY_RUN:
+                        turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+                        log(f"  [{action}] {sid}  ({len(files)} files{turn_info})")
+                        continue
+
+                    try:
+                        dest.mkdir(parents=True, exist_ok=True)
+
+                        file_ops = []
+                        for src in files:
+                            dst = dest / src.name
+                            if dst.exists():
+                                file_ops.append(f"{src.name} (exists)")
+                                if not is_active:
+                                    trash(str(src))
+                                continue
+                            total_bytes += src.stat().st_size
+                            if is_active:
+                                shutil.copy2(src, dst)
+                            else:
+                                shutil.move(str(src), str(dst))
+                            file_ops.append(src.name)
+
+                        if turn_dir:
+                            dst_turn = dest / turn_dir.name
+                            if dst_turn.exists():
+                                for f in turn_dir.iterdir():
+                                    d = dst_turn / f.name
+                                    if not d.exists():
+                                        total_bytes += f.stat().st_size
+                                        shutil.move(str(f), str(d))
+                                        file_ops.append(f"{turn_dir.name}/{f.name}")
+                                try:
+                                    turn_dir.rmdir()
+                                except OSError:
+                                    pass
+                            else:
+                                sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+                                total_bytes += sz
+                                if is_active:
+                                    shutil.copytree(str(turn_dir), str(dst_turn))
+                                else:
+                                    shutil.move(str(turn_dir), str(dst_turn))
+                                file_ops.append(f"{turn_dir.name}/")
+
+                        turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+                        log(f"  [{action}] {sid}  ({len(files)} files{turn_info})")
+                        for op in file_ops:
+                            log(f"    {op}")
+
+                        counts["copied" if is_active else "moved"] += 1
+
+                    except Exception as e:
+                        log(f"    ERROR [{sid}]: {e}")
+                        counts["errors"] += 1
+          newString: |-
+            def backup():
+                active = active_session_ids()
+                session_files, session_dirs = scan_logs()
+                sub_agents = find_sub_agents(session_files)
+
+                skipped_children: set[str] = set()
+                for children in sub_agents.values():
+                    skipped_children.update(children)
+
+                log(f"Scanned: {len(session_files)} sessions ({len(sub_agents)} parents, {len(skipped_children)} sub-agents)\n")
+
+                counts = {"copied": 0, "moved": 0, "errors": 0}
+                total_bytes = 0
+
+                for sid in sorted(session_files.keys()):
+                    if sid in skipped_children:
+                        continue
+
+                    is_active = sid in active
+                    action = "COPY" if is_active else "MOVE"
+                    children = sub_agents.get(sid, set())
+
+                    files = session_files[sid]
+                    turn_dir = session_dirs.get(sid)
+                    dest = EXPORT_DIR / sid
+
+                    if DRY_RUN:
+                        turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+                        child_info = f" +{len(children)} sub" if children else ""
+                        log(f"  [{action}] {sid}  ({len(files)} files{turn_info}{child_info})")
+                        continue
+
+                    try:
+                        dest.mkdir(parents=True, exist_ok=True)
+                        file_ops = []
+
+                        for src in files:
+                            dst = dest / src.name
+                            if dst.exists():
+                                file_ops.append(f"{src.name} (exists)")
+                                if not is_active:
+                                    trash(str(src))
+                                continue
+                            total_bytes += src.stat().st_size
+                            if is_active:
+                                shutil.copy2(src, dst)
+                            else:
+                                shutil.move(str(src), str(dst))
+                            file_ops.append(src.name)
+
+                        if turn_dir:
+                            dst_turn = dest / turn_dir.name
+                            if dst_turn.exists():
+                                for f in turn_dir.iterdir():
+                                    d = dst_turn / f.name
+                                    if not d.exists():
+                                        total_bytes += f.stat().st_size
+                                        shutil.move(str(f), str(d))
+                                        file_ops.append(f"{turn_dir.name}/{f.name}")
+                                try:
+                                    turn_dir.rmdir()
+                                except OSError:
+                                    pass
+                            else:
+                                sz = sum(f.stat().st_size for f in turn_dir.rglob("*") if f.is_file())
+                                total_bytes += sz
+                                if is_active:
+                                    shutil.copytree(str(turn_dir), str(dst_turn))
+                                else:
+                                    shutil.move(str(turn_dir), str(dst_turn))
+                                file_ops.append(f"{turn_dir.name}/")
+
+                        for child in sorted(children):
+                            child_dest = dest / child
+                            child_dest.mkdir(parents=True, exist_ok=True)
+                            child_files = session_files.get(child, [])
+                            child_turn = session_dirs.get(child)
+                            for src in child_files:
+                                cd = child_dest / src.name
+                                if cd.exists():
+                                    if not is_active:
+                                        trash(str(src))
+                                    continue
+                                total_bytes += src.stat().st_size
+                                if is_active:
+                                    shutil.copy2(src, cd)
+                                else:
+                                    shutil.move(str(src), str(cd))
+                            if child_turn:
+                                cd_turn = child_dest / child_turn.name
+                                if cd_turn.exists():
+                                    for f in child_turn.iterdir():
+                                        d = cd_turn / f.name
+                                        if not d.exists():
+                                            total_bytes += f.stat().st_size
+                                            shutil.move(str(f), str(d))
+                                    try:
+                                        child_turn.rmdir()
+                                    except OSError:
+                                        pass
+                                else:
+                                    sz = sum(f.stat().st_size for f in child_turn.rglob("*") if f.is_file())
+                                    total_bytes += sz
+                                    if is_active:
+                                        shutil.copytree(str(child_turn), str(cd_turn))
+                                    else:
+                                        shutil.move(str(child_turn), str(cd_turn))
+                            file_ops.append(f"  sub: {child}/")
+
+                        turn_info = f" +dir {turn_dir.name}" if turn_dir else ""
+                        child_info = f" +{len(children)} sub" if children else ""
+                        log(f"  [{action}] {sid}  ({len(files)} files{turn_info}{child_info})")
+                        for op in file_ops:
+                            log(f"    {op}")
+
+                        counts["copied" if is_active else "moved"] += 1
+
+                    except Exception as e:
+                        log(f"    ERROR [{sid}]: {e}")
+                        counts["errors"] += 1
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:58:15.596 AM GMT+5:30
+    duration: 18.070s
+    duration_ms: 18070
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to also clean up the `find_sub_agents` function — I used `import re` inline but I already imported it at the top. Also let me fix the import to be at the top level only.
+
+      Actually, looking at the code I wrote for `find_sub_agents`, I have `import re` inside the function. Let me remove that since `re` is already imported at the top.
+
+      Let me also check there are no other issues. Let me run the script to verify.
+    thinking_duration: 1.278s
+    thinking_duration_ms: 1278
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |2-
+                    try:
+                        text = jsonl.read_text(errors="replace")
+                    except Exception:
+                        continue
+                    import re
+                    for m in re.finditer(r'"sessionID"\s*:\s*"([^"]+)"', text):
+          newString: |2-
+                    try:
+                        text = jsonl.read_text(errors="replace")
+                    except Exception:
+                        continue
+                    for m in re.finditer(r'"sessionID"\s*:\s*"([^"]+)"', text):
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:58:34.348 AM GMT+5:30
+    duration: 9.003s
+    duration_ms: 9003
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Also, the `re` import was added at the top. Let me also remove the unused `os` import since I don't use `os.replace` anymore.
+
+      Wait, actually I should check if I need `os`. Looking at my code... I don't use `os` anywhere. Let me remove it.
+    thinking_duration: 910ms
+    thinking_duration_ms: 910
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            import os
+            import re
+          newString: import re
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:58:44.029 AM GMT+5:30
+    duration: 7.564s
+    duration_ms: 7564
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now let me test the script.
+    thinking_duration: 324ms
+    thinking_duration_ms: 324
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py --dry-run
+        result: |
+          DB: 129 active sessions
+          Scanned: 16 sessions (0 parents, 0 sub-agents)
+
+            [COPY] ses_0601ef805ffeW2qZiCdFRYeRU4  (3 files +dir ses_0601ef805ffeW2qZiCdFRYeRU4)
+            [COPY] ses_060a7aca9ffeWqo9pbu2XX72Gf  (3 files +dir ses_060a7aca9ffeWqo9pbu2XX72Gf)
+            [COPY] ses_061b5d223ffeG0Sej6B7Ot8EkP  (1 files +dir ses_061b5d223ffeG0Sej6B7Ot8EkP)
+            [COPY] ses_061f4f7e1ffe4w6seNjhFdzYKu  (2 files +dir ses_061f4f7e1ffe4w6seNjhFdzYKu)
+            [COPY] ses_061fa3b18ffeoKT0j7Njtxmq7G  (3 files +dir ses_061fa3b18ffeoKT0j7Njtxmq7G)
+            [COPY] ses_062161f22ffeviKjkMIhovs6JV  (3 files +dir ses_062161f22ffeviKjkMIhovs6JV)
+            [COPY] ses_065773a95ffe40RCFWCnkiUsoh  (2 files)
+            [COPY] ses_06584e9f3ffeA7HZBiBmGpY6Hx  (4 files)
+            [COPY] ses_065876d95ffeZsarlVWmCM9vTl  (4 files)
+            [COPY] ses_06593fec8ffeZ3JiISm465vzrO  (4 files)
+            [COPY] ses_066a352e0ffeH7q95mDstfVUCy  (4 files)
+            [COPY] ses_06ee287bfffelyHq3L1oUPM9zH  (2 files)
+            [COPY] ses_06ef1977fffexNBgiGpWy6geRh  (2 files)
+            [COPY] ses_06f0e08c7ffe02YvE97ycNXD5w  (4 files)
+            [COPY] ses_07568f752ffe1gL7GvX0mbUk38  (3 files)
+            [COPY] ses_0c2d7b1e4ffeQSPP5UOTlpWzTS  (4 files)
+
+          ============================================================
+            Copied (active):         0
+            Moved (dead):            0
+            Errors:                  0
+          ============================================================
+    time: 7/27/2026, 12:58:52.280 AM GMT+5:30
+    duration: 5.881s
+    duration_ms: 5881
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The sub-agent detection says "0 parents, 0 sub-agents" — that's because all sub-agent sessions have already been moved from logs to exports in the first run. The sub-agents (ses_0640716*, etc.) are no longer in logs, so there's nothing to detect.
+
+      Let me verify by checking the current state of the logs dir to confirm no sub-agents remain.
+
+      The key point: the script now correctly handles sub-agents. If new sub-agents appear in logs (from current/future sessions), the `find_sub_agents` function will scan the parent's JSONL for "session.sub_created" entries and group them under the parent.
+
+      Let me do a quick test to ensure the find_sub_agents function actually works by checking the existing export dir's parent JSONL.
+    thinking_duration: 1.711s
+    thinking_duration_ms: 1711
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 -c "
+            import re
+            p = '/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/ses_06407a17bffelHVDAKOst5lVcY.jsonl'
+            text = open(p).read()
+            for m in re.finditer(r'\"sessionID\"\s*:\s*\"([^\"]+)\"', text):
+                child = m.group(1)
+                if child != 'ses_06407a17bffelHVDAKOst5lVcY' and child.startswith('ses_'):
+                    prev = rf'\"type\"\s*:\s*\"session\.sub_created\".*?\"sessionID\"\s*:\s*\"{child}\"'
+                    if re.search(prev, text):
+                        print(f'  sub-agent: {child}')
+            "
+        result: (no output)
+    time: 7/27/2026, 12:58:58.898 AM GMT+5:30
+    response: 'Sub-agent detection shows 0 because all sub-agents were already moved in the first run. Let me verify the logic works by testing against the existing parent JSONL in exports:'
+    duration: 13.145s
+    duration_ms: 13145
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: No sub-agents detected in the existing export JSONL. Let me check what's actually in the JSONL to see the format.
+    thinking_duration: 532ms
+    thinking_duration_ms: 532
+    tool_calls:
+      - tool: bash
+        args:
+          command: grep -o '"type":"[^"]*"' /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/ses_06407a17bffelHVDAKOst5lVcY.jsonl | sort -u
+        result: |
+          "type":"auto"
+          "type":"message.part"
+          "type":"preferred"
+          "type":"session.created"
+          "type":"session.sub_created"
+          "type":"turn.complete"
+    time: 7/27/2026, 12:59:12.771 AM GMT+5:30
+    duration: 4.632s
+    duration_ms: 4632
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      There ARE `session.sub_created` entries. My regex was wrong. The issue is the `prev` regex tries to find `"type":"session.sub_created"` before `"sessionID":"..."` on the SAME LINE, but these might be on different lines in the JSONL file. JSONL is one JSON object per line, so they should be on the same line.
+
+      Let me debug the regex.
+    thinking_duration: 1.051s
+    thinking_duration_ms: 1051
+    tool_calls:
+      - tool: bash
+        args:
+          command: grep session.sub_created /Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/ses_06407a17bffelHVDAKOst5lVcY.jsonl | head -3
+        result: |
+          {"timestamp":"2026-07-26T01:10:01.476Z","sessionID":"ses_0640733fdffea7mTgmsd8ljO1i","type":"session.sub_created"}
+          {"timestamp":"2026-07-26T01:10:04.048Z","sessionID":"ses_0640729f1ffe55byb48s7ucx2k","type":"session.sub_created"}
+          {"timestamp":"2026-07-26T01:10:06.211Z","sessionID":"ses_06407217effeo6rjy91FA0xCq2","type":"session.sub_created"}
+    time: 7/27/2026, 12:59:18.235 AM GMT+5:30
+    duration: 5.073s
+    duration_ms: 5073
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I see the format. The JSONL entries are flat objects. The `session.sub_created` entries have the format:
+      ```json
+      {"timestamp":"...", "sessionID":"ses_0640733...", "type":"session.sub_created"}
+      ```
+
+      So the session ID that starts the sub-agent is in the `sessionID` field, and the type is `session.sub_created`.
+
+      The `find_sub_agents` function has two regex passes:
+      1. Find all `"sessionID":"ses_XXXX"` matches in the text
+      2. For each child, check if there's a `"type":"session.sub_created"` near it
+
+      But my `prev` regex was `f'"type"\\s*:\\s*"session\\.sub_created".*?"sessionID"\\s*:\\s*"{child}"'` — this tries to find them on a line, but my first pass finds sessionID anywhere. The issue is that `sessionID` appears in ALL entries, not just `session.sub_created`. So my code was detecting every unique sessionID in the parent's jsonl as a potential sub-agent, then checking if there's a sub_created type entry for them.
+
+      Let me trace through the logic:
+      ```python
+      for m in re.finditer(r'"sessionID"\s*:\s*"([^"]+)"', text):
+          child = m.group(1)
+          if child != sid and child.startswith("ses_"):
+              prev = f'"type"\s*:\s*"session\.sub_created".*?"sessionID"\s*:\s*"{child}"'
+              if re.search(prev, text):
+                  parent_map[child] = sid
+      ```
+
+      Wait, `prev` as a raw string already has `\s` which is correct for regex. But the issue is: `re.finditer` finds sessionID fields, including the parent's own ID (which is filtered by `child != sid`). For each other sessionID found, it checks if there's a `sub_created` type for it.
+
+      The problem might be that the regex is matching OTHER entries where the sessionID field appears in tool_call results, not just in the `session.sub_created` type line. For example, tool results might reference other session IDs.
+
+      Actually, looking at the output from my earlier test: the function correctly identified 0 sub-agents. But we know there ARE sub_created entries. Let me test the function directly.
+    thinking_duration: 5.057s
+    thinking_duration_ms: 5057
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 -c "
+            import re
+            p = '/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports/ses_06407a17bffelHVDAKOst5lVcY/ses_06407a17bffelHVDAKOst5lVcY.jsonl'
+            text = open(p).read()
+            sid = 'ses_06407a17bffelHVDAKOst5lVcY'
+            for m in re.finditer(r'\"sessionID\"\s*:\s*\"([^\"]+)\"', text):
+                child = m.group(1)
+                if child != sid and child.startswith('ses_'):
+                    prev = r'\"type\"\s*:\s*\"session\.sub_created\".*?\"sessionID\"\s*:\s*\"' + child + r'\"'
+                    if re.search(prev, text):
+                        print('FOUND:', child)
+            " 2>&1 | head -10
+        result: (no output)
+    time: 7/27/2026, 12:59:23.986 AM GMT+5:30
+    duration: 12.117s
+    duration_ms: 12117
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me test the regex directly against the JSONL line.
+    thinking_duration: 311ms
+    thinking_duration_ms: 311
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 -c "
+            import re
+            line = '{\"timestamp\":\"2026-07-26T01:10:01.476Z\",\"sessionID\":\"ses_0640733fdffea7mTgmsd8ljO1i\",\"type\":\"session.sub_created\"}'
+            # Test: find type before sessionID
+            m = re.search(r'\"type\"\s*:\s*\"session\\.sub_created\".*?\"sessionID\"\s*:\s*\"ses_0640733fdffea7mTgmsd8ljO1i\"', line)
+            print('type before sid:', m is not None)
+            # Test: find sessionID then check for sub_created 
+            m2 = re.search(r'\"sessionID\"\s*:\s*\"ses_0640733fdffea7mTgmsd8ljO1i\".*?\"type\"\s*:\s*\"session\\.sub_created\"', line)
+            print('sid before type:', m2 is not None)
+            # Test: order-agnostic
+            m3 = re.search(r'\"type\"\s*:\s*\"session\\.sub_created\"', line)
+            print('sub_created:', m3 is not None)
+            "
+        result: |
+          type before sid: False
+          sid before type: True
+          sub_created: True
+    time: 7/27/2026, 12:59:36.865 AM GMT+5:30
+    duration: 6.326s
+    duration_ms: 6326
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The issue: the JSON has `sessionID` BEFORE `type`, but my regex was looking for `type` BEFORE `sessionID`. I need to use a lookahead/lookbehind or just check that both exist in the same line, order-agnostic.
+
+      Let me fix the `find_sub_agents` function to handle either order.
+    thinking_duration: 807ms
+    thinking_duration_ms: 807
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          oldString: |-
+            def find_sub_agents(files: dict[str, list[Path]]) -> dict[str, set[str]]:
+                parent_map: dict[str, str] = {}
+                for sid, paths in files.items():
+                    jsonl = None
+                    for p in paths:
+                        if p.suffix == ".jsonl" and not p.name.endswith(".turns.jsonl"):
+                            jsonl = p
+                            break
+                    if not jsonl:
+                        continue
+                    try:
+                        text = jsonl.read_text(errors="replace")
+                    except Exception:
+                        continue
+                    for m in re.finditer(r'"sessionID"\s*:\s*"([^"]+)"', text):
+                        child = m.group(1)
+                        if child != sid and child.startswith("ses_"):
+                            prev = f'"type"\s*:\s*"session\.sub_created".*?"sessionID"\s*:\s*"{child}"'
+                            if re.search(prev, text):
+                                parent_map[child] = sid
+                children: dict[str, set[str]] = {}
+                for child, parent in parent_map.items():
+                    children.setdefault(parent, set()).add(child)
+                return children
+          newString: |-
+            def find_sub_agents(files: dict[str, list[Path]]) -> dict[str, set[str]]:
+                parent_map: dict[str, str] = {}
+                for sid, paths in files.items():
+                    jsonl = None
+                    for p in paths:
+                        if p.suffix == ".jsonl" and not p.name.endswith(".turns.jsonl"):
+                            jsonl = p
+                            break
+                    if not jsonl:
+                        continue
+                    try:
+                        text = jsonl.read_text(errors="replace")
+                    except Exception:
+                        continue
+                    for m in re.finditer(r'"sessionID"\s*:\s*"ses_([^"]+)"', text):
+                        child = "ses_" + m.group(1)
+                        if child == sid:
+                            continue
+                        sub_line = re.search(
+                            r'"type"\s*:\s*"session\.sub_created"'  + 
+                            r'[^}]*' + rf'"sessionID"\s*:\s*"{child}"',
+                            text,
+                        )
+                        if not sub_line:
+                            sub_line = re.search(
+                                rf'"sessionID"\s*:\s*"{child}"' +
+                                r'[^}]*' + r'"type"\s*:\s*"session\.sub_created"',
+                                text,
+                            )
+                        if sub_line:
+                            parent_map[child] = sid
+                children: dict[str, set[str]] = {}
+                for child, parent in parent_map.items():
+                    children.setdefault(parent, set()).add(child)
+                return children
+        result: Edit applied successfully.
+    time: 7/27/2026, 12:59:43.880 AM GMT+5:30
+    response: 'The regex was order-dependent — `sessionID` comes before `type` in the JSON. Let me fix:'
+    duration: 8.992s
+    duration_ms: 8992
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py --dry-run
+        result: |
+          DB: 129 active sessions
+          Scanned: 16 sessions (3 parents, 5 sub-agents)
+
+            [COPY] ses_0601ef805ffeW2qZiCdFRYeRU4  (3 files +dir ses_0601ef805ffeW2qZiCdFRYeRU4)
+            [COPY] ses_060a7aca9ffeWqo9pbu2XX72Gf  (3 files +dir ses_060a7aca9ffeWqo9pbu2XX72Gf)
+            [COPY] ses_061fa3b18ffeoKT0j7Njtxmq7G  (3 files +dir ses_061fa3b18ffeoKT0j7Njtxmq7G +2 sub)
+            [COPY] ses_062161f22ffeviKjkMIhovs6JV  (3 files +dir ses_062161f22ffeviKjkMIhovs6JV)
+            [COPY] ses_06584e9f3ffeA7HZBiBmGpY6Hx  (4 files +1 sub)
+            [COPY] ses_065876d95ffeZsarlVWmCM9vTl  (4 files)
+            [COPY] ses_06593fec8ffeZ3JiISm465vzrO  (4 files)
+            [COPY] ses_066a352e0ffeH7q95mDstfVUCy  (4 files)
+            [COPY] ses_06f0e08c7ffe02YvE97ycNXD5w  (4 files +2 sub)
+            [COPY] ses_07568f752ffe1gL7GvX0mbUk38  (3 files)
+            [COPY] ses_0c2d7b1e4ffeQSPP5UOTlpWzTS  (4 files)
+
+          ============================================================
+            Copied (active):         0
+            Moved (dead):            0
+            Errors:                  0
+          ============================================================
+    time: 7/27/2026, 12:59:53.585 AM GMT+5:30
+    duration: 5.453s
+    duration_ms: 5453
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now the sub-agent detection works! It found:
+      - 3 parents with 5 sub-agents total
+      - `ses_061fa3b18ffeoKT0j7Njtxmq7G` has 2 sub-agents
+      - `ses_06584e9f3ffeA7HZBiBmGpY6Hx` has 1 sub-agent
+      - `ses_06f0e08c7ffe02YvE97ycNXD5w` has 2 sub-agents
+
+      Note: `ses_061b5d2*` and `ses_061f4f7*` are no longer in the list — they were already copied in the first run (dest exists → skipped).
+
+      Let me verify the final state of the script. Actually wait - I just realized `ses_0601ef80*` and `ses_060a7aca*` are new sessions created during this conversation! They have 3 files each + dir (format 1 + 3). And `ses_061fa3b18ffeoKT0j7Njtxmq7G` now shows 2 sub-agents.
+
+      The script looks good. Let me run it live.
+    thinking_duration: 2.185s
+    thinking_duration_ms: 2185
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py
+          timeout: 300000
+        result: The user rejected permission to use this specific tool call.
+    time: 7/27/2026, 12:59:59.740 AM GMT+5:30
+    response: 'Sub-agent detection works now. 3 parents with 5 sub-agents identified. Let me do the live run:'
+    duration: 11.762s
+    duration_ms: 11762
+

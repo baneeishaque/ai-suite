@@ -1,0 +1,73 @@
+---
+user:
+  text: |-
+    no - overkill for a single md.
+
+    is the naming is correct (means correct id in the file)?
+  time: 7/26/2026, 7:05:10.742 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants me to check if the filenames match the session IDs inside the files. Some filenames have suffixes like `-1`, `-2`, `-merged` which might not match the actual session ID inside. Let me check each one.
+    thinking_duration: 655ms
+    thinking_duration_ms: 655
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 -c "
+            import re, os
+
+            base = '/Users/dk/lab-data/ai-suite/ai-session-exports/opencode-session-exports'
+
+            for mf in sorted(os.listdir(base)):
+                if not mf.endswith('.md'):
+                    continue
+                with open(f'{base}/{mf}') as f:
+                    content = f.read(2000)
+                m = re.search(r'\*\*Session ID:\*\*\s+(ses_\S+)', content)
+                if m:
+                    sid = m.group(1)
+                    # Extract the filename stem (remove -1, -2, -merged etc)
+                    stem = mf.replace('.md', '')
+                    # Compare
+                    fname_id = 'ses_' + stem.replace('-1', '').replace('-2', '').replace('-merged', '')
+                    if fname_id == sid:
+                        print(f'{mf}: ✅ matches {sid}')
+                    else:
+                        print(f'{mf}: ❌ filename suggests {fname_id} but file says {sid}')
+            "
+        result: |
+          079449553ffen5fXBiZ2je4AEc.md: ✅ matches ses_079449553ffen5fXBiZ2je4AEc
+          0af60978affeblDfZa0La1hXMS.md: ✅ matches ses_0af60978affeblDfZa0La1hXMS
+          0b2cba54effeKRTVCmtS0aF4uH.md: ✅ matches ses_0b2cba54effeKRTVCmtS0aF4uH
+          0c1cc62a6ffehPR7z4q1Lkcedi-1.md: ✅ matches ses_0c1cc62a6ffehPR7z4q1Lkcedi
+          0cd308527ffeFHWQkdwB2Epqlj-2.md: ✅ matches ses_0cd308527ffeFHWQkdwB2Epqlj
+          0de2809a6ffee2bbRK65pw79gT-1.md: ✅ matches ses_0de2809a6ffee2bbRK65pw79gT
+          0ef9d288dffe17xKEI2evfdzOI-1.md: ✅ matches ses_0ef9d288dffe17xKEI2evfdzOI
+          0f0e4ae04ffe3gUzLmI23GTlBD-merged.md: ✅ matches ses_0f0e4ae04ffe3gUzLmI23GTlBD
+          10de29229ffe2XlWZDaPZRh2LK.md: ✅ matches ses_10de29229ffe2XlWZDaPZRh2LK
+          10deadbbcffemlNmVQn2kJ030o.md: ✅ matches ses_10deadbbcffemlNmVQn2kJ030o
+          1226e7264ffeQeP6BasnGWRaVt.md: ✅ matches ses_1226e7264ffeQeP6BasnGWRaVt
+          12a7f23a8ffeycUu980ps9hEv6.md: ✅ matches ses_12a7f23a8ffeycUu980ps9hEv6
+          12a80bb15ffew3wKYTjWiRHoY3.md: ✅ matches ses_12a80bb15ffew3wKYTjWiRHoY3
+          13f59a09effeyDJWNigfIF82Bk.md: ✅ matches ses_13f59a09effeyDJWNigfIF82Bk
+          13f5b44cbffehOEP4dFDe44OFE.md: ✅ matches ses_13f5b44cbffehOEP4dFDe44OFE
+          141383d69ffeO6lKfFBBeeOv0F.md: ✅ matches ses_141383d69ffeO6lKfFBBeeOv0F
+          14f69188bffeT3JrIVZO5JzjwQ.md: ✅ matches ses_14f69188bffeT3JrIVZO5JzjwQ
+          14f71e615ffeu7ndcmthULNVWu.md: ✅ matches ses_14f71e615ffeu7ndcmthULNVWu
+    time: 7/26/2026, 7:05:11.144 PM GMT+5:30
+    duration: 7.153s
+    duration_ms: 7153
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: All filenames correctly match the session IDs inside the files when accounting for suffixes like -1, -2, -merged. All good!
+    thinking_duration: 383ms
+    thinking_duration_ms: 383
+    time: 7/26/2026, 7:05:18.669 PM GMT+5:30
+    response: All 18 ✅ correct — filenames match the session IDs inside the files.
+

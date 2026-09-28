@@ -1,0 +1,673 @@
+---
+user:
+  text: if removing something - ensure ditto & ssot
+  time: 7/27/2026, 6:00:47.801 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is asking me to verify that the files being deleted are truly identical (ditto) to the kept file, not just written at a different time. Before trashing any duplicate, I should compare SHA hashes and only delete if they match exactly.
+
+      Let me update the algorithm:
+
+      1. Parse all turn.complete events from JSONL → ground truth
+      2. For each YAML file (excluding header), find closest turn.complete event
+      3. If diff < 2 seconds → designate as the "canonical" copy for that turn
+      4. For all other YAML files assigned to the same turnNumber:
+         - Compare SHA-256 with the canonical copy
+         - If hash matches → safe to trash (ditto)
+         - If hash doesn't match → flag as "DIVERGED" (error, don't touch)
+      5. Rename canonical copy to correct turn number if needed
+
+      Let me think about how to implement this. I need to group YAMLs by which turn they match to (the closest turn.complete), not just by their number in the filename. Some YAMLs with different numbers might actually match the same turn.
+
+      Let me rewrite the algorithm more carefully:
+
+      1. Parse turn.complete events → `[(turnIndex, timestamp)]`
+      2. For each YAML file (skip 000-header):
+         - Parse timestamp from filename
+         - Find closest turn.complete event by timestamp diff
+         - Record: (yaml_path, yaml_current_number, closest_turnIndex, diff_seconds)
+      3. Group by closest_turnIndex
+      4. For each group:
+         - The entry with the smallest diff is the canonical copy
+         - For all other entries in the group:
+           - SHA match canonical → trash
+           - SHA mismatch → ERROR (diverged)
+         - Rename canonical to `{turnIndex+1:03d}-{timestamp}.yaml` if needed
+
+      This handles all edge cases properly. Let me write this.
+    thinking_duration: 4.124s
+    thinking_duration_ms: 4124
+    tool_calls:
+      - tool: write
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/scripts/fix-turn-numbering.py
+          content: |
+            #!/usr/bin/env python3
+            """Fix turn YAML numbering: remove byte-identical duplicates, flag diverged files."""
+
+            import json, re, subprocess, sys, hashlib
+            from pathlib import Path
+            from datetime import datetime
+
+
+            def trash(path):
+                subprocess.run(["trash", str(path)], capture_output=True)
+
+
+            def file_sha(path):
+                return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+            def norm_ts(s):
+                date_part, rest = s.split("T", 1)
+                parts = rest.rsplit("-", 3)
+                return date_part + "T" + ":".join(parts[:2]) + ":" + parts[2] + "." + parts[3].rstrip("Z")
+
+
+            def load_turns(jsonl_path):
+                events = []
+                with open(jsonl_path) as f:
+                    for line in f:
+                        obj = json.loads(line)
+                        if obj.get("type") == "turn.complete":
+                            events.append((obj["turnIndex"], obj["timestamp"]))
+                return events
+
+
+            def fix_session(sid, log_dir, dry_run=True):
+                turn_dir = log_dir / sid
+                if not turn_dir.is_dir():
+                    print(f"  SKIP: no turn dir for {sid}")
+                    return
+                jsonl = log_dir / f"{sid}.jsonl"
+                if not jsonl.exists():
+                    print(f"  SKIP: no JSONL for {sid}")
+                    return
+
+                turns = load_turns(jsonl)
+                if not turns:
+                    print(f"  SKIP: no turn.complete events in JSONL")
+                    return
+
+                turn_dts = [(ti, datetime.fromisoformat(ts.rstrip("Z"))) for ti, ts in turns]
+
+                # Classify every yaml by closest turn.complete
+                groups = {}
+                for y in sorted(turn_dir.glob("*.yaml")):
+                    if y.name.startswith("000-header"):
+                        continue
+                    m = re.match(r"(\d+)-(.+)\.yaml", y.name)
+                    if not m:
+                        continue
+                    y_num = int(m.group(1))
+                    y_dt = datetime.fromisoformat(norm_ts(m.group(2)).rstrip("Z"))
+                    best_idx = min(
+                        range(len(turn_dts)),
+                        key=lambda i: abs((y_dt - turn_dts[i][1]).total_seconds()),
+                    )
+                    diff = abs((y_dt - turn_dts[best_idx][1]).total_seconds())
+                    ti = turn_dts[best_idx][0]
+                    groups.setdefault(ti, []).append((diff, y, y_num))
+
+                kept = 0
+                deleted = 0
+                diverged = 0
+                rename_ops = []
+
+                for ti in sorted(groups):
+                    entries = groups[ti]
+                    entries.sort(key=lambda e: e[0])  # closest first = canonical
+                    best_diff, canonical, best_num = entries[0]
+
+                    if best_diff >= 2.0:
+                        print(f"  WARNING: turnIdx {ti} has no close match (best diff={best_diff:.3f}s), skipping")
+                        continue
+
+                    expected_num = ti + 1
+                    if best_num != expected_num:
+                        new_name = f"{expected_num:03d}-{canonical.name.split('-', 1)[1]}"
+                        new_path = turn_dir / new_name
+                        if new_path.exists():
+                            print(f"    ERROR: {new_name} exists, cannot rename {canonical.name}")
+                        else:
+                            rename_ops.append((canonical, new_path))
+
+                    can_sha = file_sha(canonical)
+                    kept += 1
+
+                    for diff, y, _ in entries[1:]:
+                        y_sha = file_sha(y)
+                        if y_sha == can_sha:
+                            print(f"    DELETE {y.name} (ditto canonical {canonical.name})")
+                            if not dry_run:
+                                trash(str(y))
+                            deleted += 1
+                        else:
+                            print(f"    DIVERGED {y.name} (differs from canonical {canonical.name}) — KEEPING BOTH")
+                            diverged += 1
+
+                for old_path, new_path in rename_ops:
+                    if not dry_run:
+                        old_path.rename(new_path)
+                    print(f"    RENAME {old_path.name} → {new_path.name}")
+
+                print(f"  {sid}: {kept} kept, {deleted} deleted, {diverged} diverged, {len(rename_ops)} renamed")
+
+
+            if __name__ == "__main__":
+                log_dir = Path(__file__).resolve().parent.parent / ".opencode" / "logs"
+                dry_run = "--dry-run" in sys.argv
+                sids = [a for a in sys.argv[1:] if not a.startswith("--")]
+                if not sids:
+                    print("Usage: fix-turn-numbering.py [--dry-run] <ses_id_1> [ses_id_2 ...]")
+                    sys.exit(1)
+                for sid in sids:
+                    print(f"--- {sid} ---")
+                    fix_session(sid, log_dir, dry_run=dry_run)
+        result: Wrote file successfully.
+    time: 7/27/2026, 6:00:48.915 AM GMT+5:30
+    response: |-
+      Right. Before trashing any file, verify SHA-256 matches the canonical copy. If hash differs, keep both and flag as ERROR.
+
+      Algorithm:
+      1. For each YAML (skip header), find closest `turn.complete` event → group by `turnIndex`
+      2. In each group: lowest-diff entry = **canonical**
+      3. Every other entry: compare SHA-256 to canonical
+         - MATCH → trash (byte-identical duplicate)
+         - MISMATCH → flag as DIVERGED error, keep both
+      4. Rename canonical to `{turnIndex+1:03d}-...` if current number differs
+    duration: 21.802s
+    duration_ms: 21802
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now let me run it with dry-run first to show the user what will happen.
+    thinking_duration: 406ms
+    thinking_duration_ms: 406
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - priority: high
+              content: Explore JSONL format and turn YAML naming for affected sessions
+              status: completed
+            - priority: high
+              content: Write script to fix turn numbering from JSONL sequence
+              status: completed
+            - priority: high
+              content: Run on ses_061fa3b1 and ses_062161f2 (dry-run first)
+              status: in_progress
+            - priority: high
+              content: Verify fix is correct
+              status: pending
+        result: |-
+          [
+            {
+              "content": "Explore JSONL format and turn YAML naming for affected sessions",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Write script to fix turn numbering from JSONL sequence",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Run on ses_061fa3b1 and ses_062161f2 (dry-run first)",
+              "status": "in_progress",
+              "priority": "high"
+            },
+            {
+              "content": "Verify fix is correct",
+              "status": "pending",
+              "priority": "high"
+            }
+          ]
+    time: 7/27/2026, 6:01:12.866 AM GMT+5:30
+    duration: 3.443s
+    duration_ms: 3443
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/fix-turn-numbering.py --dry-run ses_061fa3b18ffeoKT0j7Njtxmq7G ses_062161f22ffeviKjkMIhovs6JV
+        result: |
+          --- ses_061fa3b18ffeoKT0j7Njtxmq7G ---
+              DIVERGED 001-2026-07-26T16-51-29-129Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 002-2026-07-26T16-51-29-135Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 003-2026-07-26T16-51-29-135Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 004-2026-07-26T16-51-29-136Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 005-2026-07-26T16-51-29-136Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 006-2026-07-26T16-51-29-137Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 007-2026-07-26T16-51-29-137Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 008-2026-07-26T16-51-29-138Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 009-2026-07-26T16-51-29-138Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 010-2026-07-26T16-51-29-138Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 011-2026-07-26T16-51-29-138Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 012-2026-07-26T16-51-29-139Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 013-2026-07-26T16-51-29-139Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 014-2026-07-26T16-51-29-139Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 015-2026-07-26T16-51-29-140Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 016-2026-07-26T16-51-29-140Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 017-2026-07-26T16-51-29-141Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 018-2026-07-26T16-51-29-141Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 019-2026-07-26T16-51-29-141Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 020-2026-07-26T16-51-29-142Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 021-2026-07-26T16-51-29-142Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 022-2026-07-26T16-51-29-142Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 023-2026-07-26T16-51-29-143Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 024-2026-07-26T16-51-29-143Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 025-2026-07-26T16-51-29-143Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 026-2026-07-26T16-51-29-144Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 027-2026-07-26T16-51-29-144Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 028-2026-07-26T16-51-29-145Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 029-2026-07-26T16-51-29-145Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 030-2026-07-26T16-51-29-145Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 031-2026-07-26T16-51-29-145Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 032-2026-07-26T16-51-29-146Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 033-2026-07-26T16-51-29-146Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 034-2026-07-26T16-51-29-147Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 035-2026-07-26T16-51-29-147Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 036-2026-07-26T16-51-29-148Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 037-2026-07-26T16-51-29-148Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 038-2026-07-26T16-51-29-148Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DELETE 039-2026-07-26T16-51-29-148Z.yaml (ditto canonical 039-2026-07-26T16-50-54-998Z.yaml)
+              DIVERGED 035-2026-07-26T16-15-19-204Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 036-2026-07-26T16-15-19-204Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 037-2026-07-26T16-15-19-204Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 038-2026-07-26T16-15-19-204Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 033-2026-07-26T16-15-19-203Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 034-2026-07-26T16-15-19-203Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 031-2026-07-26T16-15-19-202Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 032-2026-07-26T16-15-19-202Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 027-2026-07-26T16-15-19-201Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 028-2026-07-26T16-15-19-201Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 029-2026-07-26T16-15-19-201Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 030-2026-07-26T16-15-19-201Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 024-2026-07-26T16-15-19-200Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 025-2026-07-26T16-15-19-200Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 026-2026-07-26T16-15-19-200Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 022-2026-07-26T16-15-19-199Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 023-2026-07-26T16-15-19-199Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 019-2026-07-26T16-15-19-198Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 020-2026-07-26T16-15-19-198Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 021-2026-07-26T16-15-19-198Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 017-2026-07-26T16-15-19-197Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 018-2026-07-26T16-15-19-197Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 015-2026-07-26T16-15-19-196Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 016-2026-07-26T16-15-19-196Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 014-2026-07-26T16-15-19-195Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 011-2026-07-26T16-15-19-194Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 012-2026-07-26T16-15-19-194Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 013-2026-07-26T16-15-19-194Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 008-2026-07-26T16-15-19-193Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 009-2026-07-26T16-15-19-193Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 010-2026-07-26T16-15-19-193Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 006-2026-07-26T16-15-19-192Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 007-2026-07-26T16-15-19-192Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 004-2026-07-26T16-15-19-191Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 005-2026-07-26T16-15-19-191Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 002-2026-07-26T16-15-19-190Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 003-2026-07-26T16-15-19-190Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+              DIVERGED 001-2026-07-26T16-15-19-185Z.yaml (differs from canonical 039-2026-07-26T16-50-54-998Z.yaml) — KEEPING BOTH
+            ses_061fa3b18ffeoKT0j7Njtxmq7G: 52 kept, 1 deleted, 76 diverged, 0 renamed
+          --- ses_062161f22ffeviKjkMIhovs6JV ---
+              DIVERGED 005-2026-07-26T16-10-34-757Z.yaml (differs from canonical 006-2026-07-26T16-11-34-579Z.yaml) — KEEPING BOTH
+              DIVERGED 004-2026-07-26T16-10-34-756Z.yaml (differs from canonical 006-2026-07-26T16-11-34-579Z.yaml) — KEEPING BOTH
+              DIVERGED 002-2026-07-26T16-10-34-755Z.yaml (differs from canonical 006-2026-07-26T16-11-34-579Z.yaml) — KEEPING BOTH
+              DIVERGED 003-2026-07-26T16-10-34-755Z.yaml (differs from canonical 006-2026-07-26T16-11-34-579Z.yaml) — KEEPING BOTH
+              DIVERGED 001-2026-07-26T16-10-34-749Z.yaml (differs from canonical 006-2026-07-26T16-11-34-579Z.yaml) — KEEPING BOTH
+            ses_062161f22ffeviKjkMIhovs6JV: 50 kept, 0 deleted, 5 diverged, 0 renamed
+    time: 7/27/2026, 6:01:18.437 AM GMT+5:30
+    duration: 6.220s
+    duration_ms: 6220
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Hmm, something is wrong. All the "duplicate" files are being classified as DIVERGED, not as ditto. But earlier when I checked, the files were identical SHA-wise. Let me check what happened.
+
+      The issue is in the grouping logic. For ses_061fa3b1, the YAML files from the `16:15` batch and `16:51` batch are all being grouped under the same turnIndex (38 = the canonical for 039-...). But they're different turns! The `16:15` batch files like `001-2026-07-26T16-15-19-185Z.yaml` and `002-2026-07-26T16-15-19-190Z.yaml` have timestamps that are all closest to turn.complete for turnIndex 38 (at 16:50:54), because there are NO turn.complete events around 16:15.
+
+      So the problem is that the "16:15" and "16:51" batches of files (which are numbered 001-038 but don't correspond to any actual turns) are being assigned to whatever turn is closest in time, which happens to be turnIndex 38 (the first turn after the gap).
+
+      But actually, ALL the YAML files in the 16:15 batch have timestamps around 16:15:19, which are ~2154s away from turnIndex 38 at 16:50:54. And ALL of them map to turnIndex 38 because there's no closer turn.complete.
+
+      But wait - 16:15 is closer to turnIndex 38 (16:50:54) than to any other turn.complete? Let me check:
+      - Earlier batch (16:15:19) vs turn.complete 38 (16:50:54): diff = 35 min 35s = ~2135s
+      - Earlier batch (16:15:19) vs turn.complete 37 (12:15:03): diff = 4h 0min 16s = ~14416s
+      - Earlier batch (16:15:19) vs turn.complete 39 (16:53:37): diff = 38min 18s = ~2298s
+
+      So yes, turnIndex 38 at 16:50:54 is the closest. But diff is 2135s, which is >> 2s, so they should all be classified as... let me re-check my algorithm.
+
+      Looking at the script logic:
+      1. For each YAML file, find closest turn.complete
+      2. Group by turnIndex
+      3. For each group, the first entry (sorted by diff) is canonical
+      4. All others in the group are compared to canonical
+
+      For the "16:15" batch files, they all map to turnIndex 38. The canonical for turnIndex 38 is `039-2026-07-26T16-50-54-998Z.yaml` with diff=0.001s. All the 16:15 batch files also map to turnIndex 38 but with diff=2154s. They're in the same group.
+
+      So the script says they're "DIVERGED" because their SHA differs from the canonical 039 file. This is correct - they ARE different files (different content, different turns). But the issue is that these files were mis-categorized.
+
+      The fundamental problem is that the "16:15" batch of YAML files are NOT duplicates of any canonical file. They're a separate set of files that were written during the bug. They have unique content that doesn't correspond to any actual turn.complete events.
+
+      So my earlier analysis was wrong. The "morning" batch (10:44-12:15) matched to turns 0-37 correctly. The "16:15" and "16:51" batches are NOT byte-identical duplicates - they're DIFFERENT content that was written erroneously during a logging bug.
+
+      Let me re-check: earlier I checked SHA-256 of `001-*.yaml` files (3 copies):
+      - `001-2026-07-26T10-44-30-382Z.yaml` (morning, canonical turn 0): SHA matches
+      - `001-2026-07-26T16-15-19-185Z.yaml` (afternoon, bug): SHA matches the morning one!
+      - `001-2026-07-26T16-51-29-129Z.yaml` (later afternoon, bug): SHA matches the morning one!
+
+      So the bug re-wrote the SAME content again. That means for TURN NUMBER 001 (which maps to turnIndex 0), all 3 copies are byte-identical.
+
+      But the script says they're DIVERGED. Why? Because they're all in the SAME GROUP (turnIndex 38, not turnIndex 0). The 16:15 and 16:51 copies of 001-XXX have timestamps hours away from the morning turn 0, so the closest turn.complete is actually turnIndex 38 (at 16:50). They're being compared to the canonical of turnIndex 38 (which is `039-2026-07-26T16-50-54-998Z.yaml`) and that file has different content.
+
+      The real issue is the GROUPING. The YAML files from different batches should NOT be in the same group. They should each map to their correct turn by the TIMESTAMP, not just the numerically closest turn.complete event.
+
+      But the problem is: the 16:15 and 16:51 batches are completely bogus - they don't match ANY turn.complete event within a reasonable threshold. They were written during a bug where the plugin incorrectly re-logged old content.
+
+      So the fix should be:
+      1. YAML files that match a turn.complete within 2s → canonical (keep, possibly rename)
+      2. YAML files that DON'T match any turn.complete within 2s → check if they're byte-identical to a canonical file from the SAME TURN NUMBER
+         - If yes → trash (ditto duplicate)
+         - If no → flag as UNMATCHED_ORPHAN (different content, but no corresponding turn)
+
+      Wait, but the 16:15 batch files have the same turn number as the morning batch (e.g., both are 001-xxx). Let me check if they're byte-identical to the morning files of the SAME NUMBER.
+
+      Actually, I already checked this earlier and they WERE byte-identical (`10eb5e1f5bdd1166` for all three 001-xxx files). So for 001, the 16:15 and 16:51 copies ARE identical to the morning 001.
+
+      But the script groups by closest turnIndex, not by the number in the filename. So the 16:15 copy of 001-xxx maps to turnIndex 38 (since there's no turn at 16:15), and gets compared to the canonical of turnIndex 38 (039-... file), which obviously has different content.
+
+      I need to change the matching strategy. Instead of grouping by closest turnIndex, I should:
+      1. First, separate the "good" files (those matching a turn.complete within 2s)
+      2. Then for the remaining files, check if they're byte-identical to any "good" file with the SAME TURN NUMBER
+      3. If yes → trash as duplicate
+      4. If no → flag as ORPHAN
+
+      This is a two-pass approach. Let me rewrite the script.
+    thinking_duration: 15.119s
+    thinking_duration_ms: 15119
+    tool_calls:
+      - tool: write
+        args:
+          content: |
+            #!/usr/bin/env python3
+            """Fix turn YAML numbering: remove byte-identical duplicates, flag diverged files."""
+
+            import json, re, subprocess, sys, hashlib
+            from pathlib import Path
+            from datetime import datetime
+
+
+            def trash(path):
+                subprocess.run(["trash", str(path)], capture_output=True)
+
+
+            def sha256(path):
+                return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+            def norm_ts(s):
+                date_part, rest = s.split("T", 1)
+                parts = rest.rsplit("-", 3)
+                return date_part + "T" + ":".join(parts[:2]) + ":" + parts[2] + "." + parts[3].rstrip("Z")
+
+
+            def load_turns(jsonl_path):
+                events = []
+                with open(jsonl_path) as f:
+                    for line in f:
+                        obj = json.loads(line)
+                        if obj.get("type") == "turn.complete":
+                            events.append((obj["turnIndex"], obj["timestamp"]))
+                return events
+
+
+            def fix_session(sid, log_dir, dry_run=True):
+                turn_dir = log_dir / sid
+                if not turn_dir.is_dir():
+                    print(f"  SKIP: no turn dir for {sid}")
+                    return
+                jsonl = log_dir / f"{sid}.jsonl"
+                if not jsonl.exists():
+                    print(f"  SKIP: no JSONL for {sid}")
+                    return
+
+                turns = load_turns(jsonl)
+                if not turns:
+                    print(f"  SKIP: no turn.complete events in JSONL")
+                    return
+
+                turn_dts = [(ti, datetime.fromisoformat(ts.rstrip("Z"))) for ti, ts in turns]
+
+                # Parse all YAML files
+                yaml_files = []
+                for y in sorted(turn_dir.glob("*.yaml")):
+                    if y.name.startswith("000-header"):
+                        continue
+                    m = re.match(r"(\d+)-(.+)\.yaml", y.name)
+                    if not m:
+                        continue
+                    y_num = int(m.group(1))
+                    y_dt = datetime.fromisoformat(norm_ts(m.group(2)).rstrip("Z"))
+                    best_idx = min(
+                        range(len(turn_dts)),
+                        key=lambda i: abs((y_dt - turn_dts[i][1]).total_seconds()),
+                    )
+                    diff = abs((y_dt - turn_dts[best_idx][1]).total_seconds())
+                    ti = turn_dts[best_idx][0]
+                    yaml_files.append((y_num, diff, y, ti))
+
+                # Pass 1: identify canonical files (within 2s of a turn.complete)
+                canonicals: dict[int, Path] = {}  # turnIndex -> Path
+                for y_num, diff, y, ti in yaml_files:
+                    if diff < 2.0 and ti not in canonicals:
+                        canonicals[ti] = y
+
+                # Build sha map for canonical files keyed by their CURRENT turn number
+                canonical_sha = {}  # turn_number -> sha
+                for ti, y in canonicals.items():
+                    expected = ti + 1
+                    m = re.match(r"(\d+)-", y.name)
+                    current_num = int(m.group(1))
+                    canonical_sha[current_num] = sha256(y)
+
+                # Pass 2: classify every file
+                kept = 0
+                deleted = 0
+                diverged = 0
+                rename_ops = []
+
+                for y_num, diff, y, ti in yaml_files:
+                    is_canonical = y in canonicals.values()
+                    if is_canonical:
+                        kept += 1
+                        expected_num = ti + 1
+                        if y_num != expected_num:
+                            new_name = f"{expected_num:03d}-{y.name.split('-', 1)[1]}"
+                            new_path = turn_dir / new_name
+                            if new_path.exists():
+                                print(f"    ERROR: {new_name} exists, cannot rename {y.name}")
+                            else:
+                                rename_ops.append((y, new_path))
+                        continue
+
+                    # Non-canonical: check if ditto to a canonical with the SAME turn number
+                    if y_num in canonical_sha and sha256(y) == canonical_sha[y_num]:
+                        print(f"    DELETE {y.name} (ditto canonical for turn {y_num:03d})")
+                        if not dry_run:
+                            trash(str(y))
+                        deleted += 1
+                    else:
+                        print(f"    DIVERGED {y.name} (no matching canonical) — KEEPING")
+                        diverged += 1
+
+                for old_path, new_path in rename_ops:
+                    if not dry_run:
+                        old_path.rename(new_path)
+                    print(f"    RENAME {old_path.name} → {new_path.name}")
+
+                print(f"  {sid}: {kept} kept, {deleted} deleted, {diverged} diverged, {len(rename_ops)} renamed")
+
+
+            if __name__ == "__main__":
+                log_dir = Path(__file__).resolve().parent.parent / ".opencode" / "logs"
+                dry_run = "--dry-run" in sys.argv
+                sids = [a for a in sys.argv[1:] if not a.startswith("--")]
+                if not sids:
+                    print("Usage: fix-turn-numbering.py [--dry-run] <ses_id_1> [ses_id_2 ...]")
+                    sys.exit(1)
+                for sid in sids:
+                    print(f"--- {sid} ---")
+                    fix_session(sid, log_dir, dry_run=dry_run)
+          filePath: /Users/dk/lab-data/ai-suite/scripts/fix-turn-numbering.py
+        result: Wrote file successfully.
+    time: 7/27/2026, 6:01:26.877 AM GMT+5:30
+    response: 'The grouping is wrong — `16:15`/`16:51` batch files all map to the nearest `turn.complete` (at 16:50, turnIndex 38) and get compared against the wrong canonical. Those bug-batch files have the same TURN NUMBER as a morning file. I need a two-pass approach: match by turn number, not by time proximity.'
+    duration: 27.891s
+    duration_ms: 27891
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Wait, there's still a problem. The "16:15" and "16:51" batches of files ALL have TURN NUMBERS 001-038/039. But the canonicals only cover turn numbers 001-052 (the morning + afternoon sessions). For the "16:15" batch, those files have the SAME turn numbers as the morning batch (001-038) AND their content matches the morning batch's SHA.
+
+      So the logic should work: for each non-canonical file, check if its turn number exists in `canonical_sha` and if its SHA matches. If so, it's a duplicate.
+
+      But for `ses_062161f2`, the 16:10 batch files (001-005) map to turnIndex 5 because their timestamp (16:10:34) is closest to turn.complete at 16:11:34 (diff=60s). That diff is > 2s but < 2s threshold. Wait, 60s >> 2s. So these 5 files won't be canonicals. Their turn numbers (001-005) DO exist in canonical_sha (the morning batch 001-005). Let me check if their SHAs match.
+
+      Earlier I checked for ses_061fa3b1 that three copies of 001 all had the same SHA. Let me check ses_062161f2 similarly.
+
+      Actually, let me just run the dry-run and see.
+    thinking_duration: 3.287s
+    thinking_duration_ms: 3287
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/scripts/fix-turn-numbering.py --dry-run ses_061fa3b18ffeoKT0j7Njtxmq7G ses_062161f22ffeviKjkMIhovs6JV
+        result: |
+          --- ses_061fa3b18ffeoKT0j7Njtxmq7G ---
+              DELETE 001-2026-07-26T16-15-19-185Z.yaml (ditto canonical for turn 001)
+              DELETE 001-2026-07-26T16-51-29-129Z.yaml (ditto canonical for turn 001)
+              DELETE 002-2026-07-26T16-15-19-190Z.yaml (ditto canonical for turn 002)
+              DELETE 002-2026-07-26T16-51-29-135Z.yaml (ditto canonical for turn 002)
+              DELETE 003-2026-07-26T16-15-19-190Z.yaml (ditto canonical for turn 003)
+              DELETE 003-2026-07-26T16-51-29-135Z.yaml (ditto canonical for turn 003)
+              DELETE 004-2026-07-26T16-15-19-191Z.yaml (ditto canonical for turn 004)
+              DELETE 004-2026-07-26T16-51-29-136Z.yaml (ditto canonical for turn 004)
+              DELETE 005-2026-07-26T16-15-19-191Z.yaml (ditto canonical for turn 005)
+              DELETE 005-2026-07-26T16-51-29-136Z.yaml (ditto canonical for turn 005)
+              DELETE 006-2026-07-26T16-15-19-192Z.yaml (ditto canonical for turn 006)
+              DELETE 006-2026-07-26T16-51-29-137Z.yaml (ditto canonical for turn 006)
+              DELETE 007-2026-07-26T16-15-19-192Z.yaml (ditto canonical for turn 007)
+              DELETE 007-2026-07-26T16-51-29-137Z.yaml (ditto canonical for turn 007)
+              DELETE 008-2026-07-26T16-15-19-193Z.yaml (ditto canonical for turn 008)
+              DELETE 008-2026-07-26T16-51-29-138Z.yaml (ditto canonical for turn 008)
+              DELETE 009-2026-07-26T16-15-19-193Z.yaml (ditto canonical for turn 009)
+              DELETE 009-2026-07-26T16-51-29-138Z.yaml (ditto canonical for turn 009)
+              DELETE 010-2026-07-26T16-15-19-193Z.yaml (ditto canonical for turn 010)
+              DELETE 010-2026-07-26T16-51-29-138Z.yaml (ditto canonical for turn 010)
+              DELETE 011-2026-07-26T16-15-19-194Z.yaml (ditto canonical for turn 011)
+              DELETE 011-2026-07-26T16-51-29-138Z.yaml (ditto canonical for turn 011)
+              DELETE 012-2026-07-26T16-15-19-194Z.yaml (ditto canonical for turn 012)
+              DELETE 012-2026-07-26T16-51-29-139Z.yaml (ditto canonical for turn 012)
+              DELETE 013-2026-07-26T16-15-19-194Z.yaml (ditto canonical for turn 013)
+              DELETE 013-2026-07-26T16-51-29-139Z.yaml (ditto canonical for turn 013)
+              DELETE 014-2026-07-26T16-15-19-195Z.yaml (ditto canonical for turn 014)
+              DELETE 014-2026-07-26T16-51-29-139Z.yaml (ditto canonical for turn 014)
+              DELETE 015-2026-07-26T16-15-19-196Z.yaml (ditto canonical for turn 015)
+              DELETE 015-2026-07-26T16-51-29-140Z.yaml (ditto canonical for turn 015)
+              DELETE 016-2026-07-26T16-15-19-196Z.yaml (ditto canonical for turn 016)
+              DELETE 016-2026-07-26T16-51-29-140Z.yaml (ditto canonical for turn 016)
+              DELETE 017-2026-07-26T16-15-19-197Z.yaml (ditto canonical for turn 017)
+              DELETE 017-2026-07-26T16-51-29-141Z.yaml (ditto canonical for turn 017)
+              DELETE 018-2026-07-26T16-15-19-197Z.yaml (ditto canonical for turn 018)
+              DELETE 018-2026-07-26T16-51-29-141Z.yaml (ditto canonical for turn 018)
+              DELETE 019-2026-07-26T16-15-19-198Z.yaml (ditto canonical for turn 019)
+              DELETE 019-2026-07-26T16-51-29-141Z.yaml (ditto canonical for turn 019)
+              DELETE 020-2026-07-26T16-15-19-198Z.yaml (ditto canonical for turn 020)
+              DELETE 020-2026-07-26T16-51-29-142Z.yaml (ditto canonical for turn 020)
+              DELETE 021-2026-07-26T16-15-19-198Z.yaml (ditto canonical for turn 021)
+              DELETE 021-2026-07-26T16-51-29-142Z.yaml (ditto canonical for turn 021)
+              DELETE 022-2026-07-26T16-15-19-199Z.yaml (ditto canonical for turn 022)
+              DELETE 022-2026-07-26T16-51-29-142Z.yaml (ditto canonical for turn 022)
+              DELETE 023-2026-07-26T16-15-19-199Z.yaml (ditto canonical for turn 023)
+              DELETE 023-2026-07-26T16-51-29-143Z.yaml (ditto canonical for turn 023)
+              DELETE 024-2026-07-26T16-15-19-200Z.yaml (ditto canonical for turn 024)
+              DELETE 024-2026-07-26T16-51-29-143Z.yaml (ditto canonical for turn 024)
+              DELETE 025-2026-07-26T16-15-19-200Z.yaml (ditto canonical for turn 025)
+              DELETE 025-2026-07-26T16-51-29-143Z.yaml (ditto canonical for turn 025)
+              DELETE 026-2026-07-26T16-15-19-200Z.yaml (ditto canonical for turn 026)
+              DELETE 026-2026-07-26T16-51-29-144Z.yaml (ditto canonical for turn 026)
+              DELETE 027-2026-07-26T16-15-19-201Z.yaml (ditto canonical for turn 027)
+              DELETE 027-2026-07-26T16-51-29-144Z.yaml (ditto canonical for turn 027)
+              DELETE 028-2026-07-26T16-15-19-201Z.yaml (ditto canonical for turn 028)
+              DELETE 028-2026-07-26T16-51-29-145Z.yaml (ditto canonical for turn 028)
+              DELETE 029-2026-07-26T16-15-19-201Z.yaml (ditto canonical for turn 029)
+              DELETE 029-2026-07-26T16-51-29-145Z.yaml (ditto canonical for turn 029)
+              DELETE 030-2026-07-26T16-15-19-201Z.yaml (ditto canonical for turn 030)
+              DELETE 030-2026-07-26T16-51-29-145Z.yaml (ditto canonical for turn 030)
+              DELETE 031-2026-07-26T16-15-19-202Z.yaml (ditto canonical for turn 031)
+              DELETE 031-2026-07-26T16-51-29-145Z.yaml (ditto canonical for turn 031)
+              DELETE 032-2026-07-26T16-15-19-202Z.yaml (ditto canonical for turn 032)
+              DELETE 032-2026-07-26T16-51-29-146Z.yaml (ditto canonical for turn 032)
+              DELETE 033-2026-07-26T16-15-19-203Z.yaml (ditto canonical for turn 033)
+              DELETE 033-2026-07-26T16-51-29-146Z.yaml (ditto canonical for turn 033)
+              DELETE 034-2026-07-26T16-15-19-203Z.yaml (ditto canonical for turn 034)
+              DELETE 034-2026-07-26T16-51-29-147Z.yaml (ditto canonical for turn 034)
+              DELETE 035-2026-07-26T16-15-19-204Z.yaml (ditto canonical for turn 035)
+              DELETE 035-2026-07-26T16-51-29-147Z.yaml (ditto canonical for turn 035)
+              DELETE 036-2026-07-26T16-15-19-204Z.yaml (ditto canonical for turn 036)
+              DELETE 036-2026-07-26T16-51-29-148Z.yaml (ditto canonical for turn 036)
+              DELETE 037-2026-07-26T16-15-19-204Z.yaml (ditto canonical for turn 037)
+              DELETE 037-2026-07-26T16-51-29-148Z.yaml (ditto canonical for turn 037)
+              DELETE 038-2026-07-26T16-15-19-204Z.yaml (ditto canonical for turn 038)
+              DELETE 038-2026-07-26T16-51-29-148Z.yaml (ditto canonical for turn 038)
+              DELETE 039-2026-07-26T16-51-29-148Z.yaml (ditto canonical for turn 039)
+            ses_061fa3b18ffeoKT0j7Njtxmq7G: 52 kept, 77 deleted, 0 diverged, 0 renamed
+          --- ses_062161f22ffeviKjkMIhovs6JV ---
+              DELETE 001-2026-07-26T16-10-34-749Z.yaml (ditto canonical for turn 001)
+              DELETE 002-2026-07-26T16-10-34-755Z.yaml (ditto canonical for turn 002)
+              DELETE 003-2026-07-26T16-10-34-755Z.yaml (ditto canonical for turn 003)
+              DELETE 004-2026-07-26T16-10-34-756Z.yaml (ditto canonical for turn 004)
+              DELETE 005-2026-07-26T16-10-34-757Z.yaml (ditto canonical for turn 005)
+            ses_062161f22ffeviKjkMIhovs6JV: 50 kept, 5 deleted, 0 diverged, 0 renamed
+    time: 7/27/2026, 6:01:56.774 AM GMT+5:30
+    duration: 8.953s
+    duration_ms: 8953
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now it's correct:
+      - ses_061fa3b1: 52 kept, 77 deleted (all verified ditto), 0 diverged
+      - ses_062161f2: 50 kept, 5 deleted (all verified ditto), 0 diverged
+
+      All deletions are verified as byte-identical to the canonical file with the same turn number. No renames needed (turn numbers already correct).
+
+      Let me show this to the user and ask if they want to proceed with the actual cleanup.
+    thinking_duration: 972ms
+    thinking_duration_ms: 972
+    time: 7/27/2026, 6:02:07.875 AM GMT+5:30
+    response: |-
+      Now correct:
+
+      - **ses_061fa3b1**: 52 kept, 77 deleted (all SHA-matched to canonical of same turn number), 0 diverged
+      - **ses_062161f2**: 50 kept, 5 deleted (ditto), 0 diverged
+
+      Every DELETE is verified byte-identical to the canonical copy. Proceed with actual cleanup or run `--dry-run` on additional sessions?
+    duration: 4.257s
+    duration_ms: 4257
+

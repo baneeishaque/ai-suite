@@ -1,0 +1,58 @@
+---
+user:
+  text: can you give me sample pair?
+  time: 7/27/2026, 5:58:06.523 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants to see a concrete example of the duplicate files. Let me show one matched file and its duplicate side by side, and also show the hash comparison.
+    thinking_duration: 620ms
+    thinking_duration_ms: 620
+    tool_calls:
+      - tool: bash
+        args:
+          command: |
+            python3 -c "
+            import hashlib
+            from pathlib import Path
+
+            d = Path('/Users/dk/lab-data/ai-suite/.opencode/logs/ses_061fa3b18ffeoKT0j7Njtxmq7G')
+
+            # Keep: 001-2026-07-26T10-44-30-382Z.yaml  (matches turn.complete)
+            # Dupe: 001-2026-07-26T16-15-19-185Z.yaml  (bug rewrite)
+            # Dupe: 001-2026-07-26T16-51-29-129Z.yaml  (bug rewrite)
+
+            keep = d / '001-2026-07-26T10-44-30-382Z.yaml'
+            dupe1 = d / '001-2026-07-26T16-15-19-185Z.yaml'
+            dupe2 = d / '001-2026-07-26T16-51-29-129Z.yaml'
+
+            for f in [keep, dupe1, dupe2]:
+                sha = hashlib.sha256(f.read_bytes()).hexdigest()[:16]
+                sz = f.stat().st_size
+                print(f'{sha}  {sz:>6}B  {f.name}')
+            "
+        result: |
+          10eb5e1f5bdd1166   45877B  001-2026-07-26T10-44-30-382Z.yaml
+          10eb5e1f5bdd1166   45877B  001-2026-07-26T16-15-19-185Z.yaml
+          10eb5e1f5bdd1166   45877B  001-2026-07-26T16-51-29-129Z.yaml
+    time: 7/27/2026, 5:58:07.569 AM GMT+5:30
+    duration: 7.642s
+    duration_ms: 7642
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/27/2026, 5:58:17.124 AM GMT+5:30
+    response: |-
+      All three files:
+      - Same SHA-256: `10eb5e1f5bdd1166`
+      - Same size: 45,877 bytes
+      - Same turn number `001-` in name
+      - Different timestamps: `10-44-30-382Z` (original), `16-15-19-185Z`, `16-51-29-129Z` (bug rewrites)
+
+      The bug re-wrote the identical YAML at different clock times without incrementing the turn counter. Only the file with the timestamp matching the `turn.complete` event is canonical.
+    duration: 3.514s
+    duration_ms: 3514
+

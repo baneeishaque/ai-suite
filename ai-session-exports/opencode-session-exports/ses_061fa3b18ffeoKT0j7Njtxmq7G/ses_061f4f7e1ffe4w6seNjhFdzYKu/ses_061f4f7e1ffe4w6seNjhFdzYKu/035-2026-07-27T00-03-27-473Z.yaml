@@ -1,0 +1,190 @@
+---
+user:
+  text: use artifact naming skill for naming scratch files too
+  time: 7/27/2026, 5:32:54.729 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants me to apply the planning-artifact-naming convention to the scratch output files too. Looking at the formula:
+
+      ```
+      docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md
+      ```
+
+      But these are scratch files, not docs. And they're `.out`/`.err` not `.md`. Let me adapt the naming pattern:
+
+      - date: 2026-07-27
+      - session-id: I need to figure out the current session ID
+      - session-name-slug: something descriptive like "session-backup"
+      - artifact-type: "dry-run"
+
+      I need to get the current session ID first. Actually, looking at the AGENTS.md, there's a skill for that: `opencode-current-session-id`. But I can also just get it from the session backup output since `ses_061f4f7e1ffe4w6seNjhFdzYKu` was identified as the current session in the summary.
+
+      Let me look at the session ID from the summary - it was `ses_061f4f7e1ffe4w6seNjhFdzYKu`. But the naming skill says to omit the `ses_` prefix, so it would be `061f4f7e1ffe4w6seNjhFdzYKu`.
+
+      Actually, let me just use a reasonable name. The user wants:
+      - date prefix
+      - descriptive slug
+      - artifact-type
+
+      For scratch files, I'll use: `2026-07-27_session-backup-dry-run.out` and `.err`
+
+      Or following the formula more closely:
+      `2026-07-27_061f4f7e1ffe4w6seNjhFdzYKu_session-backup_dry-run.out`
+
+      Wait, let me look up the current session ID using the skill mentioned in the list.
+    thinking_duration: 3.449s
+    thinking_duration_ms: 3449
+    tool_calls:
+      - tool: skill
+        args:
+          name: opencode-current-session-id
+        result: |-
+          <skill_content name="opencode-current-session-id">
+          # Skill: opencode-current-session-id
+
+          # OpenCode Current Session ID (v1)
+
+          ## Composition Rationale
+
+          This skill is a **composer**: it does NOT re-implement glob-sorting or YAML parsing. It sequences two base skills:
+
+          1. [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — finds the newest `.yaml` file in `.opencode/logs/`
+          2. [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — extracts `session.id` and `title` from the YAML header
+
+          The composer's value-add: orchestrating the pipeline, resolving relative script paths, and cross-verifying the state file exists.
+
+          ## When to Use
+
+          - You need to know the current opencode session ID programmatically
+          - You are composing a larger workflow that needs the session ID for traceability
+
+          ## Environment & Dependencies
+
+          | Requirement | Version | Notes |
+          |-------------|---------|-------|
+          | Python | 3.12+ | Stdlib only |
+          | PyYAML | any | Required by yaml-field-extract (PEP 723 inline metadata) |
+          | `.opencode/logs/` | — | Must exist (created by opencode logger plugin) |
+
+          ## CLI Contract
+
+          | Argument | Required | Description |
+          |----------|----------|-------------|
+          | _(none)_ | — | Runs the full pipeline; no CLI args needed |
+
+          **Output:**
+          ```
+          Session ID: ses_XXXXXXXXXXXXX
+          Title: My Session Title
+          State file: exists
+          ```
+
+          **Exit codes:**
+          - `0` — session ID found, title and state file verified
+          - `1` — any pipeline step failed (missing log, missing key, etc.)
+
+          ## Protocol
+
+          1. Run `python3 scripts/find-current-session.py`
+          2. Read stdout for session ID, title, and state file presence.
+
+          ## Edge Cases
+
+          - **No YAML logs exist**: exits 1 with "could not find newest YAML log"
+          - **YAML header missing session.id**: exits 1
+          - **No state file**: still succeeds (reports "missing")
+          - **Symlinked log dir**: follows symlinks via `Path.rglob`
+
+          ## Prohibited Actions
+
+          - Do NOT re-derive the sort or YAML extraction logic inline — always delegate to the base skill scripts.
+          - Do NOT hardcode log directory paths — use `.opencode/logs/` relative to repo root.
+
+          ## Script Reference
+
+          `find-current-session.py`:
+          1. Resolves base script paths relative to its own location
+          2. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
+          3. Parses JSON Lines output to get the newest file path
+          4. Runs `extract-field.py` twice: once for `session.id`, once for `title`
+          5. Checks for `.opencode/logs/<sid>.state.json`
+          6. Prints results
+
+          ## Composition by Lower-Level Skills
+
+          | Primitive | Composition Mechanism |
+          |-----------|----------------------|
+          | `file-glob-sort-by-mtime` | `sort-by-mtime.py --dir .opencode/logs --glob *.yaml --limit 1` → newest path |
+          | `yaml-field-extract` | `extract-field.py --file <path> --key session.id` → session ID |
+
+          ## Related Skills
+
+          - [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — base for finding the newest log file
+          - [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — base for extracting YAML header fields
+
+          Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id
+          Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.
+          Note: file list is sampled.
+
+          <skill_files>
+          <file>/Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/AGENTS.md</file>
+          <file>/Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py</file>
+          </skill_files>
+          </skill_content>
+    time: 7/27/2026, 5:32:55.718 AM GMT+5:30
+    duration: 6.634s
+    duration_ms: 6634
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me run the script to get the current session ID and title, then use that with the planning-artifact-naming convention for the scratch output file.
+    thinking_duration: 496ms
+    thinking_duration_ms: 496
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py
+        result: |
+          Session ID: ses_061f4f7e1ffe4w6seNjhFdzYKu
+          State file: missing
+    time: 7/27/2026, 5:33:04.078 AM GMT+5:30
+    duration: 3.508s
+    duration_ms: 3508
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Hmm, no title was printed. Let me check if the script prints it on a separate line. Let me look at the output more carefully.
+
+      "Session ID: ses_061f4f7e1ffe4w6seNjhFdzYKu"
+      "State file: missing"
+
+      No title line — maybe the title extraction failed, or it just doesn't have a title. That's fine. From the earlier summary, this session is a sub-agent. Let me work with what I have.
+
+      Session ID (without `ses_`): `061f4f7e1ffe4w6seNjhFdzYKu`
+      For the name slug, I'll use "session-backup" since that's what we're working on.
+      Artifact type: "dry-run"
+
+      Following the formula:
+      ```
+      2026-07-27_061f4f7e1ffe4w6seNjhFdzYKu_session-backup_dry-run.out
+      ```
+
+      Now let me run the capture.
+    thinking_duration: 2.056s
+    thinking_duration_ms: 2056
+    tool_calls:
+      - tool: bash
+        args:
+          command: 'python3 /Users/dk/lab-data/ai-suite/scripts/session-backup.py --dry-run > /Users/dk/lab-data/ai-suite/scratch/2026-07-27_061f4f7e1ffe4w6seNjhFdzYKu_session-backup_dry-run.out 2> /Users/dk/lab-data/ai-suite/scratch/2026-07-27_061f4f7e1ffe4w6seNjhFdzYKu_session-backup_dry-run.err && echo "Exit: $?"'
+        result: The user rejected permission to use this specific tool call.
+    time: 7/27/2026, 5:33:09.498 AM GMT+5:30
+    duration: 17.721s
+    duration_ms: 17721
+

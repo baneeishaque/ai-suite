@@ -1,0 +1,25 @@
+---
+user:
+  text: algorithm?
+  time: 7/27/2026, 6:00:05.138 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants me to explain the algorithm before writing the script. Let me explain the approach clearly.
+    thinking_duration: 509ms
+    thinking_duration_ms: 509
+    time: 7/27/2026, 6:00:06.150 AM GMT+5:30
+    response: |-
+      1. Parse all `turn.complete` events from JSONL → `[(turnIndex, timestamp)]` — this is the ground truth for correct turn order
+      2. Sort both YAML files and events by timestamp
+      3. For each YAML file, find the closest `turn.complete` event by timestamp difference
+      4. If diff < 2 seconds → keep (it's the canonical copy); rename to `{turnIndex+1:03d}-{timestamp}.yaml` if the number doesn't match
+      5. If diff >= 2 seconds → duplicate from the bug → trash it
+      6. `000-header-*.yaml` is always kept (not a turn file)
+
+      The 2-second threshold works because every canonical YAML was written within 1ms of its `turn.complete` event, while bug-duplicated files are seconds/hours apart.
+    duration: 6.373s
+    duration_ms: 6373
+

@@ -72,8 +72,7 @@ python3 .agents/skills/mysql-capability-probe-pymysql/scripts/probe-runner.py \
 
 The runner:
 
-1. Resolves mise global python at `~/.local/share/mise/installs/python/<latest>/bin/python`
-   (direct path — no `mise exec`, no cascading auto-install of Flutter / PHP / etc.).
+1. Resolves python via `python3` on PATH (via `mise` if workspace-configured).
 2. Idempotently installs `pymysql` via that python's `pip --user` if missing.
 3. Ensures `<repo-root>/scratch/` exists and is gitignored
    (delegates to [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)).

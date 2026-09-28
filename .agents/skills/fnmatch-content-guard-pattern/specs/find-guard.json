@@ -1,0 +1,11 @@
+[
+  {"command": "find . -name '*.py'", "expect": "allow"},
+  {"command": "find /tmp -type f", "expect": "allow"},
+  {"command": "find . -name '*.log' -mtime +7", "expect": "allow"},
+  {"command": "find . -type d -empty", "expect": "allow"},
+  {"command": "find . -delete", "expect": "ask"},
+  {"command": "find /tmp -name '*.tmp' -delete", "expect": "ask"},
+  {"command": "find . -exec rm {} +", "expect": "ask"},
+  {"command": "find . -type f -exec chmod 644 {} \\;", "expect": "ask"},
+  {"command": "find . -execdir echo {} \\;", "expect": "ask"}
+]

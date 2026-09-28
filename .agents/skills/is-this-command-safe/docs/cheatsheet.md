@@ -410,6 +410,17 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   `sed -i`, `git push`, there is no flag combination that can modify files or
   system state.
 
+### `host`
+
+- **Verdict**: ✅ SAFE — DNS lookup utility. Resolves domain names to IP
+  addresses and vice versa. Read-only network query tool. No filesystem mutation.
+- **Common usage**:
+  - `host <domain>` — lookup A record.
+  - `host -t MX <domain>` — lookup mail exchange records (safe).
+  - `host <ip>` — reverse DNS lookup (safe).
+  - `host -a <domain>` — lookup all record types (safe).
+- **Contrast**: Like `dig`, `host` has no write or system-mutation capability.
+
 ***
 
 ## API & DevOps CLIs

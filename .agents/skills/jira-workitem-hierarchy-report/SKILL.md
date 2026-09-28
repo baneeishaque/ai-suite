@@ -80,6 +80,12 @@ See [`jira-acli-operations`](../jira-acli-operations/SKILL.md) §2.1 for full au
 python3 scripts/jira-hierarchy-report.py --jql '<YOUR_JQL>' --output <path>
 ```
 
+> **Epic children JQL:** use `parent = <epic-key>` (e.g. `parent = AES-415`).
+> The `"Epic Link"` custom field does NOT exist on this site — `acli` JQL
+> search fails with *"field 'epic link' does not exist"*. The script passes
+> `--limit 1000` to the search so epics with many children are not silently
+> truncated (acli defaults to 30 results).
+
 The script will:
 
 1. **Search** — run `acli jira workitem search --jql "<jql>" --json`

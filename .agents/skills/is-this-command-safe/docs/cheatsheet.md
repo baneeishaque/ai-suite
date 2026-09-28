@@ -359,6 +359,17 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Verdict**: ✅ SAFE — Shows commit objects, diffs, tree entries, blobs. Read-only.
 - **Auto-approve form (in safe-chain entry [37])**: `show [0-9a-f]{6,40}( --stat| --name-only| --name-status)*( -- <path>...)?` — pins the first arg to a hex SHA so `git show -- /etc/passwd` (no SHA) is rejected.
 
+### `git submodule status`
+
+- **Verdict**: ✅ SAFE — Prints the SHA-1 recorded in the superproject index for each initialized
+  submodule plus a status column (`+` dirty, `-` SHA differ, leading space clean). Read-only
+  inspection of recorded submodule tips; does NOT fetch, checkout, or mutate any submodule
+  working tree.
+- **Auto-approve form** (opencode/kilo/Gemini): `git( -C [^;&|<>$`()]+)?( --no-pager)? submodule status( --(recursive|cached|files))?( [^;&|<>$`()]+)?$`
+- **Contrast**: `git submodule add`, `git submodule update`, `git submodule init`,
+  `git submodule deinit`, `git submodule foreach` (delegates to child commands) are ❌ MUTATES —
+  NOT covered by this row; classify the child command.
+
 ### `git stash list`
 
 - **Verdict**: ✅ SAFE — Enumerates the stash stack (`stash@{N}` refs with subjects). Read-only.

@@ -473,6 +473,22 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Auto-approve pattern**: `acli jira workitem comment list *`.
 - **Suggested regex**: `/^acli jira workitem comment list( .*)?$/`
 
+### `gh auth status`
+
+- **Verdict**: ✅ SAFE (bare `gh auth status` only) — GitHub CLI.
+  `gh auth status` prints login state, active account, and token scopes.
+  Read-only query; no local file or remote GitHub mutation.
+- **EXCLUDE**: `-t` / `--show-token` — these print the OAuth token to stdout
+  (credential leak into logs/transcripts).
+- **MUTATES**: every other `gh` subcommand family — `repo create`, `issue create`,
+  `pr create/merge`, `release create`, `api` (write methods) — these change
+  remote GitHub state.
+- **Auto-approve pattern**: exact-scoped `gh auth status *` only; never a bare
+  `gh *` catch-all. The `*-t*` guard must sit AFTER the allow entry in
+  last-match-wins systems (opencode, kilo) and in the `ask` array for
+  first-match-wins systems (Claude Code: deny → ask → allow).
+- **Suggested regex**: `/^gh auth status(?!.*(--show-token|-t))( .*)?$/`
+
 ***
 
 ## Container Inspection

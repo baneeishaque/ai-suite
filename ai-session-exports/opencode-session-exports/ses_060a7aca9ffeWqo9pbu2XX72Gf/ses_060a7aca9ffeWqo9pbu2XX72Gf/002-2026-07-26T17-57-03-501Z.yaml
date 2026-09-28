@@ -1,0 +1,651 @@
+---
+user:
+  text: |-
+    it starts with opencode-provider.json. then it's yaml, then it's active, then it's free, then it's free knowledge sorted (the sorted is extra - not needed for us).
+
+    now, i need the same files for zai provider
+  time: 7/26/2026, 11:24:22.041 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants:
+      1. From the opencode-provider.json → then YAML → then active → then free → then free-knowledge-sorted (and sorted is extra/not needed)
+      2. Now they want the same file set for the zai provider
+
+      So they need:
+      - zai-provider.json (already exists)
+      - zai-provider.yaml (need to create - convert from JSON)
+      - zai-provider-active.yaml (need to create - active non-deprecated models)
+      - zai-provider-free.yaml (need to create - free/cost=0 models)
+      - zai-provider-free-knowledge-sorted.yaml (need to create - free models sorted by knowledge cutoff)
+
+      Let me understand the pipeline:
+      1. `opencode-provider.json` → canonical source
+      2. `opencode-provider.yaml` = JSON converted to YAML
+      3. `opencode-provider-active.yaml` = subset: filter out models with `status: deprecated`
+      4. `opencode-provider-free.yaml` = subset: models where all costs are 0
+      5. `opencode-provider-free-knowledge-sorted.yaml` = free models sorted by knowledge cutoff descending
+
+      Let me look at the existing zai-provider.json. I already read it. Let me analyze:
+
+      **zai-provider.json models:**
+
+      1. glm-4.6v - cost: input 0.3, output 0.9 → NOT free
+      2. glm-5 - cost: input 1, output 3.2 → NOT free
+      3. glm-4.5-air - cost: input 0.2, output 1.1 → NOT free
+      4. glm-5.1 - cost: input 1.4, output 4.4 → NOT free
+      5. glm-4.7-flash - cost: input 0, output 0 → FREE (no `status: deprecated`)
+      6. glm-5.2 - cost: input 1.4, output 4.4 → NOT free
+      7. glm-4.7-flashx - cost: input 0.07, output 0.4 → NOT free
+      8. glm-4.6 - cost: input 0.6, output 2.2 → NOT free
+      9. glm-4.5 - cost: input 0.6, output 2.2 → NOT free
+      10. glm-4.5v - cost: input 0.6, output 1.8 → NOT free
+      11. glm-4.7 - cost: input 0.6, output 2.2 → NOT free
+      12. glm-5-turbo - cost: input 1.2, output 4 → NOT free
+      13. glm-5v-turbo - cost: input 1.2, output 4 → NOT free
+      14. glm-4.5-flash - cost: input 0, output 0 → FREE
+
+      Wait, let me look more carefully. None of these have a `status: deprecated` field. So "active" = all of them.
+
+      For "free" models (cost = 0):
+      - glm-4.7-flash: input 0, output 0, cache_read 0, cache_write 0
+      - glm-4.5-flash: input 0, output 0, cache_read 0, cache_write 0
+
+      Neither has a `knowledge` field, so for free-knowledge-sorted, there's no knowledge field to sort by. Let me check again...
+
+      Looking at glm-4.7-flash - it has `knowledge: "2025-04"` - wait, let me re-read...
+
+      Actually looking at the zai-provider.json more carefully:
+      - glm-4.6v: knowledge "2025-04" 
+      - glm-5: no knowledge field
+      - glm-4.5-air: knowledge "2025-04"
+      - glm-5.1: no knowledge field
+      - glm-4.7-flash: knowledge "2025-04" 
+      - glm-5.2: no knowledge field
+      - glm-4.7-flashx: knowledge "2025-04"
+      - glm-4.6: knowledge "2025-04"
+      - glm-4.5: knowledge "2025-04"
+      - glm-4.5v: knowledge "2025-04"
+      - glm-4.7: knowledge "2025-04"
+      - glm-5-turbo: no knowledge field
+      - glm-5v-turbo: no knowledge field
+      - glm-4.5-flash: knowledge "2025-04"
+
+      So for free models:
+      - glm-4.7-flash (knowledge "2025-04")
+      - glm-4.5-flash (knowledge "2025-04")
+
+      If both have the same knowledge date, sorting doesn't matter much, but I should still produce the file.
+
+      Now let me think about how to create these files. I should write a Python script to:
+      1. Read the JSON
+      2. Convert to YAML
+      3. Filter for active (no deprecated status)
+      4. Filter for free (all costs = 0)
+      5. Sort free by knowledge descending
+
+      Actually, let me think about this more carefully. The opencode-provider files are generated from the JSON in some order. Let me look at the structure more carefully.
+
+      Looking at the opencode-provider.json - it has a top-level with `id`, `env`, `npm`, `api`, `name`, `doc`, `models`.
+
+      The YAML versions have the same top-level fields but with models as a map.
+
+      For the zai-provider.json, the structure is different - it has `{"zai": { ... }}` with the actual provider info nested under "zai" key.
+
+      But looking at the opencode-provider YAMLs, they flatten the structure to just have `id`, `api`, `env`, etc at the top level with `models` as a map.
+
+      For zai, I need to decide the structure. Looking at the JSON:
+      ```json
+      {
+        "zai": {
+          "id": "zai",
+          "env": ["ZHIPU_API_KEY"],
+          "npm": "@ai-sdk/openai-compatible",
+          "api": "https://api.z.ai/api/paas/v4",
+          "name": "Z.AI",
+          "doc": "https://docs.z.ai/guides/overview/pricing",
+          "models": { ... }
+        }
+      }
+      ```
+
+      So the wrapped "zai" key is just a container. The actual structure is the same as opencode-provider.json's top-level. So I should unwrap it.
+
+      Let me write a Python script to do this transformation. I'll need to:
+
+      1. Read zai-provider.json
+      2. Extract the inner `zai` object
+      3. Generate YAML versions for each variant
+
+      Actually, for robustness, let me write a comprehensive Python script.
+
+      Let me think about the approach. I should use Python to generate the files using heredoc.
+
+      Let me also check the structure of the opencode-provider YAML files to match the exact format (key ordering, etc).
+
+      Looking at opencode-provider.yaml format:
+      - Top-level keys in order: api, doc, env, id, models
+      - Under each model: alphabetical-ish ordering
+
+      I think the simplest approach is to write a Python script that reads the JSON and generates the YAML outputs.
+
+      Let me check if `yaml` is available or if I should use a different approach. `python3 -c "import yaml"` will tell me. Actually, I can use `ruamel.yaml` or just write it manually to match the style. But the simplest is to use `yaml` package.
+
+      Actually, let me just write a Python script using `json` and `yaml` (PyYAML). If yaml isn't available, I'll install it or use a different approach.
+
+      Let me plan:
+      1. Read zai-provider.json
+      2. Extract the inner data
+      3. Generate yaml: use yaml.dump with specific formatting
+      4. Generate active: remove deprecated models
+      5. Generate free: filter for zero-cost models
+      6. Generate free-knowledge-sorted: sort free by knowledge descending
+
+      Let me check the python yaml availability first.
+
+      Actually, looking at the opencode-provider.yaml format more carefully, the key ordering seems to follow a specific pattern. Let me use ruamel.yaml to preserve key ordering, or I can write the output myself.
+
+      Actually, the simplest approach is to write a Python script. Let me first check what's available.
+
+      Wait, let me think about this differently. The user wants the same file set. Let me:
+      1. Convert zai-provider.json to zai-provider.yaml (exact YAML equivalent)
+      2. Create zai-provider-active.yaml (only non-deprecated models)
+      3. Create zai-provider-free.yaml (only zero-cost models)
+      4. Create zai-provider-free-knowledge-sorted.yaml (free sorted by knowledge)
+
+      Let me write a comprehensive script.
+
+      Actually wait - looking at the opencode-provider.yaml, the top-level has these keys in order: `api`, `doc`, `env`, `id`, `models`. The JSON has them in order: `id`, `env`, `npm`, `api`, `name`, `doc`, `models`. So the YAML reorders them.
+
+      But I don't think the exact key order matters too much. Let me just focus on getting the content right.
+
+      I'll use Python to write this. Let me first check Python and yaml availability.
+
+      Let me write a Python script that converts the JSON to YAML using PyYAML (which preserves dict ordering in Python 3.7+).
+    thinking_duration: 14.813s
+    thinking_duration_ms: 14813
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 -c "import yaml; print('yaml available')" 2>&1
+        result: |
+          yaml available
+    time: 7/26/2026, 11:24:22.269 PM GMT+5:30
+    duration: 79.337s
+    duration_ms: 79337
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Good, yaml is available. Now let me create a Python script that will generate all the zai-provider files. Let me plan carefully:
+
+      1. **zai-provider.yaml** - Full JSON to YAML conversion
+      2. **zai-provider-active.yaml** - Models without `status: deprecated`
+      3. **zai-provider-free.yaml** - Models where all costs are 0
+      4. **zai-provider-free-knowledge-sorted.yaml** - Free models sorted by knowledge descending
+
+      Let me write a Python script that handles all of these.
+
+      Looking at the zai-provider.json structure:
+      ```json
+      {
+        "zai": {
+          "id": "zai",
+          "env": ["ZHIPU_API_KEY"],
+          "npm": "@ai-sdk/openai-compatible",
+          "api": "https://api.z.ai/api/paas/v4",
+          "name": "Z.AI",
+          "doc": "https://docs.z.ai/guides/overview/pricing",
+          "models": { ... }
+        }
+      }
+      ```
+
+      For the YAML output, I should match the style of the opencode-provider.yaml. Let me look at the exact format:
+
+      ```
+      api: https://opencode.ai/zen/v1
+      doc: https://opencode.ai/docs/zen
+      env:
+      - OPENCODE_API_KEY
+      id: opencode
+      models:
+        big-pickle:
+          attachment: false
+          cost:
+            cache_read: 0
+            ...
+      ```
+
+      So I need to unwrap from the "zai" wrapper. The top-level keys should be id, api, doc, env, npm, name, models.
+
+      Let me write the script.
+    thinking_duration: 2.479s
+    thinking_duration_ms: 2479
+    tool_calls:
+      - tool: bash
+        args:
+          command: |
+            python3 << 'PYEOF'
+            import json, yaml, os
+
+            src = "/Users/dk/lab-data/ai-suite/opencode-models/zai-provider.json"
+            outdir = "/Users/dk/lab-data/ai-suite/opencode-models"
+
+            with open(src) as f:
+                data = json.load(f)
+
+            # Unwrap from the "zai" wrapper key
+            provider = data["zai"]
+            models = provider["models"]
+
+            # Top-level keys to include (matching opencode-provider.yaml style)
+            top_keys = ["api", "doc", "env", "id", "name", "npm", "models"]
+
+            def build_doc(provider_base, model_dict):
+                """Build an OrderedDict with the same top-level key order as opencode-provider.yaml."""
+                doc = {}
+                for k in top_keys:
+                    if k == "models":
+                        doc["models"] = model_dict
+                    elif k in provider_base:
+                        doc[k] = provider_base[k]
+                return doc
+
+            def is_free(m):
+                c = m.get("cost", {})
+                return all(v == 0 for v in c.values())
+
+            def write_yaml(path, doc):
+                with open(path, "w") as f:
+                    yaml.dump(doc, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
+                print(f"wrote {path}")
+
+            # 1. Full YAML (all models, original key order within each model)
+            write_yaml(os.path.join(outdir, "zai-provider.yaml"), build_doc(provider, dict(models)))
+
+            # 2. Active: remove deprecated
+            active_models = {k: v for k, v in models.items() if v.get("status") != "deprecated"}
+            write_yaml(os.path.join(outdir, "zai-provider-active.yaml"), build_doc(provider, active_models))
+
+            # 3. Free: all costs zero
+            free_models = {k: v for k, v in models.items() if is_free(v)}
+            write_yaml(os.path.join(outdir, "zai-provider-free.yaml"), build_doc(provider, free_models))
+
+            # 4. Free knowledge sorted: free models sorted by knowledge descending (models without knowledge go last)
+            def knowledge_sort_key(item):
+                m = item[1]
+                k = m.get("knowledge")
+                if k is None:
+                    return (1, "")
+                return (0, k if isinstance(k, str) else str(k))
+
+            sorted_free = dict(sorted(free_models.items(), key=knowledge_sort_key, reverse=True))
+            write_yaml(os.path.join(outdir, "zai-provider-free-knowledge-sorted.yaml"), build_doc(provider, sorted_free))
+
+            print("done")
+            PYEOF
+        result: |
+          wrote /Users/dk/lab-data/ai-suite/opencode-models/zai-provider.yaml
+          wrote /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-active.yaml
+          wrote /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-free.yaml
+          wrote /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-free-knowledge-sorted.yaml
+          done
+    time: 7/26/2026, 11:25:41.713 PM GMT+5:30
+    duration: 62.205s
+    duration_ms: 62205
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The files were created. Let me verify them quickly to make sure they look correct.
+    thinking_duration: 325ms
+    thinking_duration_ms: 325
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-active.yaml
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/opencode-models/zai-provider.yaml</path>
+          <type>file</type>
+          <content>
+          1: api: https://api.z.ai/api/paas/v4
+          2: doc: https://docs.z.ai/guides/overview/pricing
+          3: env:
+          4: - ZHIPU_API_KEY
+          5: id: zai
+          6: name: Z.AI
+          7: npm: '@ai-sdk/openai-compatible'
+          8: models:
+          9:   glm-4.6v:
+          10:     id: glm-4.6v
+          11:     name: GLM-4.6V
+          12:     description: GLM vision model for visual reasoning, documents, and multimodal
+          13:       agents
+          14:     family: glm
+          15:     attachment: true
+          16:     reasoning: true
+          17:     reasoning_options:
+          18:     - type: toggle
+          19:     tool_call: true
+          20:     temperature: true
+          21:     knowledge: 2025-04
+          22:     release_date: '2025-12-08'
+          23:     last_updated: '2025-12-08'
+          24:     modalities:
+          25:       input:
+          26:       - text
+          27:       - image
+          28:       - video
+          29:       output:
+          30:       - text
+          31:     open_weights: true
+          32:     limit:
+          33:       context: 128000
+          34:       output: 32768
+          35:     cost:
+          36:       input: 0.3
+          37:       output: 0.9
+          38:   glm-5:
+          39:     id: glm-5
+          40:     name: GLM-5
+          41:     description: General GLM flagship for coding, analysis, and tool-heavy engineering
+          42:       workflows
+          43:     family: glm
+          44:     attachment: false
+          45:     reasoning: true
+          46:     reasoning_options:
+          47:     - type: toggle
+          48:     tool_call: true
+          49:     interleaved:
+          50:       field: reasoning_content
+
+          (Showing lines 1-50 of 424. Use offset=51 to continue.)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-active.yaml
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/opencode-models/zai-provider-active.yaml</path>
+          <type>file</type>
+          <content>
+          1: api: https://api.z.ai/api/paas/v4
+          2: doc: https://docs.z.ai/guides/overview/pricing
+          3: env:
+          4: - ZHIPU_API_KEY
+          5: id: zai
+          6: name: Z.AI
+          7: npm: '@ai-sdk/openai-compatible'
+          8: models:
+          9:   glm-4.6v:
+          10:     id: glm-4.6v
+          11:     name: GLM-4.6V
+          12:     description: GLM vision model for visual reasoning, documents, and multimodal
+          13:       agents
+          14:     family: glm
+          15:     attachment: true
+          16:     reasoning: true
+          17:     reasoning_options:
+          18:     - type: toggle
+          19:     tool_call: true
+          20:     temperature: true
+
+          (Showing lines 1-20 of 424. Use offset=21 to continue.)
+          </content>
+      - tool: read
+        args: {}
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/opencode-models/zai-provider-free.yaml</path>
+          <type>file</type>
+          <content>
+          1: api: https://api.z.ai/api/paas/v4
+          2: doc: https://docs.z.ai/guides/overview/pricing
+          3: env:
+          4: - ZHIPU_API_KEY
+          5: id: zai
+          6: name: Z.AI
+          7: npm: '@ai-sdk/openai-compatible'
+          8: models:
+          9:   glm-4.7-flash:
+          10:     id: glm-4.7-flash
+          11:     name: GLM-4.7-Flash
+          12:     description: Budget GLM lane for fast coding help, routing, and everyday automation
+          13:     family: glm-flash
+          14:     attachment: false
+          15:     reasoning: true
+          16:     reasoning_options:
+          17:     - type: toggle
+          18:     tool_call: true
+          19:     temperature: true
+          20:     knowledge: 2025-04
+          21:     release_date: '2026-01-19'
+          22:     last_updated: '2026-01-19'
+          23:     modalities:
+          24:       input:
+          25:       - text
+          26:       output:
+          27:       - text
+          28:     open_weights: true
+          29:     limit:
+          30:       context: 200000
+          31:       output: 131072
+          32:     cost:
+          33:       input: 0
+          34:       output: 0
+          35:       cache_read: 0
+          36:       cache_write: 0
+          37:   glm-4.5-flash:
+          38:     id: glm-4.5-flash
+          39:     name: GLM-4.5-Flash
+          40:     description: Efficient GLM model for fast reasoning, coding, and agent workflows
+          41:     family: glm-flash
+          42:     attachment: false
+          43:     reasoning: true
+          44:     reasoning_options:
+          45:     - type: toggle
+          46:     tool_call: true
+          47:     temperature: true
+          48:     knowledge: 2025-04
+          49:     release_date: '2025-07-28'
+          50:     last_updated: '2025-07-28'
+          51:     modalities:
+          52:       input:
+          53:       - text
+          54:       output:
+          55:       - text
+          56:     open_weights: true
+          57:     limit:
+          58:       context: 131072
+          59:       output: 98304
+          60:     cost:
+          61:       input: 0
+          62:       output: 0
+          63:       cache_read: 0
+          64:       cache_write: 0
+
+          (End of file - total 64 lines)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-free-knowledge-sorted.yaml
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/opencode-models/zai-provider-free-knowledge-sorted.yaml</path>
+          <type>file</type>
+          <content>
+          1: api: https://api.z.ai/api/paas/v4
+          2: doc: https://docs.z.ai/guides/overview/pricing
+          3: env:
+          4: - ZHIPU_API_KEY
+          5: id: zai
+          6: name: Z.AI
+          7: npm: '@ai-sdk/openai-compatible'
+          8: models:
+          9:   glm-4.7-flash:
+          10:     id: glm-4.7-flash
+          11:     name: GLM-4.7-Flash
+          12:     description: Budget GLM lane for fast coding help, routing, and everyday automation
+          13:     family: glm-flash
+          14:     attachment: false
+          15:     reasoning: true
+          16:     reasoning_options:
+          17:     - type: toggle
+          18:     tool_call: true
+          19:     temperature: true
+          20:     knowledge: 2025-04
+          21:     release_date: '2026-01-19'
+          22:     last_updated: '2026-01-19'
+          23:     modalities:
+          24:       input:
+          25:       - text
+          26:       output:
+          27:       - text
+          28:     open_weights: true
+          29:     limit:
+          30:       context: 200000
+          31:       output: 131072
+          32:     cost:
+          33:       input: 0
+          34:       output: 0
+          35:       cache_read: 0
+          36:       cache_write: 0
+          37:   glm-4.5-flash:
+          38:     id: glm-4.5-flash
+          39:     name: GLM-4.5-Flash
+          40:     description: Efficient GLM model for fast reasoning, coding, and agent workflows
+          41:     family: glm-flash
+          42:     attachment: false
+          43:     reasoning: true
+          44:     reasoning_options:
+          45:     - type: toggle
+          46:     tool_call: true
+          47:     temperature: true
+          48:     knowledge: 2025-04
+          49:     release_date: '2025-07-28'
+          50:     last_updated: '2025-07-28'
+          51:     modalities:
+          52:       input:
+          53:       - text
+          54:       output:
+          55:       - text
+          56:     open_weights: true
+          57:     limit:
+          58:       context: 131072
+          59:       output: 98304
+          60:     cost:
+          61:       input: 0
+          62:       output: 0
+          63:       cache_read: 0
+          64:       cache_write: 0
+
+          (End of file - total 64 lines)
+          </content>
+    time: 7/26/2026, 11:26:44.031 PM GMT+5:30
+    duration: 3.845s
+    duration_ms: 3845
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me compare the YAML output format with the existing opencode-provider.yaml to ensure they match in style. Let me also check that the active and full yamls are the same since none of the models have `status: deprecated`.
+
+      Wait, actually, let me check the formatting difference. Looking at the opencode-provider.yaml, values are quoted differently. For example:
+      ```
+      knowledge: 2025-01
+      knowledge: '2025-09-30'
+      ```
+
+      Let me check how PyYAML handles this vs the original. The original opencode-provider.yaml uses single quotes for date strings and no quotes for simple year strings. PyYAML may output them differently.
+
+      But honestly, this is probably fine. The content is what matters. Let me verify the active file - looking at the zai models, none has `status: deprecated`, so active == full. Let me confirm that's the case.
+
+      Also, let me verify the directory listing to see all files.
+    thinking_duration: 2.278s
+    thinking_duration_ms: 2278
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/opencode-models
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/opencode-models</path>
+          <type>directory</type>
+          <entries>
+          opencode-provider-active.yaml
+          opencode-provider-free-knowledge-sorted.yaml
+          opencode-provider-free.yaml
+          opencode-provider-sorted.yaml
+          opencode-provider.json
+          opencode-provider.yaml
+          zai-provider-active.yaml
+          zai-provider-free-knowledge-sorted.yaml
+          zai-provider-free.yaml
+          zai-provider.json
+          zai-provider.yaml
+
+          (11 entries)
+          </entries>
+      - tool: bash
+        args:
+          command: cat /Users/dk/lab-data/ai-suite/opencode-models/zai-provider.yaml | wc -l && cat /Users/dk/lab-data/ai-suite/opencode-models/zai-provider-active.yaml | wc -l
+        result: |2
+               424
+               424
+    time: 7/26/2026, 11:26:47.980 PM GMT+5:30
+    duration: 6.327s
+    duration_ms: 6327
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Good, the files are all created. The active and full YAMLs have the same line count (424) because none of the zai models have `status: deprecated`, so they're identical in content.
+
+      Let me also verify the created yaml is valid by using `python3 -c` to re-read it.
+
+      Actually, the files look good. Let me list what was created:
+
+      1. `zai-provider.yaml` — Full YAML conversion (424 lines)
+      2. `zai-provider-active.yaml` — Active models (same as full, no deprecated models in zai)
+      3. `zai-provider-free.yaml` — Free models (glm-4.7-flash, glm-4.5-flash)
+      4. `zai-provider-free-knowledge-sorted.yaml` — Free sorted by knowledge descending (glm-4.7-flash first as it has latest knowledge/2026-01-19, then glm-4.5-flash/2025-07-28)
+
+      Wait, both free models have `knowledge: 2025-04`. The sorting would be by release_date then, but the knowledge_sort_key uses knowledge field. Let me check:
+
+      - glm-4.7-flash: knowledge "2025-04"
+      - glm-4.5-flash: knowledge "2025-04"
+
+      Both have the same knowledge value, so they'd sort by their key name (glm-4.5-flash would come first alphabetically). But looking at the output, glm-4.7-flash comes first. That's because sort is `reverse=True` and I'm sorting by (0, knowledge_value) where knowledge is the same, so it falls to dict insertion order stability. Actually Python's sorted is stable, so with same key they keep insertion order. The dict is the free_models which was built in iteration order from the JSON, where glm-4.7-flash appears first.
+
+      Actually wait, the free-knowledge-sorted opencode version sorted by knowledge descending (more recent knowledge first). Both have "2025-04" so they're tied. The order is determined by stable sort preserving original order.
+
+      This is fine. The user's pipeline is:
+      1. JSON (canonical)
+      2. YAML (direct conversion)
+      3. Active (filter deprecated)
+      4. Free (filter zero-cost)
+      5. Free knowledge sorted (free sorted by knowledge desc)
+
+      All generated. Let me tell the user what was done.
+    thinking_duration: 5.146s
+    thinking_duration_ms: 5146
+    time: 7/26/2026, 11:26:54.419 PM GMT+5:30
+    response: |-
+      Done. Created 4 new files for the zai provider:
+
+      | File | Content |
+      |---|---|
+      | `zai-provider.yaml` | Full JSON → YAML conversion — 14 models |
+      | `zai-provider-active.yaml` | Active only (identical to full — none of the zai models are deprecated) |
+      | `zai-provider-free.yaml` | Free models — glm-4.7-flash, glm-4.5-flash (both zero-cost) |
+      | `zai-provider-free-knowledge-sorted.yaml` | Free models sorted by knowledge descending |
+
+      The structure matches the opencode-provider pipeline — unwrapped from the `zai` container key, Top-level keys ordered as `api`, `doc`, `env`, `id`, `name`, `npm`, `models`.
+    duration: 8.909s
+    duration_ms: 8909
+

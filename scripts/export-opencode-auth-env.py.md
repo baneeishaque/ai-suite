@@ -24,8 +24,10 @@ Environment-name validation and first-key selection also use its shared
 - Uses `select_environment_key()` to accept only non-empty uppercase environment
   names ending in `_KEY`.
 - Emits only the first matching environment name for each provider.
-- Prints a warning to `stderr` when multiple matching names exist, including
-  the selected and skipped environment names but never credential values.
+- Supports command-line options to control warning output:
+  - `--quiet`: Suppress all warnings about multiple environment key names
+  - `--verbose`: Show detailed warning information
+  - `--env-name`: Force the use of a specific environment variable name
 - Emits the credential value as a shell export, so command substitution should
   be used only in a trusted shell configuration.
 
@@ -43,6 +45,38 @@ To inspect names without exposing values in the terminal:
 ```bash
 python3 scripts/export-opencode-auth-env.py 2>&1 |
   sed -E 's/(export [A-Z0-9_]+)=.*/\1=<redacted>/'
+```
+
+## Command-line Options
+
+```
+usage: export-opencode-auth-env.py [-h] [-q] [-v] [--env-name NAME]
+
+Emit exports for auth entries with explicit env names.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  -q, --quiet      Suppress warnings about multiple environment key names.
+  -v, --verbose    Show detailed warnings (default is concise).
+  --env-name NAME  Force the use of a specific environment variable name (must
+                   be present in the provider's env list).
+```
+
+## Usage Examples
+
+### Suppress warnings (default for terminal startup)
+```bash
+python3 scripts/export-opencode-auth-env.py --quiet
+```
+
+### Show detailed warnings
+```bash
+python3 scripts/export-opencode-auth-env.py --verbose
+```
+
+### Force a specific environment variable name
+```bash
+python3 scripts/export-opencode-auth-env.py --env-name GEMINI_API_KEY
 ```
 
 ## Recommended Enhancements

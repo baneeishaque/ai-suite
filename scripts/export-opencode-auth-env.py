@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import shlex
 import sys
+import argparse
 
 from opencode_common import (
     JsonObject,
@@ -46,6 +47,14 @@ def merge_providers(
 
 def main() -> int:
     """Emit exports for auth entries with explicit env names."""
+    # Argument parsing
+    parser = argparse.ArgumentParser(
+        description="Emit exports for auth entries with explicit env names."
+    )
+    parser.add_argument("-q", "--quiet", action="store_true", help="Suppress warnings about multiple environment key names.")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show detailed warnings (default is concise).")
+    parser.add_argument("--env-name", metavar="NAME", help="Force the use of a specific environment variable name (must be present in the provider's env list).")
+    args = parser.parse_args()
     auth_path = default_auth_path()
     models_path = default_models_path()
     config_path = default_config_path()
@@ -78,9 +87,26 @@ def main() -> int:
         if not isinstance(key, str) or not key:
             continue
 
-        environment_name = select_environment_key(
-            provider_name, providers.get(provider_name, [])
-        )
+        # Determine environment variable name
+        if args.env_name:
+            # Validate forced name
+            candidate_names = providers.get(provider_name, [])
+            if args.env_name in candidate_names:
+                environment_name = args.env_name
+            else:
+                if not args.quiet:
+                    print(
+                        f"[WARN] Requested env name '{args.env_name}' not found for provider "
+                        f"'{provider_name}'. Falling back to default selection.",
+                        file=sys.stderr,
+                    )
+                environment_name = select_environment_key(
+                    provider_name, providers.get(provider_name, []), quiet=args.quiet
+                )
+        else:
+            environment_name = select_environment_key(
+                provider_name, providers.get(provider_name, []), quiet=args.quiet
+            )
         if environment_name:
             print(f"export {environment_name}={shlex.quote(key)}")
     return 0

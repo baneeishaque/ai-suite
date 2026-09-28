@@ -354,6 +354,15 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   `<sha>^{tree}`) to a full SHA, or prints repo-layout paths (`--git-dir`, `--show-toplevel`,
   `--is-inside-work-tree`). Read-only.
 
+### `git rev-list`
+
+- **Verdict**: ✅ SAFE — Lists commits reachable from the given refs/rev expressions; pure
+  commit-DAG read. No local or remote mutation, and it never fetches from the network.
+- **Common safe flags**: `--count` (print counts only), `--left-right` (prefix `<`/`>` per
+  side), `--left`/`--right`, `--max-count`, `--since`/`--until`, `--author`. The three-dot
+  range `A...B` counts/annotates commits unique to each side. There is no destructive flag
+  on this subcommand.
+
 ### `git show`
 
 - **Verdict**: ✅ SAFE — Shows commit objects, diffs, tree entries, blobs. Read-only.

@@ -1,0 +1,35 @@
+#!/usr/bin/env osascript -l JavaScript
+// teams-read-messages.jxa — Read messages from the active Teams chat
+//
+// Usage: osascript -l JavaScript teams-read-messages.jxa
+
+ObjC.import("Foundation");
+
+function run(argv) {
+  var chrome = Application("Google Chrome");
+  chrome.includeStandardAdditions = true;
+  chrome.activate();
+  delay(2);
+
+  // Resolve inject JS path relative to this script
+  var args = $.NSProcessInfo.processInfo.arguments;
+  var scriptPath = args.objectAtIndex(3).js;
+  var dir = scriptPath.substring(0, scriptPath.lastIndexOf("/"));
+  var injectPath = dir + "/teams-read-messages-inject.js";
+  var contents = $.NSString.stringWithContentsOfFileEncodingError(
+    $(injectPath).stringByStandardizingPath,
+    $.NSUTF8StringEncoding,
+    null
+  );
+
+  if (contents.isNil()) {
+    console.log("Error: could not read inject JS");
+    return "1";
+  }
+
+  var injectJs = contents.js;
+  var tab = chrome.windows[0].activeTab;
+  var result = tab.execute({ javascript: injectJs });
+  console.log(result);
+  return "0";
+}

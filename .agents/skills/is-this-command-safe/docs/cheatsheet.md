@@ -432,6 +432,21 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   `acli jira auth status *` to admit `--help`.
 - **Suggested regex**: `/^acli jira auth status( --?h(elp)?)?$/`
 
+### `acli jira workitem attachment list`
+
+- **Verdict**: ✅ SAFE (all forms) — read-only attachment fetch for one work item.
+- **Why all forms are safe**: every flag in the leaf is read-only (verified via
+  `acli jira workitem attachment list --help`) — `--key <KEY>` (selector),
+  `--json` (format), `-h`/`--help`. There is no write/upload/delete flag to
+  exclude.
+- **Not yet vetted**: sibling `attachment create` / `attachment remove` leaves —
+  treat as UNKNOWN until probed.
+- **Redaction caveat**: output can carry attachment filenames/URLs — Tier B org
+  content; redact before committing per
+  [Redaction & Portability](../../redaction-portability/SKILL.md).
+- **Auto-approve pattern**: `acli jira workitem attachment list *`.
+- **Suggested regex**: `/^acli jira workitem attachment list( .*)?$/`
+
 ***
 
 ## Container Inspection

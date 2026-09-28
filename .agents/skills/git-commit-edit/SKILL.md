@@ -603,6 +603,14 @@ The agent is **BLOCKED** from:
 
 ---
 
+## Related Skills
+
+- [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md) —
+  capture a recoverable apply-not-pop safety snapshot before destructive
+  history rewrites.
+
+---
+
 ## Composition by Higher-Level Skills
 
 Skills that build on this base by feeding it domain-specific

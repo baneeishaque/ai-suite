@@ -63,11 +63,25 @@ want to use. Each agent may have its own requirements.
 
 ```text
 AI-Agents/
-├── README.md          # This file
-├── LICENSE            # MIT License
-└── ...                # Agent implementations (coming soon)
-
+├── AGENTS.md                    # Permanent Operating Reminders (all AI tools)
+├── AGENTS-github-copilot.md     # GitHub Copilot-specific instructions (delta only)
+├── AGENTS-legacy.md             # Skills table for legacy AI tools
+├── README.md                    # This file
+├── LICENSE                      # MIT License
+└── .agents/                     # AI Agent skills library
+    └── skills/
+        ├── general/
+        │   └── ...
+        ├── git/
+        │   └── ...
+        └── opencode/
+            └── ...
 ```
+
+> **AGENTS.md architecture:** Common operating reminders live in
+> `AGENTS.md` (SSOT). Tool-specific instructions (e.g. GitHub Copilot)
+> go in `AGENTS-github-copilot.md`. A legacy skills table for
+> non-skill-aware runtimes is in `AGENTS-legacy.md`.
 
 ## 🤝 Contributing
 

@@ -1,0 +1,1834 @@
+---
+user:
+  text: 'I have a Django Postgres SQL project in /Users/dk/lab-data/oleovista-acers/acers-backend. Does caching have any advantage or performance improvement here? What about the Kafka cache? What about Redis cache? '
+  time: 7/26/2026, 5:51:57.716 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: |-
+      The user is asking about caching in their Django Postgres SQL project. They want to know:
+      1. If caching has any advantage/performance improvement
+      2. About Kafka cache
+      3. About Redis cache
+
+      Let me first explore their project structure to understand what they're working with.
+    thinking_duration: 1.269s
+    thinking_duration_ms: 1269
+    tool_calls:
+      - tool: glob
+        args:
+          path: /Users/dk/lab-data/oleovista-acers/acers-backend
+          pattern: '**/*'
+        result: |-
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.gitattributes
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.git
+          /Users/dk/lab-data/oleovista-acers/acers-backend/c.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.gitignore
+          /Users/dk/lab-data/oleovista-acers/acers-backend/a.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.DS_Store
+          /Users/dk/lab-data/oleovista-acers/acers-backend/data.json
+          /Users/dk/lab-data/oleovista-acers/acers-backend/1
+          /Users/dk/lab-data/oleovista-acers/acers-backend/README.md
+          /Users/dk/lab-data/oleovista-acers/acers-backend/mise.toml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.github/workflows/main.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.github/workflows/deploy.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.github/workflows/deploy-azure.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.idea/workspace.xml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.idea/.DS_Store
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-01-04-2026-11-01-UTC.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-db_dump-march.sql
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-10-04-2026-15-50-UTC.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-01-04-2026-11-14-UTC.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-28-march-2026-00-24-ist.sql
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-01-04-2026-16-27-ist.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/acers-production-10-04-2026-15-57-UTC.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/db_dumps/db_13_12_25.dump
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.codegraph/.gitignore
+          /Users/dk/lab-data/oleovista-acers/acers-backend/.codegraph/codegraph.db
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docker-compose.docs.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.idea/workspace.xml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/merge_production_dotenvs_in_dotenv.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.editorconfig
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.readthedocs.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.devcontainer/devcontainer.json
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.devcontainer/bashrc.override.sh
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/howto.rst
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/users.rst
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/make.bat
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/conf.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/Makefile
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/index.rst
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/local.txt
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/base.txt
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/production.txt
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/softdeletemodel.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/tests/test_merge_production_dotenvs_in_dotenv.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/tests/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.python-version
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/app_name.txt
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.gitattributes
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.github/dependabot.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.github/workflows/ci.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/__pycache__/softdeletemodel.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docker-compose.local.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/environment.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/justfile
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/scripts/export_requirements.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.env
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/package.json
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/package-lock.json
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.gitignore
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docker-compose.production.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.dockerignore
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/mise.toml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/README.md
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/pyproject.toml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/.pre-commit-config.yaml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/custompagination.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/traefik/Dockerfile
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/traefik/traefik.yml
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/wsgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/websocket.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/__pycache__/custompagination.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/backups
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/restore
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/backup
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/advanced_filter.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/django/celery/worker/start
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/middleware/error_log_middleware/main.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/__pycache__/mongo.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/mongo.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/_sourced/constants.sh
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/_sourced/countdown.sh
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/_sourced/yes_no.sh
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/_sourced/messages.sh
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/maintenance/rmbackup
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/postgres/Dockerfile
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/__pycache__/advanced_filter.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/locale/fr_FR/LC_MESSAGES/django.po
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/locale/README.md
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/compose/production/django/celery/beat/start
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/registeradmin/BaseAdminRegister.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/middleware/error_log_middleware/__pycache__/__init__.cpython-311.pyc
+
+          (Results are truncated: showing first 100 results. Consider using a more specific path or pattern.)
+    time: 7/26/2026, 5:51:57.935 AM GMT+5:30
+    duration: 5.954s
+    duration_ms: 5954
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me look at the Django project structure more specifically - I need to see the Django settings, requirements, and any caching configuration.
+    thinking_duration: 344ms
+    thinking_duration_ms: 344
+    tool_calls:
+      - tool: glob
+        args:
+          pattern: '**/*.py'
+          path: /Users/dk/lab-data/oleovista-acers/acers-backend/acers
+        result: |-
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/softdeletemodel.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/softdelete/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mongo/mongo.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/abstract_model/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/abstract_model/OrganizationAbstract.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mixins/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/mixins/user_scope.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/DateFormater/date_formatter.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/DateFormater/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/custompagination.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/pagination/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/advanced_filter.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/filters/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/registeradmin/BaseAdminRegister.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/utility/registeradmin/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/conftest.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/manage.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/filters.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/serializer.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/company/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/scripts/export_requirements.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/merge_production_dotenvs_in_dotenv.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/docs/conf.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/tests/test_merge_production_dotenvs_in_dotenv.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/tests/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/serializers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/web_settings/migrations/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations/0001_initial.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations/0002_alter_domain_unique.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations/0004_alter_options_ordering_domain.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/sites/migrations/0003_set_site_domain_and_name.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/contrib/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/chat/migrations/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/tasks.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/dailytasks/pricing_days.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/adapters.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/managers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/shedulers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/serializers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/plans/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/scheduler/migrations/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/api/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/api/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/api/serializers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/context_processors.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/forms.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/serializers.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/models.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/tasks.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/users/signals.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/views.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/tests.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/admin.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/apps.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/apps/permission/serializers.py
+
+          (Results are truncated: showing first 100 results. Consider using a more specific path or pattern.)
+    time: 7/26/2026, 5:52:04.080 AM GMT+5:30
+    duration: 5.322s
+    duration_ms: 5322
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me look at the Django settings and requirements to understand the project's caching setup
+    thinking_duration: 734ms
+    thinking_duration_ms: 734
+    tool_calls:
+      - tool: glob
+        args:
+          path: /Users/dk/lab-data/oleovista-acers/acers-backend/acers
+          pattern: '**/settings*.py'
+        result: No files found
+    time: 7/26/2026, 5:52:09.560 AM GMT+5:30
+    duration: 3.665s
+    duration_ms: 3665
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me check the config directory for settings files
+    thinking_duration: 1.576s
+    thinking_duration_ms: 1576
+    tool_calls:
+      - tool: glob
+        args:
+          path: /Users/dk/lab-data/oleovista-acers/acers-backend/acers
+          pattern: '**/config/*.py'
+        result: |-
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/wsgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/websocket.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/asgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/api_router.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/celery_app.py
+    time: 7/26/2026, 5:52:13.375 AM GMT+5:30
+    duration: 3.154s
+    duration_ms: 3154
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me check for settings files in the config directory or in a settings folder
+    thinking_duration: 873ms
+    thinking_duration_ms: 873
+    tool_calls:
+      - tool: glob
+        args:
+          pattern: '**/*'
+          path: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config
+        result: |-
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/wsgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/websocket.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/urls.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/wsgi.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/api_router.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/celery_app.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__pycache__/urls.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/asgi.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/api_router.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/celery_app.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/test.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/__init__.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/base.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__pycache__/local.cpython-311.pyc
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/__init__.py
+          /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/local.py
+    time: 7/26/2026, 5:52:16.688 AM GMT+5:30
+    duration: 2.784s
+    duration_ms: 2784
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Now let me read the settings files to understand the caching setup
+    thinking_duration: 550ms
+    thinking_duration_ms: 550
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/base.py</path>
+          <type>file</type>
+          <content>
+          1: # ruff: noqa: ERA001, E501
+          2: """Base settings to build other settings files upon."""
+          3: 
+          4: import ssl
+          5: from pathlib import Path
+          6: from datetime import timedelta
+          7: import environ
+          8: import os
+          9: import stripe
+          10: BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
+          11: 
+          12: 
+          13: # Initialize the environment variable loader
+          14: env = environ.Env()
+          15: 
+          16: # Load .env file
+          17: env.read_env(str(BASE_DIR / ".env"))
+          18: 
+          19: 
+          20: APPS_DIR = BASE_DIR / "apps"
+          21: 
+          22: 
+          23: READ_DOT_ENV_FILE = env.bool("DJANGO_READ_DOT_ENV_FILE")
+          24: if READ_DOT_ENV_FILE:
+          25:     env.read_env(str(BASE_DIR / ".env"))
+          26: 
+          27: 
+          28: # Media URL and Root
+          29: MEDIA_URL = '/media/'
+          30: MEDIA_ROOT = os.path.join(BASE_DIR, 'paper_app', 'media')
+          31: 
+          32:     
+          33: 
+          34: # GENERAL
+          35: # ------------------------------------------------------------------------------
+          36: # https://docs.djangoproject.com/en/dev/ref/settings/#debug
+          37: DEBUG = env.bool("DJANGO_DEBUG", False)
+          38: # Local time zone. Choices are
+          39: # http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
+          40: # though not all of them may be available with every OS.
+          41: # In Windows, this must be set to your system time zone.
+          42: TIME_ZONE = "UTC"
+          43: # https://docs.djangoproject.com/en/dev/ref/settings/#language-code
+          44: LANGUAGE_CODE = "en-us"
+          45: # https://docs.djangoproject.com/en/dev/ref/settings/#languages
+          46: # from django.utils.translation import gettext_lazy as _
+          47: # LANGUAGES = [
+          48: #     ('en', _('English')),
+          49: #     ('fr-fr', _('French')),
+          50: #     ('pt-br', _('Portuguese')),
+          51: # ]
+          52: # https://docs.djangoproject.com/en/dev/ref/settings/#site-id
+          53: SITE_ID = 1
+          54: # https://docs.djangoproject.com/en/dev/ref/settings/#use-i18n
+          55: USE_I18N = True
+          56: # https://docs.djangoproject.com/en/dev/ref/settings/#use-tz
+          57: USE_TZ = True
+          58: # https://docs.djangoproject.com/en/dev/ref/settings/#locale-paths
+          59: LOCALE_PATHS = [str(BASE_DIR / "locale")]
+          60: 
+          61: # DATABASES
+          62: # ------------------------------------------------------------------------------
+          63: # https://docs.djangoproject.com/en/dev/ref/settings/#databases
+          64: 
+          65: DATABASES = {
+          66:     "default": env.db("DATABASE_URL"), # PostgreSQL
+          67:     }
+          68: 
+          69: 
+          70: DATABASES["default"]["ATOMIC_REQUESTS"] = True
+          71: # https://docs.djangoproject.com/en/stable/ref/settings/#std:setting-DEFAULT_AUTO_FIELD
+          72: DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+          73: 
+          74: # URLS
+          75: # ------------------------------------------------------------------------------
+          76: # https://docs.djangoproject.com/en/dev/ref/settings/#root-urlconf
+          77: ROOT_URLCONF = "config.urls"
+          78: # https://docs.djangoproject.com/en/dev/ref/settings/#wsgi-application
+          79: WSGI_APPLICATION = "config.wsgi.application"
+          80: ASGI_APPLICATION ="config.asgi.application"
+          81: 
+          82: CHANNEL_LAYERS = {
+          83:     'default': {
+          84:         'BACKEND': 'channels_redis.core.RedisChannelLayer',
+          85:         'CONFIG': {
+          86:             'hosts': [('127.0.0.1', 6379)],
+          87:         },
+          88:     },
+          89: }
+          90: 
+          91: # APPS
+          92: # ------------------------------------------------------------------------------
+          93: DJANGO_APPS = [
+          94: 
+          95:     "jet.dashboard",
+          96:     "jet",
+          97:     "django.contrib.auth",
+          98:     "django.contrib.contenttypes",
+          99:     "django.contrib.sessions",
+          100:     "django.contrib.sites",
+          101:     "django.contrib.messages",
+          102:     "django.contrib.staticfiles",
+          103:     "django.contrib.admin",
+          104:     "django.forms",
+          105: ]
+          106: 
+          107: THIRD_PARTY_APPS = [
+          108:     "crispy_forms",
+          109:     "crispy_bootstrap5",
+          110:     "allauth",
+          111:     "allauth.account",
+          112:     "allauth.mfa",
+          113:     "allauth.socialaccount",
+          114:     "django_celery_beat",
+          115:     "rest_framework",
+          116:     "rest_framework.authtoken",
+          117:     "corsheaders",
+          118:     "drf_spectacular",
+          119:     "rest_framework_simplejwt",
+          120:     'rest_framework_simplejwt.token_blacklist', 
+          121:     'apscheduler',
+          122:     'django_apscheduler',
+          123:     'channels',
+          124: 
+          125: ]
+          126: 
+          127: 
+          128: LOCAL_APPS = [
+          129:     "apps.users",
+          130:     "apps.company",
+          131:     "apps.permission",
+          132:     "apps.web_settings",
+          133:     "apps.plans",
+          134:     # "apps.paper_app",
+          135:     "apps.scheduler", 
+          136:     "apps.paper_app.apps.PaperAppConfig",
+          137: 
+          138: ]
+          139: # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
+          140: INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+          141: 
+          142: # MIGRATIONS
+          143: # ------------------------------------------------------------------------------
+          144: # https://docs.djangoproject.com/en/dev/ref/settings/#migration-modules
+          145: MIGRATION_MODULES = {"sites": "apps.contrib.sites.migrations"}
+          146: 
+          147: # AUTHENTICATION
+          148: # ------------------------------------------------------------------------------
+          149: # https://docs.djangoproject.com/en/dev/ref/settings/#authentication-backends
+          150: AUTHENTICATION_BACKENDS = [
+          151:     "django.contrib.auth.backends.ModelBackend",
+          152:     "allauth.account.auth_backends.AuthenticationBackend",
+          153: ]
+          154: # https://docs.djangoproject.com/en/dev/ref/settings/#auth-user-model
+          155: AUTH_USER_MODEL = "users.User"
+          156: # https://docs.djangoproject.com/en/dev/ref/settings/#login-redirect-url
+          157: LOGIN_REDIRECT_URL = "users:redirect"
+          158: # https://docs.djangoproject.com/en/dev/ref/settings/#login-url
+          159: LOGIN_URL = "account_login"
+          160: 
+          161: # PASSWORDS
+          162: # ------------------------------------------------------------------------------
+          163: # https://docs.djangoproject.com/en/dev/ref/settings/#password-hashers
+          164: PASSWORD_HASHERS = [
+          165:     # https://docs.djangoproject.com/en/dev/topics/auth/passwords/#using-argon2-with-django
+          166:     "django.contrib.auth.hashers.Argon2PasswordHasher",
+          167:     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
+          168:     "django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher",
+          169:     "django.contrib.auth.hashers.BCryptSHA256PasswordHasher",
+          170: ]
+          171: # https://docs.djangoproject.com/en/dev/ref/settings/#auth-password-validators
+          172: AUTH_PASSWORD_VALIDATORS = [
+          173:     {
+          174:         "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
+          175:     },
+          176:     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+          177:     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+          178:     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+          179: ]
+          180: CORS_ALLOWED_ORIGINS = [
+          181:     'http://localhost:3000',
+          182:       'http://192.168.10.179:8000',
+          183:       'http://127.0.0.1:5501',
+          184:       'https://acers.space',
+          185:       'https://backend.acers.space',
+          186:      'https://website.acers.space',
+          187:      'http://192.168.10.179:3000',
+          188:      "https://20.74.223.141",
+          189:      "https://20.74.223.141:8000",
+          190:      "https://20.74.223.141:3000",
+          191:     "http://20.74.223.141",
+          192:      "http://20.74.223.141:8000",
+          193:      "http://20.74.223.141:3000",
+          194:      "http://stagingf.acers.space:300",
+          195:      "http://stagingf.acers.space",
+          196:      "https://acers.space:8000",
+          197:      "http://acers.space:8000",
+          198:      "https://acers.space:8000",
+          199:      "http://40.120.108.178",
+          200:      "http://40.120.108.178:3000",
+          201:      #"http://acers.me:8000",
+          202:      #"https://acers.me:8000",
+          203:      #"http://www.acers.me:8000",
+          204:      #"https://www.acers.me:8000",
+          205:      "http://acers.me",
+          206:      "https://acers.me",
+          207:      "http://www.acers.me",
+          208:      "https://www.acers.me",
+          209:      "https://acerstest.website",
+          210:      "http://acerstest.website",
+          211:      "http://www.acerstest.website",
+          212:      "https://www.acerstest.website"
+          213: 
+          214: ]
+          215: ####cros allowed origin 
+          216: CORS_ALLOW_CREDENTIALS = True
+          217: 
+          218: # MIDDLEWARE
+          219: # ------------------------------------------------------------------------------
+          220: # https://docs.djangoproject.com/en/dev/ref/settings/#middleware
+          221: MIDDLEWARE = [
+          222:      "corsheaders.middleware.CorsMiddleware",
+          223:     "django.middleware.security.SecurityMiddleware",
+          224:    
+          225:     "whitenoise.middleware.WhiteNoiseMiddleware",
+          226:     "django.contrib.sessions.middleware.SessionMiddleware",
+          227:     "django.middleware.locale.LocaleMiddleware",
+          228:     "django.middleware.common.CommonMiddleware",
+          229:     "django.middleware.csrf.CsrfViewMiddleware",
+          230:     "django.contrib.auth.middleware.AuthenticationMiddleware",
+          231:     "django.contrib.messages.middleware.MessageMiddleware",
+          232:     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+          233:     "allauth.account.middleware.AccountMiddleware",
+          234:     "middleware.history_log.TrackModelViewMiddleware",
+          235:     "middleware.CurrentRequestMiddleware.RequestMiddleware",
+          236:     "middleware.error_log_middleware.main.ExceptionLoggingMiddleware",
+          237:     "middleware.request_middleware.ThreadLocalMiddleware",
+          238: ]
+          239: 
+          240: # STATIC
+          241: # ------------------------------------------------------------------------------
+          242: # https://docs.djangoproject.com/en/dev/ref/settings/#static-root
+          243: STATIC_ROOT = str(BASE_DIR / "staticfiles")
+          244: # https://docs.djangoproject.com/en/dev/ref/settings/#static-url
+          245: STATIC_URL = "/static/"
+          246: # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#std:setting-STATICFILES_DIRS
+          247: STATICFILES_DIRS = [str(APPS_DIR / "static")]
+          248: # https://docs.djangoproject.com/en/dev/ref/contrib/staticfiles/#staticfiles-finders
+          249: STATICFILES_FINDERS = [
+          250:     "django.contrib.staticfiles.finders.FileSystemFinder",
+          251:     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
+          252: ]
+          253: 
+          254: # MEDIA
+          255: # ------------------------------------------------------------------------------
+          256: # https://docs.djangoproject.com/en/dev/ref/settings/#media-root
+          257: MEDIA_ROOT = str(APPS_DIR / "media")
+          258: # https://docs.djangoproject.com/en/dev/ref/settings/#media-url
+          259: MEDIA_URL = "/media/"
+          260: 
+          261: # TEMPLATES
+          262: # ------------------------------------------------------------------------------
+          263: # https://docs.djangoproject.com/en/dev/ref/settings/#templates
+          264: TEMPLATES = [
+          265:     {
+          266:         # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-TEMPLATES-BACKEND
+          267:         "BACKEND": "django.template.backends.django.DjangoTemplates",
+          268:         # https://docs.djangoproject.com/en/dev/ref/settings/#dirs
+          269:         "DIRS": [str(APPS_DIR / "templates")],
+          270:         # https://docs.djangoproject.com/en/dev/ref/settings/#app-dirs
+          271:         "APP_DIRS": True,
+          272:         "OPTIONS": {
+          273:             # https://docs.djangoproject.com/en/dev/ref/settings/#template-context-processors
+          274:             "context_processors": [
+          275:                 "django.template.context_processors.debug",
+          276:                 "django.template.context_processors.request",
+          277:                 "django.contrib.auth.context_processors.auth",
+          278:                 "django.template.context_processors.i18n",
+          279:                 "django.template.context_processors.media",
+          280:                 "django.template.context_processors.static",
+          281:                 "django.template.context_processors.tz",
+          282:                 "django.contrib.messages.context_processors.messages",
+          283:                 "apps.users.context_processors.allauth_settings",
+          284:             ],
+          285:         },
+          286:     },
+          287: ]
+          288: 
+          289: # https://docs.djangoproject.com/en/dev/ref/settings/#form-renderer
+          290: FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
+          291: 
+          292: # http://django-crispy-forms.readthedocs.io/en/latest/install.html#template-packs
+          293: CRISPY_TEMPLATE_PACK = "bootstrap5"
+          294: CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+          295: 
+          296: # FIXTURES
+          297: # ------------------------------------------------------------------------------
+          298: # https://docs.djangoproject.com/en/dev/ref/settings/#fixture-dirs
+          299: FIXTURE_DIRS = (str(APPS_DIR / "fixtures"),)
+          300: 
+          301: # SECURITY
+          302: # ------------------------------------------------------------------------------
+          303: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-httponly
+          304: SESSION_COOKIE_HTTPONLY = True
+          305: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-httponly
+          306: CSRF_COOKIE_HTTPONLY = True
+          307: # https://docs.djangoproject.com/en/dev/ref/settings/#x-frame-options
+          308: X_FRAME_OPTIONS = "DENY"
+          309: 
+          310: # EMAIL
+          311: # ------------------------------------------------------------------------------
+          312: # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
+          313: EMAIL_BACKEND = env(
+          314:     "DJANGO_EMAIL_BACKEND",
+          315:     default="django.core.mail.backends.smtp.EmailBackend",
+          316: )
+          317: # https://docs.djangoproject.com/en/dev/ref/settings/#email-timeout
+          318: EMAIL_TIMEOUT = 5
+          319: 
+          320: # ADMIN
+          321: # ------------------------------------------------------------------------------
+          322: # Django Admin URL.
+          323: ADMIN_URL = "admin/"
+          324: # https://docs.djangoproject.com/en/dev/ref/settings/#admins
+          325: ADMINS = [("""karthikeyan""", "karthikeyan@ompventure.com")]
+          326: # https://docs.djangoproject.com/en/dev/ref/settings/#managers
+          327: MANAGERS = ADMINS
+          328: # https://cookiecutter-django.readthedocs.io/en/latest/settings.html#other-environment-settings
+          329: # Force the `admin` sign in process to go through the `django-allauth` workflow
+          330: DJANGO_ADMIN_FORCE_ALLAUTH = env.bool("DJANGO_ADMIN_FORCE_ALLAUTH", default=False)
+          331: 
+          332: # LOGGING
+          333: # ------------------------------------------------------------------------------
+          334: # https://docs.djangoproject.com/en/dev/ref/settings/#logging
+          335: # See https://docs.djangoproject.com/en/dev/topics/logging for
+          336: # more details on how to customize your logging configuration.
+          337: LOGGING = {
+          338:     "version": 1,
+          339:     "disable_existing_loggers": False,
+          340:     "formatters": {
+          341:         "verbose": {
+          342:             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+          343:         },
+          344:     },
+          345:     "handlers": {
+          346:         "console": {
+          347:             "level": "DEBUG",
+          348:             "class": "logging.StreamHandler",
+          349:             "formatter": "verbose",
+          350:         },
+          351:     },
+          352:     "root": {"level": "INFO", "handlers": ["console"]},
+          353: }
+          354: 
+          355: REDIS_URL = env("REDIS_URL", default="redis://redis:6379/0")
+          356: REDIS_SSL = REDIS_URL.startswith("rediss://")
+          357: 
+          358: # Celery
+          359: # ------------------------------------------------------------------------------
+          360: if USE_TZ:
+          361:     # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-timezone
+          362:     CELERY_TIMEZONE = TIME_ZONE
+          363: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-broker_url
+          364: CELERY_BROKER_URL = REDIS_URL
+          365: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
+          366: CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_SSL else None
+          367: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_backend
+          368: CELERY_RESULT_BACKEND = REDIS_URL
+          369: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#redis-backend-use-ssl
+          370: CELERY_REDIS_BACKEND_USE_SSL = CELERY_BROKER_USE_SSL
+          371: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-extended
+          372: CELERY_RESULT_EXTENDED = True
+          373: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-always-retry
+          374: # https://github.com/celery/celery/pull/6122
+          375: CELERY_RESULT_BACKEND_ALWAYS_RETRY = True
+          376: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#result-backend-max-retries
+          377: CELERY_RESULT_BACKEND_MAX_RETRIES = 10
+          378: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-accept_content
+          379: CELERY_ACCEPT_CONTENT = ["json"]
+          380: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-task_serializer
+          381: CELERY_TASK_SERIALIZER = "json"
+          382: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std:setting-result_serializer
+          383: CELERY_RESULT_SERIALIZER = "json"
+          384: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-time-limit
+          385: # TODO: set to whatever value is adequate in your circumstances
+          386: CELERY_TASK_TIME_LIMIT = 5 * 60
+          387: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-soft-time-limit
+          388: # TODO: set to whatever value is adequate in your circumstances
+          389: CELERY_TASK_SOFT_TIME_LIMIT = 60
+          390: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#beat-scheduler
+          391: CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+          392: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-send-task-events
+          393: CELERY_WORKER_SEND_TASK_EVENTS = True
+          394: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#std-setting-task_send_sent_event
+          395: CELERY_TASK_SEND_SENT_EVENT = True
+          396: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#worker-hijack-root-logger
+          397: CELERY_WORKER_HIJACK_ROOT_LOGGER = False
+          398: # django-allauth
+          399: # ------------------------------------------------------------------------------
+          400: ACCOUNT_ALLOW_REGISTRATION = env.bool("DJANGO_ACCOUNT_ALLOW_REGISTRATION", True)
+          401: # https://docs.allauth.org/en/latest/account/configuration.html
+          402: ACCOUNT_AUTHENTICATION_METHOD = "email"
+          403: # https://docs.allauth.org/en/latest/account/configuration.html
+          404: ACCOUNT_EMAIL_REQUIRED = True
+          405: # https://docs.allauth.org/en/latest/account/configuration.html
+          406: ACCOUNT_USERNAME_REQUIRED = False
+          407: # https://docs.allauth.org/en/latest/account/configuration.html
+          408: ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+          409: # https://docs.allauth.org/en/latest/account/configuration.html
+          410: ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+          411: # https://docs.allauth.org/en/latest/account/configuration.html
+          412: ACCOUNT_ADAPTER = "apps.users.adapters.AccountAdapter"
+          413: # https://docs.allauth.org/en/latest/account/forms.html
+          414: ACCOUNT_FORMS = {"signup": "apps.users.forms.UserSignupForm"}
+          415: # https://docs.allauth.org/en/latest/socialaccount/configuration.html
+          416: SOCIALACCOUNT_ADAPTER = "apps.users.adapters.SocialAccountAdapter"
+          417: # https://docs.allauth.org/en/latest/socialaccount/configuration.html
+          418: SOCIALACCOUNT_FORMS = {"signup": "apps.users.forms.UserSocialSignupForm"}
+          419: # django-compressor
+          420: # ------------------------------------------------------------------------------
+          421: # https://django-compressor.readthedocs.io/en/latest/quickstart/#installation
+          422: INSTALLED_APPS += ["compressor"]
+          423: STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
+          424: # django-rest-framework
+          425: # -------------------------------------------------------------------------------
+          426: # django-rest-framework - https://www.django-rest-framework.org/api-guide/settings/
+          427: REST_FRAMEWORK = {
+          428:     "DEFAULT_AUTHENTICATION_CLASSES": (
+          429:         "rest_framework_simplejwt.authentication.JWTAuthentication",
+          430:     ),
+          431:     "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+          432:     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+          433:     'DEFAULT_PARSER_CLASSES': [
+          434:         'rest_framework.parsers.JSONParser',
+          435:         'rest_framework.parsers.FormParser',
+          436:         'rest_framework.parsers.MultiPartParser',  # Important for file upload (CSV, images, etc.)
+          437:     ]
+          438: }
+          439: 
+          440: # django-cors-headers - https://github.com/adamchainz/django-cors-headers#setup
+          441: # CORS_URLS_REGEX = r"^/api/.*$"
+          442: 
+          443: # By Default swagger ui is available only to admin user(s). You can change permission classes to change that
+          444: # See more configuration options at https://drf-spectacular.readthedocs.io/en/latest/settings.html#settings
+          445: SPECTACULAR_SETTINGS = {
+          446:     "TITLE": "core API",
+          447:     "DESCRIPTION": "Documentation of API endpoints of core",
+          448:     "VERSION": "1.0.0",
+          449:     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
+          450:     "SCHEMA_PATH_PREFIX": "/api/",
+          451: }
+          452: # Your stuff...
+          453: # ------------------------------------------------------------------------------
+          454: 
+          455: 
+          456: #JWT Token IMplementation
+          457: 
+          458: 
+          459: SIMPLE_JWT = {
+          460:     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=55),
+          461:     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+          462:     "ROTATE_REFRESH_TOKENS": False,
+          463:     "BLACKLIST_AFTER_ROTATION": False,
+          464:     "UPDATE_LAST_LOGIN": True,
+          465: 
+          466:     "ALGORITHM": "HS256",
+          467:     "SIGNING_KEY":env("DJANGO_SECRET_KEY"),
+          468:     "VERIFYING_KEY": "",
+          469:     "AUDIENCE": None,
+          470:     "ISSUER": None,
+          471:     "JSON_ENCODER": None,
+          472:     "JWK_URL": None,
+          473:     "LEEWAY": 0,
+          474: 
+          475:     "AUTH_HEADER_TYPES": ("Bearer",),
+          476:     "AUTH_HEADER_NAME": "HTTP_AUTHORIZATION",
+          477:     "USER_ID_FIELD": "id",
+          478:     "USER_ID_CLAIM": "user_id",
+          479:     "USER_AUTHENTICATION_RULE": "rest_framework_simplejwt.authentication.default_user_authentication_rule",
+          480: 
+          481:     "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
+          482:     "TOKEN_TYPE_CLAIM": "token_type",
+          483:     "TOKEN_USER_CLASS": "rest_framework_simplejwt.models.TokenUser",
+          484: 
+          485:     "JTI_CLAIM": "jti",
+          486: 
+          487:     "SLIDING_TOKEN_REFRESH_EXP_CLAIM": "refresh_exp",
+          488:     "SLIDING_TOKEN_LIFETIME": timedelta(minutes=55),
+          489:     "SLIDING_TOKEN_REFRESH_LIFETIME": timedelta(days=1),
+          490: 
+          491:     "TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainPairSerializer",
+          492:     "TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSerializer",
+          493:     "TOKEN_VERIFY_SERIALIZER": "rest_framework_simplejwt.serializers.TokenVerifySerializer",
+          494:     "TOKEN_BLACKLIST_SERIALIZER": "rest_framework_simplejwt.serializers.TokenBlacklistSerializer",
+          495:     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
+          496:     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
+          497: }
+          498: 
+          499: 
+          500: 
+          501: # Stripe integration
+          502: 
+          503: STRIPE_SECRET_KEY = "<redacted-stripe-test-key>"
+          504: STRIPE_PUBLISHABLE_KEY = "<redacted-api-key>"
+          505: 
+          506: stripe.api_key = STRIPE_SECRET_KEY
+          507: 
+          508: IS_PRODUCTION = env.bool("IS_PRODUCTION", False)
+
+          (End of file - total 508 lines)
+          </content>
+    time: 7/26/2026, 5:52:19.632 AM GMT+5:30
+    duration: 2.053s
+    duration_ms: 2053
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me also check the production settings and the local settings to see if there's any caching configuration
+    thinking_duration: 341ms
+    thinking_duration_ms: 341
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py</path>
+          <type>file</type>
+          <content>
+          1: # ruff: noqa: E501
+          2: import logging
+          3: 
+          4: import sentry_sdk
+          5: from sentry_sdk.integrations.celery import CeleryIntegration
+          6: from sentry_sdk.integrations.django import DjangoIntegration
+          7: from sentry_sdk.integrations.logging import LoggingIntegration
+          8: from sentry_sdk.integrations.redis import RedisIntegration
+          9: 
+          10: from .base import *  # noqa: F403
+          11: from .base import DATABASES
+          12: from .base import INSTALLED_APPS
+          13: from .base import REDIS_URL
+          14: from .base import SPECTACULAR_SETTINGS
+          15: from .base import env
+          16: 
+          17: # GENERAL
+          18: # ------------------------------------------------------------------------------
+          19: # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
+          20: SECRET_KEY = env("DJANGO_SECRET_KEY")
+          21: # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
+          22: ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["acers.com"])
+          23: 
+          24: # DATABASES
+          25: # ------------------------------------------------------------------------------
+          26: DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
+          27: 
+          28: # CACHES
+          29: # ------------------------------------------------------------------------------
+          30: CACHES = {
+          31:     "default": {
+          32:         "BACKEND": "django_redis.cache.RedisCache",
+          33:         "LOCATION": REDIS_URL,
+          34:         "OPTIONS": {
+          35:             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+          36:             # Mimicking memcache behavior.
+          37:             # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
+          38:             "IGNORE_EXCEPTIONS": True,
+          39:         },
+          40:     },
+          41: }
+          42: 
+          43: # SECURITY
+          44: # ------------------------------------------------------------------------------
+          45: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-proxy-ssl-header
+          46: SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+          47: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
+          48: SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+          49: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
+          50: SESSION_COOKIE_SECURE = True
+          51: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
+          52: SESSION_COOKIE_NAME = "__Secure-sessionid"
+          53: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-secure
+          54: CSRF_COOKIE_SECURE = True
+          55: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-name
+          56: CSRF_COOKIE_NAME = "__Secure-csrftoken"
+          57: # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
+          58: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
+          59: # TODO: set this to 60 seconds first and then to 518400 once you prove the former works
+          60: SECURE_HSTS_SECONDS = 60
+          61: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-include-subdomains
+          62: SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
+          63:     "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+          64:     default=True,
+          65: )
+          66: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-preload
+          67: SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=True)
+          68: # https://docs.djangoproject.com/en/dev/ref/middleware/#x-content-type-options-nosniff
+          69: SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
+          70:     "DJANGO_SECURE_CONTENT_TYPE_NOSNIFF",
+          71:     default=True,
+          72: )
+          73: 
+          74: 
+          75: AZURE_ACCOUNT_KEY = env("DJANGO_AZURE_ACCOUNT_KEY")
+          76: AZURE_ACCOUNT_NAME = env("DJANGO_AZURE_ACCOUNT_NAME")
+          77: AZURE_CONTAINER = env("DJANGO_AZURE_CONTAINER_NAME")
+          78: # STATIC & MEDIA
+          79: # ------------------------
+          80: STORAGES = {
+          81:     "default": {
+          82:         "BACKEND": "storages.backends.azure_storage.AzureStorage",
+          83:         "OPTIONS": {
+          84:             "location": "media",
+          85:             "overwrite_files": False,
+          86:         },
+          87:     },
+          88:     "staticfiles": {
+          89:         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+          90:     },
+          91: }
+          92: MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/media/"
+          93: 
+          94: # EMAIL
+          95: # ------------------------------------------------------------------------------
+          96: # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
+          97: DEFAULT_FROM_EMAIL = env(
+          98:     "DJANGO_DEFAULT_FROM_EMAIL",
+          99:     default="core <noreply@acers.com>",
+          100: )
+          101: # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
+          102: SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+          103: # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
+          104: EMAIL_SUBJECT_PREFIX = env(
+          105:     "DJANGO_EMAIL_SUBJECT_PREFIX",
+          106:     default="[core] ",
+          107: )
+          108: ACCOUNT_EMAIL_SUBJECT_PREFIX = EMAIL_SUBJECT_PREFIX
+          109: 
+          110: # ADMIN
+          111: # ------------------------------------------------------------------------------
+          112: # Django Admin URL regex.
+          113: ADMIN_URL = env("DJANGO_ADMIN_URL")
+          114: 
+          115: # Anymail
+          116: # ------------------------------------------------------------------------------
+          117: # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
+          118: INSTALLED_APPS += ["anymail"]
+          119: # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
+          120: # https://anymail.readthedocs.io/en/stable/installation/#anymail-settings-reference
+          121: # https://anymail.readthedocs.io/en/stable/esps
+          122: EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+          123: ANYMAIL = {}
+          124: 
+          125: # django-compressor
+          126: # ------------------------------------------------------------------------------
+          127: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_ENABLED
+          128: COMPRESS_ENABLED = env.bool("COMPRESS_ENABLED", default=True)
+          129: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_URL
+          130: COMPRESS_URL = STATIC_URL  # noqa: F405
+          131: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_OFFLINE
+          132: COMPRESS_OFFLINE = True  # Offline compression is required when using Whitenoise
+          133: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_FILTERS
+          134: COMPRESS_FILTERS = {
+          135:     "css": [
+          136:         "compressor.filters.css_default.CssAbsoluteFilter",
+          137:         "compressor.filters.cssmin.rCSSMinFilter",
+          138:     ],
+          139:     "js": ["compressor.filters.jsmin.JSMinFilter"],
+          140: }
+          141: 
+          142: # LOGGING
+          143: # ------------------------------------------------------------------------------
+          144: # https://docs.djangoproject.com/en/dev/ref/settings/#logging
+          145: # See https://docs.djangoproject.com/en/dev/topics/logging for
+          146: # more details on how to customize your logging configuration.
+          147: 
+          148: LOGGING = {
+          149:     "version": 1,
+          150:     "disable_existing_loggers": True,
+          151:     "formatters": {
+          152:         "verbose": {
+          153:             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+          154:         },
+          155:     },
+          156:     "handlers": {
+          157:         "console": {
+          158:             "level": "DEBUG",
+          159:             "class": "logging.StreamHandler",
+          160:             "formatter": "verbose",
+          161:         },
+          162:     },
+          163:     "root": {"level": "INFO", "handlers": ["console"]},
+          164:     "loggers": {
+          165:         "django.db.backends": {
+          166:             "level": "ERROR",
+          167:             "handlers": ["console"],
+          168:             "propagate": False,
+          169:         },
+          170:         # Errors logged by the SDK itself
+          171:         "sentry_sdk": {"level": "ERROR", "handlers": ["console"], "propagate": False},
+          172:         "django.security.DisallowedHost": {
+          173:             "level": "ERROR",
+          174:             "handlers": ["console"],
+          175:             "propagate": False,
+          176:         },
+          177:     },
+          178: }
+          179: 
+          180: # Sentry
+          181: # ------------------------------------------------------------------------------
+          182: SENTRY_DSN = env("SENTRY_DSN")
+          183: SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
+          184: 
+          185: sentry_logging = LoggingIntegration(
+          186:     level=SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
+          187:     event_level=logging.ERROR,  # Send errors as events
+          188: )
+          189: integrations = [
+          190:     sentry_logging,
+          191:     DjangoIntegration(),
+          192:     CeleryIntegration(),
+          193:     RedisIntegration(),
+          194: ]
+          195: sentry_sdk.init(
+          196:     dsn=SENTRY_DSN,
+          197:     integrations=integrations,
+          198:     environment=env("SENTRY_ENVIRONMENT", default="production"),
+          199:     traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+          200: )
+          201: 
+          202: # django-rest-framework
+          203: # -------------------------------------------------------------------------------
+          204: # Tools that generate code samples can use SERVERS to point to the correct domain
+          205: SPECTACULAR_SETTINGS["SERVERS"] = [
+          206:     {"url": "https://acers.com", "description": "Production server"},
+          207: ]
+          208: # Your stuff...
+          209: # ------------------------------------------------------------------------------
+
+          (End of file - total 209 lines)
+          </content>
+    time: 7/26/2026, 5:52:21.865 AM GMT+5:30
+    duration: 1.988s
+    duration_ms: 1988
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Now let me check the local settings to see if there's caching there as well
+    thinking_duration: 144ms
+    thinking_duration_ms: 144
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/local.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/local.py</path>
+          <type>file</type>
+          <content>
+          1: # ruff: noqa: E501
+          2: from .base import *  # noqa: F403
+          3: from .base import INSTALLED_APPS
+          4: from .base import MIDDLEWARE
+          5: from .base import env
+          6: 
+          7: # GENERAL
+          8: # ------------------------------------------------------------------------------
+          9: # https://docs.djangoproject.com/en/dev/ref/settings/#debug
+          10: DEBUG = True
+          11: # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
+          12: SECRET_KEY = env(
+          13:     "DJANGO_SECRET_KEY",
+          14: )
+          15: # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
+          16: #ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1","192.168.10.179","192.168.10.51","3001","backend.acers.space","acers.space",
+          17: #                 "website.acers.space","20.74.223.141","20.74.223.141:8000","20.74.223.141:3000","stagingf.acers.space","acers.space:8000"]  
+          18: #ALLOWED_HOSTS = ["localhost", "0.0.0.0", "127.0.0.1","40.120.108.178"]
+          19: ALLOWED_HOSTS = ['*']
+          20: # CACHES
+          21: # ------------------------------------------------------------------------------
+          22: # https://docs.djangoproject.com/en/dev/ref/settings/#caches
+          23: CACHES = {
+          24:     "default": {
+          25:         "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+          26:         "LOCATION": "",
+          27:     },
+          28: }
+          29: 
+          30: # EMAIL
+          31: # ------------------------------------------------------------------------------
+          32: # https://docs.djangoproject.com/en/dev/ref/settings/#email-host
+          33: EMAIL_HOST = env("EMAIL_HOST", default="mailpit")
+          34: # https://docs.djangoproject.com/en/dev/ref/settings/#email-port
+          35: EMAIL_PORT = 1025
+          36: 
+          37: # WhiteNoise
+          38: # ------------------------------------------------------------------------------
+          39: # http://whitenoise.evans.io/en/latest/django.html#using-whitenoise-in-development
+          40: INSTALLED_APPS = ["whitenoise.runserver_nostatic", *INSTALLED_APPS]
+          41: 
+          42: 
+          43: # django-debug-toolbar
+          44: # ------------------------------------------------------------------------------
+          45: # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#prerequisites
+          46: INSTALLED_APPS += ["debug_toolbar"]
+          47: # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#middleware
+          48: MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
+          49: # https://django-debug-toolbar.readthedocs.io/en/latest/configuration.html#debug-toolbar-config
+          50: DEBUG_TOOLBAR_CONFIG = {
+          51:     "DISABLE_PANELS": [
+          52:         "debug_toolbar.panels.redirects.RedirectsPanel",
+          53:         # Disable profiling panel due to an issue with Python 3.12:
+          54:         # https://github.com/jazzband/django-debug-toolbar/issues/1875
+          55:         "debug_toolbar.panels.profiling.ProfilingPanel",
+          56:     ],
+          57:     "SHOW_TEMPLATE_CONTEXT": True,
+          58: }
+          59: # https://django-debug-toolbar.readthedocs.io/en/latest/installation.html#internal-ips
+          60: INTERNAL_IPS = ["127.0.0.1", "10.0.2.2"]
+          61: if env("USE_DOCKER") == "yes":
+          62:     import socket
+          63: 
+          64:     hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
+          65:     INTERNAL_IPS += [".".join(ip.split(".")[:-1] + ["1"]) for ip in ips]
+          66:     # RunServerPlus
+          67:     # ------------------------------------------------------------------------------
+          68:     # This is a custom setting for RunServerPlus to fix reloader issue in Windows docker environment
+          69:     # Werkzeug reloader type [auto, watchdog, or stat]
+          70:     RUNSERVERPLUS_POLLER_RELOADER_TYPE = 'stat'
+          71:     # If you have CPU and IO load issues, you can increase this poller interval e.g) 5
+          72:     RUNSERVERPLUS_POLLER_RELOADER_INTERVAL = 1
+          73: 
+          74: # django-extensions
+          75: # ------------------------------------------------------------------------------
+          76: # https://django-extensions.readthedocs.io/en/latest/installation_instructions.html#configuration
+          77: INSTALLED_APPS += ["django_extensions"]
+          78: # Celery
+          79: # ------------------------------------------------------------------------------
+          80: 
+          81: # https://docs.celeryq.dev/en/stable/userguide/configuration.html#task-eager-propagates
+          82: CELERY_TASK_EAGER_PROPAGATES = True
+          83: # Your stuff...
+          84: # ------------------------------------------------------------------------------
+
+          (End of file - total 84 lines)
+          </content>
+    time: 7/26/2026, 5:52:24.080 AM GMT+5:30
+    duration: 2.053s
+    duration_ms: 2053
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Now let me check the requirements to see what's installed for caching, and also check the Redis and Kafka
+    thinking_duration: 575ms
+    thinking_duration_ms: 575
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/base.txt
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/base.txt</path>
+          <type>file</type>
+          <content>
+          1: # Generated from environment.yml — do not edit directly.
+          2: # Run: python scripts/export_requirements.py
+          3: 
+          4: # ── ASGI / WebSockets ────────────────────────────────────────────
+          5: anyio==4.8.0  # ASGI / WebSockets
+          6: channels==4.2.2  # ASGI / WebSockets
+          7: channels-redis==4.2.1  # ASGI / WebSockets
+          8: daphne==4.1.2  # ASGI / WebSockets
+          9: httptools==0.6.4  # ASGI / WebSockets
+          10: starlette==0.45.3  # ASGI / WebSockets
+          11: uvicorn==0.34.0  # ASGI / WebSockets
+          12: uvicorn-worker==0.3.0  # ASGI / WebSockets
+          13: watchfiles==1.0.4  # ASGI / WebSockets
+          14: websockets==14.2  # ASGI / WebSockets
+          15: 
+          16: # ── Authentication & Security ────────────────────────────────────────────
+          17: argon2-cffi==23.1.0  # Authentication & Security
+          18: cryptography==44.0.0  # Authentication & Security
+          19: django-allauth==65.3.1  # Authentication & Security
+          20: djangorestframework-simplejwt==5.4.0  # Authentication & Security
+          21: fido2==1.2.0  # Authentication & Security
+          22: oauthlib==3.2.2  # Authentication & Security
+          23: pyasn1==0.6.1  # Authentication & Security
+          24: pyjwt==2.10.1  # Authentication & Security
+          25: pyopenssl==25.0.0  # Authentication & Security
+          26: python3-openid==3.2.0  # Authentication & Security
+          27: requests-oauthlib==2.0.0  # Authentication & Security
+          28: rsa==4.9  # Authentication & Security
+          29: social-auth-core==4.5.4  # Authentication & Security
+          30: 
+          31: # ── Data Processing ────────────────────────────────────────────
+          32: arrow==1.3.0  # Data Processing
+          33: dateparser==1.2.1  # Data Processing
+          34: humanize==4.11.0  # Data Processing
+          35: imageio==2.37.0  # Data Processing
+          36: inflection==0.5.1  # Data Processing
+          37: isodate==0.7.2  # Data Processing
+          38: jsonschema==4.23.0  # Data Processing
+          39: moviepy==2.2.1  # Data Processing
+          40: numpy==2.2.4  # Data Processing
+          41: openpyxl==3.1.5  # Data Processing
+          42: pandas==2.2.3  # Data Processing
+          43: phonenumbers==8.13.54  # Data Processing
+          44: pycountry==24.6.1  # Data Processing
+          45: pygments==2.19.1  # Data Processing
+          46: python-dateutil==2.9.0  # Data Processing
+          47: pytz==2025.1  # Data Processing
+          48: regex==2024.11.6  # Data Processing
+          49: simplejson==3.19.3  # Data Processing
+          50: tqdm==4.67.1  # Data Processing
+          51: tzdata==2025.1  # Data Processing
+          52: tzlocal==5.2  # Data Processing
+          53: ua-parser==1.0.1  # Data Processing
+          54: user-agents==2.2.0  # Data Processing
+          55: 
+          56: # ── Database & Storage ────────────────────────────────────────────
+          57: azure-core==1.32.0  # Database & Storage
+          58: azure-storage-blob==12.24.1  # Database & Storage
+          59: django-redis==5.4.0  # Database & Storage
+          60: hiredis==3.1.0  # Database & Storage
+          61: psycopg2==2.9.10  # Database & Storage
+          62: pymongo==4.1.1  # Database & Storage
+          63: redis==5.2.1  # Database & Storage
+          64: sqlalchemy==1.4.54  # Database & Storage
+          65: sqlparse==0.5.3  # Database & Storage
+          66: 
+          67: # ── HTTP & Networking ────────────────────────────────────────────
+          68: certifi==2025.1.31  # HTTP & Networking
+          69: charset-normalizer==3.4.1  # HTTP & Networking
+          70: dnspython==2.7.0  # HTTP & Networking
+          71: httplib2==0.22.0  # HTTP & Networking
+          72: idna==3.10  # HTTP & Networking
+          73: requests==2.32.3  # HTTP & Networking
+          74: sniffio==1.3.1  # HTTP & Networking
+          75: urllib3==2.3.0  # HTTP & Networking
+          76: 
+          77: # ── Payment / API ────────────────────────────────────────────
+          78: apscheduler==3.11.0  # Payment / API
+          79: prometheus-client==0.21.1  # Payment / API
+          80: qrcode==8.0  # Payment / API
+          81: stripe==11.5.0  # Payment / API
+          82: 
+          83: # ── Static Assets / Media ────────────────────────────────────────────
+          84: pillow==11.1.0  # Static Assets / Media
+          85: python-slugify==8.0.4  # Static Assets / Media
+          86: rcssmin==1.1.2  # Static Assets / Media
+          87: whitenoise==6.8.2  # Static Assets / Media
+          88: 
+          89: # ── Task Queue ────────────────────────────────────────────
+          90: amqp==5.3.1  # Task Queue
+          91: billiard==4.2.1  # Task Queue
+          92: celery==5.4.0  # Task Queue
+          93: click==8.1.8  # Task Queue
+          94: click-didyoumean==0.3.1  # Task Queue
+          95: click-plugins==1.1.1  # Task Queue
+          96: django-celery-beat==2.7.0  # Task Queue
+          97: flower==2.0.1  # Task Queue
+          98: kombu==5.4.2  # Task Queue
+          99: vine==5.1.0  # Task Queue
+          100: 
+          101: # ── Templating / Markup ────────────────────────────────────────────
+          102: cssbeautifier==1.15.1  # Templating / Markup
+          103: defusedxml==0.8.0rc2  # Templating / Markup
+          104: et_xmlfile==2.0.0  # Templating / Markup
+          105: jinja2==3.1.5  # Templating / Markup
+          106: jsbeautifier==1.15.1  # Templating / Markup
+          107: json5==0.10.0  # Templating / Markup
+          108: markupsafe==3.0.2  # Templating / Markup
+          109: pyyaml==6.0.2  # Templating / Markup
+          110: 
+          111: # ── Web Framework ────────────────────────────────────────────
+          112: crispy-bootstrap5==2024.10  # Web Framework
+          113: django==5.0.11  # Web Framework
+          114: django-compressor==4.5.1  # Web Framework
+          115: django-cors-headers==4.6.0  # Web Framework
+          116: django-crispy-forms==2.3  # Web Framework
+          117: django-environ==0.12.0  # Web Framework
+          118: django-model-utils==5.0.0  # Web Framework
+          119: django-stubs==5.1.2  # Web Framework
+          120: djangorestframework==3.15.2  # Web Framework
+          121: djangorestframework-stubs==3.15.2  # Web Framework
+          122: drf-spectacular==0.28.0  # Web Framework
+          123: graphene==2.1.9  # Web Framework
+          124: 
+
+          (End of file - total 124 lines)
+          </content>
+    time: 7/26/2026, 5:52:26.301 AM GMT+5:30
+    duration: 2.060s
+    duration_ms: 2060
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me also check the production requirements to see what's in there
+    thinking_duration: 577ms
+    thinking_duration_ms: 577
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/production.txt
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/requirements/production.txt</path>
+          <type>file</type>
+          <content>
+          1: # Generated from environment.yml — do not edit directly.
+          2: # Production-only extras (added to base.txt).
+          3: 
+          4: -r base.txt
+          5: 
+          6: # ── ASGI / WebSockets ────────────────────────────────────────────
+          7: gunicorn==23.0.0  # ASGI / WebSockets
+          8: 
+          9: # ── Database & Storage ────────────────────────────────────────────
+          10: django-anymail==12.0  # Database & Storage
+          11: django-storages==1.14.4  # Database & Storage
+          12: 
+          13: # ── Payment / API ────────────────────────────────────────────
+          14: sentry-sdk==2.20.0  # Payment / API
+          15: 
+          16: # ── PyPI-only (not on conda-forge) ────────────────────────
+          17: django-apscheduler==0.7.0  # PyPI-only (fallback via pip)
+          18: django-jet-reboot==1.3.10  # PyPI-only (fallback via pip)
+          19: forex-python==1.8  # PyPI-only (fallback via pip)
+          20: msgpack==1.1.0  # PyPI-only (fallback via pip)
+          21: 
+
+          (End of file - total 21 lines)
+          </content>
+    time: 7/26/2026, 5:52:28.525 AM GMT+5:30
+    duration: 2.241s
+    duration_ms: 2241
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Now let me check the celery configuration and see what's using Redis, also check for any Kafka integration
+    thinking_duration: 641ms
+    thinking_duration_ms: 641
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/celery_app.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/celery_app.py</path>
+          <type>file</type>
+          <content>
+          1: import os
+          2: 
+          3: from celery import Celery
+          4: from celery.signals import setup_logging
+          5: from celery.schedules import crontab
+          6: 
+          7: # set the default Django settings module for the 'celery' program.
+          8: os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
+          9: 
+          10: app = Celery("acers",broker='redis://localhost:6379/0')
+          11: 
+          12: app.config_from_object("django.conf:settings", namespace="CELERY")
+          13: 
+          14: 
+          15: @setup_logging.connect
+          16: def config_loggers(*args, **kwargs):
+          17:     from logging.config import dictConfig
+          18: 
+          19:     from django.conf import settings
+          20: 
+          21:     dictConfig(settings.LOGGING)
+          22: 
+          23: 
+          24: app.autodiscover_tasks()
+          25: 
+          26: app.conf.beat_schedule = {
+          27:     # 'run-every-30-seconds': {
+          28:     #     'task': 'apps.scheduler.tasks.swaps_calculations',
+          29:     #    'schedule': 30.0
+          30:     # }
+          31: 
+          32:     # Task 1: Swaps calculations at 12 P
+          33:     'run-every-morning': {
+          34:         'task': 'apps.scheduler.tasks.swaps_calculations',
+          35:         'schedule': crontab(hour=0, minute=0),  # ⏰ 11:10 AM IST (UTC +5:30)
+          36:     },
+          37: 
+          38:     'run-every-morning-arrayfile': {
+          39:         'task': 'apps.scheduler.tasks.download_array_file_task',
+          40:         'schedule': crontab(hour=6, minute=25),
+          41:         },
+          42:     
+          43:     # 'run-every-morning-tt': {
+          44:     # 'task': 'apps.scheduler.tasks.run_tt_api_trades',
+          45:     # 'schedule': crontab(hour=11, minute=15),  # every minute
+          46:     # },
+          47: 
+          48:     # 'run-every-morning-ice': {
+          49:     # 'task': 'apps.scheduler.tasks.run_ice_api_trades',
+          50:     # 'schedule': crontab(hour=11, minute=16),  # every minute
+          51:     # },
+          52: 
+          53:     #_____________________________________PNL Daily Tasks ____________________________________________________
+          54: 
+          55:     #step 1
+          56:     # 'run-update-yesterday-mtm': {
+          57:     #     'task': 'apps.scheduler.tasks.run_update_yesterday_mtm',
+          58:     #     # 'schedule': crontab(hour=0, minute=30),  # ⏰ 6:00 AM IST (UTC +5:30)
+          59:     #      'schedule': crontab(hour=8, minute=5),  # ⏰ 1:35 PM IST (UTC +5:30)
+          60:     # },
+          61: 
+          62:     #step 2
+          63: 
+          64:     # 'run-daily-nasdaq-prices': {
+          65:     #     'task': 'apps.scheduler.tasks.download_nasdaq_prices',
+          66:     #     'schedule': crontab(hour=2, minute=0),  # ⏰ 7:30 AM IST (UTC +5:30)
+          67:     # },
+          68: 
+          69:     #step 3
+          70: 
+          71:     # 'run-daily-future-pnl': {
+          72:     #     'task': 'apps.scheduler.tasks.run_daily_future_pnl_calculations',
+          73:     #     # 'schedule': crontab(hour=3, minute=0),  # ⏰ 8:30 AM IST (UTC +5:30)
+          74:     #     # 'schedule': crontab(hour=12, minute=16),  # ⏰ 5:46 PM IST
+          75:     #     'schedule': crontab(hour=13, minute=56),  # ⏰ 7:26 PM IST (UTC +5:30)
+          76:     # },
+          77: 
+          78:     #step 4
+          79: 
+          80:     # 'run-daily-swaps-pnl': {
+          81:     # 'task': 'apps.scheduler.tasks.daily_pnl_update_swaps',
+          82:     # # 'schedule': crontab(hour=3, minute=30),  # ⏰ 9:00 AM IST (UTC +5:30)
+          83:     # 'schedule': crontab(hour=7, minute=40),  # ⏰ 1:10 PM IST (UTC +5:30)
+          84:     # },
+          85: 
+          86:     'run-every-morning-calc': {
+          87:     'task': 'apps.scheduler.tasks.swaps_calculations_chunked',
+          88:     'schedule': crontab(hour=1, minute=15),  # ⏰ 11:10 AM IST (UTC +5:30)
+          89:     }
+          90:         
+          91: }
+          92: 
+          93: 
+          94: 
+
+          (End of file - total 94 lines)
+          </content>
+    time: 7/26/2026, 5:52:30.924 AM GMT+5:30
+    duration: 2.195s
+    duration_ms: 2195
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: Let me also check the production settings for any caching configuration
+    thinking_duration: 1.385s
+    thinking_duration_ms: 1385
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py
+        result: |-
+          <path>/Users/dk/lab-data/oleovista-acers/acers-backend/acers/config/settings/production.py</path>
+          <type>file</type>
+          <content>
+          1: # ruff: noqa: E501
+          2: import logging
+          3: 
+          4: import sentry_sdk
+          5: from sentry_sdk.integrations.celery import CeleryIntegration
+          6: from sentry_sdk.integrations.django import DjangoIntegration
+          7: from sentry_sdk.integrations.logging import LoggingIntegration
+          8: from sentry_sdk.integrations.redis import RedisIntegration
+          9: 
+          10: from .base import *  # noqa: F403
+          11: from .base import DATABASES
+          12: from .base import INSTALLED_APPS
+          13: from .base import REDIS_URL
+          14: from .base import SPECTACULAR_SETTINGS
+          15: from .base import env
+          16: 
+          17: # GENERAL
+          18: # ------------------------------------------------------------------------------
+          19: # https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
+          20: SECRET_KEY = env("DJANGO_SECRET_KEY")
+          21: # https://docs.djangoproject.com/en/dev/ref/settings/#allowed-hosts
+          22: ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["acers.com"])
+          23: 
+          24: # DATABASES
+          25: # ------------------------------------------------------------------------------
+          26: DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
+          27: 
+          28: # CACHES
+          29: # ------------------------------------------------------------------------------
+          30: CACHES = {
+          31:     "default": {
+          32:         "BACKEND": "django_redis.cache.RedisCache",
+          33:         "LOCATION": REDIS_URL,
+          34:         "OPTIONS": {
+          35:             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+          36:             # Mimicking memcache behavior.
+          37:             # https://github.com/jazzband/django-redis#memcached-exceptions-behavior
+          38:             "IGNORE_EXCEPTIONS": True,
+          39:         },
+          40:     },
+          41: }
+          42: 
+          43: # SECURITY
+          44: # ------------------------------------------------------------------------------
+          45: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-proxy-ssl-header
+          46: SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+          47: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-ssl-redirect
+          48: SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT", default=True)
+          49: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-secure
+          50: SESSION_COOKIE_SECURE = True
+          51: # https://docs.djangoproject.com/en/dev/ref/settings/#session-cookie-name
+          52: SESSION_COOKIE_NAME = "__Secure-sessionid"
+          53: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-secure
+          54: CSRF_COOKIE_SECURE = True
+          55: # https://docs.djangoproject.com/en/dev/ref/settings/#csrf-cookie-name
+          56: CSRF_COOKIE_NAME = "__Secure-csrftoken"
+          57: # https://docs.djangoproject.com/en/dev/topics/security/#ssl-https
+          58: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-seconds
+          59: # TODO: set this to 60 seconds first and then to 518400 once you prove the former works
+          60: SECURE_HSTS_SECONDS = 60
+          61: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-include-subdomains
+          62: SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
+          63:     "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS",
+          64:     default=True,
+          65: )
+          66: # https://docs.djangoproject.com/en/dev/ref/settings/#secure-hsts-preload
+          67: SECURE_HSTS_PRELOAD = env.bool("DJANGO_SECURE_HSTS_PRELOAD", default=True)
+          68: # https://docs.djangoproject.com/en/dev/ref/middleware/#x-content-type-options-nosniff
+          69: SECURE_CONTENT_TYPE_NOSNIFF = env.bool(
+          70:     "DJANGO_SECURE_CONTENT_TYPE_NOSNIFF",
+          71:     default=True,
+          72: )
+          73: 
+          74: 
+          75: AZURE_ACCOUNT_KEY = env("DJANGO_AZURE_ACCOUNT_KEY")
+          76: AZURE_ACCOUNT_NAME = env("DJANGO_AZURE_ACCOUNT_NAME")
+          77: AZURE_CONTAINER = env("DJANGO_AZURE_CONTAINER_NAME")
+          78: # STATIC & MEDIA
+          79: # ------------------------
+          80: STORAGES = {
+          81:     "default": {
+          82:         "BACKEND": "storages.backends.azure_storage.AzureStorage",
+          83:         "OPTIONS": {
+          84:             "location": "media",
+          85:             "overwrite_files": False,
+          86:         },
+          87:     },
+          88:     "staticfiles": {
+          89:         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+          90:     },
+          91: }
+          92: MEDIA_URL = f"https://{AZURE_ACCOUNT_NAME}.blob.core.windows.net/media/"
+          93: 
+          94: # EMAIL
+          95: # ------------------------------------------------------------------------------
+          96: # https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email
+          97: DEFAULT_FROM_EMAIL = env(
+          98:     "DJANGO_DEFAULT_FROM_EMAIL",
+          99:     default="core <noreply@acers.com>",
+          100: )
+          101: # https://docs.djangoproject.com/en/dev/ref/settings/#server-email
+          102: SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
+          103: # https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix
+          104: EMAIL_SUBJECT_PREFIX = env(
+          105:     "DJANGO_EMAIL_SUBJECT_PREFIX",
+          106:     default="[core] ",
+          107: )
+          108: ACCOUNT_EMAIL_SUBJECT_PREFIX = EMAIL_SUBJECT_PREFIX
+          109: 
+          110: # ADMIN
+          111: # ------------------------------------------------------------------------------
+          112: # Django Admin URL regex.
+          113: ADMIN_URL = env("DJANGO_ADMIN_URL")
+          114: 
+          115: # Anymail
+          116: # ------------------------------------------------------------------------------
+          117: # https://anymail.readthedocs.io/en/stable/installation/#installing-anymail
+          118: INSTALLED_APPS += ["anymail"]
+          119: # https://docs.djangoproject.com/en/dev/ref/settings/#email-backend
+          120: # https://anymail.readthedocs.io/en/stable/installation/#anymail-settings-reference
+          121: # https://anymail.readthedocs.io/en/stable/esps
+          122: EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+          123: ANYMAIL = {}
+          124: 
+          125: # django-compressor
+          126: # ------------------------------------------------------------------------------
+          127: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_ENABLED
+          128: COMPRESS_ENABLED = env.bool("COMPRESS_ENABLED", default=True)
+          129: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_URL
+          130: COMPRESS_URL = STATIC_URL  # noqa: F405
+          131: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_OFFLINE
+          132: COMPRESS_OFFLINE = True  # Offline compression is required when using Whitenoise
+          133: # https://django-compressor.readthedocs.io/en/latest/settings/#django.conf.settings.COMPRESS_FILTERS
+          134: COMPRESS_FILTERS = {
+          135:     "css": [
+          136:         "compressor.filters.css_default.CssAbsoluteFilter",
+          137:         "compressor.filters.cssmin.rCSSMinFilter",
+          138:     ],
+          139:     "js": ["compressor.filters.jsmin.JSMinFilter"],
+          140: }
+          141: 
+          142: # LOGGING
+          143: # ------------------------------------------------------------------------------
+          144: # https://docs.djangoproject.com/en/dev/ref/settings/#logging
+          145: # See https://docs.djangoproject.com/en/dev/topics/logging for
+          146: # more details on how to customize your logging configuration.
+          147: 
+          148: LOGGING = {
+          149:     "version": 1,
+          150:     "disable_existing_loggers": True,
+          151:     "formatters": {
+          152:         "verbose": {
+          153:             "format": "%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s",
+          154:         },
+          155:     },
+          156:     "handlers": {
+          157:         "console": {
+          158:             "level": "DEBUG",
+          159:             "class": "logging.StreamHandler",
+          160:             "formatter": "verbose",
+          161:         },
+          162:     },
+          163:     "root": {"level": "INFO", "handlers": ["console"]},
+          164:     "loggers": {
+          165:         "django.db.backends": {
+          166:             "level": "ERROR",
+          167:             "handlers": ["console"],
+          168:             "propagate": False,
+          169:         },
+          170:         # Errors logged by the SDK itself
+          171:         "sentry_sdk": {"level": "ERROR", "handlers": ["console"], "propagate": False},
+          172:         "django.security.DisallowedHost": {
+          173:             "level": "ERROR",
+          174:             "handlers": ["console"],
+          175:             "propagate": False,
+          176:         },
+          177:     },
+          178: }
+          179: 
+          180: # Sentry
+          181: # ------------------------------------------------------------------------------
+          182: SENTRY_DSN = env("SENTRY_DSN")
+          183: SENTRY_LOG_LEVEL = env.int("DJANGO_SENTRY_LOG_LEVEL", logging.INFO)
+          184: 
+          185: sentry_logging = LoggingIntegration(
+          186:     level=SENTRY_LOG_LEVEL,  # Capture info and above as breadcrumbs
+          187:     event_level=logging.ERROR,  # Send errors as events
+          188: )
+          189: integrations = [
+          190:     sentry_logging,
+          191:     DjangoIntegration(),
+          192:     CeleryIntegration(),
+          193:     RedisIntegration(),
+          194: ]
+          195: sentry_sdk.init(
+          196:     dsn=SENTRY_DSN,
+          197:     integrations=integrations,
+          198:     environment=env("SENTRY_ENVIRONMENT", default="production"),
+          199:     traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+          200: )
+          201: 
+          202: # django-rest-framework
+          203: # -------------------------------------------------------------------------------
+          204: # Tools that generate code samples can use SERVERS to point to the correct domain
+          205: SPECTACULAR_SETTINGS["SERVERS"] = [
+          206:     {"url": "https://acers.com", "description": "Production server"},
+          207: ]
+          208: # Your stuff...
+          209: # ------------------------------------------------------------------------------
+
+          (End of file - total 209 lines)
+          </content>
+    time: 7/26/2026, 5:52:33.269 AM GMT+5:30
+    duration: 3.989s
+    duration_ms: 3989
+  - agent: build
+    model:
+      id: nvidia/nemotron-3-ultra-550b-a55b:free
+      provider: openrouter-banee-google-2
+    thinking: |-
+      Now I have a good understanding of the project's caching setup. Let me summarize:
+
+      1. **Production uses Redis cache** (`django_redis.cache.RedisCache`) with Redis URL from environment variable
+      2. **Local development** doesn't seem to have CACHES configured - it uses Django's default local-memory cache
+      3. **Celery uses Redis** as broker and result backend
+      4. **Channels uses Redis** for WebSocket channel layers
+      5. **Kafka** - I didn't see any Kafka integration in the project
+
+      Let me provide a comprehensive answer about caching advantages, Redis cache, and Kafka cache.
+    thinking_duration: 1.332s
+    thinking_duration_ms: 1332
+    time: 7/26/2026, 5:52:37.425 AM GMT+5:30
+    response: |-
+      Based on my analysis of your Django project (`/Users/dk/lab-data/oleovista-acers/acers-backend/acers`), here's the caching situation:
+
+      ## Current Caching Setup
+
+      | Environment | Cache Backend |
+      |-------------|---------------|
+      | **Production** | **Redis** (`django_redis.cache.RedisCache`) via `REDIS_URL` env var |
+      | **Local/Dev** | Django's default **locmem** (in-memory) cache |
+
+      **Dependencies installed:**
+      - `django-redis==5.4.0`
+      - `redis==5.2.1`
+      - `hiredis==3.1.0`
+
+      **Redis is already used for:**
+      - Django cache (production)
+      - Celery broker & result backend
+      - Django Channels WebSocket layer
+
+      ---
+
+      ## Caching Advantages for Your Project
+
+      **Yes, caching provides significant performance improvements:**
+
+      | Cache Target | Typical Speedup | Your Use Cases |
+      |--------------|-----------------|----------------|
+      | **Database queries** (Django ORM) | 10-100x | Company/plans/users queries, scheduler tasks |
+      | **API responses** (DRF) | 5-50x | REST endpoints, swagger schema |
+      | **Session storage** | 10x vs DB | JWT tokens, allauth sessions |
+      | **Celery results** | 100x vs DB | Swaps calculations, pricing tasks |
+      | **WebSocket channels** | Required | Real-time chat/scheduler |
+
+      **Your specific wins:**
+      - `swaps_calculations` scheduled task (runs daily) → cache computed results
+      - `Company`/`Plans` models → cache queryset results
+      - REST API responses → `drf-spectacular` caching
+      - JWT token blacklist → already uses Redis via `rest_framework_simplejwt.token_blacklist`
+
+      ---
+
+      ## Redis Cache (Currently Configured for Production)
+
+      **Pros:**
+      - ✅ **Already configured** in `production.py:30-41`
+      - ✅ **Sub-millisecond latency** (in-memory)
+      - ✅ **TTL/expiration** built-in
+      - ✅ **Pub/Sub** for cache invalidation across workers
+      - ✅ **Shared across** Django, Celery, Channels
+      - ✅ **django-redis** supports native Django cache API
+
+      **Cons:**
+      - Requires Redis server (you have `redis://redis:6379/0` in docker-compose)
+      - Memory-limited (plan capacity accordingly)
+
+      **To enable locally:** Add to `local.py`:
+      ```python
+      CACHES = {
+          "default": {
+              "BACKEND": "django_redis.cache.RedisCache",
+              "LOCATION": "redis://localhost:6379/1",
+              "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+          }
+      }
+      ```
+
+      ---
+
+      ## Kafka Cache (Not Present)
+
+      **Your project has NO Kafka integration.** I searched for:
+      - `kafka` / `confluent-kafka` / `aiokafka` → **not in requirements**
+      - Kafka settings → **none in settings files**
+      - Celery broker → **Redis**, not Kafka
+
+      **Kafka ≠ Cache.** Kafka is a **distributed log/stream processor**, not a cache. You'd use it for:
+      - Event sourcing / audit trails
+      - Inter-service messaging
+      - Stream processing (e.g., real-time pricing feeds)
+
+      **If you need Kafka later**, you'd add it alongside Redis (not replace it):
+      - `confluent-kafka` for producers/consumers
+      - Redis remains the cache; Kafka handles event streaming
+
+      ---
+
+      ## Recommendation
+
+      | Action | Priority |
+      |--------|----------|
+      | **Enable Redis cache locally** (add CACHES to local.py) | High - matches prod parity |
+      | **Add `@cache_page` or `cache_response`** to heavy API views | High - immediate API speedup |
+      | **Use `django-redis` native features** (tag-based invalidation, scan_iter) | Medium |
+      | **Monitor Redis memory** (set `maxmemory-policy allkeys-lru`) | Medium |
+      | **Skip Kafka** unless you need event streaming | N/A - not needed for caching |
+    duration: 9.702s
+    duration_ms: 9702
+

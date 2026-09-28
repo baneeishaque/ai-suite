@@ -151,12 +151,9 @@ sections to be filled per §2.1 steps 4–7.
 
 ## 4. Traceability
 
-- Origin: session `ses_012fd48f0ffedPT1brWW8fcezW` (2026-08-11) — created
-  after the analysis of `ses_02f0d4351ffeTl1vcyqbPXZqvW` ("Listing absolute
-  paths of open VSCode files") demonstrated the undocumented
-  problem → solution → workflow reconstruction procedure; the composer
-  script generalizes the ad-hoc `/tmp` summarizer + narrative dumper used
-  during that analysis.
+- Origin: 2026-08-11 — created after analyzing the "Listing absolute paths of open VSCode files" workflow,
+  which demonstrated the undocumented problem → solution → workflow reconstruction procedure; the composer
+  script generalizes the ad-hoc summarizer + narrative dumper used during that analysis.
 - Created 2026-08-11
 
 ***

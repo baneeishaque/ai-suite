@@ -191,7 +191,7 @@ emitted plan is copy-executable from any `cwd`.
 | Pitfall | Solution |
 | ------- | -------- |
 | Drop list contains SHAs not on the rewritten branch | Same SHA reached from several branches; harmless in the todo writer (no match = no rewrite); the dedup in plan-removal already collapses repeats. |
-| `rebase -i` shows the submodule's INTRO line as `drop` by subject prefix too early (misplacement guard) | Turn-003 lesson: verify the drop line sits directly under the `pick` of the commit whose tree the rebase is rebuilding; a wrong `pick` above it silently re-introduces the gitlink. |
+| `rebase -i` shows the submodule's INTRO line as `drop` by subject prefix too early (misplacement guard) | Verify the drop line sits directly under the `pick` of the commit whose tree the rebase is rebuilding; a wrong `pick` above it silently re-introduces the gitlink. |
 | `.gitmodules` conflict mid-rebase | Resolve, `git add .gitmodules`, continue with `GIT_EDITOR=true`. |
 | `fatal: '<branch>' is already used by worktree` | Fresh `--purpose` token or `git worktree prune`. |
 | Push rejected despite lease | Fetch, re-run classifier to confirm re-created commits (someone pushed INTRO again while offline), decide with the user. |

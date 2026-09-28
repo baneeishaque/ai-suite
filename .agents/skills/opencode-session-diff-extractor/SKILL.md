@@ -107,8 +107,8 @@ python3 scripts/extract-session-diff.py --session <path> [--file-pattern <glob>]
 
 ## Traceability
 
-- Origin: Session `ses_0ef9d288dffe17xKEI2evfdzOI` (exported 2026-06-29) —
-  recovery of AGENTS.md after `git checkout HEAD -- AGENTS.md` lost 7 skill rows
+- Origin: 2026-06-29 — recovery of AGENTS.md after `git checkout HEAD --
+  AGENTS.md` lost 7 skill rows
 
 ## License
 

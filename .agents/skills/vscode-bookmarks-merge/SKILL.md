@@ -288,8 +288,7 @@ print(f'{len(data[\"files\"])} file entries, {sum(len(e[\"bookmarks\"]) for e in
 ## 10. Traceability
 
 - **Created**: 2026-07-14
-- **Source session**: `ses_0c1d09aacffehMxzFP6YJNoAhC` — cross-repo VS Code
-  bookmark migration from `oleovista-acers` to `ai-suite`.
+- **Source**: cross-repo VS Code bookmark migration from `oleovista-acers` to `ai-suite`.
 - **Design rationale**: The merge primitive was extracted as a base skill
   because the same merge-by-path + deduplicate-by-(line,column) algorithm
   is needed whenever two bookmark files need consolidation, regardless of

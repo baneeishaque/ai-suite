@@ -134,9 +134,8 @@ callers must never mistake an uninstalled extractor for "no record".
 
 ## 7. Traceability
 
-- Origin: Session `022f5142bffe9wHhj17G5A9QA1` — incident: the "mover
-  session" reordered `planning-artifact-*` files via plain `mv`, discovered
-  ad-hoc via logger YAML forensics; plan v4 Step 1.
+- Origin: incident — a `mv`-based reorder of `planning-artifact-*` files, discovered ad-hoc via
+  logger YAML forensics.
 - Created 2026-08-08
 
 ***

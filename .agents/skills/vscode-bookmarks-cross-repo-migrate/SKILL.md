@@ -311,8 +311,7 @@ composer.)*
 ## 10. Traceability
 
 - **Created**: 2026-07-14
-- **Source session**: `ses_0c1d09aacffehMxzFP6YJNoAhC` — cross-repo VS Code
-  bookmark migration from `oleovista-acers` to `ai-suite`.
+- **Source**: cross-repo VS Code bookmark migration from `oleovista-acers` to `ai-suite`.
 - **Design rationale**: Separated as a composer skill because the path
   remapping logic is domain-specific (depends on knowledge of how files were
   relocated), while the merge logic is a generic primitive.

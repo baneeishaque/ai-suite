@@ -221,7 +221,7 @@ scripts/recover-agents-md.py \
 
 ## Source Rules
 
-- Generated: 2026-06-29 from session `ses_0ef9d288dffe17xKEI2evfdzOI`
+- Generated: 2026-06-29
 - Context: AGENTS-legacy.md recovery after `git checkout HEAD -- AGENTS-legacy.md`
   in oleovista-acers repo
 - Base skill origin:

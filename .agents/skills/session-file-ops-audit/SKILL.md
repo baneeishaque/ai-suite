@@ -122,8 +122,7 @@ python3 scripts/audit-session-file-ops.py --session <path> \
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` — Layer 3 (composer)
-  of a 3-layer architecture
+- Origin: Layer 3 (composer) of a 3-layer architecture
 - Created 2026-07-04
 
 ## License

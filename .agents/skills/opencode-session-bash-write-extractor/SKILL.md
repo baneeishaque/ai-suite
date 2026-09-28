@@ -159,8 +159,8 @@ python3 scripts/extract-bash-writes.py --session <path> [--file-pattern <glob>] 
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —
-  same session as write/edgextractors, during file-recovery skills full-scope expansion
+- Origin: 2026-07-04 — alongside the write/edit extractors, during the file-recovery skills
+  full-scope expansion
 
 ## Changelog
 

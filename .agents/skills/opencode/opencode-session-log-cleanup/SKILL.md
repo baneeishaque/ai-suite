@@ -57,7 +57,7 @@ the same YAML/JSONL log formats this skill removes.
 
 | Argument | Required | Description |
 | ---------- | ---------- | ------------- |
-| `session_id` | Yes | OpenCode session ID (e.g. `ses_00d820a27ffeHZMIGG66ok42Kl`) |
+| `session_id` | Yes | OpenCode session ID (e.g. `ses_<session-id>`) |
 | `--logs-dir` | No | Logs directory (default: `.opencode/logs`) |
 | `--remove-empty-parents` | No | Remove empty parent directories after cleanup |
 | `--yes` | No | Skip user confirmation (use with caution) |

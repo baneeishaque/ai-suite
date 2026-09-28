@@ -153,8 +153,7 @@ python3 scripts/audit-full-change.py (--session <path> | --yaml <path>) \
 
 ## Traceability
 
-+ Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` — Layer 3+ composer
-  extending the 3-layer architecture to cover all change types
++ Origin: Layer 3+ composer extending the 3-layer architecture to cover all change types
 + Created 2026-07-04
 
 ## Changelog

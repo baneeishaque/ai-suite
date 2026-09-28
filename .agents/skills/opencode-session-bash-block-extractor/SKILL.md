@@ -108,8 +108,7 @@ python3 scripts/extract-bash-blocks.py --session <path> [--output <path>]
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —
-  during session-bash-file-ops-extractor-suite expansion
+- Origin: 2026-07-04 — during session-bash-file-ops-extractor-suite expansion
 - Created as Layer 1 of a 3-layer architecture
 
 ## Changelog

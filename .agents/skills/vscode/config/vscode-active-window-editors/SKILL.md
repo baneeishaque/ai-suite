@@ -59,16 +59,16 @@ field confirms which workspace it belongs to.
 
 ### Why not JXA / accessibility?
 
-**Lesson — applies to any skill that tries to read VS Code's open tabs via
-macOS UI automation:** JXA / System Events can *control* VS Code as an
-application (launch, focus, menus, keystrokes) exactly like any other macOS
-app, but it **cannot enumerate the open editor tabs**. VS Code is an Electron
-app, and its web-rendered tab content is not exposed to the macOS accessibility
-API in a structured way — the accessibility tree returns empty for tab
-elements. The source session (`02f0d4351ffeTl1vcyqbPXZqvW`) confirmed this and
-pivoted to reading the `state.vscdb` SQLite database directly, which is both
-more reliable and faster. Any future attempt to list VS Code tabs through
-JXA/accessibility will hit the same wall — read `state.vscdb` instead.
+**Lesson — applies to any skill that tries to read VS Code's open tabs via macOS
+UI automation:** JXA / System Events can *control* VS Code as an application
+(launch, focus, menus, keystrokes) exactly like any other macOS app, but it
+**cannot enumerate the open editor tabs**. VS Code is an Electron app, and its
+web-rendered tab content is not exposed to the macOS accessibility API in a
+structured way — the accessibility tree returns empty for tab elements. The
+source workflow confirmed this and pivoted to reading the `state.vscdb` SQLite
+database directly, which is both more reliable and faster. Any future attempt to
+list VS Code tabs through JXA/accessibility will hit the same wall — read
+`state.vscdb` instead.
 
 ## When to Apply
 

@@ -183,11 +183,9 @@ python3 scripts/extract-yaml-transcript.py --input <path> \
 
 ## 7. Traceability
 
-- Origin: session `ses_012fd48f0ffedPT1brWW8fcezW` — created as the base
-  layer for the opencode-session problem/solution/workflow analysis
-  composer; the script logic generalizes the ad-hoc `/tmp` summarizer +
-  narrative dumper scripts used during the analysis of
-  `ses_02f0d4351ffeTl1vcyqbPXZqvW` (2026-08-05).
+- Origin: created as the base layer for the opencode-session problem/solution/workflow analysis composer; the
+  script logic generalizes the ad-hoc summarizer + narrative dumper scripts used during the source
+  analysis (2026-08-05).
 - Source of truth for the YAML layout: the opencode logger-plugin artifacts
   under `.opencode/logs/`
 - Created 2026-08-11

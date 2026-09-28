@@ -162,8 +162,8 @@ python3 scripts/extract-yaml-tool-calls.py --input <path> \
 
 ## 7. Traceability
 
-- Origin: Session `ses_046cbc31fffe2WLkugMfyQfmhJ` — created as Phase A of
-  the YAML-log upgrade for the file-changes session skill family
+- Origin: created as Phase A of the YAML-log upgrade for the file-changes
+  audit skill family
 - Source of truth for the YAML layout: the opencode logger-plugin artifacts
   under `.opencode/logs/`
 - Created 2026-07-31

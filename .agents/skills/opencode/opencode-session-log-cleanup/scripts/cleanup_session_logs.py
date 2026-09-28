@@ -78,7 +78,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Discover and remove opencode session logs by session ID."
     )
-    parser.add_argument("session_id", help="Session ID (e.g. ses_00d820a27ffe...)")
+    parser.add_argument("session_id", help="Session ID (e.g. ses_<session-id>)")
     parser.add_argument(
         "--logs-dir",
         default=".opencode/logs",

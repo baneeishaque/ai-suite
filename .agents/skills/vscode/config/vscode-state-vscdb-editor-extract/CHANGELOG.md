@@ -27,10 +27,10 @@ All notable changes to this skill are documented here. See
 
 ### Notes
 
-- Enrichment session `00dd58393ffertAuAtxH2qg1EU` ("List open VS Code editor
-  tabs", 2026-08-12): the file-only projection silently dropped webview and
-  terminal tabs, so it never matched the on-screen tab bar; the webview source
-  file was found to be recoverable via `value['state']['resource']`.
+- Enrichment ("List open VS Code editor tabs", 2026-08-12): the file-only
+  projection silently dropped webview and terminal tabs, so it never matched
+  the on-screen tab bar; the webview source file was found to be recoverable
+  via `value['state']['resource']`.
 
 ## [1.0.0] — 2026-08-11
 
@@ -46,8 +46,8 @@ All notable changes to this skill are documented here. See
 
 ### Notes
 
-- Extracted from session `02f0d4351ffeTl1vcyqbPXZqvW` ("Listing absolute paths
-  of open VSCode files", 2026-08-05), turns 002–003.
+- Extracted from the "Listing absolute paths of open VSCode files"
+  workflow (2026-08-05).
 - The `sticky: N` count is the only pinned signal — VS Code does not serialize
   a per-editor `pinned` flag in `serializedGrid`.
 - The `memento/workbench.editors.files.textFileEditor` key was identified as

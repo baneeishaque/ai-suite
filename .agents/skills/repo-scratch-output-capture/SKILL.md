@@ -43,13 +43,13 @@ reboots while staying out of version control.
 
 Artifacts are organized **per-session** under a scratch root that is
 gitignored. The session folder is named by the current opencode session ID
-(`ses_` prefix omitted), e.g. `scratch/02c693aeeffetmVJizAQ7kD0iP/`:
+(`ses_` prefix omitted), e.g. `scratch/<session-id>/`:
 
 ```text
 <repo-root>/
 ├── .gitignore              # contains line: scratch/
 └── scratch/                # gitignored
-    └── <session-id>/        # ses_ prefix omitted (e.g. 02c693aeeffetmVJizAQ7kD0iP)
+    └── <session-id>/        # ses_ prefix omitted (e.g. <session-id>)
         ├── <purpose>_<ts>.out      # captured stdout
         ├── <purpose>_<ts>.err      # captured stderr
         └── <purpose>_<ref-slug>_<ref-sha>.<ext>  # artifact captured at a git ref

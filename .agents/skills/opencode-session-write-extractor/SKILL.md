@@ -120,9 +120,7 @@ python3 scripts/extract-session-writes.py (--session <path> | --yaml <path>) [--
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —
-  recovery of `2026-07-03-document-uptimerobot-mcp-workflow.md` after
-  accidental deletion
+- Origin: 2026-07-04 — recovery of `2026-07-03-document-uptimerobot-mcp-workflow.md` after accidental deletion
 
 ## Changelog
 

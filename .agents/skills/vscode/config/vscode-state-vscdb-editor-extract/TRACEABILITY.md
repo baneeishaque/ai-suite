@@ -1,10 +1,8 @@
 # Traceability — vscode-state-vscdb-editor-extract
 
-## Enrichment Session
+## Enrichment
 
-- **Session ID:** `00dd58393ffertAuAtxH2qg1EU`
-- **Session title:** "List open VS Code editor tabs"
-- **Session date:** 2026-08-12
+- **Date:** 2026-08-12
 - **Trigger:** user's on-screen VS Code tab bar contained terminal and webview
   tabs that the v1.0.0 file-only projection did not report — the output never
   matched the visual tab bar.
@@ -18,23 +16,20 @@
   `--mode all` output (every tab + `[type]` tags + `# group` markers) is the
   faithful view. `--mode files` retains the legacy projection for callers that
   only want source files.
-- **Plan artifact:**
-  `<workspace-root>/docs/2026-08-12_00dd58393ffertAuAtxH2qg1EU_list-open-vs-code-editor-tabs_implementation-plan_v1.md`
 
-## Source Session
+## Source
 
-- **Session ID:** `02f0d4351ffeTl1vcyqbPXZqvW`
-- **Session title:** "Listing absolute paths of open VSCode files"
-- **Session date:** 2026-08-05
+- **Source workflow:** "Listing absolute paths of open VSCode files"
+- **Date:** 2026-08-05
 - **Log files:**
-    - `<workspace-root>/.opencode/logs/ses_02f0d4351ffeTl1vcyqbPXZqvW/002-2026-08-05T08-17-58-407Z.yaml`
+    - `<workspace-root>/.opencode/logs/<session-id>/002-2026-08-05T08-17-58-407Z.yaml`
     (investigation loop — DB discovery, rejected JXA accessibility path,
     workspaceStorage mtime heuristic)
-    - `<workspace-root>/.opencode/logs/ses_02f0d4351ffeTl1vcyqbPXZqvW/003-2026-08-05T08-19-33-346Z.yaml`
+    - `<workspace-root>/.opencode/logs/<session-id>/003-2026-08-05T08-19-33-346Z.yaml`
     (pinned ordering — `sticky: 32` discovery, `editors[]` display-order
     verification, tab enumeration)
 
-## Key Technical Findings (verbatim from session logs)
+## Key Technical Findings
 
 1. The live editor tab state lives in the **running window's** workspace
    storage: `state.vscdb` → key `memento/workbench.parts.editor` →
@@ -54,8 +49,5 @@
 
 ## Skill Origin
 
-- **Created by:** Base skill extracted from session `02f0d4351ffeTl1vcyqbPXZqvW`.
-- **Skill Factory session:** `011fd359dffe2p11kHfOQFbMaZ` (2026-08-11) — "VSCode
-  open editor tabs pin order skill".
-- **Plan artifact:**
-  `<workspace-root>/docs/implementation-plans/2026-08-11_011fd359dffe2p11kHfOQFbMaZ_vscode-open-editor-tabs-pin-order-skill_implementation-plan_v1.md`
+- **Created by:** Base skill extracted from the source workflow.
+- **Skill Factory:** 2026-08-11.

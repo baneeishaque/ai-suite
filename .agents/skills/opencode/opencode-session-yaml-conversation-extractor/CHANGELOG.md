@@ -9,5 +9,4 @@
   Preserves YAML structure via ruamel.yaml round-trip (comments, scalar styles,
   key ordering, `---` separators). One `<stem>-transcript.yaml` per input
   file, written to a `transcripts/` subfolder. Script logic generalizes the
-  ad-hoc conversation-filter workflow executed during session
-  `ses_012fd48f0ffedPT1brWW8fcezW`.
+  ad-hoc conversation-filter workflow.

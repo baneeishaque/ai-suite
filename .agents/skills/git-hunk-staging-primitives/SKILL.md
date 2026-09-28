@@ -223,4 +223,3 @@ All scripts:
 
 - Created: 2026-07-03
 - Source: git-atomic-commit-construction §2f.1, §3i, §3i.1, §13 primitives extracted per Layered Composition Mandate.
-- Session: `0db62dc68ffe5YBqo3Ze1Vtcnd` (git hunk staging primitives layering)

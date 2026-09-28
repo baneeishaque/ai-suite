@@ -35,7 +35,7 @@ repository (per
 | Part | Required | Format | Example |
 | :--- | :--- | :--- | :--- |
 | `date` | Always | `YYYY-MM-DD` | `2026-07-03` |
-| `session-id` | Always | Full opencode session ID (without `ses_` prefix) | `0dd0a9769ffe9VhJz3qA3VnZNV` |
+| `session-id` | Always | Full opencode session ID (without `ses_` prefix) | `<session-id>` |
 | `session-name-slug` | Always | Kebab-case of the opencode session name | `opencode-config-versioning-preservation` |
 | `artifact-type` | Always | Kebab-case type identifier | `implementation-plan` |
 | `version` | Versioned only | `v<integer>` | `v3` |
@@ -50,30 +50,28 @@ session-name-slug, artifact-type).
 Correct:
 
 ```text
-2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_implementation-plan_v3.md
+2026-07-03_<session-id>_opencode-config-versioning-preservation_implementation-plan_v3.md
 ```
 
 Incorrect (hyphen between parts — ambiguous boundaries):
 
 ```text
-2026-07-03-0dd0a9769ffe9VhJz3qA3VnZNV-opencode-config-versioning-preservation-implementation-plan-v3.md
+2026-07-03-<session-id>-opencode-config-versioning-preservation-implementation-plan-v3.md
 ```
 
 Incorrect (truncated ID, missing date, missing name):
 
 ```text
-ses_0dd0a9_task.md
+<session-id>_task.md
 ```
 
 ### 1.3 `ses_` Prefix Handling
 
-The opencode session ID natively starts with `ses_` (e.g.,
-`ses_0dd0a9769ffe9VhJz3qA3VnZNV`). The `ses_` prefix MUST be omitted
-from the filename because the filename context already identifies it
-as a session ID:
+The opencode session ID natively starts with `ses_` (e.g., `ses_<session-id>`). The `ses_` prefix MUST be omitted from
+the filename because the filename context already identifies it as a session ID:
 
-- Correct: `0dd0a9769ffe9VhJz3qA3VnZNV`
-- Incorrect: `ses_0dd0a9769ffe9VhJz3qA3VnZNV`
+- Correct: `<session-id>`
+- Incorrect: `ses_<session-id>`
 
 The full 26+ character ID MUST be used — NOT a truncated form.
 
@@ -125,10 +123,10 @@ The following files were created during the originating session and
 serve as canonical examples:
 
 ```text
-docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_task.md
-docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_implementation-plan_v3.md
-docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_commit-preview_v2.md
-docs/2026-07-03_0dd0a9769ffe9VhJz3qA3VnZNV_opencode-config-versioning-preservation_skill-documentation-plan_v1.md
+docs/2026-07-03_<session-id>_opencode-config-versioning-preservation_task.md
+docs/2026-07-03_<session-id>_opencode-config-versioning-preservation_implementation-plan_v3.md
+docs/2026-07-03_<session-id>_opencode-config-versioning-preservation_commit-preview_v2.md
+docs/2026-07-03_<session-id>_opencode-config-versioning-preservation_skill-documentation-plan_v1.md
 ```
 
 All four share the same session identity (date + session-id +
@@ -158,7 +156,5 @@ session-name-slug) and differ only in artifact-type and version.
 ## 5. Traceability
 
 - Created: 2026-07-03
-- Source: OpenCode config versioning & preservation session
-  (`0dd0a9769ffe9VhJz3qA3VnZNV`). The convention was iteratively refined
-  through conversation: underscore separators, omission of `ses_` prefix,
-  date prefix for task files, independent versioning for artifact types.
+- Source: OpenCode config versioning & preservation workflow. The convention was refined iteratively: underscore
+  separators, omission of `ses_` prefix, date prefix for task files, independent versioning for artifact types.

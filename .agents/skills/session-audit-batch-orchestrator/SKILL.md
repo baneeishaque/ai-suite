@@ -233,8 +233,7 @@ pass. No intermediate files are kept.
 
 ## Traceability
 
-+ Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` — batch-aggregation
-  layer extracted from the two-phase workflow (files 3, 5–15 → Phase 1;
++ Origin: batch-aggregation layer extracted from the two-phase workflow (files 3, 5–15 → Phase 1;
   files 16–18 → Phase 2; then merge)
 + Bugfix: `collect_from_sessions()` originally parsed stdout as JSONL
   (`audit-full-change.py` outputs human-readable report to stdout, not

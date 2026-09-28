@@ -22,17 +22,16 @@ project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Notes
 
-- Enrichment session `00dd58393ffertAuAtxH2qg1EU` ("List open VS Code editor
-  tabs", 2026-08-12) — the base extractor now reports webview/terminal tabs by
-  default; this composer forwards the `--mode` choice.
+- Enrichment ("List open VS Code editor tabs", 2026-08-12) — the base
+  extractor now reports webview/terminal tabs by default; this composer
+  forwards the `--mode` choice.
 
 ## [1.0.0] — 2026-08-11
 
 ### Added
 
 - Initial extraction of the `vscode-active-window-editors` composer skill from
-  session `02f0d4351ffeTl1vcyqbPXZqvW` ("Listing absolute paths of open VSCode
-  files").
+  the "Listing absolute paths of open VSCode files" workflow.
 - `scripts/list-active-window-editors.py` — macOS discovery layer that
   resolves the active VS Code window's `state.vscdb` via workspaceStorage
   mtime sorting + `workspace.json` title cross-check, then delegates to
@@ -40,8 +39,7 @@ project adheres to [Semantic Versioning](https://semver.org/).
 - SKILL.md — full skill documentation with CLI contract, protocol, and
   composition rationale.
 - AGENTS.md — operational reminders and command reference.
-- TRACEABILITY.md — lineage to the source session logs and technical
-  findings.
+- TRACEABILITY.md — lineage to the source logs and technical findings.
 
 ### Key design decisions
 

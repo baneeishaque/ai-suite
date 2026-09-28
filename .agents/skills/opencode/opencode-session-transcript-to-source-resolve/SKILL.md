@@ -135,7 +135,7 @@ python3 scripts/resolve-transcript-refs.py --text "<reference text>" \
 
 ```bash
 python3 scripts/resolve-transcript-refs.py \
-    --text ".../ses_01171ed57ffeNQjYA7j6gQwKHV/transcripts/030-2026-08-11T06-12-54-496Z-transcript.yaml to 36" \
+    --text ".../<session-id>/transcripts/030-2026-08-11T06-12-54-496Z-transcript.yaml to 36" \
     --expand
 ```
 

@@ -112,7 +112,7 @@ symlink automatically — no extra step required.
 
 ## 7. Companion Change: `vscode-settings-promotion` 2-Space Default
 
-During the same session that produced this skill, `promote.py` in
+During the same authoring run that produced this skill, `promote.py` in
 [vscode-settings-promotion](../vscode-settings-promotion/SKILL.md) was patched:
 
 - Default indent changed from `4` to `2` in `save_json()`.

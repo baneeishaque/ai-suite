@@ -138,8 +138,7 @@ for details.
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` — Layer 2 of a
-  3-layer architecture
+- Origin: Layer 2 of a 3-layer architecture
 - Created 2026-07-04
 
 ## Changelog

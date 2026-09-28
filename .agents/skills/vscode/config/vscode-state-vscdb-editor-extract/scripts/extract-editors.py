@@ -13,7 +13,7 @@ Default text output ('--mode all') lists EVERY tab — file, webview
 emits the file-only projection (one absolute fsPath per line) for callers
 that want just source files.
 
-Key findings from session 02f0d4351ffeTl1vcyqbPXZqvW:
+Key findings:
   - The 'editors[]' array on each leaf node is in display order (pinned first).
   - 'sticky: N' at the group level = number of pinned (sticky) editors.
     Editors at index < N are pinned. The per-editor 'pinned' flag is NOT
@@ -23,7 +23,7 @@ Key findings from session 02f0d4351ffeTl1vcyqbPXZqvW:
   - 'memento/workbench.editors.files.textFileEditor' (view-state memento) is
     NOT a reliable source — it includes historically-closed editors.
 
-Key findings from session 00dd58393ffertAuAtxH2qg1EU:
+Additional findings (webview/terminal support):
   - Webview tabs (workbench.editors.webviewEditor) carry their backing source
     file inside value['state'] — a JSON-encoded string whose parsed object has
     a 'resource' key (URI dict with 'path'/'fsPath', or a 'file://' string).

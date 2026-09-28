@@ -119,9 +119,7 @@ python3 scripts/extract-session-edits.py --session <path> [--file-pattern <glob>
 
 ## Traceability
 
-- Origin: Session `ses_0dd374af6ffe02JHq06EQ89B48` (exported 2026-07-04) —
-  extracted from the same session as the write-extractor, during file-recovery
-  skills audit
+- Origin: 2026-07-04 — extracted alongside the write-extractor, during the file-recovery skills audit
 
 ## Changelog
 

@@ -226,7 +226,7 @@ skill artifact, all Tier-B elements MUST be redacted to placeholders:
 
 ```markdown
 <!-- Forbidden in a public-scope skill: -->
-See [Phase 1g](https://github.com/baneeishaque/ai-suite/blob/a405f52/.agents/skills/...)
+See [Phase 1g](https://github.com/<PARENT-REPO-OWNER>/<PARENT-REPO>/blob/<SHA>/.agents/skills/...)
 
 <!-- Allowed — Tier-B elements replaced: -->
 See Phase 1g in the parent repo

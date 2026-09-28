@@ -1,0 +1,36 @@
+---
+user:
+  text: i want to pass the lowercase select too
+  time: 7/26/2026, 9:55:55.430 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants the lowercase `select` to also be auto-allowed via the SELECT pattern. Currently `"SELECT *` only matches uppercase SELECT. I need to make it case-insensitive using the bracket expression pattern like the destructive ones.
+
+      Pattern: `"SELECT *` → `"[Ss][Ee][Ll][Ee][Cc][Tt] *`
+
+      In JSON: `"sqlite3 /Users/dk/lab-data/configurations-private/opencode/share/opencode.db \"[Ss][Ee][Ll][Ee][Cc][Tt] *": "allow"`
+    thinking_duration: 1.673s
+    thinking_duration_ms: 1673
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/opencode.json
+          oldString: '"sqlite3 /Users/dk/lab-data/configurations-private/opencode/share/opencode.db \"SELECT *": "allow",'
+          newString: '"sqlite3 /Users/dk/lab-data/configurations-private/opencode/share/opencode.db \"[Ss][Ee][Ll][Ee][Cc][Tt] *": "allow",'
+        result: Edit applied successfully.
+    time: 7/26/2026, 9:55:55.602 PM GMT+5:30
+    duration: 7.331s
+    duration_ms: 7331
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/26/2026, 9:56:03.200 PM GMT+5:30
+    response: Now `select * from ...`, `SELECT * FROM ...`, `Select * from ...` etc. all auto-allowed, while `DROP`/`DELETE`/etc. still hit ask regardless of case.
+    duration: 3.493s
+    duration_ms: 3493
+

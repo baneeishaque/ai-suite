@@ -268,13 +268,26 @@ end-user applications where usage is more important than internals.
 
 ### Step 5 — Audit / Create AGENTS.md
 
+This project uses a three-file AGENTS.md architecture:
+
+| File | Role | Content |
+|------|------|---------|
+| `AGENTS.md` | Permanent Operating Reminders (all tools) | SSOT for common reminders |
+| `AGENTS-legacy.md` | Skills table for legacy runtimes | One row per skill with path and trigger |
+| `AGENTS-github-copilot.md` | Copilot-specific instructions (delta only) | Tool-specific; references `AGENTS.md` |
+
+Each file MUST NOT duplicate content from the others.
+
 `AGENTS.md` is a **thin bridge** for AI agent discovery. It MUST NOT
 duplicate content from `README.md` or `SKILL.md`.
 
-#### Template
+#### Template (AGENTS-legacy.md)
 
 ```markdown
-# AGENTS.md
+# AGENTS-legacy.md — Legacy Skills Table
+
+For common Permanent Operating Reminders that apply to all tools,
+see [AGENTS.md](AGENTS.md).
 
 ## Skills
 
@@ -297,6 +310,7 @@ duplicate content from `README.md` or `SKILL.md`.
 - **Defer to README** — link to it for build commands, structure, etc.
 - **Defer to SKILL.md** — link to it for procedures, templates, etc.
 - **Zero duplicated tables** — if a table exists in SKILL.md or README, do not copy it here
+- **Zero duplication across the three AGENTS.* files** — AGENTS.md is SSOT for common reminders; AGENTS-legacy.md and AGENTS-github-copilot.md are delta-only, each pointing back to AGENTS.md
 
 ### Step 6 — Audit CI/CD Placement
 

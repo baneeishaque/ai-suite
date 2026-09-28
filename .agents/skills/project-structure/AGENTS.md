@@ -1,6 +1,6 @@
 ---
 name: Project Structure & Documentation
-description: Passive context bridge for industrial-standard project folder structure, root hygiene, and README/AGENTS.md conventions.
+description: Passive context bridge for industrial-standard project folder structure, root hygiene, README/AGENTS.md conventions, and the three-file AGENTS.md architecture (AGENTS.md reminders, AGENTS-legacy.md skills table, AGENTS-github-copilot.md tool-specific instructions).
 category: Project Organization
 ---
 

@@ -411,6 +411,16 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
   Read-only image listing; nothing is created/removed/pulled.
 - **Auto-approve pattern**: `docker images*` only.
 
+### `docker system df`
+
+- **Verdict**: ✅ SAFE — Prints aggregate reclaimable space for images/containers/build-cache
+  and local volumes. Read-only summary; does NOT prune anything.
+- **Contrast**: `docker system prune`, `docker builder prune`, `docker volume prune`,
+  `docker image prune` are ❌ MUTATES.
+- **Auto-approve pattern**: `docker system df( [^;&|<>$`()]+)?$` (arg charset rejects shell
+  metachars in last-match-wins systems; first-match `ask` chain guard still required in
+  Gemini first-match-wins).
+
 ***
 
 ## Linters & Analysis Tools

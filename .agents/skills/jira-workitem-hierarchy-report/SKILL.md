@@ -18,7 +18,7 @@ Generate a markdown hierarchy report from a Jira JQL query. The report includes 
 | :--- | :--- | :--- |
 | `acli` | `which acli` | `brew install acli` or `npm install -g @atlassian/cli` |
 | `python3` | `python3 --version` (3.10+) | Bundled with macOS / via `brew` |
-| `acli` auth | `acli jira workitem list --max 1` | See [`jira-acli-operations`](../jira-acli-operations/SKILL.md) §2.1 |
+| `acli` auth | `acli jira auth status` | See [`jira-acli-operations`](../jira-acli-operations/SKILL.md) §2.1 |
 
 ---
 
@@ -61,10 +61,13 @@ python3 .agents/skills/jira-workitem-hierarchy-report/scripts/jira-hierarchy-rep
 Verify `acli` is authenticated:
 
 ```bash
-acli jira workitem list --max 1
+acli jira auth status
 ```
 
-Expected: `Authenticated site: <org>.atlassian.net`
+Expected: `✓ Authenticated` with the site name.
+
+> **Note:** `acli jira workitem list --max 1` does NOT exist in current acli
+> versions — the auth check above is the reliable form.
 
 If not authenticated, run:
 

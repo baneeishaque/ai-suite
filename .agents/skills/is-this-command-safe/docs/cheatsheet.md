@@ -447,6 +447,32 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 - **Auto-approve pattern**: `acli jira workitem attachment list *`.
 - **Suggested regex**: `/^acli jira workitem attachment list( .*)?$/`
 
+### `acli jira workitem comment list`
+
+- **Verdict**: ✅ SAFE (all forms) — read-only comment fetch for one work item.
+  Returns the paginated envelope `{comments, isLast, maxResults, startAt, total}`;
+  each comment carries `author`, `body`, `id`, `visibility`.
+- **Why all forms are safe**: every flag in the leaf is read-only (verified via
+  `acli jira workitem comment list --help`) — `--key <KEY>` (selector),
+  `--limit <int>` (page size, default 50), `--order <created|updated>`
+  (default `+created`), `--paginate`, `--json`, `-h`/`--help`. There is no
+  write/edit/delete flag to exclude.
+- **MUTATES siblings**: `comment create`, `comment update`, and `comment delete`
+  (destructive — removes a comment from remote Jira). Scope auto-approve to the
+  `list` leaf only, never `acli jira workitem comment *`. `comment visibility`
+  reads visibility options but is **not yet vetted** — treat as UNKNOWN until probed.
+- **Output-bounding caveat**: `--paginate` **ignores `--limit`** and walks every
+  page, so it can emit unbounded JSON. Redirect to a file and inspect it rather
+  than streaming into the transcript, per
+  [`shell-execution-rules.md`](../../../../ai-agent-rules/shell-execution-rules.md)
+  §2.3.4. This is an output-size concern, not a safety downgrade.
+- **Redaction caveat**: comment bodies and author display names are Tier B
+  organizational content (no emails or `accountId`s observed in the payload).
+  Per [Redaction & Portability](../../redaction-portability/SKILL.md), redact
+  before pasting into committed artifacts.
+- **Auto-approve pattern**: `acli jira workitem comment list *`.
+- **Suggested regex**: `/^acli jira workitem comment list( .*)?$/`
+
 ***
 
 ## Container Inspection

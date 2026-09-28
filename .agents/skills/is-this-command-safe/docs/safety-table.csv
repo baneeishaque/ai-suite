@@ -18,6 +18,7 @@ diff,SAFE,,n/a,Compares files line-by-line. Output only; no files modified.
 dig,SAFE,,n/a,"DNS lookup utility (Domain Information Groper). Queries DNS resolvers and prints responses. Read-only network query tool. No filesystem mutation. Common flags: +short (concise output), -x (reverse lookup), @server (query specific nameserver), -t TYPE (record type), -f file (batch from file, read-only). Pipeline to xargs rm/sed is dangerous — general-pipeline guard catches it."
 echo,SAFE,,n/a,Prints arguments to stdout. No mutation. Builtin.
 find,SAFE-IF-PIPED,-delete; -exec rm; -exec mv; -exec sed -i,find … -print,Safe alone. Upgrade to MUTATES if any destructive flag is present.
+file,SAFE,-C,file <path>,"Reads magic bytes / header of a file and prints its type classification (file(1)). Read-only; no writes, no content dump. -C compiles a magic file and writes magic.mgc (MUTATES). file - reads stdin, file <fifo> can block — hangs, not damage. Never auto-approve bare file *; exclude -C."
 Format-Table,SAFE,,n/a,PowerShell formatter. Read-only output formatting; consumes pipeline input.
 Get-ChildItem,SAFE,,n/a,PowerShell directory listing (alias gci/ls/dir). Read-only.
 Get-Content,SAFE,,n/a,PowerShell file reader (alias cat/gc/type). Read-only.

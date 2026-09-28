@@ -264,6 +264,7 @@ window.stepCollectVisible = function () {
       var isTailIn = row.querySelector('[data-testid="tail-in"]');
       var myNames = /^(baneeishaque|\+91 81369 47512)$/i;
       var direction = isTailOut ? "out" : isTailIn ? "in" : (myNames.test(sender) ? "out" : "in");
+      var quoted = row.querySelector('[class*="quoted-"], [data-testid*="quoted"]');
       var bodyEl = row.querySelector("span.selectable-text") || row.querySelector("span.copyable-text");
       var body = bodyEl ? bodyEl.textContent.trim() : "";
       if (!body) {
@@ -283,7 +284,7 @@ window.stepCollectVisible = function () {
         }
       }
 
-      window.__msgStore[id] = { order: batch * 1000000 + rowIndex, dateKey: dateKey, time: timeStr, sender: sender, direction: direction, text: body };
+      window.__msgStore[id] = { order: batch * 1000000 + rowIndex, dateKey: dateKey, time: timeStr, sender: sender, direction: direction, text: body, dataId: id, testid: row.getAttribute("data-testid"), hasQuote: !!quoted };
       added++;
 
       if (dateKey && window.__targetDate) {
@@ -330,5 +331,22 @@ window.stepScrollUpBy = function (pixels) {
     if (!container) return JSON.stringify({ error: "No message container" });
     container.scrollTop = Math.max(0, container.scrollTop - pixels);
     return JSON.stringify({ st: container.scrollTop, atTop: container.scrollTop <= 0 });
+  } catch (e) { return JSON.stringify({ error: e.message }); }
+};
+
+window.stepDupDiagnose = function () {
+  try {
+    var byText = {};
+    var ids = Object.keys(window.__msgStore);
+    for (var i = 0; i < ids.length; i++) {
+      var m = window.__msgStore[ids[i]];
+      byText[m.text] = byText[m.text] || [];
+      byText[m.text].push(m);
+    }
+    var groups = [];
+    for (var t in byText) {
+      if (byText[t].length > 1) groups.push(byText[t]);
+    }
+    return JSON.stringify({ dupGroups: groups.length, groups: groups });
   } catch (e) { return JSON.stringify({ error: e.message }); }
 };

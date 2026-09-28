@@ -1,0 +1,835 @@
+---
+user:
+  text: |-
+    k, working perfectly.
+
+    another thing is the turn supposed to continues. but, somehow the turn is duplicated (may be session resume). but files are not overwritted (files always contains time stamps). but i need continues turns - what will do? can you fix the plugin code?
+  time: 7/27/2026, 4:51:04.730 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is saying that when a session resumes, turns are duplicated instead of continuing. The turn files are not overwritten because they have timestamps in their names, so each resume creates new files rather than continuing the existing turn sequence. They want turns to continue (i.e., when a session resumes, it should pick up where it left off, not create duplicate turns).
+
+      Let me first understand the plugin code to see how session initialization and turn resumption works. I need to look at the codegraph for the plugin.
+
+      Let me read the plugin source to understand the session initialization logic.
+    thinking_duration: 1.410s
+    thinking_duration_ms: 1410
+    tool_calls:
+      - tool: codegraph_codegraph_explore
+        args:
+          query: opencode-logger.ts session initSession finalizeTurn writeTurnCompleted writtenTurns YAML_SPLIT_MODE
+          maxFiles: 3
+          projectPath: /Users/dk/lab-data/configurations-private
+        result: The project at /Users/dk/lab-data/configurations-private isn't indexed with codegraph (no .codegraph/ directory found walking up from it), so codegraph cannot query it. Use your built-in tools (Read/Grep/Glob) for that codebase instead, and don't call codegraph for it again this session. Indexing is the user's decision — they can run 'codegraph init' in that project to enable it.
+    time: 7/27/2026, 4:51:06.341 AM GMT+5:30
+    duration: 5.365s
+    duration_ms: 5365
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+        result: |-
+          <path>/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts</path>
+          <type>file</type>
+          <content>
+          1: import type { Plugin } from "@opencode-ai/plugin"
+          2: import { mkdirSync, appendFileSync, writeFileSync, existsSync, readFileSync, readdirSync } from "node:fs"
+          3: import { join } from "node:path"
+          4: import { dump, loadAll } from "js-yaml"
+          5: 
+          6: const LOG_BASE = ".opencode/logs"
+          7: 
+          8: const YAML_SPLIT_MODE = "flat-timestamped"
+          9: 
+          10: function ts(): string {
+          11:   return new Date().toISOString()
+          12: }
+          13: 
+          14: function j(o: unknown): string {
+          15:   try { return JSON.stringify(o) } catch { return JSON.stringify({ error: "serialize failed" }) }
+          16: }
+          17: 
+          18: // ---------------------------------------------------------------------------
+          19: // Time helpers
+          20: // ---------------------------------------------------------------------------
+          21: 
+          22: function formatLocal(iso: string | null): string {
+          23:   if (!iso) return ""
+          24:   const d = new Date(iso)
+          25:   const m = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
+          26:   const h = d.getHours() % 12 || 12
+          27:   const ap = d.getHours() >= 12 ? "PM" : "AM"
+          28:   const t = `${h}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}.${String(d.getMilliseconds()).padStart(3, "0")}`
+          29:   const tz = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).format(d).split(", ").pop() ?? ""
+          30:   return `${m}, ${t} ${ap} ${tz}`
+          31: }
+          32: 
+          33: function formatDuration(ms: number): string {
+          34:   if (ms >= 1000) return (ms / 1000).toFixed(3) + "s"
+          35:   return ms + "ms"
+          36: }
+          37: 
+          38: // ---------------------------------------------------------------------------
+          39: // YAML builder (js-yaml)
+          40: // ---------------------------------------------------------------------------
+          41: 
+          42: function buildYAML(docs: Record<string, unknown>[]): string {
+          43:   if (docs.length === 0) return ""
+          44:   return docs.map((d) => "---\n" + dump(d, { indent: 2, lineWidth: -1, noRefs: true, quotingType: '"', noCompatMode: true }) + "\n").join("")
+          45: }
+          46: 
+          47: // ---------------------------------------------------------------------------
+          48: // JSONL
+          49: // ---------------------------------------------------------------------------
+          50: 
+          51: function writeJSONL(sid: string, entry: Record<string, unknown>) {
+          52:   try {
+          53:     mkdirSync(LOG_BASE, { recursive: true })
+          54:     appendFileSync(join(LOG_BASE, `${sid}.jsonl`), j(entry) + "\n")
+          55:   } catch { /* no crash */ }
+          56: }
+          57: 
+          58: function parseTaskResult(result: string): { sessionId: string | null; state: string | null; taskResult: string | null } | null {
+          59:   const idMatch = result.match(/<task\s+id="([^"]+)"/)
+          60:   const stateMatch = result.match(/state="([^"]+)"/)
+          61:   const resultMatch = result.match(/<task_result>([\s\S]*?)<\/task_result>/)
+          62:   if (!idMatch && !stateMatch && !resultMatch) return null
+          63:   return {
+          64:     sessionId: idMatch ? idMatch[1] : null,
+          65:     state: stateMatch ? stateMatch[1] : null,
+          66:     taskResult: resultMatch ? resultMatch[1].trim() : result,
+          67:   }
+          68: }
+          69: 
+          70: function normalizeResult(result: string): string {
+          71:   if (!result) return result
+          72:   try {
+          73:     const parsed = JSON.parse(result)
+          74:     if (typeof parsed === "object" && parsed !== null) {
+          75:       return JSON.stringify(parsed, null, 2)
+          76:     }
+          77:   } catch { /* not JSON — return as-is */ }
+          78:   return result
+          79: }
+          80: 
+          81: function writeYAML(ses: string, includePending = false) {
+          82:   try {
+          83:     const s = getSS(ses)
+          84:     if (YAML_SPLIT_MODE === "flat-timestamped") {
+          85:       writeYAMLFlatTimestamped(ses, includePending)
+          86:     } else if (YAML_SPLIT_MODE === "per-turn") {
+          87:       writeYAMLSplit(ses, includePending)
+          88:     } else {
+          89:       writeYAMLSingle(ses, includePending)
+          90:     }
+          91:   } catch { /* no crash */ }
+          92: }
+          93: 
+          94: function writeYAMLSingle(ses: string, includePending = false) {
+          95:   try {
+          96:     const s = getSS(ses)
+          97:     const yp = join(LOG_BASE, `${ses}.yaml`)
+          98:     const header: Record<string, unknown> = {
+          99:       session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },
+          100:     }
+          101:     if (s.model) header.model = s.model
+          102:     if (s.title) header.title = s.title
+          103:     if (s.compactedAt) {
+          104:       header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }
+          105:     }
+          106:     const docs: Record<string, unknown>[] = [header, ...s.turns]
+          107:     if (includePending && s.turn && s.turn.steps.length > 0) {
+          108:       docs.push(s.turn.toFields())
+          109:     }
+          110:     writeFileSync(yp, buildYAML(docs))
+          111:   } catch { /* no crash */ }
+          112: }
+          113: 
+          114: function writeYAMLSplit(ses: string, includePending = false) {
+          115:   try {
+          116:     const s = getSS(ses)
+          117:     const baseDir = join(LOG_BASE, ses)
+          118:     mkdirSync(baseDir, { recursive: true })
+          119: 
+          120:     // Write header
+          121:     const header: Record<string, unknown> = {
+          122:       session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },
+          123:     }
+          124:     if (s.model) header.model = s.model
+          125:     if (s.title) header.title = s.title
+          126:     if (s.compactedAt) {
+          127:       header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }
+          128:     }
+          129:     writeFileSync(join(baseDir, "00-header.yaml"), buildYAML([header]))
+          130: 
+          131:     // Write each turn
+          132:     for (let i = 0; i < s.turns.length; i++) {
+          133:       const turnNum = String(i + 1).padStart(4, "0")
+          134:       writeFileSync(join(baseDir, `${turnNum}-turn.yaml`), buildYAML([s.turns[i]]))
+          135:     }
+          136: 
+          137:     // Write pending turn if requested
+          138:     if (includePending && s.turn && s.turn.steps.length > 0) {
+          139:       const turnNum = String(s.turns.length + 1).padStart(4, "0")
+          140:       writeFileSync(join(baseDir, `${turnNum}-turn-pending.yaml`), buildYAML([s.turn.toFields()]))
+          141:     }
+          142:   } catch { /* no crash */ }
+          143: }
+          144: 
+          145: function writeYAMLFlatTimestamped(ses: string, includePending = false) {
+          146:   try {
+          147:     const s = getSS(ses)
+          148:     const baseDir = join(LOG_BASE, ses)
+          149:     mkdirSync(baseDir, { recursive: true })
+          150: 
+          151:     // Header file (turn 000) - write once if not exists
+          152:     const headerFiles = readdirSync(baseDir).filter(f => f.startsWith("000-header-"))
+          153:     if (headerFiles.length === 0) {
+          154:       const header: Record<string, unknown> = {
+          155:         session: { id: ses, created: formatLocal(s.created ?? ts()) },
+          156:       }
+          157:       if (s.model) header.model = s.model
+          158:       if (s.title) header.title = s.title
+          159:       if (s.compactedAt) {
+          160:         header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }
+          161:       }
+          162:       const headerTime = s.created ?? ts()
+          163:       const headerFilename = `000-header-${headerTime.replace(/[:.]/g, "-")}.yaml`
+          164:       writeFileSync(join(baseDir, headerFilename), buildYAML([header]))
+          165:     }
+          166: 
+          167:     // Write newly completed turns (not yet written)
+          168:     for (let i = s.writtenTurns; i < s.turns.length; i++) {
+          169:       const turn = s.turns[i]
+          170:       const turnNum = String(i + 1).padStart(3, "0")
+          171:       const turnTime = (turn.endTime as string) ?? turn.time ?? ts()
+          172:       const turnFilename = `${turnNum}-${turnTime.replace(/[:.]/g, "-")}.yaml`
+          173:       writeFileSync(join(baseDir, turnFilename), buildYAML([turn]))
+          174:       s.writtenTurns++
+          175:     }
+          176: 
+          177:     // Write pending turn if requested
+          178:     if (includePending && s.turn && s.turn.steps.length > 0) {
+          179:       const turnNum = String(s.turns.length + 1).padStart(3, "0")
+          180:       const startTime = s.turn.startTime ?? ts()
+          181:       const pendingFilename = `${turnNum}-pending-${startTime.replace(/[:.]/g, "-")}.yaml`
+          182:       writeFileSync(join(baseDir, pendingFilename), buildYAML([s.turn.toFields()]))
+          183:     }
+          184:   } catch { /* no crash */ }
+          185: }
+          186: 
+          187: function writeTurnCompleted(ses: string, turnIndex: number, turnFields: Record<string, unknown>) {
+          188:   try {
+          189:     const s = getSS(ses)
+          190:     const baseDir = join(LOG_BASE, ses)
+          191:     mkdirSync(baseDir, { recursive: true })
+          192: 
+          193:     const turnNum = String(turnIndex + 1).padStart(3, "0")
+          194:     const turnTime = (turnFields.endTime as string) ?? turnFields.time ?? ts()
+          195:     const completedFilename = `${turnNum}-${turnTime.replace(/[:.]/g, "-")}.yaml`
+          196:     const completedPath = join(baseDir, completedFilename)
+          197: 
+          198:     // Remove any pending file for this turn
+          199:     const pendingPattern = `${turnNum}-pending-`
+          200:     const pendingFiles = readdirSync(baseDir).filter(f => f.startsWith(pendingPattern))
+          201:     for (const pf of pendingFiles) {
+          202:       try { require("node:fs").unlinkSync(join(baseDir, pf)) } catch { /* ignore */ }
+          203:     }
+          204: 
+          205:     writeFileSync(completedPath, buildYAML([turnFields]))
+          206:     // Track that this turn has been written
+          207:     if (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1
+          208:   } catch { /* no crash */ }
+          209: }
+          210: 
+          211: function finalizeTurn(ses: string) {
+          212:   const s = getSS(ses)
+          213:   if (!s.turn || s.turn.steps.length === 0) return false
+          214:   s.turn.endTime = ts()
+          215:   if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+          216:     s.turn.currentStep.endTime = ts()
+          217:     if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+          218:       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+          219:     }
+          220:   }
+          221:   const turnFields = s.turn.toFields()
+          222:   pushTurn(turnFields, ses)
+          223:   // Write completed turn file (index is length - 1 after push)
+          224:   writeTurnCompleted(ses, s.turns.length - 1, turnFields)
+          225:   s.turn = null
+          226:   return true
+          227: }
+          228: 
+          229: function pushTurn(turnFields: Record<string, unknown>, ses: string) {
+          230:   const s = getSS(ses)
+          231:   s.turns.push(turnFields)
+          232:   if (s.turnsFile) {
+          233:     try {
+          234:       mkdirSync(LOG_BASE, { recursive: true })
+          235:       appendFileSync(s.turnsFile, j(turnFields) + "\n")
+          236:     } catch { /* no crash */ }
+          237:   }
+          238: }
+          239: 
+          240: function stateFile(sid: string): string {
+          241:   return join(LOG_BASE, `${sid}.state.json`)
+          242: }
+          243: 
+          244: function loadState(sid: string): Record<string, unknown> {
+          245:   try { return JSON.parse(readFileSync(stateFile(sid), "utf-8")) } catch { return {} }
+          246: }
+          247: 
+          248: function saveState(sid: string, data: Record<string, unknown>) {
+          249:   try { mkdirSync(LOG_BASE, { recursive: true }); writeFileSync(stateFile(sid), j(data)) } catch { /* no crash */ }
+          250: }
+          251: 
+          252: function initSession(ses: string, info?: Record<string, unknown>) {
+          253:   sid = ses
+          254:   const s = getSS(ses)
+          255:   s.turnsFile = join(LOG_BASE, `${ses}.turns.jsonl`)
+          256:   s.turns = []
+          257:   if (existsSync(s.turnsFile)) {
+          258:     for (const line of readFileSync(s.turnsFile, "utf-8").trim().split("\n").filter(Boolean)) {
+          259:       try { s.turns.push(JSON.parse(line) as Record<string, unknown>) } catch { /* skip bad line */ }
+          260:     }
+          261:   }
+          262:   // Recover from split YAML files (new format) or single YAML (legacy)
+          263:   const splitFiles = loadSplitYAML(ses)
+          264:   if (splitFiles.length > 0 && s.turns.length === 0) {
+          265:     for (const doc of splitFiles) {
+          266:       if (doc?.user) s.turns.push(doc)
+          267:     }
+          268:   } else {
+          269:     const yp = join(LOG_BASE, `${ses}.yaml`)
+          270:     if (existsSync(yp) && s.turns.length === 0) {
+          271:       try {
+          272:         const existing = loadAll(readFileSync(yp, "utf-8")) as Record<string, unknown>[]
+          273:         for (let i = 1; i < existing.length; i++) {
+          274:           const d = existing[i]
+          275:           if (d?.user) s.turns.push(d)
+          276:         }
+          277:       } catch { /* skip bad yaml recovery */ }
+          278:     }
+          279:   }
+          280:   s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())
+          281:   s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()
+          282:   s.model = modelFromInfo(info ?? {})
+          283:   s.title = info?.title as string ?? null
+          284:   s.turn = null
+          285:   s.compactedAt = null
+          286:   s.firstUserTime = null
+          287: }
+          288: 
+          289: function loadSplitYAML(ses: string): Record<string, unknown>[] {
+          290:   try {
+          291:     // Check flat-timestamped format (session subdirectory)
+          292:     const sessionDir = join(LOG_BASE, ses)
+          293:     let files: string[] = []
+          294:     if (existsSync(sessionDir)) {
+          295:       files = readdirSync(sessionDir)
+          296:         .filter(f => f.match(/^\d{3}-/) && f.endsWith(".yaml"))
+          297:         .sort()
+          298:         .map(f => join(ses, f))
+          299:     }
+          300: 
+          301:     // Fallback to legacy per-turn format (flat files with ses_ prefix)
+          302:     if (files.length === 0) {
+          303:       files = readdirSync(LOG_BASE)
+          304:         .filter(f => f.startsWith(`${ses}_`) && f.endsWith(".yaml"))
+          305:         .sort()
+          306:     }
+          307: 
+          308:     const docs: Record<string, unknown>[] = []
+          309:     for (const f of files) {
+          310:       try {
+          311:         const content = readFileSync(join(LOG_BASE, f), "utf-8")
+          312:         const loaded = loadAll(content) as Record<string, unknown>[]
+          313:         docs.push(...loaded)
+          314:       } catch { /* skip bad file */ }
+          315:     }
+          316:     return docs
+          317:   } catch { return [] }
+          318: }
+          319: 
+          320: // ---------------------------------------------------------------------------
+          321: // Turn model
+          322: // ---------------------------------------------------------------------------
+          323: 
+          324: interface ModelInfo {
+          325:   id: string; provider: string
+          326: }
+          327: 
+          328: interface ToolCall {
+          329:   tool: string; args: unknown; result: unknown
+          330: }
+          331: 
+          332: class Step {
+          333:   model: ModelInfo | null = null
+          334:   agent: string | null = null
+          335:   thinking: string[] = []
+          336:   thinkingStartTime: string | null = null
+          337:   thinkingDuration: number | null = null
+          338:   responseText: string[] = []
+          339:   toolCalls: ToolCall[] = []
+          340:   startTime = ts()
+          341:   endTime: string | null = null
+          342:   pendingTool: string | null = null
+          343:   pendingArgs: unknown = null
+          344: 
+          345:   get hasContent(): boolean {
+          346:     return this.thinking.length > 0 || this.toolCalls.length > 0 || this.responseText.length > 0
+          347:   }
+          348: 
+          349:   toFields(): Record<string, unknown> {
+          350:     const a: Record<string, unknown> = {}
+          351:     if (this.agent) a.agent = this.agent
+          352:     if (this.model) a.model = { id: this.model.id, provider: this.model.provider }
+          353:     if (this.thinking.length > 0) {
+          354:       const text = this.thinking.filter(Boolean).join("\n")
+          355:       if (text) a.thinking = text
+          356:     }
+          357:     if (this.thinkingDuration != null) {
+          358:       a.thinking_duration = formatDuration(this.thinkingDuration)
+          359:       a.thinking_duration_ms = this.thinkingDuration
+          360:     }
+          361:     if (this.toolCalls.length > 0) {
+          362:       a.tool_calls = this.toolCalls.map((tc) => {
+          363:         const base: Record<string, unknown> = { tool: tc.tool, args: tc.args }
+          364:         if (tc.tool === "task" && typeof tc.result === "object" && tc.result !== null) {
+          365:           const r = tc.result as Record<string, unknown>
+          366:           if (r.sessionId) base.task_session_id = r.sessionId
+          367:           if (r.state) base.task_state = r.state
+          368:           if (r.taskResult) base.task_result = r.taskResult
+          369:         } else {
+          370:           base.result = tc.result
+          371:         }
+          372:         return base
+          373:       })
+          374:     }
+          375:     if (this.startTime) a.time = formatLocal(this.startTime)
+          376:     if (this.responseText.length > 0) a.response = this.responseText.join("")
+          377:     if (this.startTime && this.endTime) {
+          378:       const ms = new Date(this.endTime).getTime() - new Date(this.startTime).getTime()
+          379:       a.duration = formatDuration(ms)
+          380:       a.duration_ms = ms
+          381:     }
+          382:     return a
+          383:   }
+          384: }
+          385: 
+          386: class Turn {
+          387:   userText = ""
+          388:   userTime: string | null = null
+          389:   startTime = ts()
+          390:   endTime: string | null = null
+          391:   userMessageID: string | null = null
+          392:   steps: Step[] = []
+          393:   currentStep: Step | null = null
+          394: 
+          395:   toFields(): Record<string, unknown> {
+          396:     const userField: Record<string, unknown> = { text: this.userText }
+          397:     if (this.userTime) userField.time = formatLocal(this.userTime)
+          398:     const out: Record<string, unknown> = { user: userField }
+          399:     const stepFields = this.steps.filter((s) => s.hasContent).map((s) => s.toFields())
+          400:     if (stepFields.length > 0) {
+          401:       out.assistant = stepFields
+          402:     }
+          403:     return out
+          404:   }
+          405: }
+          406: 
+          407: function modelFromInfo(info: Record<string, unknown>): ModelInfo | null {
+          408:   // AssistantMessage: flat modelID / providerID
+          409:   if (info.modelID) return { id: info.modelID as string, provider: (info.providerID as string) ?? "" }
+          410:   // UserMessage: nested model { providerID, modelID }
+          411:   if (info.model && typeof info.model === "object") {
+          412:     const m = info.model as Record<string, unknown>
+          413:     if (m.modelID) return { id: m.modelID as string, provider: (m.providerID as string) ?? "" }
+          414:   }
+          415:   return null
+          416: }
+          417: 
+          418: // ---------------------------------------------------------------------------
+          419: // Per-session state
+          420: // ---------------------------------------------------------------------------
+          421: 
+          422: interface SessionState {
+          423:   turn: Turn | null
+          424:   turns: Record<string, unknown>[]
+          425:   turnsFile: string | null
+          426:   model: ModelInfo | null
+          427:   title: string | null
+          428:   compactedAt: string | null
+          429:   firstUserTime: string | null
+          430:   created: string | null
+          431:   updated: string | null
+          432:   writtenTurns: number
+          433: }
+          434: const SS = new Map<string, SessionState>()
+          435: 
+          436: function getSS(ses: string): SessionState {
+          437:   let s = SS.get(ses)
+          438:   if (!s) {
+          439:     s = { turn: null, turns: [], turnsFile: null, model: null, title: null, compactedAt: null, firstUserTime: null, created: null, updated: null, writtenTurns: 0 }
+          440:     SS.set(ses, s)
+          441:   }
+          442:   return s
+          443: }
+          444: 
+          445: let sid: string | null = null
+          446: 
+          447: interface MsgInfo {
+          448:   role: string; sessionID: string | null; model: ModelInfo | null; agent: string | null; userTime: string | null
+          449: }
+          450: const msgStore = new Map<string, MsgInfo>()
+          451: 
+          452: // ---------------------------------------------------------------------------
+          453: // Plugin
+          454: // ---------------------------------------------------------------------------
+          455: 
+          456: export const OpenCodeLogger: Plugin = async () => {
+          457:   return {
+          458:     event: async ({ event }) => {
+          459:       try {
+          460:         const p = (event as any).properties
+          461:         const now = ts()
+          462: 
+          463:         switch (event.type) {
+          464:             case "session.created": {
+          465:               const info = p?.info
+          466:               if (!info?.id) break
+          467:               if (sid) {
+          468:                 // Sub-agent session — don't overwrite main session state
+          469:                 writeJSONL(sid, { timestamp: now, sessionID: info.id, type: "session.sub_created" })
+          470:                 break
+          471:               }
+          472:               initSession(info.id as string, info)
+          473:               const s = getSS(info.id as string)
+          474:               msgStore.clear()
+          475:               saveState(sid!, { created: s.created })
+          476:               writeJSONL(sid!, { timestamp: now, sessionID: sid, type: "session.created", model: s.model, title: s.title })
+          477:               break
+          478:             }
+          479: 
+          480:            case "session.updated": {
+          481:              const info = p?.info
+          482:              if (!info?.id || info.id !== sid) break
+          483:              const s = getSS(info.id as string)
+          484:              if (info.title) s.title = info.title
+          485:              if (info.time?.updated) s.updated = new Date(info.time.updated).toISOString()
+          486:              break
+          487:            }
+          488: 
+          489:            case "message.updated": {
+          490:              const info = p?.info
+          491:              if (!info?.id) break
+          492:              const msgModel = modelFromInfo(info)
+          493:              msgStore.set(info.id, {
+          494:                role: info.role,
+          495:                sessionID: info.sessionID ?? null,
+          496:                model: msgModel,
+          497:                agent: info.role === "user" ? (info.agent ?? null) : null,
+          498:                userTime: info.time?.created ? new Date(info.time.created).toISOString() : null,
+          499:              })
+          500:              if (info.role === "assistant") {
+          501:                const ses = info.sessionID ?? sid
+          502:                if (ses) {
+          503:                  const s = getSS(ses as string)
+          504:                  if (s.turn) {
+          505:                    if (s.turn.currentStep) {
+          506:                      s.turn.currentStep.endTime = ts()
+          507:                      if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+          508:                        s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+          509:                      }
+          510:                    }
+          511:                    if (msgModel) s.model = msgModel
+          512:                    const step = new Step()
+          513:                    step.model = msgModel ?? s.model
+          514:                    step.agent = info.agent ?? null
+          515:                    step.startTime = ts()
+          516:                    s.turn.steps.push(step)
+          517:                    s.turn.currentStep = step
+          518:                  }
+          519:                }
+          520:              }
+          521:              break
+          522:            }
+          523: 
+          524:            case "message.part.updated": {
+          525:               const part = p?.part
+          526:               if (!part?.messageID) break
+          527:               const mi = msgStore.get(part.messageID)
+          528:               const role = mi?.role ?? "unknown"
+          529:               const ses = mi?.sessionID ?? sid
+          530:               if (!ses) break
+          531:               // Lazy init: resumed sessions may not fire session.created
+          532:               if (!sid) initSession(ses as string)
+          533: 
+          534:               const s = getSS(ses as string)
+          535:               if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
+          536:                 if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
+          537:                 if (s.turn && s.turn.steps.length > 0) {
+          538:                   s.turn.endTime = ts()
+          539:                   if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+          540:                     s.turn.currentStep.endTime = ts()
+          541:                     if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+          542:                       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+          543:                     }
+          544:                   }
+          545:                   pushTurn(s.turn.toFields(), ses as string)
+          546:                   s.updated = ts()
+          547:                   if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+          548:                     s.created = s.firstUserTime
+          549:                   }
+          550:                   writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          551:                   writeYAML(ses as string)
+          552:                 }
+          553:                 s.turn = new Turn()
+          554:                 s.turn.userText = part.text ?? ""
+          555:                 s.turn.userTime = mi?.userTime ?? null
+          556:                 s.turn.userMessageID = part.messageID
+          557:                 s.turn.startTime = ts()
+          558:               }
+          559: 
+          560:               const stp = s.turn ? (s.turn.currentStep ?? (() => {
+          561:                 const ns = new Step()
+          562:                 ns.model = s.model
+          563:                 s.turn!.steps.push(ns)
+          564:                 s.turn!.currentStep = ns
+          565:                 return ns
+          566:               })()) : null
+          567: 
+          568:               const entry: Record<string, unknown> = {
+          569:                 timestamp: ts(), sessionID: ses, type: "message.part", role,
+          570:                 partType: part.type, messageID: part.messageID,
+          571:                 agent: mi?.agent ?? null,
+          572:               }
+          573:               if (s.model) { entry.modelID = s.model.id; entry.providerID = s.model.provider }
+          574: 
+          575:             switch (part.type) {
+          576:               case "text":
+          577:                 entry.text = part.text ?? ""
+          578:                 if (stp && role === "assistant") {
+          579:                   stp.responseText.push(part.text ?? "")
+          580:                   if (stp.thinkingStartTime != null && stp.thinkingDuration == null) {
+          581:                     const end = ts()
+          582:                     stp.thinkingDuration = new Date(end).getTime() - new Date(stp.thinkingStartTime).getTime()
+          583:                   }
+          584:                 }
+          585:                 break
+          586:               case "reasoning":
+          587:                 entry.reasoning = part.text ?? part.reasoning ?? ""
+          588:                 if (stp && role === "assistant") {
+          589:                   stp.thinking.push(part.text ?? part.reasoning ?? "")
+          590:                   if (stp.thinkingStartTime == null) stp.thinkingStartTime = ts()
+          591:                 }
+          592:                 break
+          593:               case "tool_call":
+          594:               case "tool":
+          595:                 entry.toolID = part.callID ?? ""
+          596:                 entry.toolName = part.tool ?? ""
+          597:                 entry.args = part.state?.input ?? ""
+          598:                 entry.result = normalizeResult(part.state?.output ?? part.state?.error ?? "")
+          599:                 entry.status = part.state?.status ?? ""
+          600:                 if (stp && part.tool) {
+          601:                   if (entry.result) {
+          602:                     const rawResult = normalizeResult(entry.result as string)
+          603:                     const isTask = (stp.pendingTool ?? part.tool) === "task"
+          604:                     stp.toolCalls.push({
+          605:                       tool: stp.pendingTool ?? part.tool,
+          606:                       args: stp.pendingArgs ?? (part.state?.input ?? ""),
+          607:                       result: isTask ? (parseTaskResult(rawResult) ?? rawResult) : rawResult,
+          608:                     })
+          609:                     stp.pendingTool = null; stp.pendingArgs = null
+          610:                   } else {
+          611:                     // First arrival of this tool — compute thinking duration if reasoning just ended
+          612:                     if (stp.thinkingStartTime != null && stp.thinkingDuration == null) {
+          613:                       stp.thinkingDuration = Date.now() - new Date(stp.thinkingStartTime).getTime()
+          614:                     }
+          615:                     stp.pendingTool = part.tool; stp.pendingArgs = part.state?.input ?? ""
+          616:                   }
+          617:                 }
+          618:                 break
+          619:                case "tool_result":
+          620:                   entry.toolCallID = part.toolCallID ?? ""
+          621:                   entry.result = normalizeResult(part.data ?? part.text ?? "")
+          622:                   if (stp && stp.pendingTool) {
+          623:                     stp.toolCalls.push({
+          624:                       tool: stp.pendingTool, args: stp.pendingArgs ?? "",
+          625:                       result: normalizeResult(part.data ?? part.text ?? ""),
+          626:                     })
+          627:                     stp.pendingTool = null; stp.pendingArgs = null
+          628:                  }
+          629:                  break
+          630:                case "step-finish":
+          631:                  writeYAML(ses, true)
+          632:                  break
+          633:               default:
+          634:                 entry.text = part.text ?? ""
+          635:             }
+          636: 
+          637:             writeJSONL(ses, entry)
+          638:             break
+          639:           }
+          640: 
+          641:             case "session.status": {
+          642:               const props = p?.properties ?? p
+          643:               if (props?.status?.type !== "idle") break
+          644:               const ses = props?.sessionID ?? sid
+          645:               if (!ses || ses !== sid) break
+          646: 
+          647:               const s = getSS(ses)
+          648:               if (finalizeTurn(ses)) {
+          649:                 if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+          650:                   s.created = s.firstUserTime
+          651:                 }
+          652:                 writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          653:               }
+          654:               s.updated = ts()
+          655:               writeYAML(ses)
+          656:               break
+          657:             }
+          658: 
+          659:            case "session.compacted": {
+          660:               const ses = p?.sessionID ?? sid
+          661:               if (!ses || ses !== sid) break
+          662:               const s = getSS(ses)
+          663:               s.compactedAt = ts()
+          664:               writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: "session.compacted" })
+          665:               break
+          666:             }
+          667: 
+          668:             case "session.deleted":
+          669:             case "server.instance.disposed": {
+          670:               const info = p?.info
+          671:               const ses = event.type === "session.deleted" ? (info?.id ?? sid) : sid
+          672:               if (!ses || ses !== sid) break
+          673:               const s = getSS(ses)
+          674:               s.updated = ts()
+          675:               if (finalizeTurn(ses)) {
+          676:                 writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          677:               }
+          678:               writeYAML(ses)
+          679:               writeJSONL(ses, {
+          680:                 timestamp: ts(), sessionID: ses,
+          681:                 type: event.type === "session.deleted" ? "session.deleted" : "server.shutdown",
+          682:               })
+          683:               if (sid === ses) sid = null
+          684:               break
+          685:             }
+          686:         }
+          687:       } catch { /* no crash */ }
+          688:     },
+          689:   }
+          690: }
+
+          (End of file - total 690 lines)
+          </content>
+    time: 7/27/2026, 4:51:13.907 AM GMT+5:30
+    duration: 2.475s
+    duration_ms: 2475
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I understand the problem. Let me trace the flow:
+
+      1. When a session resumes, `message.part.updated` fires before `session.created`. There's a lazy init on line 532:
+      ```ts
+      if (!sid) initSession(ses as string)
+      ```
+
+      2. `initSession` on line 252 starts fresh:
+      ```ts
+      s.turns = []  // line 256
+      if (existsSync(s.turnsFile)) {
+        // loads turns from JSONL
+      }
+      ```
+
+      So `initSession` does load existing turns from the JSONL file. Good, that should work.
+
+      3. But look at `writtenTurns` — it's initialized to `0` in `getSS` (line 439):
+      ```ts
+      s = { ..., writtenTurns: 0 }
+      ```
+
+      And in `initSession`, it's never set from the loaded turns. So `writtenTurns` stays at 0. That means when `writeYAMLFlatTimestamped` is called on resume, it will try to re-write all turns from index 0, creating duplicate turn files.
+
+      4. Also, look at the turn creation on line 553:
+      ```ts
+      s.turn = new Turn()
+      ```
+      When the user sends a new message in a resumed session, a new turn is created. But then `finalizeTurn` / `writeTurnCompleted` writes it as a new file. That's correct behavior for a new user message. The issue is about the previous turns being re-written.
+
+      Let me think more carefully about what "turn duplication" means.
+
+      Actually, wait — looking more carefully at the flow:
+
+      When a session resumes:
+      1. `message.part.updated` fires with the first user text
+      2. `initSession` is called, loads existing turns from JSONL
+      3. Line 553 creates a new `s.turn`, and line 537 checks if there's an existing turn with steps, and if so, pushes and writes it
+
+      But wait — at this point, the previous turn was already finalized (written via `writeTurnCompleted`). When `initSession` loads turns from JSONL, those turns are in `s.turns`. When a new user message comes in, it creates a new turn. The old turns shouldn't be written again because they're already on disk.
+
+      But `writtenTurns` is 0 on resume. So when `writeYAMLFlatTimestamped` is called (line 551, 655, 678), it writes from index 0, overwriting/duplicating files.
+
+      Actually wait, `writeTurnCompleted` uses `s.writtenTurns` tracking on line 207:
+      ```ts
+      if (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1
+      ```
+
+      But `finalizeTurn` on the previous turn called `pushTurn` first (which pushes to `s.turns`), then `writeTurnCompleted` sets `writtenTurns` to the right value. So when a turn completes during normal operation, `writtenTurns` tracks correctly.
+
+      The problem is: when the session resumes (new opencode process), `initSession` loads JSONL turns into `s.turns`, but `writtenTurns` stays 0. So the next call to `writeYAMLFlatTimestamped` will write from index 0, creating duplicate files.
+
+      The fix: in `initSession`, after loading turns from JSONL, set `writtenTurns` to match the number of loaded turns:
+
+      ```ts
+      s.writtenTurns = s.turns.length
+      ```
+
+      Let me find the right place in `initSession`.
+    thinking_duration: 6.439s
+    thinking_duration_ms: 6439
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+          oldString: |2-
+              s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())
+              s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()
+          newString: |2-
+              s.writtenTurns = s.turns.length
+              s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())
+              s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()
+        result: Edit applied successfully.
+    time: 7/27/2026, 4:51:18.956 AM GMT+5:30
+    response: |-
+      Now I see the bug. In `initSession`, existing turns are loaded from JSONL into `s.turns`, but `s.writtenTurns` is never updated — it stays at 0. So on resume, `writeYAMLFlatTimestamped` re-writes all past turns, creating duplicate timestamped files.
+
+      The fix is to set `writtenTurns` after loading turns.
+    duration: 28.075s
+    duration_ms: 28075
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me verify the change looks right.
+    thinking_duration: 398ms
+    thinking_duration_ms: 398
+    time: 7/27/2026, 4:51:49.395 AM GMT+5:30
+    response: '`initSession` now sets `s.writtenTurns = s.turns.length` after loading existing turns from JSONL, so on session resume it won''t re-write turns that are already on disk.'
+    duration: 2.651s
+    duration_ms: 2651
+

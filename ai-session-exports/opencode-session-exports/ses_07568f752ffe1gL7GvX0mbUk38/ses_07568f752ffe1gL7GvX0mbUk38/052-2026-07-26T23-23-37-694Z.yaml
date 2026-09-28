@@ -1,0 +1,499 @@
+---
+user:
+  text: k, let me check - what is our session id - we have a skill fro this?
+  time: 7/27/2026, 4:52:15.919 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants to know their current session ID. They mentioned there's a skill for this - let me check. Looking at the available skills, I see `opencode-current-session-id` - that's the one. Let me load it.
+    thinking_duration: 826ms
+    thinking_duration_ms: 826
+    tool_calls:
+      - tool: skill
+        args:
+          name: opencode-current-session-id
+        result: |-
+          <skill_content name="opencode-current-session-id">
+          # Skill: opencode-current-session-id
+
+          # OpenCode Current Session ID (v1)
+
+          ## Composition Rationale
+
+          This skill is a **composer**: it does NOT re-implement glob-sorting or YAML parsing. It sequences two base skills:
+
+          1. [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — finds the newest `.yaml` file in `.opencode/logs/`
+          2. [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — extracts `session.id` and `title` from the YAML header
+
+          The composer's value-add: orchestrating the pipeline, resolving relative script paths, and cross-verifying the state file exists.
+
+          ## When to Use
+
+          - You need to know the current opencode session ID programmatically
+          - You are composing a larger workflow that needs the session ID for traceability
+
+          ## Environment & Dependencies
+
+          | Requirement | Version | Notes |
+          |-------------|---------|-------|
+          | Python | 3.12+ | Stdlib only |
+          | PyYAML | any | Required by yaml-field-extract (PEP 723 inline metadata) |
+          | `.opencode/logs/` | — | Must exist (created by opencode logger plugin) |
+
+          ## CLI Contract
+
+          | Argument | Required | Description |
+          |----------|----------|-------------|
+          | _(none)_ | — | Runs the full pipeline; no CLI args needed |
+
+          **Output:**
+          ```
+          Session ID: ses_XXXXXXXXXXXXX
+          Title: My Session Title
+          State file: exists
+          ```
+
+          **Exit codes:**
+          - `0` — session ID found, title and state file verified
+          - `1` — any pipeline step failed (missing log, missing key, etc.)
+
+          ## Protocol
+
+          1. Run `python3 scripts/find-current-session.py`
+          2. Read stdout for session ID, title, and state file presence.
+
+          ## Edge Cases
+
+          - **No YAML logs exist**: exits 1 with "could not find newest YAML log"
+          - **YAML header missing session.id**: exits 1
+          - **No state file**: still succeeds (reports "missing")
+          - **Symlinked log dir**: follows symlinks via `Path.rglob`
+
+          ## Prohibited Actions
+
+          - Do NOT re-derive the sort or YAML extraction logic inline — always delegate to the base skill scripts.
+          - Do NOT hardcode log directory paths — use `.opencode/logs/` relative to repo root.
+
+          ## Script Reference
+
+          `find-current-session.py`:
+          1. Resolves base script paths relative to its own location
+          2. Runs `sort-by-mtime.py` on `.opencode/logs/` with glob `*.yaml` and `--limit 1`
+          3. Parses JSON Lines output to get the newest file path
+          4. Runs `extract-field.py` twice: once for `session.id`, once for `title`
+          5. Checks for `.opencode/logs/<sid>.state.json`
+          6. Prints results
+
+          ## Composition by Lower-Level Skills
+
+          | Primitive | Composition Mechanism |
+          |-----------|----------------------|
+          | `file-glob-sort-by-mtime` | `sort-by-mtime.py --dir .opencode/logs --glob *.yaml --limit 1` → newest path |
+          | `yaml-field-extract` | `extract-field.py --file <path> --key session.id` → session ID |
+
+          ## Related Skills
+
+          - [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — base for finding the newest log file
+          - [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — base for extracting YAML header fields
+
+          Base directory for this skill: /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id
+          Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.
+          Note: file list is sampled.
+
+          <skill_files>
+          <file>/Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/AGENTS.md</file>
+          <file>/Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py</file>
+          </skill_files>
+          </skill_content>
+    time: 7/27/2026, 4:52:16.842 AM GMT+5:30
+    duration: 5.328s
+    duration_ms: 5328
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The skill says to run `python3 scripts/find-current-session.py` from the skill's base directory. Let me run it.
+    thinking_duration: 325ms
+    thinking_duration_ms: 325
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py
+        result: |
+          ERROR: session.id not found in YAML header
+    time: 7/27/2026, 4:52:23.988 AM GMT+5:30
+    duration: 30.289s
+    duration_ms: 30289
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The flat-timestamped YAML format uses a subdirectory (`ses_xxx/000-header-*.yaml`) rather than a flat `ses_xxx.yaml` file. The script is looking for `*.yaml` files in `.opencode/logs/` but the session files are now inside subdirectories. Let me look at the script and see what it does.
+
+      Also, the user might have a state file or JSONL that would tell us the session ID.
+    thinking_duration: 1.063s
+    thinking_duration_ms: 1063
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: from __future__ import annotations
+          3: import json, subprocess, sys
+          4: from pathlib import Path
+          5: 
+          6: SCRIPT_DIR = Path(__file__).resolve().parent
+          7: REPO_ROOT = SCRIPT_DIR.parents[4]  # ../../../../ from scripts/
+          8: 
+          9: SORT_BY_MTIME = REPO_ROOT / ".agents/skills/general/file/file-glob-sort-by-mtime/scripts/sort-by-mtime.py"
+          10: EXTRACT_FIELD = REPO_ROOT / ".agents/skills/general/yaml-field-extract/scripts/extract-field.py"
+          11: LOG_DIR = REPO_ROOT / ".opencode/logs"
+          12: 
+          13: 
+          14: def run(args: list[str]) -> tuple[int, str]:
+          15:     try:
+          16:         r = subprocess.run(args, capture_output=True, text=True, timeout=30)
+          17:         return r.returncode, r.stdout.strip()
+          18:     except FileNotFoundError as exc:
+          19:         return 127, f"File not found: {exc.filename}"
+          20:     except subprocess.TimeoutExpired:
+          21:         return 124, "Timed out"
+          22: 
+          23: 
+          24: def main() -> int:
+          25:     if not SORT_BY_MTIME.is_file():
+          26:         print(f"ERROR: sort-by-mtime.py not found at {SORT_BY_MTIME}", file=sys.stderr)
+          27:         return 1
+          28:     if not EXTRACT_FIELD.is_file():
+          29:         print(f"ERROR: extract-field.py not found at {EXTRACT_FIELD}", file=sys.stderr)
+          30:         return 1
+          31:     if not LOG_DIR.is_dir():
+          32:         print(f"ERROR: .opencode/logs not found at {LOG_DIR}", file=sys.stderr)
+          33:         return 1
+          34: 
+          35:     rc, newest = run([sys.executable, str(SORT_BY_MTIME), "--dir", str(LOG_DIR), "--glob", "*.yaml", "--limit", "1"])
+          36:     if rc != 0 or not newest:
+          37:         print("ERROR: could not find newest YAML log", file=sys.stderr)
+          38:         return 1
+          39: 
+          40:     try:
+          41:         newest_entry = json.loads(newest.splitlines()[0])
+          42:         yaml_path = LOG_DIR / newest_entry["path"]
+          43:     except (json.JSONDecodeError, KeyError, IndexError):
+          44:         print("ERROR: could not parse sort-by-mtime output", file=sys.stderr)
+          45:         return 1
+          46: 
+          47:     rc, sid = run([sys.executable, str(EXTRACT_FIELD), "--file", str(yaml_path), "--key", "session.id", "--doc-index", "0"])
+          48:     rc2, title = run([sys.executable, str(EXTRACT_FIELD), "--file", str(yaml_path), "--key", "title", "--doc-index", "0"])
+          49: 
+          50:     if rc != 0:
+          51:         print("ERROR: session.id not found in YAML header", file=sys.stderr)
+          52:         return 1
+          53: 
+          54:     state_file = LOG_DIR / f"{sid}.state.json"
+          55:     state_exists = state_file.is_file()
+          56: 
+          57:     print(f"Session ID: {sid}")
+          58:     if rc2 == 0 and title:
+          59:         print(f"Title: {title}")
+          60:     print(f"State file: {'exists' if state_exists else 'missing'}")
+          61:     return 0
+          62: 
+          63: 
+          64: if __name__ == "__main__":
+          65:     raise SystemExit(main())
+
+          (End of file - total 65 lines)
+          </content>
+
+          <system-reminder>
+          Instructions from: /Users/dk/lab-data/ai-suite/.agents/skills/opencode/opencode-current-session-id/AGENTS.md
+          # OpenCode Current Session ID — Companion Bridge
+
+          ## Purpose
+
+          This file is the companion bridge for non-skill-aware agent runtimes that auto-load `AGENTS.md` by filename convention. The operational SSOT lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - You need to programmatically discover the current opencode session ID and title from the logger logs in `.opencode/logs/`
+          - You are building a higher-level workflow that needs session-level traceability
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full composition rationale, CLI contract, protocol, and script reference. Do NOT execute any step without first loading `SKILL.md`.
+
+          ## Cross-References
+
+          - [`file-glob-sort-by-mtime`](../general/file/file-glob-sort-by-mtime/SKILL.md) — base primitive for finding the newest log file
+          - [`yaml-field-extract`](../general/yaml-field-extract/SKILL.md) — base primitive for extracting YAML header fields
+
+          </system-reminder>
+    time: 7/27/2026, 4:52:57.616 AM GMT+5:30
+    duration: 3.457s
+    duration_ms: 3457
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The script looks for `*.yaml` files flat in `.opencode/logs/`, but the flat-timestamped format stores YAML files inside subdirectories (`ses_xxx/*.yaml`). The script needs to be updated to also look inside session subdirectories.
+
+      But let me not fix the skill script right now - the user just wants to know their current session ID. Let me find it directly.
+
+      The session ID is `ses_061f4f7e1ffe4w6seNjhFdzYKu` based on the file path the user referenced. But that might be the sub-agent session that was being observed. The current session (the one we're in) might be different.
+
+      Let me check the state files or the most recent log.
+    thinking_duration: 1.551s
+    thinking_duration_ms: 1551
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/.opencode/logs
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/.opencode/logs</path>
+          <type>directory</type>
+          <entries>
+          .DS_Store
+          ses_0601ef805ffeW2qZiCdFRYeRU4.jsonl
+          ses_0601ef805ffeW2qZiCdFRYeRU4.state.json
+          ses_0601ef805ffeW2qZiCdFRYeRU4.turns.jsonl
+          ses_0601ef805ffeW2qZiCdFRYeRU4/
+          ses_060a7aca9ffeWqo9pbu2XX72Gf.jsonl
+          ses_060a7aca9ffeWqo9pbu2XX72Gf.state.json
+          ses_060a7aca9ffeWqo9pbu2XX72Gf.turns.jsonl
+          ses_060a7aca9ffeWqo9pbu2XX72Gf/
+          ses_061b5d223ffeG0Sej6B7Ot8EkP.jsonl
+          ses_061b5d223ffeG0Sej6B7Ot8EkP/
+          ses_061f4f7e1ffe4w6seNjhFdzYKu.jsonl
+          ses_061f4f7e1ffe4w6seNjhFdzYKu.turns.jsonl
+          ses_061f4f7e1ffe4w6seNjhFdzYKu/
+          ses_061fa3b18ffeoKT0j7Njtxmq7G.jsonl
+          ses_061fa3b18ffeoKT0j7Njtxmq7G.state.json
+          ses_061fa3b18ffeoKT0j7Njtxmq7G.turns.jsonl
+          ses_061fa3b18ffeoKT0j7Njtxmq7G/
+          ses_062161f22ffeviKjkMIhovs6JV.jsonl
+          ses_062161f22ffeviKjkMIhovs6JV.state.json
+          ses_062161f22ffeviKjkMIhovs6JV.turns.jsonl
+          ses_062161f22ffeviKjkMIhovs6JV/
+          ses_065773a95ffe40RCFWCnkiUsoh.jsonl
+          ses_065773a95ffe40RCFWCnkiUsoh.yaml
+          ses_06584e9f3ffeA7HZBiBmGpY6Hx.jsonl
+          ses_06584e9f3ffeA7HZBiBmGpY6Hx.state.json
+          ses_06584e9f3ffeA7HZBiBmGpY6Hx.turns.jsonl
+          ses_06584e9f3ffeA7HZBiBmGpY6Hx.yaml
+          ses_065876d95ffeZsarlVWmCM9vTl.jsonl
+          ses_065876d95ffeZsarlVWmCM9vTl.state.json
+          ses_065876d95ffeZsarlVWmCM9vTl.turns.jsonl
+          ses_065876d95ffeZsarlVWmCM9vTl.yaml
+          ses_06593fec8ffeZ3JiISm465vzrO.jsonl
+          ses_06593fec8ffeZ3JiISm465vzrO.state.json
+          ses_06593fec8ffeZ3JiISm465vzrO.turns.jsonl
+          ses_06593fec8ffeZ3JiISm465vzrO.yaml
+          ses_066a352e0ffeH7q95mDstfVUCy.jsonl
+          ses_066a352e0ffeH7q95mDstfVUCy.state.json
+          ses_066a352e0ffeH7q95mDstfVUCy.turns.jsonl
+          ses_066a352e0ffeH7q95mDstfVUCy.yaml
+          ses_06ee287bfffelyHq3L1oUPM9zH.jsonl
+          ses_06ee287bfffelyHq3L1oUPM9zH.yaml
+          ses_06ef1977fffexNBgiGpWy6geRh.jsonl
+          ses_06ef1977fffexNBgiGpWy6geRh.yaml
+          ses_06f0e08c7ffe02YvE97ycNXD5w.jsonl
+          ses_06f0e08c7ffe02YvE97ycNXD5w.state.json
+          ses_06f0e08c7ffe02YvE97ycNXD5w.turns.jsonl
+          ses_06f0e08c7ffe02YvE97ycNXD5w.yaml
+          ses_07568f752ffe1gL7GvX0mbUk38.jsonl
+          ses_07568f752ffe1gL7GvX0mbUk38.turns.jsonl
+          ses_07568f752ffe1gL7GvX0mbUk38.yaml
+          ses_07568f752ffe1gL7GvX0mbUk38/
+          ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.jsonl
+          ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.state.json
+          ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.turns.jsonl
+          ses_0c2d7b1e4ffeQSPP5UOTlpWzTS.yaml
+
+          (56 entries)
+          </entries>
+    time: 7/27/2026, 4:53:02.957 AM GMT+5:30
+    response: The skill script doesn't handle the flat-timestamped subdirectory format yet. Let me find the current session ID directly.
+    duration: 4.064s
+    duration_ms: 4064
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The newest directories/sessions. Let me check the most recent jsonl or state file to find our current session. Since the skill script doesn't handle the subdirectory format, let me just find the most recent state file to get the current session ID.
+
+      Actually, looking at the directory listing, `ses_061f4f7e1ffe4w6seNjhFdzYKu` is the one we were working with (the YAML file the user asked about was in that session's subdirectory). Let me check if that's the current session by looking at the state file.
+
+      Wait, actually the session ID for this conversation is likely different. Let me check the newest files in the logs directory.
+    thinking_duration: 1.700s
+    thinking_duration_ms: 1700
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls -lt /Users/dk/lab-data/ai-suite/.opencode/logs/*.state.json 2>/dev/null | head -5
+        result: |
+          -rw-r--r--@ 1 dk  staff  38 Jul 27 00:52 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_0601ef805ffeW2qZiCdFRYeRU4.state.json
+          -rw-r--r--@ 1 dk  staff  38 Jul 26 22:23 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_060a7aca9ffeWqo9pbu2XX72Gf.state.json
+          -rw-r--r--@ 1 dk  staff  38 Jul 26 16:13 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_061fa3b18ffeoKT0j7Njtxmq7G.state.json
+          -rw-r--r--@ 1 dk  staff  38 Jul 26 15:42 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_062161f22ffeviKjkMIhovs6JV.state.json
+          -rw-r--r--@ 1 dk  staff  38 Jul 25 23:43 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_06584e9f3ffeA7HZBiBmGpY6Hx.state.json
+    time: 7/27/2026, 4:53:09.124 AM GMT+5:30
+    duration: 3.997s
+    duration_ms: 3997
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The most recent state file is `ses_0601ef805ffeW2qZiCdFRYeRU4`. But wait, there's no session directory for that one (wait, there is — `ses_0601ef805ffeW2qZiCdFRYeRU4/` is in the directory listing). But that seems to be a different session.
+
+      Let me check the newest overall file, including `.jsonl` and sessions in subdirectories. Actually, the `ses_061f4f7e1ffe4w6seNjhFdzYKu` session is the one whose 019 turn we were looking at. But we might be in a different session now.
+
+      Actually, let me look at what's accessible. The `sid` global variable in the plugin tracks our current session. But I can't access that from here. Let me check the most recently modified turns.jsonl file.
+    thinking_duration: 1.965s
+    thinking_duration_ms: 1965
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls -lt /Users/dk/lab-data/ai-suite/.opencode/logs/*.turns.jsonl 2>/dev/null | head -5
+        result: |
+          -rw-r--r--@ 1 dk  staff   554540 Jul 27 04:51 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38.turns.jsonl
+          -rw-r--r--@ 1 dk  staff   423294 Jul 27 04:49 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_061f4f7e1ffe4w6seNjhFdzYKu.turns.jsonl
+          -rw-r--r--@ 1 dk  staff   532886 Jul 27 01:27 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_061fa3b18ffeoKT0j7Njtxmq7G.turns.jsonl
+          -rw-r--r--@ 1 dk  staff    14554 Jul 27 01:08 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_0601ef805ffeW2qZiCdFRYeRU4.turns.jsonl
+          -rw-r--r--@ 1 dk  staff   367143 Jul 26 23:36 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_060a7aca9ffeWqo9pbu2XX72Gf.turns.jsonl
+    time: 7/27/2026, 4:53:15.770 AM GMT+5:30
+    duration: 4.497s
+    duration_ms: 4497
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The most recently modified turns.jsonl is `ses_07568f752ffe1gL7GvX0mbUk38` modified at 04:51. But `ses_061f4f7e1ffe4w6seNjhFdzYKu` (the one we were looking at earlier) was modified at 04:49. Our current session is likely `ses_07568f752ffe1gL7GvX0mbUk38`.
+
+      Let me check the JSONL file for this session to see its most recent entry.
+    thinking_duration: 1.102s
+    thinking_duration_ms: 1102
+    tool_calls:
+      - tool: bash
+        args:
+          command: tail -1 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38.turns.jsonl | python3 -m json.tool 2>/dev/null || tail -1 /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38.turns.jsonl
+        result: |-
+          {
+            "user": {
+              "text": "k, working perfectly.\n\nanother thing is the turn supposed to continues. but, somehow the turn is duplicated (may be session resume). but files are not overwritted (files always contains time stamps). but i need continues turns - what will do? can you fix the plugin code?",
+              "time": "7/27/2026, 4:51:04.730 AM GMT+5:30"
+            },
+            "assistant": [
+              {
+                "agent": "build",
+                "model": {
+                  "id": "deepseek-v4-flash-free",
+                  "provider": "opencode"
+                },
+                "thinking": "The user is saying that when a session resumes, turns are duplicated instead of continuing. The turn files are not overwritten because they have timestamps in their names, so each resume creates new files rather than continuing the existing turn sequence. They want turns to continue (i.e., when a session resumes, it should pick up where it left off, not create duplicate turns).\n\nLet me first understand the plugin code to see how session initialization and turn resumption works. I need to look at the codegraph for the plugin.\n\nLet me read the plugin source to understand the session initialization logic.",
+                "thinking_duration": "1.410s",
+                "thinking_duration_ms": 1410,
+                "tool_calls": [
+                  {
+                    "tool": "codegraph_codegraph_explore",
+                    "args": {
+                      "query": "opencode-logger.ts session initSession finalizeTurn writeTurnCompleted writtenTurns YAML_SPLIT_MODE",
+                      "maxFiles": 3,
+                      "projectPath": "/Users/dk/lab-data/configurations-private"
+                    },
+                    "result": "The project at /Users/dk/lab-data/configurations-private isn't indexed with codegraph (no .codegraph/ directory found walking up from it), so codegraph cannot query it. Use your built-in tools (Read/Grep/Glob) for that codebase instead, and don't call codegraph for it again this session. Indexing is the user's decision — they can run 'codegraph init' in that project to enable it."
+                  }
+                ],
+                "time": "7/27/2026, 4:51:06.341 AM GMT+5:30",
+                "duration": "5.365s",
+                "duration_ms": 5365
+              },
+              {
+                "agent": "build",
+                "model": {
+                  "id": "deepseek-v4-flash-free",
+                  "provider": "opencode"
+                },
+                "tool_calls": [
+                  {
+                    "tool": "read",
+                    "args": {
+                      "filePath": "/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts"
+                    },
+                    "result": "<path>/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts</path>\n<type>file</type>\n<content>\n1: import type { Plugin } from \"@opencode-ai/plugin\"\n2: import { mkdirSync, appendFileSync, writeFileSync, existsSync, readFileSync, readdirSync } from \"node:fs\"\n3: import { join } from \"node:path\"\n4: import { dump, loadAll } from \"js-yaml\"\n5: \n6: const LOG_BASE = \".opencode/logs\"\n7: \n8: const YAML_SPLIT_MODE = \"flat-timestamped\"\n9: \n10: function ts(): string {\n11:   return new Date().toISOString()\n12: }\n13: \n14: function j(o: unknown): string {\n15:   try { return JSON.stringify(o) } catch { return JSON.stringify({ error: \"serialize failed\" }) }\n16: }\n17: \n18: // ---------------------------------------------------------------------------\n19: // Time helpers\n20: // ---------------------------------------------------------------------------\n21: \n22: function formatLocal(iso: string | null): string {\n23:   if (!iso) return \"\"\n24:   const d = new Date(iso)\n25:   const m = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`\n26:   const h = d.getHours() % 12 || 12\n27:   const ap = d.getHours() >= 12 ? \"PM\" : \"AM\"\n28:   const t = `${h}:${String(d.getMinutes()).padStart(2, \"0\")}:${String(d.getSeconds()).padStart(2, \"0\")}.${String(d.getMilliseconds()).padStart(3, \"0\")}`\n29:   const tz = new Intl.DateTimeFormat(\"en-US\", { timeZoneName: \"short\" }).format(d).split(\", \").pop() ?? \"\"\n30:   return `${m}, ${t} ${ap} ${tz}`\n31: }\n32: \n33: function formatDuration(ms: number): string {\n34:   if (ms >= 1000) return (ms / 1000).toFixed(3) + \"s\"\n35:   return ms + \"ms\"\n36: }\n37: \n38: // ---------------------------------------------------------------------------\n39: // YAML builder (js-yaml)\n40: // ---------------------------------------------------------------------------\n41: \n42: function buildYAML(docs: Record<string, unknown>[]): string {\n43:   if (docs.length === 0) return \"\"\n44:   return docs.map((d) => \"---\\n\" + dump(d, { indent: 2, lineWidth: -1, noRefs: true, quotingType: '\"', noCompatMode: true }) + \"\\n\").join(\"\")\n45: }\n46: \n47: // ---------------------------------------------------------------------------\n48: // JSONL\n49: // ---------------------------------------------------------------------------\n50: \n51: function writeJSONL(sid: string, entry: Record<string, unknown>) {\n52:   try {\n53:     mkdirSync(LOG_BASE, { recursive: true })\n54:     appendFileSync(join(LOG_BASE, `${sid}.jsonl`), j(entry) + \"\\n\")\n55:   } catch { /* no crash */ }\n56: }\n57: \n58: function parseTaskResult(result: string): { sessionId: string | null; state: string | null; taskResult: string | null } | null {\n59:   const idMatch = result.match(/<task\\s+id=\"([^\"]+)\"/)\n60:   const stateMatch = result.match(/state=\"([^\"]+)\"/)\n61:   const resultMatch = result.match(/<task_result>([\\s\\S]*?)<\\/task_result>/)\n62:   if (!idMatch && !stateMatch && !resultMatch) return null\n63:   return {\n64:     sessionId: idMatch ? idMatch[1] : null,\n65:     state: stateMatch ? stateMatch[1] : null,\n66:     taskResult: resultMatch ? resultMatch[1].trim() : result,\n67:   }\n68: }\n69: \n70: function normalizeResult(result: string): string {\n71:   if (!result) return result\n72:   try {\n73:     const parsed = JSON.parse(result)\n74:     if (typeof parsed === \"object\" && parsed !== null) {\n75:       return JSON.stringify(parsed, null, 2)\n76:     }\n77:   } catch { /* not JSON — return as-is */ }\n78:   return result\n79: }\n80: \n81: function writeYAML(ses: string, includePending = false) {\n82:   try {\n83:     const s = getSS(ses)\n84:     if (YAML_SPLIT_MODE === \"flat-timestamped\") {\n85:       writeYAMLFlatTimestamped(ses, includePending)\n86:     } else if (YAML_SPLIT_MODE === \"per-turn\") {\n87:       writeYAMLSplit(ses, includePending)\n88:     } else {\n89:       writeYAMLSingle(ses, includePending)\n90:     }\n91:   } catch { /* no crash */ }\n92: }\n93: \n94: function writeYAMLSingle(ses: string, includePending = false) {\n95:   try {\n96:     const s = getSS(ses)\n97:     const yp = join(LOG_BASE, `${ses}.yaml`)\n98:     const header: Record<string, unknown> = {\n99:       session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },\n100:     }\n101:     if (s.model) header.model = s.model\n102:     if (s.title) header.title = s.title\n103:     if (s.compactedAt) {\n104:       header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }\n105:     }\n106:     const docs: Record<string, unknown>[] = [header, ...s.turns]\n107:     if (includePending && s.turn && s.turn.steps.length > 0) {\n108:       docs.push(s.turn.toFields())\n109:     }\n110:     writeFileSync(yp, buildYAML(docs))\n111:   } catch { /* no crash */ }\n112: }\n113: \n114: function writeYAMLSplit(ses: string, includePending = false) {\n115:   try {\n116:     const s = getSS(ses)\n117:     const baseDir = join(LOG_BASE, ses)\n118:     mkdirSync(baseDir, { recursive: true })\n119: \n120:     // Write header\n121:     const header: Record<string, unknown> = {\n122:       session: { id: ses, created: formatLocal(s.created ?? ts()), updated: formatLocal(s.updated ?? ts()) },\n123:     }\n124:     if (s.model) header.model = s.model\n125:     if (s.title) header.title = s.title\n126:     if (s.compactedAt) {\n127:       header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }\n128:     }\n129:     writeFileSync(join(baseDir, \"00-header.yaml\"), buildYAML([header]))\n130: \n131:     // Write each turn\n132:     for (let i = 0; i < s.turns.length; i++) {\n133:       const turnNum = String(i + 1).padStart(4, \"0\")\n134:       writeFileSync(join(baseDir, `${turnNum}-turn.yaml`), buildYAML([s.turns[i]]))\n135:     }\n136: \n137:     // Write pending turn if requested\n138:     if (includePending && s.turn && s.turn.steps.length > 0) {\n139:       const turnNum = String(s.turns.length + 1).padStart(4, \"0\")\n140:       writeFileSync(join(baseDir, `${turnNum}-turn-pending.yaml`), buildYAML([s.turn.toFields()]))\n141:     }\n142:   } catch { /* no crash */ }\n143: }\n144: \n145: function writeYAMLFlatTimestamped(ses: string, includePending = false) {\n146:   try {\n147:     const s = getSS(ses)\n148:     const baseDir = join(LOG_BASE, ses)\n149:     mkdirSync(baseDir, { recursive: true })\n150: \n151:     // Header file (turn 000) - write once if not exists\n152:     const headerFiles = readdirSync(baseDir).filter(f => f.startsWith(\"000-header-\"))\n153:     if (headerFiles.length === 0) {\n154:       const header: Record<string, unknown> = {\n155:         session: { id: ses, created: formatLocal(s.created ?? ts()) },\n156:       }\n157:       if (s.model) header.model = s.model\n158:       if (s.title) header.title = s.title\n159:       if (s.compactedAt) {\n160:         header.session = { ...header.session as Record<string, unknown>, compacted: formatLocal(s.compactedAt) }\n161:       }\n162:       const headerTime = s.created ?? ts()\n163:       const headerFilename = `000-header-${headerTime.replace(/[:.]/g, \"-\")}.yaml`\n164:       writeFileSync(join(baseDir, headerFilename), buildYAML([header]))\n165:     }\n166: \n167:     // Write newly completed turns (not yet written)\n168:     for (let i = s.writtenTurns; i < s.turns.length; i++) {\n169:       const turn = s.turns[i]\n170:       const turnNum = String(i + 1).padStart(3, \"0\")\n171:       const turnTime = (turn.endTime as string) ?? turn.time ?? ts()\n172:       const turnFilename = `${turnNum}-${turnTime.replace(/[:.]/g, \"-\")}.yaml`\n173:       writeFileSync(join(baseDir, turnFilename), buildYAML([turn]))\n174:       s.writtenTurns++\n175:     }\n176: \n177:     // Write pending turn if requested\n178:     if (includePending && s.turn && s.turn.steps.length > 0) {\n179:       const turnNum = String(s.turns.length + 1).padStart(3, \"0\")\n180:       const startTime = s.turn.startTime ?? ts()\n181:       const pendingFilename = `${turnNum}-pending-${startTime.replace(/[:.]/g, \"-\")}.yaml`\n182:       writeFileSync(join(baseDir, pendingFilename), buildYAML([s.turn.toFields()]))\n183:     }\n184:   } catch { /* no crash */ }\n185: }\n186: \n187: function writeTurnCompleted(ses: string, turnIndex: number, turnFields: Record<string, unknown>) {\n188:   try {\n189:     const s = getSS(ses)\n190:     const baseDir = join(LOG_BASE, ses)\n191:     mkdirSync(baseDir, { recursive: true })\n192: \n193:     const turnNum = String(turnIndex + 1).padStart(3, \"0\")\n194:     const turnTime = (turnFields.endTime as string) ?? turnFields.time ?? ts()\n195:     const completedFilename = `${turnNum}-${turnTime.replace(/[:.]/g, \"-\")}.yaml`\n196:     const completedPath = join(baseDir, completedFilename)\n197: \n198:     // Remove any pending file for this turn\n199:     const pendingPattern = `${turnNum}-pending-`\n200:     const pendingFiles = readdirSync(baseDir).filter(f => f.startsWith(pendingPattern))\n201:     for (const pf of pendingFiles) {\n202:       try { require(\"node:fs\").unlinkSync(join(baseDir, pf)) } catch { /* ignore */ }\n203:     }\n204: \n205:     writeFileSync(completedPath, buildYAML([turnFields]))\n206:     // Track that this turn has been written\n207:     if (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1\n208:   } catch { /* no crash */ }\n209: }\n210: \n211: function finalizeTurn(ses: string) {\n212:   const s = getSS(ses)\n213:   if (!s.turn || s.turn.steps.length === 0) return false\n214:   s.turn.endTime = ts()\n215:   if (s.turn.currentStep && !s.turn.currentStep.endTime) {\n216:     s.turn.currentStep.endTime = ts()\n217:     if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {\n218:       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()\n219:     }\n220:   }\n221:   const turnFields = s.turn.toFields()\n222:   pushTurn(turnFields, ses)\n223:   // Write completed turn file (index is length - 1 after push)\n224:   writeTurnCompleted(ses, s.turns.length - 1, turnFields)\n225:   s.turn = null\n226:   return true\n227: }\n228: \n229: function pushTurn(turnFields: Record<string, unknown>, ses: string) {\n230:   const s = getSS(ses)\n231:   s.turns.push(turnFields)\n232:   if (s.turnsFile) {\n233:     try {\n234:       mkdirSync(LOG_BASE, { recursive: true })\n235:       appendFileSync(s.turnsFile, j(turnFields) + \"\\n\")\n236:     } catch { /* no crash */ }\n237:   }\n238: }\n239: \n240: function stateFile(sid: string): string {\n241:   return join(LOG_BASE, `${sid}.state.json`)\n242: }\n243: \n244: function loadState(sid: string): Record<string, unknown> {\n245:   try { return JSON.parse(readFileSync(stateFile(sid), \"utf-8\")) } catch { return {} }\n246: }\n247: \n248: function saveState(sid: string, data: Record<string, unknown>) {\n249:   try { mkdirSync(LOG_BASE, { recursive: true }); writeFileSync(stateFile(sid), j(data)) } catch { /* no crash */ }\n250: }\n251: \n252: function initSession(ses: string, info?: Record<string, unknown>) {\n253:   sid = ses\n254:   const s = getSS(ses)\n255:   s.turnsFile = join(LOG_BASE, `${ses}.turns.jsonl`)\n256:   s.turns = []\n257:   if (existsSync(s.turnsFile)) {\n258:     for (const line of readFileSync(s.turnsFile, \"utf-8\").trim().split(\"\\n\").filter(Boolean)) {\n259:       try { s.turns.push(JSON.parse(line) as Record<string, unknown>) } catch { /* skip bad line */ }\n260:     }\n261:   }\n262:   // Recover from split YAML files (new format) or single YAML (legacy)\n263:   const splitFiles = loadSplitYAML(ses)\n264:   if (splitFiles.length > 0 && s.turns.length === 0) {\n265:     for (const doc of splitFiles) {\n266:       if (doc?.user) s.turns.push(doc)\n267:     }\n268:   } else {\n269:     const yp = join(LOG_BASE, `${ses}.yaml`)\n270:     if (existsSync(yp) && s.turns.length === 0) {\n271:       try {\n272:         const existing = loadAll(readFileSync(yp, \"utf-8\")) as Record<string, unknown>[]\n273:         for (let i = 1; i < existing.length; i++) {\n274:           const d = existing[i]\n275:           if (d?.user) s.turns.push(d)\n276:         }\n277:       } catch { /* skip bad yaml recovery */ }\n278:     }\n279:   }\n280:   s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())\n281:   s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()\n282:   s.model = modelFromInfo(info ?? {})\n283:   s.title = info?.title as string ?? null\n284:   s.turn = null\n285:   s.compactedAt = null\n286:   s.firstUserTime = null\n287: }\n288: \n289: function loadSplitYAML(ses: string): Record<string, unknown>[] {\n290:   try {\n291:     // Check flat-timestamped format (session subdirectory)\n292:     const sessionDir = join(LOG_BASE, ses)\n293:     let files: string[] = []\n294:     if (existsSync(sessionDir)) {\n295:       files = readdirSync(sessionDir)\n296:         .filter(f => f.match(/^\\d{3}-/) && f.endsWith(\".yaml\"))\n297:         .sort()\n298:         .map(f => join(ses, f))\n299:     }\n300: \n301:     // Fallback to legacy per-turn format (flat files with ses_ prefix)\n302:     if (files.length === 0) {\n303:       files = readdirSync(LOG_BASE)\n304:         .filter(f => f.startsWith(`${ses}_`) && f.endsWith(\".yaml\"))\n305:         .sort()\n306:     }\n307: \n308:     const docs: Record<string, unknown>[] = []\n309:     for (const f of files) {\n310:       try {\n311:         const content = readFileSync(join(LOG_BASE, f), \"utf-8\")\n312:         const loaded = loadAll(content) as Record<string, unknown>[]\n313:         docs.push(...loaded)\n314:       } catch { /* skip bad file */ }\n315:     }\n316:     return docs\n317:   } catch { return [] }\n318: }\n319: \n320: // ---------------------------------------------------------------------------\n321: // Turn model\n322: // ---------------------------------------------------------------------------\n323: \n324: interface ModelInfo {\n325:   id: string; provider: string\n326: }\n327: \n328: interface ToolCall {\n329:   tool: string; args: unknown; result: unknown\n330: }\n331: \n332: class Step {\n333:   model: ModelInfo | null = null\n334:   agent: string | null = null\n335:   thinking: string[] = []\n336:   thinkingStartTime: string | null = null\n337:   thinkingDuration: number | null = null\n338:   responseText: string[] = []\n339:   toolCalls: ToolCall[] = []\n340:   startTime = ts()\n341:   endTime: string | null = null\n342:   pendingTool: string | null = null\n343:   pendingArgs: unknown = null\n344: \n345:   get hasContent(): boolean {\n346:     return this.thinking.length > 0 || this.toolCalls.length > 0 || this.responseText.length > 0\n347:   }\n348: \n349:   toFields(): Record<string, unknown> {\n350:     const a: Record<string, unknown> = {}\n351:     if (this.agent) a.agent = this.agent\n352:     if (this.model) a.model = { id: this.model.id, provider: this.model.provider }\n353:     if (this.thinking.length > 0) {\n354:       const text = this.thinking.filter(Boolean).join(\"\\n\")\n355:       if (text) a.thinking = text\n356:     }\n357:     if (this.thinkingDuration != null) {\n358:       a.thinking_duration = formatDuration(this.thinkingDuration)\n359:       a.thinking_duration_ms = this.thinkingDuration\n360:     }\n361:     if (this.toolCalls.length > 0) {\n362:       a.tool_calls = this.toolCalls.map((tc) => {\n363:         const base: Record<string, unknown> = { tool: tc.tool, args: tc.args }\n364:         if (tc.tool === \"task\" && typeof tc.result === \"object\" && tc.result !== null) {\n365:           const r = tc.result as Record<string, unknown>\n366:           if (r.sessionId) base.task_session_id = r.sessionId\n367:           if (r.state) base.task_state = r.state\n368:           if (r.taskResult) base.task_result = r.taskResult\n369:         } else {\n370:           base.result = tc.result\n371:         }\n372:         return base\n373:       })\n374:     }\n375:     if (this.startTime) a.time = formatLocal(this.startTime)\n376:     if (this.responseText.length > 0) a.response = this.responseText.join(\"\")\n377:     if (this.startTime && this.endTime) {\n378:       const ms = new Date(this.endTime).getTime() - new Date(this.startTime).getTime()\n379:       a.duration = formatDuration(ms)\n380:       a.duration_ms = ms\n381:     }\n382:     return a\n383:   }\n384: }\n385: \n386: class Turn {\n387:   userText = \"\"\n388:   userTime: string | null = null\n389:   startTime = ts()\n390:   endTime: string | null = null\n391:   userMessageID: string | null = null\n392:   steps: Step[] = []\n393:   currentStep: Step | null = null\n394: \n395:   toFields(): Record<string, unknown> {\n396:     const userField: Record<string, unknown> = { text: this.userText }\n397:     if (this.userTime) userField.time = formatLocal(this.userTime)\n398:     const out: Record<string, unknown> = { user: userField }\n399:     const stepFields = this.steps.filter((s) => s.hasContent).map((s) => s.toFields())\n400:     if (stepFields.length > 0) {\n401:       out.assistant = stepFields\n402:     }\n403:     return out\n404:   }\n405: }\n406: \n407: function modelFromInfo(info: Record<string, unknown>): ModelInfo | null {\n408:   // AssistantMessage: flat modelID / providerID\n409:   if (info.modelID) return { id: info.modelID as string, provider: (info.providerID as string) ?? \"\" }\n410:   // UserMessage: nested model { providerID, modelID }\n411:   if (info.model && typeof info.model === \"object\") {\n412:     const m = info.model as Record<string, unknown>\n413:     if (m.modelID) return { id: m.modelID as string, provider: (m.providerID as string) ?? \"\" }\n414:   }\n415:   return null\n416: }\n417: \n418: // ---------------------------------------------------------------------------\n419: // Per-session state\n420: // ---------------------------------------------------------------------------\n421: \n422: interface SessionState {\n423:   turn: Turn | null\n424:   turns: Record<string, unknown>[]\n425:   turnsFile: string | null\n426:   model: ModelInfo | null\n427:   title: string | null\n428:   compactedAt: string | null\n429:   firstUserTime: string | null\n430:   created: string | null\n431:   updated: string | null\n432:   writtenTurns: number\n433: }\n434: const SS = new Map<string, SessionState>()\n435: \n436: function getSS(ses: string): SessionState {\n437:   let s = SS.get(ses)\n438:   if (!s) {\n439:     s = { turn: null, turns: [], turnsFile: null, model: null, title: null, compactedAt: null, firstUserTime: null, created: null, updated: null, writtenTurns: 0 }\n440:     SS.set(ses, s)\n441:   }\n442:   return s\n443: }\n444: \n445: let sid: string | null = null\n446: \n447: interface MsgInfo {\n448:   role: string; sessionID: string | null; model: ModelInfo | null; agent: string | null; userTime: string | null\n449: }\n450: const msgStore = new Map<string, MsgInfo>()\n451: \n452: // ---------------------------------------------------------------------------\n453: // Plugin\n454: // ---------------------------------------------------------------------------\n455: \n456: export const OpenCodeLogger: Plugin = async () => {\n457:   return {\n458:     event: async ({ event }) => {\n459:       try {\n460:         const p = (event as any).properties\n461:         const now = ts()\n462: \n463:         switch (event.type) {\n464:             case \"session.created\": {\n465:               const info = p?.info\n466:               if (!info?.id) break\n467:               if (sid) {\n468:                 // Sub-agent session — don't overwrite main session state\n469:                 writeJSONL(sid, { timestamp: now, sessionID: info.id, type: \"session.sub_created\" })\n470:                 break\n471:               }\n472:               initSession(info.id as string, info)\n473:               const s = getSS(info.id as string)\n474:               msgStore.clear()\n475:               saveState(sid!, { created: s.created })\n476:               writeJSONL(sid!, { timestamp: now, sessionID: sid, type: \"session.created\", model: s.model, title: s.title })\n477:               break\n478:             }\n479: \n480:            case \"session.updated\": {\n481:              const info = p?.info\n482:              if (!info?.id || info.id !== sid) break\n483:              const s = getSS(info.id as string)\n484:              if (info.title) s.title = info.title\n485:              if (info.time?.updated) s.updated = new Date(info.time.updated).toISOString()\n486:              break\n487:            }\n488: \n489:            case \"message.updated\": {\n490:              const info = p?.info\n491:              if (!info?.id) break\n492:              const msgModel = modelFromInfo(info)\n493:              msgStore.set(info.id, {\n494:                role: info.role,\n495:                sessionID: info.sessionID ?? null,\n496:                model: msgModel,\n497:                agent: info.role === \"user\" ? (info.agent ?? null) : null,\n498:                userTime: info.time?.created ? new Date(info.time.created).toISOString() : null,\n499:              })\n500:              if (info.role === \"assistant\") {\n501:                const ses = info.sessionID ?? sid\n502:                if (ses) {\n503:                  const s = getSS(ses as string)\n504:                  if (s.turn) {\n505:                    if (s.turn.currentStep) {\n506:                      s.turn.currentStep.endTime = ts()\n507:                      if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {\n508:                        s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()\n509:                      }\n510:                    }\n511:                    if (msgModel) s.model = msgModel\n512:                    const step = new Step()\n513:                    step.model = msgModel ?? s.model\n514:                    step.agent = info.agent ?? null\n515:                    step.startTime = ts()\n516:                    s.turn.steps.push(step)\n517:                    s.turn.currentStep = step\n518:                  }\n519:                }\n520:              }\n521:              break\n522:            }\n523: \n524:            case \"message.part.updated\": {\n525:               const part = p?.part\n526:               if (!part?.messageID) break\n527:               const mi = msgStore.get(part.messageID)\n528:               const role = mi?.role ?? \"unknown\"\n529:               const ses = mi?.sessionID ?? sid\n530:               if (!ses) break\n531:               // Lazy init: resumed sessions may not fire session.created\n532:               if (!sid) initSession(ses as string)\n533: \n534:               const s = getSS(ses as string)\n535:               if (role === \"user\" && part.type === \"text\" && (!s.turn || s.turn.userMessageID !== part.messageID)) {\n536:                 if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime\n537:                 if (s.turn && s.turn.steps.length > 0) {\n538:                   s.turn.endTime = ts()\n539:                   if (s.turn.currentStep && !s.turn.currentStep.endTime) {\n540:                     s.turn.currentStep.endTime = ts()\n541:                     if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {\n542:                       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()\n543:                     }\n544:                   }\n545:                   pushTurn(s.turn.toFields(), ses as string)\n546:                   s.updated = ts()\n547:                   if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {\n548:                     s.created = s.firstUserTime\n549:                   }\n550:                   writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: \"turn.complete\", turnIndex: s.turns.length - 1 })\n551:                   writeYAML(ses as string)\n552:                 }\n553:                 s.turn = new Turn()\n554:                 s.turn.userText = part.text ?? \"\"\n555:                 s.turn.userTime = mi?.userTime ?? null\n556:                 s.turn.userMessageID = part.messageID\n557:                 s.turn.startTime = ts()\n558:               }\n559: \n560:               const stp = s.turn ? (s.turn.currentStep ?? (() => {\n561:                 const ns = new Step()\n562:                 ns.model = s.model\n563:                 s.turn!.steps.push(ns)\n564:                 s.turn!.currentStep = ns\n565:                 return ns\n566:               })()) : null\n567: \n568:               const entry: Record<string, unknown> = {\n569:                 timestamp: ts(), sessionID: ses, type: \"message.part\", role,\n570:                 partType: part.type, messageID: part.messageID,\n571:                 agent: mi?.agent ?? null,\n572:               }\n573:               if (s.model) { entry.modelID = s.model.id; entry.providerID = s.model.provider }\n574: \n575:             switch (part.type) {\n576:               case \"text\":\n577:                 entry.text = part.text ?? \"\"\n578:                 if (stp && role === \"assistant\") {\n579:                   stp.responseText.push(part.text ?? \"\")\n580:                   if (stp.thinkingStartTime != null && stp.thinkingDuration == null) {\n581:                     const end = ts()\n582:                     stp.thinkingDuration = new Date(end).getTime() - new Date(stp.thinkingStartTime).getTime()\n583:                   }\n584:                 }\n585:                 break\n586:               case \"reasoning\":\n587:                 entry.reasoning = part.text ?? part.reasoning ?? \"\"\n588:                 if (stp && role === \"assistant\") {\n589:                   stp.thinking.push(part.text ?? part.reasoning ?? \"\")\n590:                   if (stp.thinkingStartTime == null) stp.thinkingStartTime = ts()\n591:                 }\n592:                 break\n593:               case \"tool_call\":\n594:               case \"tool\":\n595:                 entry.toolID = part.callID ?? \"\"\n596:                 entry.toolName = part.tool ?? \"\"\n597:                 entry.args = part.state?.input ?? \"\"\n598:                 entry.result = normalizeResult(part.state?.output ?? part.state?.error ?? \"\")\n599:                 entry.status = part.state?.status ?? \"\"\n600:                 if (stp && part.tool) {\n601:                   if (entry.result) {\n602:                     const rawResult = normalizeResult(entry.result as string)\n603:                     const isTask = (stp.pendingTool ?? part.tool) === \"task\"\n604:                     stp.toolCalls.push({\n605:                       tool: stp.pendingTool ?? part.tool,\n606:                       args: stp.pendingArgs ?? (part.state?.input ?? \"\"),\n607:                       result: isTask ? (parseTaskResult(rawResult) ?? rawResult) : rawResult,\n608:                     })\n609:                     stp.pendingTool = null; stp.pendingArgs = null\n610:                   } else {\n611:                     // First arrival of this tool — compute thinking duration if reasoning just ended\n612:                     if (stp.thinkingStartTime != null && stp.thinkingDuration == null) {\n613:                       stp.thinkingDuration = Date.now() - new Date(stp.thinkingStartTime).getTime()\n614:                     }\n615:                     stp.pendingTool = part.tool; stp.pendingArgs = part.state?.input ?? \"\"\n616:                   }\n617:                 }\n618:                 break\n619:                case \"tool_result\":\n620:                   entry.toolCallID = part.toolCallID ?? \"\"\n621:                   entry.result = normalizeResult(part.data ?? part.text ?? \"\")\n622:                   if (stp && stp.pendingTool) {\n623:                     stp.toolCalls.push({\n624:                       tool: stp.pendingTool, args: stp.pendingArgs ?? \"\",\n625:                       result: normalizeResult(part.data ?? part.text ?? \"\"),\n626:                     })\n627:                     stp.pendingTool = null; stp.pendingArgs = null\n628:                  }\n629:                  break\n630:                case \"step-finish\":\n631:                  writeYAML(ses, true)\n632:                  break\n633:               default:\n634:                 entry.text = part.text ?? \"\"\n635:             }\n636: \n637:             writeJSONL(ses, entry)\n638:             break\n639:           }\n640: \n641:             case \"session.status\": {\n642:               const props = p?.properties ?? p\n643:               if (props?.status?.type !== \"idle\") break\n644:               const ses = props?.sessionID ?? sid\n645:               if (!ses || ses !== sid) break\n646: \n647:               const s = getSS(ses)\n648:               if (finalizeTurn(ses)) {\n649:                 if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {\n650:                   s.created = s.firstUserTime\n651:                 }\n652:                 writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: \"turn.complete\", turnIndex: s.turns.length - 1 })\n653:               }\n654:               s.updated = ts()\n655:               writeYAML(ses)\n656:               break\n657:             }\n658: \n659:            case \"session.compacted\": {\n660:               const ses = p?.sessionID ?? sid\n661:               if (!ses || ses !== sid) break\n662:               const s = getSS(ses)\n663:               s.compactedAt = ts()\n664:               writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: \"session.compacted\" })\n665:               break\n666:             }\n667: \n668:             case \"session.deleted\":\n669:             case \"server.instance.disposed\": {\n670:               const info = p?.info\n671:               const ses = event.type === \"session.deleted\" ? (info?.id ?? sid) : sid\n672:               if (!ses || ses !== sid) break\n673:               const s = getSS(ses)\n674:               s.updated = ts()\n675:               if (finalizeTurn(ses)) {\n676:                 writeJSONL(ses, { timestamp: ts(), sessionID: ses, type: \"turn.complete\", turnIndex: s.turns.length - 1 })\n677:               }\n678:               writeYAML(ses)\n679:               writeJSONL(ses, {\n680:                 timestamp: ts(), sessionID: ses,\n681:                 type: event.type === \"session.deleted\" ? \"session.deleted\" : \"server.shutdown\",\n682:               })\n683:               if (sid === ses) sid = null\n684:               break\n685:             }\n686:         }\n687:       } catch { /* no crash */ }\n688:     },\n689:   }\n690: }\n\n(End of file - total 690 lines)\n</content>"
+                  }
+                ],
+                "time": "7/27/2026, 4:51:13.907 AM GMT+5:30",
+                "duration": "2.475s",
+                "duration_ms": 2475
+              },
+              {
+                "agent": "build",
+                "model": {
+                  "id": "deepseek-v4-flash-free",
+                  "provider": "opencode"
+                },
+                "thinking": "Now I understand the problem. Let me trace the flow:\n\n1. When a session resumes, `message.part.updated` fires before `session.created`. There's a lazy init on line 532:\n```ts\nif (!sid) initSession(ses as string)\n```\n\n2. `initSession` on line 252 starts fresh:\n```ts\ns.turns = []  // line 256\nif (existsSync(s.turnsFile)) {\n  // loads turns from JSONL\n}\n```\n\nSo `initSession` does load existing turns from the JSONL file. Good, that should work.\n\n3. But look at `writtenTurns` — it's initialized to `0` in `getSS` (line 439):\n```ts\ns = { ..., writtenTurns: 0 }\n```\n\nAnd in `initSession`, it's never set from the loaded turns. So `writtenTurns` stays at 0. That means when `writeYAMLFlatTimestamped` is called on resume, it will try to re-write all turns from index 0, creating duplicate turn files.\n\n4. Also, look at the turn creation on line 553:\n```ts\ns.turn = new Turn()\n```\nWhen the user sends a new message in a resumed session, a new turn is created. But then `finalizeTurn` / `writeTurnCompleted` writes it as a new file. That's correct behavior for a new user message. The issue is about the previous turns being re-written.\n\nLet me think more carefully about what \"turn duplication\" means.\n\nActually, wait — looking more carefully at the flow:\n\nWhen a session resumes:\n1. `message.part.updated` fires with the first user text\n2. `initSession` is called, loads existing turns from JSONL\n3. Line 553 creates a new `s.turn`, and line 537 checks if there's an existing turn with steps, and if so, pushes and writes it\n\nBut wait — at this point, the previous turn was already finalized (written via `writeTurnCompleted`). When `initSession` loads turns from JSONL, those turns are in `s.turns`. When a new user message comes in, it creates a new turn. The old turns shouldn't be written again because they're already on disk.\n\nBut `writtenTurns` is 0 on resume. So when `writeYAMLFlatTimestamped` is called (line 551, 655, 678), it writes from index 0, overwriting/duplicating files.\n\nActually wait, `writeTurnCompleted` uses `s.writtenTurns` tracking on line 207:\n```ts\nif (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1\n```\n\nBut `finalizeTurn` on the previous turn called `pushTurn` first (which pushes to `s.turns`), then `writeTurnCompleted` sets `writtenTurns` to the right value. So when a turn completes during normal operation, `writtenTurns` tracks correctly.\n\nThe problem is: when the session resumes (new opencode process), `initSession` loads JSONL turns into `s.turns`, but `writtenTurns` stays 0. So the next call to `writeYAMLFlatTimestamped` will write from index 0, creating duplicate files.\n\nThe fix: in `initSession`, after loading turns from JSONL, set `writtenTurns` to match the number of loaded turns:\n\n```ts\ns.writtenTurns = s.turns.length\n```\n\nLet me find the right place in `initSession`.",
+                "thinking_duration": "6.439s",
+                "thinking_duration_ms": 6439,
+                "tool_calls": [
+                  {
+                    "tool": "edit",
+                    "args": {
+                      "filePath": "/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts",
+                      "oldString": "  s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())\n  s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()",
+                      "newString": "  s.writtenTurns = s.turns.length\n  s.created = (loadState(ses).created as string) ?? (info?.time?.created ? new Date((info.time as Record<string, unknown>).created as string).toISOString() : ts())\n  s.updated = info?.time?.updated ? new Date((info.time as Record<string, unknown>).updated as string).toISOString() : ts()"
+                    },
+                    "result": "Edit applied successfully."
+                  }
+                ],
+                "time": "7/27/2026, 4:51:18.956 AM GMT+5:30",
+                "response": "Now I see the bug. In `initSession`, existing turns are loaded from JSONL into `s.turns`, but `s.writtenTurns` is never updated — it stays at 0. So on resume, `writeYAMLFlatTimestamped` re-writes all past turns, creating duplicate timestamped files.\n\nThe fix is to set `writtenTurns` after loading turns.",
+                "duration": "28.075s",
+                "duration_ms": 28075
+              },
+              {
+                "agent": "build",
+                "model": {
+                  "id": "deepseek-v4-flash-free",
+                  "provider": "opencode"
+                },
+                "thinking": "Let me verify the change looks right.",
+                "thinking_duration": "398ms",
+                "thinking_duration_ms": 398,
+                "time": "7/27/2026, 4:51:49.395 AM GMT+5:30",
+                "response": "`initSession` now sets `s.writtenTurns = s.turns.length` after loading existing turns from JSONL, so on session resume it won't re-write turns that are already on disk.",
+                "duration": "2.651s",
+                "duration_ms": 2651
+              }
+            ]
+          }
+    time: 7/27/2026, 4:53:22.219 AM GMT+5:30
+    duration: 5.956s
+    duration_ms: 5956
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Our current session is `ses_07568f752ffe1gL7GvX0mbUk38`. The last turn is the one where we fixed the `writtenTurns` issue. Let me inform the user.
+    thinking_duration: 749ms
+    thinking_duration_ms: 749
+    time: 7/27/2026, 4:53:30.440 AM GMT+5:30
+    response: |-
+      Current session ID: **ses_07568f752ffe1gL7GvX0mbUk38**
+
+      The skill script needs updating for the flat-timestamped subdirectory format (it looks for `*.yaml` in the flat logs dir, not inside session subdirs). Want me to fix it?
+    duration: 4.290s
+    duration_ms: 4290
+

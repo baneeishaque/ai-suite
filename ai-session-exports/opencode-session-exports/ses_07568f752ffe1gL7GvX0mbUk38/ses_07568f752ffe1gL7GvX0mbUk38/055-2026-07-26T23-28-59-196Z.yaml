@@ -1,0 +1,428 @@
+---
+user:
+  text: k, the 54 turn is now completed, but the turn 47 file is still on pending - waht is that means? or is it a glitch? is it correctly completed on 47 turn file?
+  time: 7/27/2026, 4:57:59.077 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is saying that:
+      - Turn 54 is now completed (so 054-completed file exists)
+      - But turn 47 still has a pending file (`047-pending-2026-07-26T23-14-44-852Z.yaml`) still on disk
+
+      This suggests that the `writeTurnCompleted` function didn't properly clean up the pending file for turn 47. Let me look at the session directory again.
+
+      Let me check the session directory to see the current state.
+    thinking_duration: 900ms
+    thinking_duration_ms: 900
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38
+        result: |-
+          <path>/Users/dk/lab-data/ai-suite/.opencode/logs/ses_07568f752ffe1gL7GvX0mbUk38</path>
+          <type>directory</type>
+          <entries>
+          000-header-2026-07-26T23-14-23-023Z.yaml
+          046-2026-07-26T23-14-36-020Z.yaml
+          047-2026-07-26T23-15-06-389Z.yaml
+          047-pending-2026-07-26T23-14-44-852Z.yaml
+          048-2026-07-26T23-15-15-789Z.yaml
+          049-2026-07-26T23-17-27-368Z.yaml
+          050-2026-07-26T23-18-55-152Z.yaml
+          051-2026-07-26T23-21-55-054Z.yaml
+          052-2026-07-26T23-23-37-694Z.yaml
+          053-2026-07-26T23-24-37-691Z.yaml
+          054-2026-07-26T23-27-02-779Z.yaml
+
+          (11 entries)
+          </entries>
+    time: 7/27/2026, 4:58:00.197 AM GMT+5:30
+    duration: 4.407s
+    duration_ms: 4407
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      So:
+      - `054-pending` is gone (good - replaced by `054-2026-07-26T23-27-02-779Z.yaml`)
+      - But `047-pending-2026-07-26T23-14-44-852Z.yaml` still exists alongside `047-2026-07-26T23-15-06-389Z.yaml`
+
+      That means `writeTurnCompleted` left the pending file behind for turn 47. Let me look at the `writeTurnCompleted` function:
+
+      ```ts
+      function writeTurnCompleted(ses: string, turnIndex: number, turnFields: Record<string, unknown>) {
+        try {
+          const s = getSS(ses)
+          const baseDir = join(LOG_BASE, ses)
+          mkdirSync(baseDir, { recursive: true })
+
+          const turnNum = String(turnIndex + 1).padStart(3, "0")
+          const turnTime = (turnFields.endTime as string) ?? turnFields.time ?? ts()
+          const completedFilename = `${turnNum}-${turnTime.replace(/[:.]/g, "-")}.yaml`
+          const completedPath = join(baseDir, completedFilename)
+
+          // Remove any pending file for this turn
+          const pendingPattern = `${turnNum}-pending-`
+          const pendingFiles = readdirSync(baseDir).filter(f => f.startsWith(pendingPattern))
+          for (const pf of pendingFiles) {
+            try { require("node:fs").unlinkSync(join(baseDir, pf)) } catch { /* ignore */ }
+          }
+
+          writeFileSync(completedPath, buildYAML([turnFields]))
+          // Track that this turn has been written
+          if (s.writtenTurns <= turnIndex) s.writtenTurns = turnIndex + 1
+        } catch { /* no crash */ }
+      }
+      ```
+
+      The logic looks correct for turn 47 - it would look for files starting with `047-pending-` and delete them. But this function only runs for the *current* turn when it's finalized. Turn 47 was finalized during the original session, and the `047-pending` file should have been cleaned up then.
+
+      The issue is that this orphaned pending file was likely left behind from a previous session instance. During the original session, turn 47's pending file was written, then when the turn completed, `writeTurnCompleted` was called. But did it work?
+
+      Let me look at the timing:
+      - `047-pending-2026-07-26T23-14-44-852Z.yaml` created at 23:14:44
+      - `047-2026-07-26T23-15-06-389Z.yaml` completed at 23:15:06
+
+      The completed file exists. So `writeTurnCompleted` was called. But the pending file wasn't deleted. Why?
+
+      There might be a timing issue or a race condition. Or perhaps the `readdirSync` / `unlinkSync` code path failed silently (the catch clause ignores errors).
+
+      Actually wait - there could be a more fundamental issue. Let me think about how `writeTurnCompleted` gets called:
+
+      1. When `session.status` fires with idle → calls `finalizeTurn(ses)` → calls `writeTurnCompleted(ses, s.turns.length - 1, turnFields)`
+      2. When `message.part.updated` receives a new user message → finalizes old turn → calls `pushTurn` (not `writeTurnCompleted` directly)
+
+      For case 2, the old turn is finalized via:
+      ```
+      pushTurn(s.turn.toFields(), ses as string)
+      ```
+
+      And then later `writeYAML(ses)` is called which would call `writeYAMLFlatTimestamped` which writes only NEW completed turns via `writtenTurns` tracking. But it doesn't clean up pending files.
+
+      Wait, but `writeTurnCompleted` IS called during `finalizeTurn`. Let me re-read `finalizeTurn`:
+
+      ```ts
+      function finalizeTurn(ses: string) {
+        const s = getSS(ses)
+        if (!s.turn || s.turn.steps.length === 0) return false
+        s.turn.endTime = ts()
+        if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+          s.turn.currentStep.endTime = ts()
+          if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+            s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+          }
+        }
+        const turnFields = s.turn.toFields()
+        pushTurn(turnFields, ses)
+        // Write completed turn file (index is length - 1 after push)
+        writeTurnCompleted(ses, s.turns.length - 1, turnFields)
+        s.turn = null
+        return true
+      }
+      ```
+
+      So `finalizeTurn` does call `writeTurnCompleted`. That should clean up the pending file.
+
+      But look at case 2 (in `message.part.updated`):
+      ```ts
+      if (s.turn && s.turn.steps.length > 0) {
+        s.turn.endTime = ts()
+        if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+          s.turn.currentStep.endTime = ts()
+          ...
+        }
+        pushTurn(s.turn.toFields(), ses as string)
+        s.updated = ts()
+        ...
+        writeJSONL(ses as string, { ... })
+        writeYAML(ses as string)
+      }
+      ```
+
+      Here, the old turn is finalized via `pushTurn` + `writeYAML`, NOT via `finalizeTurn`. So `writeTurnCompleted` is NOT called here. The pending file for the old turn is NOT cleaned up.
+
+      `writeYAML` → `writeYAMLFlatTimestamped` only writes new completed turns via `writtenTurns` tracking, but it doesn't clean up pending files for those turns.
+
+      So the bug is: when a new user message arrives (in `message.part.updated`), the old turn is finalized via `pushTurn` + `writeYAML`, but `writeTurnCompleted` is not called, so the pending file for that turn is never removed.
+
+      The fix: in the `message.part.updated` handler, instead of just calling `pushTurn` + `writeYAML`, we should also clean up the pending file for the turn being finalized. Or better yet, just call `finalizeTurn` instead of manually finalizing.
+
+      Actually wait, let me look more carefully. The `message.part.updated` section:
+
+      ```ts
+      if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
+        if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
+        if (s.turn && s.turn.steps.length > 0) {
+          s.turn.endTime = ts()
+          if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+            s.turn.currentStep.endTime = ts()
+            if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+              s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+            }
+          }
+          pushTurn(s.turn.toFields(), ses as string)
+          s.updated = ts()
+          if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+            s.created = s.firstUserTime
+          }
+          writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          writeYAML(ses as string)
+        }
+        s.turn = new Turn()
+        ...
+      }
+      ```
+
+      The fix: replace the manual finalization block with a call to `finalizeTurn(ses)`, which already calls `writeTurnCompleted` which cleans up pending files. But we need to be careful - `finalizeTurn` also calls `writeTurnCompleted` which writes the YAML file already. And then the current code also calls `writeYAML`. So we'd need to avoid the double write.
+
+      Actually, looking at `finalizeTurn`:
+      1. Sets endTime on turn and currentStep
+      2. Calls `pushTurn(turnFields, ses)` — pushes to s.turns and appends to JSONL
+      3. Calls `writeTurnCompleted(ses, s.turns.length - 1, turnFields)` — writes the completed YAML file, removes pending, increments writtenTurns
+      4. Sets s.turn = null
+
+      And the manual finalization in `message.part.updated`:
+      1. Sets endTime on turn and currentStep
+      2. Calls `pushTurn(turnFields, ses)` — pushes to s.turns and appends to JSONL
+      3. Updates s.updated
+      4. Adjusts s.created if needed
+      5. Writes JSONL log entry
+      6. Calls `writeYAML(ses)` — which calls `writeYAMLFlatTimestamped` which writes NEW completed turns from writtenTurns index
+
+      So the manual path doesn't call `writeTurnCompleted`, which means:
+      - No pending file cleanup
+      - `writtenTurns` is not incremented immediately - but `writeYAMLFlatTimestamped` does increment it
+
+      The simplest fix: in the `message.part.updated` handler, after `pushTurn`, also clean up the pending file for the finalized turn. Or better, just replace the manual finalization with `finalizeTurn`.
+
+      But wait, `finalizeTurn` already calls `writeTurnCompleted` which writes the YAML AND removes pending. And then the code also calls `writeYAML`. That would be redundant but not harmful since `writeYAMLFlatTimestamped` is idempotent (it only writes from `writtenTurns` index).
+
+      Actually, there's a subtle issue. When `finalizeTurn` calls `writeTurnCompleted`, it increments `writtenTurns`. Then the subsequent `writeYAML` → `writeYAMLFlatTimestamped` starts from the updated `writtenTurns` index, so it won't write anything for that turn again. Good.
+
+      Let me refactor to use `finalizeTurn` in `message.part.updated`:
+
+      ```ts
+      if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
+        if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
+        if (finalizeTurn(ses as string)) {
+          if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+            s.created = s.firstUserTime
+          }
+          writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          writeYAML(ses as string)
+        }
+        s.turn = new Turn()
+        ...
+      }
+      ```
+
+      Wait, but `finalizeTurn` already calls `pushTurn` (which appends to JSONL) and `writeTurnCompleted` (which writes YAML). If we then also call `writeJSONL` and `writeYAML`, we'd duplicate the turn in JSONL and potentially in YAML.
+
+      Let me trace through more carefully:
+
+      `finalizeTurn`:
+      1. Sets s.turn.endTime
+      2. Sets s.turn.currentStep.endTime
+      3. Computes thinkingDuration
+      4. const turnFields = s.turn.toFields()
+      5. pushTurn(turnFields, ses) → inserts into s.turns and appends to turns.jsonl
+      6. writeTurnCompleted(ses, s.turns.length - 1, turnFields) → writes YAML file, removes pending, sets writtenTurns
+      7. s.turn = null
+
+      Then if I call `writeJSONL` after `finalizeTurn`: this would add an *additional* JSONL entry about turn completion (the log entry, not the turn data itself). Looking at the original code, the `writeJSONL` call is: `writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })` — this is a metadata entry, not the turn data. So it's fine.
+
+      And `writeYAML` after `finalizeTurn`: `writeYAMLFlatTimestamped` loops from `s.writtenTurns` to `s.turns.length`. Since `finalizeTurn` incremented `writtenTurns` to `s.turns.length`, the loop won't execute. So no duplicate. Good.
+
+      OK so the fix is to replace the manual finalization block in `message.part.updated` with a call to `finalizeTurn`.
+
+      Actually, let me also check if there's a duplicate `writeJSONL` issue. `finalizeTurn` calls `pushTurn` which appends the FULL turn data to `turns.jsonl`. The separate `writeJSONL` call is for a metadata entry to `sid.jsonl`. Different files. Good.
+
+      Let me make the edit.
+    thinking_duration: 19.762s
+    thinking_duration_ms: 19762
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+          offset: 531
+          limit: 30
+        result: |-
+          <path>/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts</path>
+          <type>file</type>
+          <content>
+          531:               if (!ses) break
+          532:               // Lazy init: resumed sessions may not fire session.created
+          533:               if (!sid) initSession(ses as string)
+          534: 
+          535:               const s = getSS(ses as string)
+          536:               if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
+          537:                 if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
+          538:                 if (s.turn && s.turn.steps.length > 0) {
+          539:                   s.turn.endTime = ts()
+          540:                   if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+          541:                     s.turn.currentStep.endTime = ts()
+          542:                     if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+          543:                       s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+          544:                     }
+          545:                   }
+          546:                   pushTurn(s.turn.toFields(), ses as string)
+          547:                   s.updated = ts()
+          548:                   if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+          549:                     s.created = s.firstUserTime
+          550:                   }
+          551:                   writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          552:                   writeYAML(ses as string)
+          553:                 }
+          554:                 s.turn = new Turn()
+          555:                 s.turn.userText = part.text ?? ""
+          556:                 s.turn.userTime = mi?.userTime ?? null
+          557:                 s.turn.userMessageID = part.messageID
+          558:                 s.turn.startTime = ts()
+          559:               }
+          560: 
+
+          (Showing lines 531-560 of 691. Use offset=561 to continue.)
+          </content>
+    time: 7/27/2026, 4:58:07.209 AM GMT+5:30
+    response: |-
+      That `047-pending-*.yaml` is an orphan from a previous session instance — `writeTurnCompleted` wasn't called when the turn was finalized during the new-user-message path in `message.part.updated`. The manual finalization there does `pushTurn` + `writeYAML` but skips `writeTurnCompleted`, so the pending file is never removed.
+
+      Fix: replace the manual finalization block with `finalizeTurn()`, which already handles pending cleanup.
+    duration: 23.353s
+    duration_ms: 23353
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to replace lines 538-553 with a call to `finalizeTurn`. Let me craft the edit:
+
+      ```ts
+                      if (s.turn && s.turn.steps.length > 0) {
+                        if (finalizeTurn(ses as string)) {
+                          if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+                            s.created = s.firstUserTime
+                          }
+                          writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+                          writeYAML(ses as string)
+                        }
+                      }
+      ```
+
+      This replaces the manual finalization (lines 539-546 for endTime/currentStep/pushTurn) with `finalizeTurn`. `finalizeTurn` does all of that plus `writeTurnCompleted` which removes the pending file.
+    thinking_duration: 1.556s
+    thinking_duration_ms: 1556
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+          oldString: |2-
+                            if (s.turn && s.turn.steps.length > 0) {
+                              s.turn.endTime = ts()
+                              if (s.turn.currentStep && !s.turn.currentStep.endTime) {
+                                s.turn.currentStep.endTime = ts()
+                                if (s.turn.currentStep.thinkingStartTime != null && s.turn.currentStep.thinkingDuration == null) {
+                                  s.turn.currentStep.thinkingDuration = Date.now() - new Date(s.turn.currentStep.thinkingStartTime).getTime()
+                                }
+                              }
+                              pushTurn(s.turn.toFields(), ses as string)
+                              s.updated = ts()
+                              if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+                                s.created = s.firstUserTime
+                              }
+                              writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+                              writeYAML(ses as string)
+                            }
+          newString: |2-
+                            if (s.turn && s.turn.steps.length > 0) {
+                              if (finalizeTurn(ses as string)) {
+                                if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+                                  s.created = s.firstUserTime
+                                }
+                                writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+                                writeYAML(ses as string)
+                              }
+                            }
+        result: Edit applied successfully.
+    time: 7/27/2026, 4:58:33.171 AM GMT+5:30
+    duration: 10.667s
+    duration_ms: 10667
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Wait, there's a potential issue. `finalizeTurn` sets `s.turn = null` at the end. But after the `if (finalizeTurn(ses as string))` block, lines 554-558 create a new Turn:
+
+      ```ts
+      s.turn = new Turn()
+      s.turn.userText = part.text ?? ""
+      s.turn.userTime = mi?.userTime ?? null
+      s.turn.userMessageID = part.messageID
+      s.turn.startTime = ts()
+      ```
+
+      That's fine - `finalizeTurn` nulls the old turn, then the code creates a new one for the new user message. Good.
+
+      But also note: `finalizeTurn` calls `pushTurn` which appends to turns.jsonl AND `writeTurnCompleted` which writes the completed YAML file and removes pending. Then we also call `writeYAML` which is a no-op (writtenTurns is already caught up). And `writeJSONL` adds a metadata entry.
+
+      Let me verify the edit looks right.
+    thinking_duration: 1.702s
+    thinking_duration_ms: 1702
+    tool_calls:
+      - tool: read
+        args:
+          offset: 535
+          filePath: /Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts
+          limit: 25
+        result: |-
+          <path>/Users/dk/lab-data/configurations-private/opencode/config/plugins/opencode-logger.ts</path>
+          <type>file</type>
+          <content>
+          535:               const s = getSS(ses as string)
+          536:               if (role === "user" && part.type === "text" && (!s.turn || s.turn.userMessageID !== part.messageID)) {
+          537:                 if (mi?.userTime && s.firstUserTime == null) s.firstUserTime = mi.userTime
+          538:                 if (s.turn && s.turn.steps.length > 0) {
+          539:                   if (finalizeTurn(ses as string)) {
+          540:                     if (s.firstUserTime && s.created && new Date(s.firstUserTime).getTime() < new Date(s.created).getTime()) {
+          541:                       s.created = s.firstUserTime
+          542:                     }
+          543:                     writeJSONL(ses as string, { timestamp: ts(), sessionID: ses, type: "turn.complete", turnIndex: s.turns.length - 1 })
+          544:                     writeYAML(ses as string)
+          545:                   }
+          546:                 }
+          547:                 s.turn = new Turn()
+          548:                 s.turn.userText = part.text ?? ""
+          549:                 s.turn.userTime = mi?.userTime ?? null
+          550:                 s.turn.userMessageID = part.messageID
+          551:                 s.turn.startTime = ts()
+          552:               }
+          553: 
+          554:               const stp = s.turn ? (s.turn.currentStep ?? (() => {
+          555:                 const ns = new Step()
+          556:                 ns.model = s.model
+          557:                 s.turn!.steps.push(ns)
+          558:                 s.turn!.currentStep = ns
+          559:                 return ns
+
+          (Showing lines 535-559 of 684. Use offset=560 to continue.)
+          </content>
+    time: 7/27/2026, 4:58:46.325 AM GMT+5:30
+    duration: 4.569s
+    duration_ms: 4569
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/27/2026, 4:58:53.272 AM GMT+5:30
+    response: |-
+      Now on the next turn completion, `finalizeTurn` will call `writeTurnCompleted` which removes the pending file for that turn number. The orphan `047-pending-*.yaml` is a leftover from before this fix — you can safely delete it manually or it'll be cleaned up when any future operation touches that turn number (unlikely since it's in the past).
+
+      The fix takes effect immediately for all future turn completions.
+    duration: 3.771s
+    duration_ms: 3771
+

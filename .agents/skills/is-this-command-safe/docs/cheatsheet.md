@@ -391,6 +391,27 @@ in [`SKILL.md §4`](../SKILL.md#4-destructive-flag-inventory-non-exhaustive-auth
 
 ***
 
+## Network Inspection
+
+### `dig`
+
+- **Verdict**: ✅ SAFE — DNS lookup utility (Domain Information Groper). Queries DNS
+  resolvers and prints responses. Read-only network query tool. No filesystem mutation.
+- **Common flags**:
+  - `+short` — concise output (IP address only).
+  - `-x <ip>` — reverse DNS lookup (safe).
+  - `@<nameserver>` — query a specific DNS server (safe).
+  - `-t <type>` — query a specific record type (A, MX, TXT, NS, etc.).
+  - `-f <file>` — batch mode reading queries from a file (read-only).
+  - `AXFR` — zone transfer request (read-only DNS query; not a mutation).
+- **Pipeline caution**: `dig` output piped to `xargs rm` is dangerous, but general
+  pipeline guards (`* | *`: ask) already catch this.
+- **Contrast**: `dig` has no write or system-mutation capability. Unlike `rm`,
+  `sed -i`, `git push`, there is no flag combination that can modify files or
+  system state.
+
+***
+
 ## API & DevOps CLIs
 
 ### `acli`

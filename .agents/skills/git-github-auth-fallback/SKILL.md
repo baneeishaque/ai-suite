@@ -572,6 +572,9 @@ git -C <repo> status -sb
   key tooling if missing.
 - [Redaction & Portability](../redaction-portability/SKILL.md) — Mandatory: PATs, account usernames, and
   internal-org email addresses are all Tier-A and MUST be redacted before any artifact is committed.
+- [`github-repo-account-transfer`](../github/transfer/github-repo-account-transfer/SKILL.md) — the transfer
+  pipeline resolves per-account tokens (`gh auth token --user`) and can surface 401/403 at the initiate or
+  repoint stages; use this skill's §3 paths to restore the failing account's auth first.
 
 ***
 

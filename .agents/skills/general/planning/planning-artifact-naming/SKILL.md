@@ -91,6 +91,7 @@ Committed documents MUST NOT reference them — explain the relevant context sel
 | `implementation-plan-<topic>` | Yes | Topic-scoped variant used when one session produces MULTIPLE independent implementation plans; `<topic>` is a kebab-case slug disambiguating the plan (e.g. `implementation-plan-acers-audit-history`). The version counter is independent per topic |
 | `commit-preview` | Yes | Preview of commits to be executed |
 | `walkthrough` | Yes | Post-execution record of steps taken and decisions made |
+| `walkthrough-<topic>` | Yes | Topic-scoped variant used when one session produces multiple walkthroughs; `<topic>` is a kebab-case slug disambiguating the record (mirrors `implementation-plan-<topic>`) |
 | `skill-creation-plan` | Yes | Sub-plan for creating a new skill |
 | `skill-documentation-plan` | Yes | Sub-plan for enriching existing skills |
 | `audit-log` | Yes | Record of an audit or inspection |

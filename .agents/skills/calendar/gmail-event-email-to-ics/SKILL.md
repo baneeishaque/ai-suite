@@ -151,3 +151,6 @@ deliverable exists.
   base/composer split.
 - [`redaction-portability`](../../redaction-portability/SKILL.md) — placeholder vocabulary for
   examples and reports.
+- [`gmail-poll-for-message`](../../email/gmail-poll-for-message/SKILL.md) — the Gmail IMAP access
+  sibling (app-password polling); use it when the invitation must be waited for rather than
+  searched on demand.

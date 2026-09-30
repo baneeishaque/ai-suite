@@ -285,6 +285,9 @@ authenticate with a higher limit.
 - [Redaction & Portability](../redaction-portability/SKILL.md) — Mandatory: any captured response (`.gh_*.txt`)
   containing emails, internal hostnames, or org names MUST be redacted before being copied into a committed
   artifact.
+- [`github-repo-name-conflict-check`](../github/repo/github-repo-name-conflict-check/SKILL.md) — destination
+  name-availability checks; this skill's `GET /repos/{o}/{r}` cookbook is the no-`gh` alternative when the
+  script's `gh api` path is unavailable.
 
 ***
 

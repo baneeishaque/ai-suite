@@ -111,3 +111,5 @@ On failure, prints diagnostics to stderr and exits non-zero.
 - [`gh-repo-edit-metadata`](../gh-repo-edit-metadata/SKILL.md) — edit description and topics after creation
 - [`github-repo-template`](../github-repo-template/SKILL.md) — populates a repo with standard files before push
 - [`git-github-auth-fallback`](../git-github-auth-fallback/SKILL.md) — when `gh` is not authenticated
+- [`github-repo-name-conflict-check`](../github/repo/github-repo-name-conflict-check/SKILL.md) — check
+  destination name availability before creation (owner-token per-name lookups)

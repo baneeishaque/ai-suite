@@ -75,6 +75,12 @@ without re-implementing them:
   — sibling skill for when a **fork** IS desired (e.g., upstream contribution).
 - [`gitignore-rules`](../gitignore-rules/SKILL.md) — alternative for files that
   do not need version control at all.
+- [`git-remote-origin-repoint`](../git/repo/git-remote-origin-repoint/SKILL.md) — batch repoint of clone
+  remotes (including the `personal` remote) after a repository moves owners, with `git ls-remote`
+  verification.
+- [`github-repo-name-conflict-check`](../github/repo/github-repo-name-conflict-check/SKILL.md) — verify a
+  candidate personal-repo name is available under the account before creating it.
+
 ## Composition by Higher-Level Skills
 
 | Composer Skill | Role of this skill in the pipeline |

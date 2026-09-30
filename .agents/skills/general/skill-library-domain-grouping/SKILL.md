@@ -55,9 +55,10 @@ consumed by:
 ├── database/                     (9 items — flat)
 ├── docker/                       (2 items — flat)   <- NEW
 ├── eclipse/                      (4 items — flat)
-├── general/                      (10 flat + 6 sub-groups)
+├── email/                        (2 items — flat)   <- NEW
+├── general/                      (12 flat + 7 sub-groups)
 ├── git/                          (7 sub-groups)
-├── github/                       (6 flat + 2 sub-groups)
+├── github/                       (2 flat + 8 sub-groups)
 ├── java/                         (3 items — flat)
 ├── jira/                         (4 items — flat)
 ├── json/                         (3 items — flat)
@@ -78,7 +79,7 @@ consumed by:
 
 ### 1.2 Sub-Groups
 
-**general/** (6 sub-groups; 10 flat items remain at general/ level):
+**general/** (7 sub-groups; 12 flat items remain at general/ level):
 
 ```text
 general/
@@ -110,6 +111,9 @@ general/
 │   ├── planning-superseded-version-retirement  <- NEW
 │   ├── planning-version-coverage-audit         <- NEW
 │   └── versioned-artifact-superset-build       <- NEW
+│
+├── polling/                  (1)
+│   └── poll-until
 │
 ├── setup/                    (4)
 │   ├── dev-env-private-config-symlink
@@ -180,10 +184,11 @@ git/
 │                                  gitignore-whitelist-pattern,
 │                                  gitignored-reference-detection
 │
-├── repo/                     (4) — canonical-source-vs-workflow-repo-audit,
+├── repo/                     (5) — canonical-source-vs-workflow-repo-audit,
 │                                  cross-repo-cherry-pick,
 │                                  lfs-selective-clone,
-│                                  repo-storage-minimization
+│                                  repo-storage-minimization,
+│                                  git-remote-origin-repoint
 │
 ├── sandbox/                  (4) — personal-content-extraction,
 │                                  personal-sandbox-remote,
@@ -210,17 +215,20 @@ git/
                                    git-submodule-history-removal
 ```
 
-**github/** (7 sub-groups; 1 flat item remains at github/ level):
+**github/** (8 sub-groups; 2 flat items remain at github/ level):
 
 ```text
 github/
 ├── copilot/                  (2) — activity-history-split,
 │                                  chat-history-analysis
 ├── actions/                  (2) — run-audit, workflow-dispatch
-├── repo/                     (7) — gh-repo-create, gh-repo-edit-metadata,
-│                                  pr-edit, repo-commit-fetch,
-│                                  rest-api-fallback, secrets-bulk-set,
-│                                  pr-merge-decision-classifier
+├── repo/                     (10) — gh-repo-create, gh-repo-edit-metadata,
+│                                   pr-edit, repo-commit-fetch,
+│                                   rest-api-fallback, secrets-bulk-set,
+│                                   pr-merge-decision-classifier,
+│                                   github-repo-name-conflict-check,
+│                                   github-repo-state-fingerprint,
+│                                   github-repo-collaborator-remove
 ├── community-standards/      (10) — issue-template-bug,
 │                                   issue-template-feature,
 │                                   issue-template-documentation,
@@ -238,7 +246,11 @@ github/
 │                                  renovate-auto-rebase-detector,
 │                                  renovate-dependent-branch-auto-rebase
 │
-├── (flat: 1) — auth-fallback
+├── transfer/                 (6) — destination-conflict-check,
+│                                  baseline-capture, completion-poll,
+│                                  initiate, verify, account-transfer
+│
+├── (flat: 2) — auth-fallback, github-api-poll-until
 ```
 
 **vscode/** (5 sub-groups):
@@ -285,6 +297,14 @@ database/
 docker/
 ├── docker-resource-cleanup          <- NEW
 └── docker-resource-inventory        <- NEW
+```
+
+**email/** (2 items — flat):
+
+```text
+email/
+├── email-poll-for-message
+└── gmail-poll-for-message
 ```
 
 **media/** (10 items — flat):
@@ -404,6 +424,30 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-09-30 — email/ domain added (2 items); github/transfer/ + general/polling/ sub-groups added; transfer suite placed
+
+Added:
+
+* **`email/`** (new domain, 2 items — flat): `email-poll-for-message` (provider-agnostic IMAP
+  message poller composed over `poll-until`) and `gmail-poll-for-message` (Gmail preset fixing
+  `imap.gmail.com:993` + `GMAIL_APP_PASSWORD`) — the provider-layered email stack for the
+  repo-transfer suite's acceptance-email wait.
+* **`github/transfer/`** (new sub-group, 6 items): `github-repo-transfer-destination-conflict-check`,
+  `github-repo-transfer-baseline-capture`, `github-repo-transfer-completion-poll`,
+  `github-repo-transfer-initiate`, `github-repo-transfer-verify`, `github-repo-account-transfer` —
+  the transfer composites + top-level dispatcher documented from the executed account transfer.
+* **`general/polling/`** (new sub-group, 1 item): `poll-until` — generic interval/attempt polling engine.
+* **`github-api-poll-until`** (new base, `github/` flat, 1→2): API-endpoint poller over `poll-until`.
+* **`github-repo-name-conflict-check`**, **`github-repo-state-fingerprint`**,
+  **`github-repo-collaborator-remove`** (new bases, `github/repo/`, 7→10): destination
+  name-availability checks, cross-owner state fingerprints, and collaborator removal.
+* **`git-remote-origin-repoint`** (new base, `git/repo/`, 4→5): batch origin repointing with
+  `git ls-remote` verification.
+
+Updated Section 1.1 tree (`email/` added; `github/` reconciled to 2 flat + 8 sub-groups;
+`general/` reconciled to 12 flat + 7 sub-groups) and Section 1.2 listings (`email/` flat block;
+`github/transfer/` block; `general/polling/` block; `github/repo/` 7→10; `git/repo/` 4→5).
 
 ### 2026-09-26 — calendar/ domain added (4 items); mcp/ realized (3 items, 2 pending-move)
 

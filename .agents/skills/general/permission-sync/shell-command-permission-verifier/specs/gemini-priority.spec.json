@@ -1,0 +1,185 @@
+{
+  "description": "Gemini TOSL priority semantics \u2014 highest-priority tier first-match-wins, default ask_user (verified against ~/.gemini/policies/safe-commands.toml). Covers: priority-tier ordering (allow 100 vs ask_user 200/300), negative-lookahead exclusion (--outfile), commandPrefix trailing-space matching, commandRegex anchoring, unquoted-vs-quoted sqlite3 '.tables', PAGER=cat pin to .agents/skills/ path, and default ask_user for unlisted commands (mkdir, psql, file -C). Positive and negative controls.",
+  "commands": [
+    {
+      "command": "git status",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "git log --oneline",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "git remote -v",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "git submodule status",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "git commit -m x",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "mkdir -p tmp",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "PAGER=cat python3 scripts/git-commit-details-audit/scripts/audit.py abc123 --oneline",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "PAGER=cat python3 .agents/skills/git-commit-details-audit/scripts/audit.py abc123 --oneline",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "python3 scripts/find-current-session.py",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "PAGER=cat python3 scripts/find-current-session.py",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "python3 /Users/dk/lab-data/ai-suite/.agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py --yes --debug",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "python3 /Users/dk/lab-data/ai-suite/.agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py --yes --outfile /tmp/x.txt",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "acli jira workitem list",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "acli jira workitem list ",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "acli jira workitem search --jql 'x' | head -1",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "git status | head -1",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "git status && echo hi",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "psql -c SELECT",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "psql -c 'DROP TABLE t'",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "sqlite3 db.sqlite '.tables'",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "sqlite3 db.sqlite .tables",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "sqlite3 db.sqlite '.dump'",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "sqlite3 db.sqlite \".tables\"",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "dig example.com",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "host example.com",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "date",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "head -n 5 f.txt",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "file f.txt",
+      "expect": {
+        "gemini": "allow"
+      }
+    },
+    {
+      "command": "file -C magic.mgc",
+      "expect": {
+        "gemini": "ask_user"
+      }
+    },
+    {
+      "command": "date ",
+      "expect": {
+        "gemini": "allow"
+      }
+    }
+  ]
+}

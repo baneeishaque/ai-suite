@@ -1,0 +1,25 @@
+{
+  "description": "Opencode read-only shell commands — must be allowed (last-match-wins, no chain guard). Mirrors docker-readonly + git-submodule-status + audit scripts allow families captured at execution.",
+  "note": "Derived from §11.1 ground truth: permission.bash object last-match-wins, default ask. These commands have no shell metacharacters and match an explicit allow leaf.",
+  "commands": [
+    {"command": "docker ps", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker ps --format", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker ps -a", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker images", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker images -a", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker system df", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "docker system df -v", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git status", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git -C /Users/dk/lab-data/ai-suite status", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git log --oneline -5", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git diff --stat", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git submodule status", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git -C /Users/dk/lab-data/ai-suite submodule status --recursive", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git remote -v", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "git rev-parse HEAD", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "head -20 .agents/skills/README.md", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "wc -l scratch/draft.txt", "expect": {"opencode": "allow", "kilo": "allow"}},
+    {"command": "cat scratch/notes.txt | head -5", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "PAGER=cat python3 /Users/dk/lab-data/ai-suite/.agents/skills/git-commit-details-audit/scripts/audit.py abc123 --oneline", "expect": {"opencode": "allow", "kilo": "allow"}}
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "description": "Opencode destructive / chain-guarded commands — must be asked (ask). Captures the ask-leaf families in permission.bash plus first-class chain guards.",
+  "note": "Ground truth from /tmp/oc-debug-config.txt: git commit/push/rebase/branch -D/reset/remote add/remote remove/... and all chain metacharacter patterns are classified ask.",
+  "commands": [
+    {"command": "git commit -m 'chore'", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git push", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git push origin main", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git branch -D stale", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git branch -m new-name", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git reset --hard HEAD~1", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git remote add upstream https://x", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git remote set-url origin https://x", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "mkdir -p scratch/x", "expect": {"opencode": "ask", "kilo": "allow"}},
+    {"command": "sqlite3 db.sqlite 'DROP TABLE users'", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "psql -c '\\l'", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git status ; rm -f /tmp/x", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git status && git commit", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git status | head", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "git submodule status && git submodule add https://x", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "docker images ; rm -rf /", "expect": {"opencode": "ask", "kilo": "ask"}},
+    {"command": "python3 run-brew-upgrade.py --yes --outfile /etc/passwd", "expect": {"opencode": "ask", "kilo": "ask"}}
+  ]
+}

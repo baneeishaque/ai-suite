@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Cross-tool shell-command permission registry — canonical path & format map for the permission-sync composer. Placeholders <user-home> must be expanded by consumers (redaction-portability). opencode is SSOT; the other four are SYNC targets.",
+  "opencode": {
+    "ssot": true,
+    "format": "jsonc",
+    "path": "<user-home>/.config/opencode/opencode.json",
+    "permission_key": "permission.bash",
+    "shape": "object",
+    "semantics": "pattern->{allow|ask|deny} object; last-match-wins (findLast); default ask"
+  },
+  "kilo": {
+    "ssot": false,
+    "format": "json",
+    "path": "<user-home>/.config/kilo/kilo.jsonc",
+    "permission_key": "permission.bash",
+    "shape": "object",
+    "semantics": "identical to opencode (fork)"
+  },
+  "claude": {
+    "ssot": false,
+    "format": "json",
+    "path": "<user-home>/.claude/settings.json",
+    "permission_key": "permissions.allow",
+    "shape": "list-glob",
+    "semantics": "list of strings matched with fnmatchcase against full Bash(...) invocation; any match -> allow; default ask"
+  },
+  "copilot": {
+    "ssot": false,
+    "format": "json",
+    "path": "<user-home>/Library/Application Support/Code - Insiders/User/settings.json",
+    "permission_key": "chat.tools.terminal.autoApprove",
+    "shape": "list-regex",
+    "semantics": "list of /regex/flags strings; any re.search match -> allow; default ask"
+  },
+  "gemini": {
+    "ssot": false,
+    "format": "toml",
+    "path": "<user-home>/.gemini/policies/safe-commands.toml",
+    "permission_key": "[[rule]] tables (toolName=run_shell_command)",
+    "shape": "priority-rules",
+    "semantics": "highest priority tier, first-match-wins; commandPrefix[] literal-startswith or commandRegex; decision allow|ask_user; default ask_user"
+  }
+}

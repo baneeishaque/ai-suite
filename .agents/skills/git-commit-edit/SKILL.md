@@ -192,6 +192,16 @@ git stash list
 
 ### Step 2 — Start Interactive Rebase
 
+> [!NOTE]
+> **Non-interactive and dirty-tree alternatives:** when the working tree is
+> dirty and MUST stay untouched, do not run this interactive sequence in
+> the main worktree — use
+> [`git-commit-edit-in-worktree`](../git/basic/edit/git-commit-edit-in-worktree/SKILL.md)
+> (Mode A scratch-worktree isolation, or Mode B when the session cwd is a
+> dedicated linked worktree). For a single-commit replacement with no
+> interactive stop, the scripted route is
+> [`git-commit-replace-and-replay`](../git/basic/edit/git-commit-replace-and-replay/SKILL.md).
+
 #### 2a — Create Sequence Editor Script
 
 Create a temporary script that automatically marks the target commit
@@ -608,6 +618,9 @@ The agent is **BLOCKED** from:
 - [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md) —
   capture a recoverable apply-not-pop safety snapshot before destructive
   history rewrites.
+- [`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md) —
+  byte-level worktree state capture/compare used by the worktree-isolated
+  routes built on this skill (composer Modes A/B).
 
 ---
 
@@ -624,7 +637,7 @@ discovery, classification, or batch logic:
 | [`git-commit-identity-rewrite`](../git-commit-identity-rewrite/SKILL.md) | Rewrites author + committer identity (and optionally dates) of one or more commits by copying from a source commit; handles the parent-repo + submodule pointer cascade. |
 | [`git-drop-commit-with-divergent-recreation`](../git-drop-commit-with-divergent-recreation/SKILL.md) | Drives this skill's `drop` mode for a commit whose deleted file is recreated downstream from a stale, diverged copy; adds the divergence audit, union-blob splice, and Lesson-2-safe conflict resolution that the base skill does not own. |
 | [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) | Phase 4 — invokes this skill to drop the single-purpose `.gitmodules` URL-change commit (`git rebase --onto <C^> <C> <branch>`). |
-| [`git-commit-edit-in-worktree`](../git/basic/edit/git-commit-edit-in-worktree/SKILL.md) | Worktree-isolated counterpart of this skill: identical edit repertoire (drop / amend / reword / edit) executed in a scratch worktree with an untouched-main-worktree baseline contract — the mandatory route when the working tree is dirty and must stay untouched. |
+| [`git-commit-edit-in-worktree`](../git/basic/edit/git-commit-edit-in-worktree/SKILL.md) | Worktree-isolated counterpart of this skill: identical edit repertoire (drop / amend / reword / edit) with an untouched-working-tree contract. Mode A runs the scratch-worktree route (todo-writer + fingerprint gates); Mode B runs the dedicated-worktree in-place route delegating to [`git-commit-replace-and-replay`](../git/basic/edit/git-commit-replace-and-replay/SKILL.md) with fingerprint + range-diff parity. The mandatory route when the working tree is dirty and must stay untouched. |
 
 ## Post-Processing
 

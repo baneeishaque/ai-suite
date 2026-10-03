@@ -34,6 +34,13 @@ It should be invoked whenever the user asks to "edit a commit," "remove files fr
 - Multi-branch rebasing → [`git-rebase-standardization`](../git-rebase-standardization/SKILL.md)
 - Message-only fix on the most recent commit → `git commit --amend -m "..."` directly
 
+### Related Skills
+
+- [`git-commit-replace-and-replay`](../git/basic/edit/git-commit-replace-and-replay/SKILL.md) — scripted
+  non-interactive same-branch replacement route (prepare / finish / verify).
+- [`git-commit-edit-in-worktree`](../git/basic/edit/git-commit-edit-in-worktree/SKILL.md) — worktree-isolated
+  composer; Mode B delegates to `git-commit-replace-and-replay`.
+
 ### Reference Mapping
 
 - **Source Rules**:

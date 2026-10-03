@@ -64,6 +64,9 @@ this skill in their `## Composition by Higher-Level Skills` tables.
 - [`git-history-refinement`](../../../../git-history-refinement/SKILL.md) —
   general history-reconstruction toolkit; this composer is its
   submodule-purge specialization.
+- [`git-worktree-state-fingerprint`](../../../basic/audit/git-worktree-state-fingerprint/SKILL.md) —
+  byte-level capture/compare primitive consumed by the refresh-2 baseline
+  gate (Gate 8).
 
 ## Environment & Dependencies
 
@@ -137,10 +140,14 @@ emitted plan is copy-executable from any `cwd`.
    addition — that is the STOP condition signal, not a desired state: never
    commit it; resolve via a deliberate preservation branch, then re-run
    Gate 8.
-8. **Refresh-2 baseline gate** — re-capture the Gate-1 evidence (porcelain,
-   `git ls-files -s`, `git diff --cached --binary`, `git diff --binary`,
-   untracked listing — all hashed) and compare byte-for-byte with the
-   pre-edit capture; re-run
+8. **Refresh-2 baseline gate** — delegate capture/compare to
+   [`git-worktree-state-fingerprint`](../../../basic/audit/git-worktree-state-fingerprint/SKILL.md):
+   `worktree-state-fingerprint.py capture --repo <main-worktree> --out
+   <scratch>/baseline-post.json`, then `compare --pre
+   <scratch>/baseline-pre.json --post <scratch>/baseline-post.json`
+   (byte-level hashes of porcelain, `git ls-files -s`, staged/worktree
+   binary diffs, untracked listing) — must report IDENTICAL except
+   documented expected deltas; also re-run
    `classify-submodule-commits.py --path <path> --scope all --json`: MUST
    print ZERO commits. Any residual classification or baseline mismatch =
    STOP, restore from `backup/removal-<path>`.

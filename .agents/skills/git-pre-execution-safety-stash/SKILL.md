@@ -398,6 +398,7 @@ authorization.
 | [`git-stash-triage`](../git-stash-triage/SKILL.md) | **Prerequisite when stash list is non-empty at Phase 1a.** Classifies pre-existing stash entries so the `safety:` push lands at a known position on the stack. Also provides §4d (Selective File Restoration — Per-File Triage) for stale stashes where Phase 1g does not apply. |
 | [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) | When Phase 3a residue includes unexpected untracked files (e.g., hunk-stage backup sidecars per §4.3), classifies them before deciding whether to drop the safety stash. |
 | [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) | Optional Phase 3c.1 per-file blob-equality audit between the safety stash (including its `^3` untracked tree) and HEAD — upgrades the `apply` no-op check from delta-level to byte-level supersession proof. |
+| [`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md) | Read-only byte-level worktree state capture/compare (no stash entry involved) — the complementary verification primitive when the proof requirement is "the working tree did not change" rather than "the working tree can be rolled back"; useful for bracketing any multi-commit sequence without touching the stash stack. |
 
 ## Pitfalls & Recovery
 

@@ -31,5 +31,7 @@ intentionally non-actionable.
   isolation composer providing the worktree rebase mechanics.
 - [`git-rebase-drop-noninteractive`](../../../basic/edit/git-rebase-drop-noninteractive/SKILL.md) —
   base skill providing the todo rewrite primitive.
+- [`git-worktree-state-fingerprint`](../../../basic/audit/git-worktree-state-fingerprint/SKILL.md) —
+  base skill providing the refresh-2 byte-level capture/compare.
 - [`git-submodule-removal`](../../../../git-submodule-removal/SKILL.md) —
   registration-level counterpart (when history removal is not required).

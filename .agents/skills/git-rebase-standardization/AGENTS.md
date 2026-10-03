@@ -17,3 +17,5 @@ across diverged feature branches.
 - **Related Skills**:
     - [`git-history-refinement`](../git-history-refinement/SKILL.md) — single-branch reconstruction
     - [`git-divergence-audit`](../git-divergence-audit/SKILL.md) — pre-rebase diff analysis
+    - [`git-commit-replace-and-replay`](../git/basic/edit/git-commit-replace-and-replay/SKILL.md) — same-branch
+      single-commit replacement (the `rebase --onto` special case)

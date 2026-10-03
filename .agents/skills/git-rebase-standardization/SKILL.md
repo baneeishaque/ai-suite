@@ -211,6 +211,17 @@ Expected: Empty diff.
 
 ---
 
+## Related Skills
+
+- [`git-commit-replace-and-replay`](../git/basic/edit/git-commit-replace-and-replay/SKILL.md) —
+  same-branch single-commit replacement — the `rebase --onto <target>^
+  <target> <branch>` special case, scripted as prepare / finish / verify
+  with `--autostash` and range-diff marker-accounting parity. Use it
+  instead of this skill's chain machinery when exactly one commit is
+  replaced on its own branch.
+
+---
+
 ## Prohibited Behaviors
 
 The agent is **BLOCKED** from:

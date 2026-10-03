@@ -27,3 +27,5 @@ skill before every qualifying sequence
 rewrites
 - [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) — classifies Phase 3a residue
 - [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) — optional Phase 3c.1 per-file blob-equality audit
+- [`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md) — read-only
+byte-level state capture/compare (complementary proof that a tree did not change)

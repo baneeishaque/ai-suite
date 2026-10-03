@@ -49,16 +49,21 @@ Known composer:
 
 | Argument | Required | Description |
 | -------- | -------- | ----------- |
-| `<todo-file>` | yes | Path to the rebase todo file (git passes it as the LAST argument when invoked via `GIT_SEQUENCE_EDITOR`). |
+| `<todo-file>` | yes | Path to the rebase todo file. Git appends it as the LAST argument via `GIT_SEQUENCE_EDITOR`; direct invocations may pass it first — both orders are accepted (the positional that exists on disk is treated as the todo). |
 | `<sha>...` | yes (≥ 1) | Full or abbreviated commit SHAs to drop / turn into `edit`. |
-| `--edit <sha>...` | no | Instead of `drop`, rewrite `pick <sha> → edit <sha>` (amend / reword / squash-scratch use case). Repeatable. |
+| `--edit <sha>...` | no | Instead of `drop`, rewrite `pick <sha> → edit <sha>` (amend / reword / squash-scratch use case). Repeatable. A SHA passed in both the positional list and `--edit` is edited — `--edit` wins. |
 | `--check` | no | Do not write; exit 1 if any named SHA is absent from the todo file, 0 otherwise. |
 | `--dry-run` | no | Print the rewritten todo to stdout; do not modify the file. |
 
 **Behavior:**
 
 - Rewrites every `pick <sha> …` line whose SHA is in the target set; default
-  `→ drop <sha>`; with `--edit <sha>`, `→ edit <sha>`.
+  `→ drop <sha>`; with `--edit <sha>`, `→ edit <sha>` (`--edit` wins over the
+  positional drop set).
+- SHA matching is prefix-tolerant: the todo file usually carries abbreviated
+  SHAs (`pick 2da761c …`) while callers pass full SHAs — either side may be
+  the abbreviation. A todo SHA matching more than one distinct target aborts
+  with an ambiguity error before any write.
 - Idempotent: lines already in the target state (drop of a to-dropped SHA;
   edit of a to-edited SHA) are skipped.
 - Preserves all other lines byte-exact (reword/squash/fixup, comments,
@@ -121,6 +126,7 @@ GIT_EDITOR=true PAGER=cat git rebase -i <base-ref>
 | Pitfall | Solution |
 | ------- | -------- |
 | SHA not found in the todo (already rewritten, wrong base, or abbreviated too aggressively) | Run with `--check` first — exits 1 with the absent SHA(s) before any file mutation. |
+| Caller passes full SHAs while the todo file holds abbreviated ones | Since v1.0.1 matching is prefix-tolerant — full vs abbreviated on either side both work; never exact-match. |
 | Dropping a commit that introduces a submodule whose path is re-created later | `add/add` conflict on the path; resolve per the divergent-recreation protocol in [`git-drop-commit-with-divergent-recreation`](../../../../git-drop-commit-with-divergent-recreation/SKILL.md). |
 | `.gitmodules` conflict during continue | Resolve, `git add .gitmodules`, then `GIT_EDITOR=true git rebase --continue`. |
 | Rebase interrupted by a stop | `git commit -C <sha>` + `GIT_EDITOR=true git rebase --continue`. |

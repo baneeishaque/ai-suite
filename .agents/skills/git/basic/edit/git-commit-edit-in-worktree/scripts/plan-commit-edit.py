@@ -4,9 +4,11 @@
 Deterministic discovery half of `git-commit-edit-in-worktree`: validates the
 target commit, resolves the rebase base, derives the scratch worktree path and
 the backup branch name, and emits the isolation+rebase plan as JSON (or text).
+`--mode in-place` instead emits the Mode B plan (branch + pre_tip) for the
+dedicated-worktree route delegated to `git-commit-replace-and-replay`.
 Consumes the sibling base `git-rebase-drop-noninteractive`'s todo writer by
 reporting its absolute path in the plan; the rebase execution itself lives in
-`isolate-edit-worktree.sh`.
+`isolate-edit-worktree.sh` (Mode A only).
 
 Tier 1 (Python 3.12+) per scripting-language-selection-rules.md §3.
 
@@ -44,13 +46,11 @@ def main() -> int:
     parser.add_argument("target_sha", help="Full or abbreviated commit SHA to edit.")
     parser.add_argument("--action", choices=("drop", "edit", "reword"), default="drop",
                         help="Todo action to apply (default: drop).")
+    parser.add_argument("--mode", choices=("scratch", "in-place"), default="scratch",
+                        help="Isolation mode (default: scratch).")
     parser.add_argument("--purpose", default="", help="Purpose token for branch/worktree naming.")
     parser.add_argument("--json", action="store_true", help="Emit the plan as JSON.")
     args = parser.parse_args()
-
-    if not TODO_WRITER.is_file():
-        print(f"plan-commit-edit: base script not found: {TODO_WRITER}", file=sys.stderr)
-        return 1
 
     repo = os.path.abspath(args.repo)
     try:
@@ -60,19 +60,39 @@ def main() -> int:
         return 1
 
     purpose = args.purpose or full_sha[:12]
-    base_ref = f"{full_sha}^"
 
-    plan = {
-        "repo": repo,
-        "target_sha": full_sha,
-        "action": args.action,
-        "base_ref": base_ref,
-        "branch_name": f"rebase-{purpose}",
-        "backup_branch": f"backup/pre-edit-{purpose}",
-        "worktree_path": os.path.join(repo, "scratch", f"rebase-{purpose}"),
-        "sequence_editor": str(TODO_WRITER),
-        "sequence_args": [full_sha] + (["--edit", full_sha] if args.action != "drop" else []),
-    }
+    if args.mode == "in-place":
+        try:
+            branch = git(repo, "symbolic-ref", "--short", "-q", "HEAD").strip()
+        except subprocess.CalledProcessError:
+            print("plan-commit-edit: detached HEAD — in-place mode requires a checked-out branch",
+                  file=sys.stderr)
+            return 1
+        plan = {
+            "mode": "in-place",
+            "repo": repo,
+            "target_sha": full_sha,
+            "action": args.action,
+            "branch": branch,
+            "backup_branch": f"backup/pre-edit-{purpose}",
+            "pre_tip": git(repo, "rev-parse", branch).strip(),
+        }
+    else:
+        if not TODO_WRITER.is_file():
+            print(f"plan-commit-edit: base script not found: {TODO_WRITER}", file=sys.stderr)
+            return 1
+        plan = {
+            "mode": "scratch",
+            "repo": repo,
+            "target_sha": full_sha,
+            "action": args.action,
+            "base_ref": f"{full_sha}^",
+            "branch_name": f"rebase-{purpose}",
+            "backup_branch": f"backup/pre-edit-{purpose}",
+            "worktree_path": os.path.join(repo, "scratch", f"rebase-{purpose}"),
+            "sequence_editor": str(TODO_WRITER),
+            "sequence_args": [full_sha] + (["--edit", full_sha] if args.action != "drop" else []),
+        }
 
     if args.json:
         print(json.dumps(plan, indent=2))

@@ -100,9 +100,11 @@ python3 scripts/resolve-scratch-path.py --repo <path> --purpose <slug>
 - **`ses_` prefix handling**: both `--session-id ses_02c6…` and
   `--session-id 02c6…` resolve to folder `scratch/02c6…/`.
 - **Concurrent sessions in the same repo**: the composed auto-discovery is
-  newest-first by mtime and can resolve to a sibling session. When the intended
-  session ID is already known, pin it with `--session-id` instead of relying on
-  discovery.
+  pending-marker-first (the in-flight session wins) with newest-mtime fallback,
+  and can still resolve to a sibling session when multiple sessions are truly
+  active. NEVER pin `--session-id` from a remembered or deduced value — IDs
+  change on fork; omit the flag (auto-discovery) or pass only an ID resolved in
+  the current run or supplied by the user.
 
 ## Prohibited Actions
 
@@ -112,6 +114,9 @@ python3 scripts/resolve-scratch-path.py --repo <path> --purpose <slug>
   scratch root (flattens and collides across sessions).
 - Do NOT write timestamps into the ref variant NOR commit SHAs into the
   timestamp variant — each variant is defined by its inclusion/exclusion.
+- Do NOT pass `--session-id` values deduced from artifact filenames, scratch
+  folders, or prior conversation context — session IDs change on fork. Omit the
+  flag (auto-discovery) or use an ID resolved in the current run.
 
 ## Script Reference
 

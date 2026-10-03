@@ -149,13 +149,14 @@ general/
 ```text
 git/
 ├── basic/
-│   ├── edit/                 (8) — atomic-commit-construction, commit-edit,
+│   ├── edit/                 (9) — atomic-commit-construction, commit-edit,
 │   │                              noise-removal-via-commit-edit,
 │   │                              separate-content-from-formatting-commits,
 │   │                              drop-commit-with-divergent-recreation,
 │   │                              git-commit-preview-verify,
 │   │                              git-commit-edit-in-worktree,
-│   │                              git-rebase-drop-noninteractive
+│   │                              git-rebase-drop-noninteractive,
+│   │                              git-commit-replace-and-replay
 │   ├── message/              (4) — commit-message-bulk-reword,
 │   │                              commit-message-reword,
 │   │                              commit-metadata-extraction,
@@ -449,6 +450,21 @@ Added:
 Updated Section 1.1 tree (`email/` added; `github/` reconciled to 2 flat + 8 sub-groups;
 `general/` reconciled to 12 flat + 7 sub-groups) and Section 1.2 listings (`email/` flat block;
 `github/transfer/` block; `general/polling/` block; `github/repo/` 7→10; `git/repo/` 4→5).
+
+### 2026-09-27 — git/basic/audit/ + git/basic/edit/ 8->9: worktree-state-fingerprint + replace-and-replay added
+
+Added:
+
+* **`git-worktree-state-fingerprint`** (new base, `git/basic/audit/`): byte-level worktree state
+  capture/compare (hashed porcelain, index, staged/worktree binary diffs, untracked listing) with an
+  IDENTICAL / DELTA verdict and exit 0/1/2 — the Gate 1/8 proof primitive of
+  `git-commit-edit-in-worktree` and the refresh-2 baseline gate of `git-submodule-history-removal`.
+* **`git-commit-replace-and-replay`** (new base, `git/basic/edit/`): same-branch single-commit
+  replacement (prepare / finish / verify) around `git rebase --autostash --onto <new> <target>
+  <branch>` with main-worktree refusal and range-diff marker-accounting parity; the Mode B mechanic
+  of `git-commit-edit-in-worktree`.
+
+Updated Section 1.2 tree counts (`git/basic/audit/` 8->9, `git/basic/edit/` 8->9) and listings.
 
 ### 2026-09-26 — calendar/ domain added (4 items); mcp/ realized (3 items, 2 pending-move)
 

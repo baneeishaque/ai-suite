@@ -28,7 +28,7 @@ python3 scripts/find-current-session.py [OPTIONS]
 ```
 
 | Option | Type | Default | Description |
-|--------|------|---------|-------------|
+| -------- | ------ | --------- | ------------- |
 | `--log-dir` | path | `$OPENCODE_LOGS_DIR` or `<repo-root>/.opencode/logs` | Override log directory |
 | `--repo-root` | path | `$OPENCODE_REPO_ROOT` / `$AI_SUITE_ROOT` / `git rev-parse` / legacy `parents[4]` | Override repo root discovery |
 | `--json` | flag | false | Emit single-line JSON instead of human text |
@@ -40,7 +40,7 @@ python3 scripts/find-current-session.py [OPTIONS]
 ### Exit Codes
 
 | Code | Meaning |
-|------|---------|
+| ------ | --------- |
 | `0` | Success — session ID found, optional gate passed |
 | `1` | Data failure — no logs, missing `session.id`, bad timestamp, base script not found |
 | `2` | Policy failure — `--state` gate not satisfied |
@@ -109,7 +109,7 @@ find-current-session.py (composer)
 ### Base Skills Consumed
 
 | Skill | Script | Role |
-|-------|--------|------|
+| ------- | -------- | ------ |
 | `file-glob-sort-by-mtime` | `sort-by-mtime.py` | Newest `*.yaml` by mtime (flat fallback) |
 | `yaml-field-extract` | `extract-field.py` | Dot-path extraction from YAML header (`session.id`, `title`) |
 
@@ -122,7 +122,7 @@ find-current-session.py (composer)
 ### Line-by-Line Mapping
 
 | Lines | Component | Pedagogical Rationale |
-|-------|-----------|----------------------|
+| ------- | ----------- | ---------------------- |
 | `1` | `#!/usr/bin/env python3` | Portable shebang; works under mise/venv/system Python (`python-script-generation` §2). |
 | `2-7` | Module docstring | Scope statement: composer role, base skills, pending-marker-first selection. |
 | `8` | `from __future__ import annotations` | Enables `list[str] \| None`, `tuple[Path,Path]` on 3.10+ without runtime cost. |
@@ -166,7 +166,7 @@ if pending_dirs:
 ```
 
 | Property | Detail |
-|----------|--------|
+| ---------- | -------- |
 | **Signal** | An in-flight turn writes `NNN-pending-*.yaml` into the ACTIVE session's dir — stronger than mtime, which an idle sibling can win. |
 | **TTL guard** | Markers older than `--pending-ttl` (default 3600s) are stale (crashed/force-quit turn) and ignored. |
 | **Multi-pending** | Two genuinely in-flight sessions → stderr WARNING + newest marker wins; callers should treat the result as ambiguous and verify against their own context. |
@@ -181,7 +181,7 @@ if pending_dirs:
 ## Architectural Decision Matrix
 
 | Decision | Rejected Alternative | Rationale |
-|----------|---------------------|-----------|
+| ---------- | --------------------- | ----------- |
 | Subprocess to base skills | `import sort_by_mtime, yaml` | Composer discipline: base fixes propagate with zero composer edits; process isolation. |
 | `@lru_cache` on `find_repo_root` | Manual cache / call every time | 1-line stdlib; `maxsize=1` = zero memory risk. Git spawn dominates runtime. |
 | Pending-marker-first selection | Newest-mtime only / remembered-ID pinning | Session IDs change on fork; mtime lets an idle sibling win. The in-flight marker is the strongest liveness signal, with `--pending-ttl` guarding crashed-turn orphans. |
@@ -224,7 +224,7 @@ python3 scripts/find-current-session.py --pending-ttl 0
 ## Edge Cases Handled
 
 | Scenario | Behavior |
-|----------|----------|
+| ---------- | ---------- |
 | `$OPENCODE_REPO_ROOT` set but not a dir | Falls to git/legacy (`strip()` + `is_dir()` guard) |
 | `git rev-parse` timeout (5s) | Falls to legacy; no hang |
 | Newest `ses_*/` has header but `session.id` missing | Skips to next candidate; `probe_session_id` returns `None` |
@@ -243,7 +243,7 @@ python3 scripts/find-current-session.py --pending-ttl 0
 ## Recommended Enhancements
 
 | Enhancement | Tracking |
-|-------------|----------|
+| ------------- | ---------- |
 | `--max-parallel` CLI arg / `OPENCODE_MAX_PARALLEL` env | Tuning for large session counts |
 | `--top N` to control candidate window | Currently hardcoded `[:5]` slice |
 | `--since` relative formats (`-1h`, `-7d`) | Requires `dateutil` or custom parser |

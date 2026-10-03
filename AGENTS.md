@@ -124,6 +124,14 @@
     (`detect-dangling-links.py` over the commit's SKILL.md/AGENTS.md/changelog files) — flag DANGLES
     for user disposition (FOLD / RESOLVE-NOW / KEEP-AS-IS) rather than silently fixing stale links;
     also sweep `/tmp` scans for session-evidence drift before reporting final verdicts.
+12. **Never deduce or reuse opencode session IDs — resolve and verify at runtime.**
+    Session IDs change when an opencode session is forked, so an ID seen in
+    artifact filenames, scratch folders, or earlier conversation is NOT the
+    current session's ID. Run the `opencode-current-session-id` script at the
+    point of use and verify its pending-marker flag (an in-flight
+    `NNN-pending-*.yaml` in the winning `ses_*/` log dir) before passing the ID
+    to any consumer — never pass a remembered ID to scripts. See
+    [`.agents/skills/opencode/opencode-current-session-id/SKILL.md`](.agents/skills/opencode/opencode-current-session-id/SKILL.md).
 
 ## Conventions
 

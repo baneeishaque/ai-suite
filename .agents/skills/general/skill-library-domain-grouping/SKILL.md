@@ -160,14 +160,15 @@ git/
 │   │                              commit-message-reword,
 │   │                              commit-metadata-extraction,
 │   │                              commit-identity-rewrite
-│   ├── audit/                (8) — commit-comparison-audit,
+│   ├── audit/                (9) — commit-comparison-audit,
 │   │                              commit-details-audit,
 │   │                              cross-ref-file-parity,
 │   │                              divergence-audit,
 │   │                              ref-content-audit,
 │   │                              deleted-files-audit,
 │   │                              git-commit-dangling-link-audit,
-│   │                              git-repository-status
+│   │                              git-repository-status,
+│   │                              git-worktree-state-fingerprint
 │   └── history/              (2) — history-refinement,
 │                                   untracked-scratch-triage
 │

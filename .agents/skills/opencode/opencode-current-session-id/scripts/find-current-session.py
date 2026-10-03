@@ -2,10 +2,12 @@
 """Discover the current opencode session ID from logger logs.
 
 Composer: sequences file-glob-sort-by-mtime + yaml-field-extract base skills.
+Selection prefers session dirs with a fresh in-flight (`*-pending-*.yaml`)
+turn marker, then falls back to newest-mtime ordering.
 """
 from __future__ import annotations
-import argparse, json, os, subprocess, sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import argparse, json, os, subprocess, sys, time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -70,6 +72,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ap.add_argument("--state", choices=("exists", "missing", "any"), default="any",
                     help="Gate on state-file presence (default: any; mismatch exits 2)")
     ap.add_argument("--since", default=None, help="Filter sessions by st_mtime >= ISO timestamp (e.g. 2026-09-19T10:00:00)")
+    ap.add_argument("--pending-ttl", type=int, default=3600,
+                    help="Seconds after which an in-flight (pending) turn marker is treated as stale; 0 disables (default: 3600)")
     ap.add_argument("--dry-run", action="store_true", help="Print discovered paths (repo_root, log_dir, base scripts) and exit without extractors")
     return ap.parse_args(argv)
 
@@ -90,6 +94,25 @@ def probe_session_id(extract_field: Path, yaml_path: Path) -> str | None:
     rc, out, _err = run([sys.executable, str(extract_field), "--file", str(yaml_path),
                          "--key", "session.id", "--doc-index", "0"])
     return out if rc == 0 and out else None
+
+
+def pending_marker(sdir: Path, ttl_seconds: int) -> Path | None:
+    """Return the newest in-flight turn marker of an ACTIVE session dir, or None.
+
+    The logger writes `NNN-pending-*.yaml` into a session directory while one
+    of its turns is executing — the strongest "this is the current session"
+    signal. Markers older than `ttl_seconds` are treated as stale (crashed or
+    force-quit turn); pass 0 to disable the TTL.
+    """
+    newest: Path | None = None
+    for marker in sdir.glob("*-pending-*.yaml"):
+        if newest is None or marker.stat().st_mtime > newest.stat().st_mtime:
+            newest = marker
+    if newest is None:
+        return None
+    if ttl_seconds > 0 and (time.time() - newest.stat().st_mtime) > ttl_seconds:
+        return None
+    return newest
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -124,12 +147,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"ERROR: .opencode/logs not found at {log_dir}", file=sys.stderr)
         return 1
 
-    # Fast path: walk ses_*/ dirs newest-first and accept the first header
-    # whose session.id actually parses. A corrupt newest header must not
-    # shadow an older healthy session.
-    session_dirs = sorted(
-        [d for d in log_dir.iterdir() if d.is_dir() and d.name.startswith("ses_")],
-        key=lambda d: d.stat().st_mtime, reverse=True)
+    # Fast path: order ses_*/ dirs pending-marker-first (an in-flight turn
+    # writes `NNN-pending-*.yaml` into the ACTIVE session's dir — the
+    # strongest "this is the current session" signal), then newest-mtime.
+    # Accept the first header in that order whose session.id actually parses:
+    # a corrupt newest header must not shadow an older healthy session.
+    session_dirs = [d for d in log_dir.iterdir() if d.is_dir() and d.name.startswith("ses_")]
 
     # Apply --since filter if provided
     if args.since:
@@ -140,27 +163,36 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: --since requires valid ISO timestamp (e.g. 2026-09-19T10:00:00)", file=sys.stderr)
             return 1
 
-    # Probe top-N dirs in parallel (default top 5)
+    pending_map = {d: pending_marker(d, args.pending_ttl) for d in session_dirs}
+    pending_dirs = [d for d in session_dirs if pending_map[d] is not None]
+    session_dirs.sort(key=lambda d: d.stat().st_mtime, reverse=True)
+    if pending_dirs:
+        pending_dirs.sort(key=lambda d: pending_map[d].stat().st_mtime, reverse=True)
+        if len(pending_dirs) > 1:
+            names = ", ".join(d.name for d in pending_dirs)
+            print(f"WARNING: multiple sessions have in-flight turns ({names}); "
+                  f"selecting the newest pending session", file=sys.stderr)
+        session_dirs = pending_dirs + [d for d in session_dirs if d not in pending_dirs]
+
+    # Probe top-N dirs in parallel (default top 5), then pick the winner in
+    # newest-first order — NOT completion order: a faster subprocess for an
+    # older session must never beat the true newest session under load.
     yaml_path = None
     fast_sid: str | None = None
     max_parallel = 5
-    if session_dirs:
-        with ThreadPoolExecutor(max_workers=min(max_parallel, len(session_dirs))) as executor:
-            future_to_dir = {
-                executor.submit(probe_session_id, extract_field, sorted(sdir.glob("000-header-*.yaml"))[-1]): sdir
-                for sdir in session_dirs[:max_parallel]
-                if sorted(sdir.glob("000-header-*.yaml"))
-            }
-            for future in as_completed(future_to_dir):
-                sdir = future_to_dir[future]
-                sid_probe = future.result()
-                if sid_probe:
-                    header_files = sorted(sdir.glob("000-header-*.yaml"))
-                    yaml_path, fast_sid = header_files[-1], sid_probe
-                    # Cancel remaining futures
-                    for f in future_to_dir:
-                        f.cancel()
-                    break
+    candidates: list[tuple[Path, Path]] = []
+    for sdir in session_dirs[:max_parallel]:
+        header_files = sorted(sdir.glob("000-header-*.yaml"))
+        if header_files:
+            candidates.append((sdir, header_files[-1]))
+    if candidates:
+        with ThreadPoolExecutor(max_workers=min(max_parallel, len(candidates))) as executor:
+            probes = list(executor.map(
+                lambda cand: probe_session_id(extract_field, cand[1]), candidates))
+        for (_, header), sid_probe in zip(candidates, probes):
+            if sid_probe:
+                yaml_path, fast_sid = header, sid_probe
+                break
 
     # Fall back to flat *.yaml in log dir
     sort_err = ""
@@ -191,10 +223,12 @@ def main(argv: list[str] | None = None) -> int:
     state_file = log_dir / f"{sid}.state.json"
     state_exists = state_file.is_file()
     title_val = title if title else None
+    winner_pending = any(yaml_path.parent == d for d in pending_dirs)
     payload = {
         "session_id": sid,
         "title": title_val,
         "state": "exists" if state_exists else "missing",
+        "pending": winner_pending,
         "yaml_path": str(yaml_path),
         "log_dir": str(log_dir),
     }
@@ -216,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
     if title_val:
         print(f"Title: {title_val}")
     print(f"State file: {'exists' if state_exists else 'missing'}")
+    print(f"Pending marker: {'yes' if winner_pending else 'no'}")
     return 0
 
 

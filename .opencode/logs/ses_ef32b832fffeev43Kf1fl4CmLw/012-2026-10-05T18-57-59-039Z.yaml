@@ -1,0 +1,2267 @@
+---
+user:
+  text: Continue if you have next steps, or stop and ask for clarification if you are unsure how to proceed.
+  time: 10/5/2026, 6:55:37.989 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have next steps: write the task.md + implementation-plan v1 into docs/, lint them, then present for approval. Let me now write both artifacts.
+
+      Let me carefully compose the implementation plan following the precedent structure. Key content from my prior state:
+
+      Session facts:
+      - Session ID: `ses_ef32b832fffeev43Kf1fl4CmLw`
+      - Title: "Fix account-ledger CLI: checks and arrow key"
+      - Date: 2026-10-05
+      - Workflow analysis report: `scratch/ef32b832fffeev43Kf1fl4CmLw/workflow-analysis_2026-10-05_17-54-26.md` (2,628 lines, 9 turns, 346 tool calls)
+
+      Artifacts:
+      - `docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md`
+      - `docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md`
+
+      H1: per rule `# [Goal Description] (vN)` — the rule is literal. The 2026-09-27 precedent omitted brackets, but the rule text with example `# [Setup Authentication] (v1)` is explicit, and the user emphasized "follow strictly & deeply". Hmm. Let me re-read the rule from memory of the prior session summary: "H1 MUST be `# [Goal Description] (vN)` (bracket form; precedent `# [Code review and merge for Jira tickets via Teams] (v20 - Consolidated)`)". I recorded "bracket form" as the mandate. So use brackets: `# [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)`.
+
+      Hmm wait, but should the H1 be about documenting the workflow, or about the account-ledger CLI fix? The goal of THIS session is: assess + document the workflow as reusable skills. So H1 = `# [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)`.
+
+      Task.md H1: precedent `# Task — Document the Skill-Folder Relocation Workflow as Reusable Layered Skills`. So: `# Task — Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills`.
+
+      Plan structure:
+
+      ```
+      # [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)
+
+      ## Rule Compliance Reference
+      - links...
+
+      ## User Questions & Answers
+
+      ### Q1 — "Is this workflow correctly documented?"
+      A1: partially... verdict...
+
+      ### Q2 — "New skills or enrichments?"
+      A2: ...
+
+      ### Q3 — Commit/push scope
+      A3: ...
+
+      ## 1. Goal & Context
+      ...
+
+      ## 2. Gap Analysis
+      ### 2.1 G1 — Submodule detached-HEAD resolution has rules but no skill
+      ### 2.2 G2 — JLine console history integration is undocumented
+      ### 2.3 G3 — Interactive CLI smoke testing (piped / EOF / pty) is undocumented
+      ### 2.4 G4 — Session-skill-coverage assessment has no composer (OPTIONAL)
+      ### 2.5 Documented workflow (no action needed)
+      ### 2.6 Flagged pre-existing drift (OUT OF SCOPE)
+
+      ## 3. Deliverables
+      ### 3.1 NEW-BASE-1 — cli-smoke-test-piped-eof-pty
+      ### 3.2 NEW-COMPOSER-1 — jvm-cli-jline-console-history-integration
+      ### 3.3 NEW-STANDALONE-1 — git-submodule-detached-head-branch-resolution
+      ### 3.4 OPTIONAL-1 — session-skill-coverage-audit
+      ### 3.5 Cross-reference sweep
+      ### 3.6 Script Tier Declaration
+
+      ## 4. Execution Phases
+
+      ## 5. Commit Strategy
+
+      ## 6. Verification Matrix
+
+      ## 7. Out of Scope
+
+      ## 8. Guardrails
+      ```
+
+      Rule Compliance Reference links (relative from docs/):
+      - `../ai-agent-rules/ai-agent-planning-rules.md`
+      - `../ai-agent-rules/ai-rule-standardization-rules.md`
+      - `../ai-agent-rules/scripting-language-selection-rules.md`
+      - `../ai-agent-rules/git-submodule-rules.md`
+      - `../ai-agent-rules/git-commit-message-rules.md`
+      - `../.agents/skills/markdown-generation/SKILL.md`
+      - `../.agents/skills/skill-factory/SKILL.md`
+      - `../.agents/skills/general/skill-library-domain-grouping/SKILL.md`
+      - `../.agents/skills/general/planning/planning-artifact-naming/SKILL.md`
+      - `../.agents/skills/redaction-portability/SKILL.md`
+      - `../.agents/skills/git-atomic-commit-construction/SKILL.md`
+      - `../.agents/skills/script-over-instruction-decomposition/SKILL.md`
+      - `../.agents/skills/git-submodule-commit-details/SKILL.md` (coverage-confirmed)
+      - `../.agents/skills/git-hunk-staging-primitives/SKILL.md` (coverage-confirmed)
+
+      All these files must exist for relative-links rule. Let me verify a few exist: git-commit-message-rules.md — from prior summary, submodule sync messages follow it; path `ai-agent-rules/git-commit-message-rules.md` presumably exists. I should verify with glob before finalizing to avoid dangling links. Also `scripting-language-selection-rules.md` exists per prior plan. `git-hunk-staging-primitives/SKILL.md` exists. `git-submodule-commit-details/SKILL.md` exists.
+
+      Let me glob `ai-agent-rules/*.md` to confirm names, and check the skills exist. Quick batch.
+
+      Gap analysis content:
+
+      2.1 G1 — Submodule detached-HEAD → branch resolution:
+      - Rules: `git-submodule-rules.md` §1 (Never Commit to Detached HEAD), §2 (branch checkout), §3 (recovery).
+      - No skill executes it. Closest skills are all different directions:
+        - `git-submodule-addition` §3.4: addition context.
+        - `git-submodule-missing-revision-recovery`: materializes detached at recorded SHA (opposite).
+        - `git-submodule-pointer-repair`: parent-history pointer repair.
+        - `git-atomic-commit-construction` §(detached HEAD handling): main repo only.
+      - Session evidence: both submodules sat detached at pinned SHAs (common-lib `fe171ed`, lib `26554d6`) while `master` was ahead (`a041e6e` / `4f5b63c`); resolution = fetch + `git checkout master` (carrying local edits) + `pull --ff-only` when behind. Commits C1/L1/L2/L3 then landed on branches; Lsync updated common-lib gitlink; P1 updated lib gitlink with §5 sync message.
+
+      2.2 G2 — JLine console history:
+      - No skill covers JLine/console line editing. Session integrated JLine 3.30.17 into a Kotlin/JVM CLI:
+        - Single self-contained bundle `org.jline:jline:3.30.17` (terminal+reader+providers+native libs); no need for `jline-terminal-jni`; JLine 4.x exists but 3.x API stability chosen.
+        - Pluggable indirection in the shared JVM library: `ConsoleInputUtils.setLineReader { prompt -> ... }`; shared lib has NO JLine dependency (prevents propagation to Android consumers); CLI module initializes a `LineReader` at startup.
+        - `TerminalBuilder.builder().system(true).build()` + `LineReaderBuilder`; `EndOfFileException` → `EOFException`; `UserInterruptException` → exit 130.
+        - Dumb-terminal fallback (piped input still works).
+        - ~72 read sites migrated (`Scanner(System.in)` conflicts with JLine raw mode).
+        - GraalVM native-image caveat (project has a native-image workflow; JLine may need reflection/resource config).
+
+      2.3 G3 — Interactive CLI smoke testing:
+      - No skill covers piped/EOF/pty smoke testing of interactive CLIs.
+      - Session commands:
+        1. piped: `printf '0\n' | java -jar <jar> > build/agent/smoke-piped.log 2>&1`
+        2. EOF: `printf '' | java -jar <jar> > build/agent/smoke-eof.log 2>&1`
+        3. pty: `printf '0\n' | script -qec "stty cols 80 rows 24; java -jar <jar>" /dev/null > build/agent/smoke-pty.log 2>&1`
+      - Evidence: pty log shows JLine bracketed-paste escape codes `[?2004h`; EOF run exercises empty-stdin termination; 0x0 pty size causes rendering artifacts → `stty cols 80 rows 24`.
+      - Generic base skill value: any interactive CLI (not JVM-specific).
+
+      2.4 G4 (OPTIONAL) — session-skill-coverage-audit:
+      - The assessment procedure itself (workflow report → tool-call inventory → skill-library matching → coverage matrix) has no owner. Optional meta composer.
+
+      2.5 Already documented (no action):
+      - Atomic commit arrangement + safety stash + hunk staging: `git-atomic-commit-construction`, `git-pre-execution-safety-stash`, `git-hunk-staging-primitives`.
+      - Submodule sync message generation: `git-submodule-commit-details` v2.1.0 (composes `git-commit-metadata-extraction`; called by `git-submodule-commit-reword` and `git-atomic-commit-construction`) → §5 sync-message rules documented.
+      - Workflow analysis: `opencode-session-problem-solution-workflow-analysis`.
+
+      2.6 Flagged pre-existing drift (OUT OF SCOPE):
+      - Taxonomy SSOT §1.1 claims `cli/` (7), `java/` (3), `testing/` (4), `general/skill-dev/` (6) but those folders are absent in this checkout; `java-*` skills live at top level, skill-factory at top level. New skills follow taxonomy slots (recent precedent: `email/`, `calendar/`, `docker/` groups created for new skills; pre-grouping skills not moved).
+      - Dirty submodule pointers + modified `.opencode/package*.json` in ai-suite working tree; pre-existing; excluded from commits.
+
+      Deliverables:
+
+      3.1 NEW-BASE-1 `cli-smoke-test-piped-eof-pty`
+      - Placement: `.agents/skills/cli/cli-smoke-test-piped-eof-pty/` (taxonomy `cli/`).
+      - Files: SKILL.md, AGENTS.md, CHANGELOG.md, TRACEABILITY.md, scripts/run-cli-smoke-test.py.
+      - CLI contract:
+      ```bash
+      python3 scripts/run-cli-smoke-test.py --command "<shell command>" [--input "0\n"] [--out-dir build/agent] [--mode piped|eof|pty|all] [--rows 24] [--cols 80] [--timeout 60] [--json]
+      ```
+      - Semantics:
+        1. piped: `printf '<input>' | <command>` capture log.
+        2. eof: empty stdin.
+        3. pty: `script -qec "stty cols C rows R; <command>" /dev/null` (util-linux `script`; document macOS `script -q /dev/null <cmd>` variant).
+        4. Per-mode exit code, log path, timeout handling; `--json` summary; non-zero command exits reported but harness exit reflects mode completion (or exit 1 if any mode failed? define).
+      - Prohibited: no `npx`; no interactive hangs (timeout mandatory).
+
+      3.2 NEW-COMPOSER-1 `jvm-cli-jline-console-history-integration`
+      - Placement: `.agents/skills/java/jvm-cli-jline-console-history-integration/` (taxonomy `java/`).
+      - Files: SKILL.md, AGENTS.md, CHANGELOG.md, TRACEABILITY.md, scripts/find-console-read-sites.py.
+      - Composition Rationale: composes `cli-smoke-test-piped-eof-pty` (base §3.1) for verification; `find-console-read-sites.py` enumerates `readLine`/`Scanner`/`readln` sites for migration.
+      - Script contract: `python3 scripts/find-console-read-sites.py --root <dir> [--json]` → per-file line sites, summary counts.
+      - Prose steps: dependency selection (self-contained bundle; version catalog), shared-lib pluggable reader (no JLine dep), CLI init + exception mapping, site migration, smoke test (delegates to base), GraalVM caveat.
+      - Cross-refs: Related Skills → `android-feature-to-shared-kotlin-lib` (shared JVM lib consumption), base.
+
+      3.3 NEW-STANDALONE-1 `git-submodule-detached-head-branch-resolution`
+      - Placement: `.agents/skills/git/submodule/setup/git-submodule-detached-head-branch-resolution/` (taxonomy `git/submodule/setup/`).
+      - Hmm — is `git/submodule/setup/` an existing taxonomy subgroup? Prior inventory: `git/submodule/` groups seen: `git/submodule/repair/git-submodule-history-classification`, `git/submodule/lifecycle/git-submodule-history-removal`, `git/basic/edit/...`, `git/repo/...`, `git/basic/audit/...`. So `setup/` may not exist yet. Options: `git/submodule/setup/` (new subgroup; taxonomy SSOT update needed) or `git/submodule/` flat? Taxonomy SSOT §1.2 listing should tell. I noted `git-submodule-addition` placement unknown. To minimize taxonomy invention, check where git-submodule-addition lives. From system prompt: `git-submodule-addition` — location not given (skills listed alphabetically with location only in <location> tags... Actually the available_skills listing gives locations. Let me search: "git-submodule-addition" isn't in the available skills list! Hmm — it's not in the list I have (list includes git-submodule-commit-details, git-submodule-commit-reword, git-submodule-dead-upstream-audit, git-submodule-fork-reconfigure, git-submodule-fork-sync, git-submodule-history-classification, git-submodule-history-removal, git-submodule-misconfiguration-audit-and-revert, git-submodule-missing-revision-recovery, git-submodule-orphan-gitlink-recovery, git-submodule-removal, git-submodule-selective-init-no-lfs, git-submodule-uninitialized-audit, git-submodule-uninitialized-handler). No `git-submodule-addition` in the list — but I referenced it in prior summary as existing (found via grep/glob during exploration). It may exist physically but not be registered as a skill? Or the available list is truncated. Whatever — for placement, check the taxonomy SSOT §1.2 listing for git/submodule structure. I'll read the taxonomy file sections during authoring? I already read it fully earlier (per prior summary: §1.1 claims etc.). From my summary: submodule skills at `git/submodule/repair/`, `git/submodule/lifecycle/`. So create `git/submodule/setup/` as a new subgroup per taxonomy? The 2026-09-27 plan precedent created `.agents/skills/general/skill-dev/` (which taxonomy claimed existed) — i.e., they placed into taxonomy slots even when dirs were absent. For git submodule resolution, if taxonomy §1.2 shows a `git/submodule/setup/` or similar, use it; else choose nearest existing (`git/submodule/repair/`? resolution isn't repair exactly... it's setup/lifecycle). I'll verify during authoring by reading the taxonomy file's git section. Let me grep it quickly before writing.
+
+      3.4 OPTIONAL-1 `session-skill-coverage-audit`
+      - Placement: `.agents/skills/general/skill-dev/session-skill-coverage-audit/` (taxonomy `general/skill-dev/`).
+      - Files + `scripts/` (Tier 1): composes `opencode-session-yaml-tool-call-extractor` (tool-call inventory), `opencode-session-problem-solution-workflow-analysis` (report), skill frontmatter scanner.
+      - Present as optional; user decides at approval.
+
+      3.5 Cross-reference sweep:
+      - `git-atomic-commit-construction` (detached-HEAD subsection): pointer to §3.3 for submodules.
+      - `git-submodule-addition` §3.4 (if exists): pointer.
+      - `git-submodule-commit-details`: Related Skills pointer to §3.3 (prerequisite resolution).
+      - `android-feature-to-shared-kotlin-lib`: Related Skills pointer to §3.2 (if applicable — shared JVM lib).
+      - `git-submodule-rules.md` is a rule file (ai-agent-rules submodule) — DO NOT edit (submodule pointer policy; rules changes out of scope).
+      - Taxonomy §1.1/§1.2 + §4 Changelog per skill, in-commit.
+      - `AGENTS-legacy.md` registration rows (alphabetical).
+
+      3.6 Script Tier Declaration table: all Tier 1 Python 3.12+ (run-cli-smoke-test.py, find-console-read-sites.py, resolve-submodule-branches.py, optional coverage script). Citation `scripting-language-selection-rules` §3.
+
+      Execution phases:
+      - Phase 0 — planning artifacts (this step): create plan + task.md; lint both with markdownlint-cli2 (direct binary; `mise x node -- markdownlint-cli2`); present for approval. No skill mutation before approval.
+      - Phase 1 — C1 base §3.1: create files; smoke-test the script against a fixture interactive command (e.g., a tiny Python/shell prompt loop) in scratch; verify piped/eof/pty logs; taxonomy + AGENTS-legacy; §6 checks; commit C1.
+      - Phase 2 — C2 composer §3.2: create files; dry-run `find-console-read-sites.py` on a fixture tree (or the CLI repo read-only); §3.5 cross-refs (android skill); taxonomy + AGENTS-legacy; §6; commit C2.
+      - Phase 3 — C3 standalone §3.3: create files; run `resolve-submodule-branches.py --check` on a scratch fixture (simulate detached submodule) — or read-only against a clone in scratch; taxonomy + AGENTS-legacy; §3.5 cross-refs; §6; commit C3.
+      - Phase 4 — optional §3.4 if approved: create files; smoke; taxonomy + AGENTS-legacy; §6; commit C4.
+      - Phase 5 — close-out: full §6 matrix; task.md statuses; propose planning-artifact disposition (commit vs trash) per planning-rules §10 with explicit user confirmation.
+
+      Commit strategy table:
+      | C1 | `feat(skills): add cli-smoke-test-piped-eof-pty base skill` | §3.1 + taxonomy + AGENTS-legacy |
+      | C2 | `feat(skills): add jvm-cli-jline-console-history-integration composer` | §3.2 + taxonomy + AGENTS-legacy + §3.5 cross-refs |
+      | C3 | `feat(skills): add git-submodule-detached-head-branch-resolution skill` | §3.3 + ... |
+      | C4 (optional) | `feat(skills): add session-skill-coverage-audit composer` | §3.4 + ... |
+      No push. Multi-line bodies via `git-commit-message-delivery`. Stage only planned paths (dirty submodules excluded).
+
+      Verification matrix:
+      - Markdown lint: `mise x node -- markdownlint-cli2 --fix <paths>` then without --fix → 0 issues (direct binary; npx forbidden; repo-root node_modules holds custom rule — installed).
+      - Cross-reference audit: `python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py`
+      - Dangling links: `python3 .agents/skills/git-commit-dangling-link-audit/scripts/detect-dangling-links.py <changed md>`
+      - Invocation audit: `python3 .agents/skills/skill-factory/scripts/verify-doc-invocations.py`
+      - Smoke script fixture: piped/eof/pty modes produce logs + expected exit codes.
+      - Read-site scanner fixture: expected counts.
+      - Submodule resolver fixture: `--check` detects detached → `--apply` checks out default branch; idempotent re-run.
+      - Redaction scan: redaction §8 regex inventory over new/edited files → empty/Tier-C.
+      - Standalone-clone test: no external-repo paths/names/session IDs in committed skill files.
+
+      Out of scope:
+      - git push.
+      - Editing `ai-agent-rules` submodule rules.
+      - Pre-existing taxonomy/physical drift (§2.6).
+      - Committing planning artifacts (Phase 5 user gate).
+      - Library-wide metadata separation sweep.
+
+      Guardrails:
+      - All deterministic mechanics via shipped scripts (Consumer Discipline).
+      - markdownlint direct binary; no npx.
+      - `trash` over `rm`; no `.DS_Store`; no `/tmp` writes — scratch under `scratch/ef32b832fffeev43Kf1fl4CmLw/`; output capture per repo-scratch-output-capture.
+      - One command per bash call; no chained probes.
+      - No session IDs / local paths / external repo names in committed skill files (redaction + cross-repo test).
+      - Stop and report if any §6 verification fails.
+
+      Now — before writing, verify:
+      1. `ai-agent-rules` filenames: ai-agent-planning-rules.md, ai-rule-standardization-rules.md, scripting-language-selection-rules.md, git-submodule-rules.md, git-commit-message-rules.md.
+      2. Taxonomy git/submodule structure to pick placement.
+      3. `git-submodule-addition` existence/location (for cross-ref).
+      4. `android-feature-to-shared-kotlin-lib` location (known: top-level `.agents/skills/android-feature-to-shared-kotlin-lib/`).
+      5. `skill-cross-reference-audit` path: `.agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py` (per prior plan §6 used `python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py`).
+      6. `verify-doc-invocations.py` path under skill-factory/scripts.
+      7. `detect-dangling-links.py` path under git-commit-dangling-link-audit/scripts.
+
+      Let me batch glob/grep these. Use glob for rule files, read taxonomy git section (grep "git/submodule" in taxonomy file), glob for git-submodule-addition.
+    thinking_duration: 16.690s
+    thinking_duration_ms: 16690
+    tool_calls:
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite/ai-agent-rules
+          pattern: '*.md'
+        result: |-
+          /workspaces/ai-suite/ai-agent-rules/node-crypto-mcp-infrastructure-rules.md
+          /workspaces/ai-suite/ai-agent-rules/github-pr-management-rules.md
+          /workspaces/ai-suite/ai-agent-rules/moltbridge-discovery-rules.md
+          /workspaces/ai-suite/ai-agent-rules/flutter-app-development-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-repo-management-rules.md
+          /workspaces/ai-suite/ai-agent-rules/docs/implementation-plans/2026-02-06-strict-dependency-freezing.md
+          /workspaces/ai-suite/ai-agent-rules/docs/implementation-plans/2026-02-06-typescript-hardening-workflow-globalization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/implementation-plans/2026-02-09-bash-script-optimization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/implementation-plans/2026-02-09-bash-scripting-rules-standardization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/Topics-vs-Tags.md
+          /workspaces/ai-suite/ai-agent-rules/docs/architecture.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-18-react-query-organization-table.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-09-bash-execution-standards-establishment.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-26-pdf-cli-extraction-tool.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-09-bash-scripting-standards-establishment.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-06-standardizing-typescript-config.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-11-atomic-commit-refinement.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-27-staging-server-diagnostics.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-06-dependency-freezing-and-rule-standardization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-16-file-renaming-task.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-16-workflow-fix-mise-input.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-26-mise-verification-script-alignment.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2025-12-26-cicd-rulebooks-refinement-and-deduplication.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-09-bash-script-optimization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/conversations/2026-02-09-postman-mcp-server-integration.md
+          /workspaces/ai-suite/ai-agent-rules/git-history-refinement-rules.md
+          /workspaces/ai-suite/ai-agent-rules/typescript-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-text-normalization-rules.md
+          /workspaces/ai-suite/ai-agent-rules/docs/walkthroughs/2026-02-09-bash-scripting-standards-walkthrough.md
+          /workspaces/ai-suite/ai-agent-rules/docs/walkthroughs/2026-02-06-typescript-hardening-workflow-globalization.md
+          /workspaces/ai-suite/ai-agent-rules/docs/walkthroughs/2026-02-09-bash-script-optimization-walkthrough.md
+          /workspaces/ai-suite/ai-agent-rules/ai-tools-rules.md
+          /workspaces/ai-suite/ai-agent-rules/ci-cd-rules.md
+          /workspaces/ai-suite/ai-agent-rules/kmp-version-upgrade-rules.md
+          /workspaces/ai-suite/ai-agent-rules/rclone-download-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-submodule-history-repair-rules.md
+          /workspaces/ai-suite/ai-agent-rules/manual-testing-rules.md
+          /workspaces/ai-suite/ai-agent-rules/bash-scripting-rules.md
+          /workspaces/ai-suite/ai-agent-rules/github-actions-workflow-rules.md
+          /workspaces/ai-suite/ai-agent-rules/zero-backend-sync-rules.md
+          /workspaces/ai-suite/ai-agent-rules/postman-mcp-server-rules.md
+          /workspaces/ai-suite/ai-agent-rules/repo-discovery-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-workflow-practical-guide.md
+          /workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md
+          /workspaces/ai-suite/ai-agent-rules/strict-dependency-freezing-rules.md
+          /workspaces/ai-suite/ai-agent-rules/GitHub-Action-Creation-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-submodule-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-rebase-standardization-rules.md
+          /workspaces/ai-suite/ai-agent-rules/linkedin-contributor-call-rules.md
+          /workspaces/ai-suite/ai-agent-rules/rule-management-rules.md
+          /workspaces/ai-suite/ai-agent-rules/github-atom-feed-rules.md
+          /workspaces/ai-suite/ai-agent-rules/brew-rules.md
+          /workspaces/ai-suite/ai-agent-rules/GITHUB_TOPICS.md
+          /workspaces/ai-suite/ai-agent-rules/linkedin-post-creation-rules.md
+          /workspaces/ai-suite/ai-agent-rules/android-app-launch-rules.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-02-06-typescript-hardening-workflow-globalization.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2024-05-23-kmp-upgrade-protocol-derivation.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-05-29-mise-github-backend-php-vscode-config.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-02-01-submodule-history-repair.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-02-06-standardizing-verification-protocols.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-01-15-zero-backend-preferences-sync.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-01-19-rclone-download-optimization.md
+          /workspaces/ai-suite/ai-agent-rules/conversations/2026-01-19-github-atom-feed-urls.md
+          /workspaces/ai-suite/ai-agent-rules/ai-rule-standardization-rules.md
+          /workspaces/ai-suite/ai-agent-rules/script-management-rules.md
+          /workspaces/ai-suite/ai-agent-rules/ai-agent-planning-rules.md
+          /workspaces/ai-suite/ai-agent-rules/scripting-language-selection-rules.md
+          /workspaces/ai-suite/ai-agent-rules/shell-execution-rules.md
+          /workspaces/ai-suite/ai-agent-rules/ai-agent-session-documentation-rules.md
+          /workspaces/ai-suite/ai-agent-rules/zero-data-loss-cloud-cleanup-rules.md
+          /workspaces/ai-suite/ai-agent-rules/README.md
+          /workspaces/ai-suite/ai-agent-rules/markdown-generation-rules-additions.md
+          /workspaces/ai-suite/ai-agent-rules/github-repo-metadata-management-rules.md
+          /workspaces/ai-suite/ai-agent-rules/agent-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-operation-rules.md
+          /workspaces/ai-suite/ai-agent-rules/redaction-portability-rules.md
+          /workspaces/ai-suite/ai-agent-rules/shellcheck-fixer-rules.md
+          /workspaces/ai-suite/ai-agent-rules/github-cli-permission-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-atomic-commit-construction-rules.md
+          /workspaces/ai-suite/ai-agent-rules/git-gitignore-handling-rules.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/USAGE.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/docs/implementation-plans/v15-industrial-plan.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/tsconfig.json.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/types.ts.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/storage.ts.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/engine.ts.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/config.json.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/worker/index.ts.md
+          /workspaces/ai-suite/ai-agent-rules/architectures/sync/packages/core/src/worker/crypto.asm.ts.md
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/**/git-submodule-addition/**
+        result: No files found
+      - tool: grep
+        args:
+          path: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md
+          pattern: git/submodule|submodule/
+        result: |
+          Found 5 matches
+          /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md:
+            Line 204: └── submodule/
+
+            Line 542: * **`git-submodule-history-classification`** (new base, `git/submodule/repair/`):
+
+            Line 552:   `git/submodule/lifecycle/`): eleven-gate full-history submodule removal —
+
+            Line 556: Updated Section 1.2 tree counts (`git/basic/edit/` 6->8, `git/submodule/
+
+            Line 557: repair/` 5->6, `git/submodule/lifecycle/` 4->5) and listings.
+    time: 10/5/2026, 6:55:38.622 PM UTC
+    response: |+
+      Next step: author the task + plan artifacts. First, quick path verification so every relative link in the plan resolves (dangling-link compliance):
+
+    duration: 19.765s
+    duration_ms: 19765
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Interesting findings:
+
+      1. `git-submodule-addition` does NOT exist in ai-suite skills (glob found nothing). My prior summary said it existed — that may have been from a different exploration (maybe it was in a listing but not physical, or I misremembered). So the cross-ref target doesn't exist → remove from plan. Also `git-atomic-commit-construction` — does it exist physically? In available_skills list, yes: `git-atomic-commit-construction` (location not shown but listed). Wait, the available_skills list includes `git-atomic-commit-construction`? Let me check... The list has "git-atomic-commit-construction" — hmm, scanning: I see `git-alias-preflight`, `git-atomic-commit-construction` — yes it's there in the available skills (listed after git-alias-preflight). Location not in the tag (the list shows location for some but for many it shows nothing? Actually each <skill> has <location>; scanning the system prompt, many entries lack explicit <location> in what I see... Actually the format includes location for all. But I can't re-read; trust the earlier summary: `git-atomic-commit-construction/SKILL.md` exists.
+
+      2. Taxonomy `git/submodule/` structure at line 204: a tree with `submodule/` having children (repair/, lifecycle/ presumably). Line 542: `git-submodule-history-classification` in `git/submodule/repair/`; line 552: history-removal in `git/submodule/lifecycle/`. Need to see the tree at line ~200 to know if `setup/` exists. Let me read lines 195-215 of taxonomy.
+
+      3. `git-submodule-rules.md` exists ✓. Other rule files: ai-agent-planning-rules.md ✓, ai-rule-standardization-rules.md ✓, scripting-language-selection-rules.md ✓, git-commit-message-rules.md ✓, git-atomic-commit-construction-rules.md ✓ (there's a rule file too).
+
+      Note: The taxonomy file line 556 mentions "git/basic/edit/ 6->8, git/submodule/repair/ 5->6, git/submodule/lifecycle/ 4->5" — so counts exist. Let me read the tree to find where a "resolution" skill belongs: maybe `git/submodule/setup/` exists in the as-designed tree. Read lines ~195-230.
+    thinking_duration: 2.157s
+    thinking_duration_ms: 2157
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md
+          offset: 190
+          limit: 45
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md</path>
+          <type>file</type>
+          <content>
+          190: │                                  cross-repo-cherry-pick,
+          191: │                                  lfs-selective-clone,
+          192: │                                  repo-storage-minimization,
+          193: │                                  git-remote-origin-repoint
+          194: │
+          195: ├── sandbox/                  (4) — personal-content-extraction,
+          196: │                                  personal-sandbox-remote,
+          197: │                                  personal-sandbox-restack,
+          198: │                                  personal-team-branch-workflow
+          199: │
+          200: ├── stash/                    (3) — pre-execution-safety-stash,
+          201: │                                  stash-parent-commit,
+          202: │                                  stash-triage
+          203: │
+          204: └── submodule/
+          205:     ├── setup/                (4) — addition, selective-init-no-lfs,
+          206:     │                              uninitialized-audit,
+          207:     │                              uninitialized-handler
+          208:     ├── repair/               (6) — dead-upstream-audit,
+          209:     │                              misconfiguration-audit-and-revert,
+          210:     │                              missing-revision-recovery,
+          211:     │                              orphan-gitlink-recovery,
+          212:     │                              pointer-repair,
+          213:     │                              git-submodule-history-classification
+          214:     ├── fork/                 (2) — fork-reconfigure, fork-sync
+          215:     └── lifecycle/            (5) — commit-details, commit-reword,
+          216:                                    removal, readd,
+          217:                                    git-submodule-history-removal
+          218: ```
+          219: 
+          220: **github/** (8 sub-groups; 2 flat items remain at github/ level):
+          221: 
+          222: ```text
+          223: github/
+          224: ├── copilot/                  (2) — activity-history-split,
+          225: │                                  chat-history-analysis
+          226: ├── actions/                  (2) — run-audit, workflow-dispatch
+          227: ├── repo/                     (10) — gh-repo-create, gh-repo-edit-metadata,
+          228: │                                   pr-edit, repo-commit-fetch,
+          229: │                                   rest-api-fallback, secrets-bulk-set,
+          230: │                                   pr-merge-decision-classifier,
+          231: │                                   github-repo-name-conflict-check,
+          232: │                                   github-repo-state-fingerprint,
+          233: │                                   github-repo-collaborator-remove
+          234: ├── community-standards/      (10) — issue-template-bug,
+
+          (Showing lines 190-234 of 826. Use offset=235 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/AGENTS.md
+          # Skill Library Domain Grouping — Companion Bridge
+
+          ## Purpose
+
+          This file is the companion bridge for non-skill-aware agent runtimes. The
+          operational SSOT resides in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - You are creating a new skill and need to determine where in the folder
+            structure it belongs.
+          - You are auditing or reviewing the skill library's folder organization.
+          - You need to reference the domain taxonomy for any cross-skill dependency or
+            placement decision.
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full domain taxonomy, placement rules,
+          and change protocol. Do NOT execute any step without first loading
+          `SKILL.md` — this bridge is intentionally non-actionable.
+
+          ## Cross-References
+
+          - [`SKILL.md`](SKILL.md) — SSOT with the complete domain taxonomy and
+            placement rules.
+          - [`human-scanable-organization`](../human-scanable-organization/SKILL.md) —
+            the 8±2 principle that governed this taxonomy.
+          - [`skill-factory`](../../skill-factory/SKILL.md) — consumer skill that enforces
+            compliance with this taxonomy.
+          - [`directory-tree-audit`](../directory-tree-audit/SKILL.md) — tool for
+            verifying item counts during placement decisions.
+
+          </system-reminder>
+    time: 10/5/2026, 6:55:58.438 PM UTC
+    response: "\n\n"
+    duration: 3.938s
+    duration_ms: 3938
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The taxonomy tree shows `git/submodule/setup/` EXISTS in the as-designed taxonomy with 4 items: addition, selective-init-no-lfs, uninitialized-audit, uninitialized-handler. So `git-submodule-addition` is a taxonomy-listed skill whose folder is absent in this checkout (like other groups). Placement for the new submodule skill: `git/submodule/setup/` (5 → 6? No: setup (4) → 5 items) — wait, the new skill is about resolving detached HEAD to default branch before committing; that's arguably "setup"/"lifecycle". Options: setup/ (4→5). I'll place it in `git/submodule/setup/` (5th item). Hmm, "setup" contains addition, selective-init, uninitialized-* — those are initialization/setup. Detached-head resolution is more of a worktree-state operation... `repair/` (6 items: dead-upstream, misconfiguration, missing-revision, orphan-gitlink, pointer-repair, history-classification) — resolution isn't repair of a broken thing; it's a routine pre-commit state fix. Could be lifecycle/. But "setup" fits "get submodule ready for work" semantics best? Actually, the operation: after clone/checkout of a parent, submodules land detached; you resolve them to their default branch before working/committing. That's post-clone setup → `setup/` fits well. Go with `git/submodule/setup/` (4 → 5).
+
+      Now, note the taxonomy file is the SSOT and contains §1.1 counts like "git/submodule/setup/ (4)". My plan must update counts for:
+      - cli/ group: taxonomy claims `cli/ (7)`? Need to check the taxonomy tree for cli/ and java/ sections to get exact current counts and listing format. Let me read the relevant sections. Search for "cli/" and "java/" in the taxonomy.
+
+      Let me grep the taxonomy for `cli/` and `java/` lines.
+    thinking_duration: 1.699s
+    thinking_duration_ms: 1699
+    tool_calls:
+      - tool: grep
+        args:
+          path: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md
+          pattern: cli/|java/|skill-dev/
+        result: |
+          Found 5 matches
+          /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md:
+            Line 54: ├── cli/                          (7 items — flat)
+
+            Line 62: ├── java/                         (3 items — flat)
+
+            Line 124: ├── skill-dev/                (6)
+
+            Line 728: ### 2026-06-20 — general/skill-dev/ expanded: 5→6 — skill-cross-reference-audit added
+
+            Line 735: ### 2026-06-20 — general/skill-dev/ expanded: 4→5 — script-template-extraction added
+    time: 10/5/2026, 6:56:02.414 PM UTC
+    response: "\n\n"
+    duration: 4.670s
+    duration_ms: 4670
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: Let me read the taxonomy sections around lines 50-70 and 120-130 to get the exact listing format (item names for cli/ and java/).
+    thinking_duration: 112ms
+    thinking_duration_ms: 112
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md
+          limit: 20
+          offset: 48
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md</path>
+          <type>file</type>
+          <content>
+          48: 
+          49: ### 1.1 Top-Level Domains
+          50: 
+          51: ```text
+          52: .agents/skills/
+          53: ├── calendar/                     (4 items — flat)   <- NEW
+          54: ├── cli/                          (7 items — flat)
+          55: ├── database/                     (9 items — flat)
+          56: ├── docker/                       (2 items — flat)   <- NEW
+          57: ├── eclipse/                      (4 items — flat)
+          58: ├── email/                        (2 items — flat)   <- NEW
+          59: ├── general/                      (12 flat + 7 sub-groups)
+          60: ├── git/                          (7 sub-groups)
+          61: ├── github/                       (2 flat + 8 sub-groups)
+          62: ├── java/                         (3 items — flat)
+          63: ├── jira/                         (4 items — flat)
+          64: ├── json/                         (3 items — flat)
+          65: ├── markdown/                     (4 items — flat)
+          66: ├── maven/                        (1 item — flat)
+          67: ├── mcp/                          (3 items — flat; 2 pending-move)
+
+          (Showing lines 48-67 of 826. Use offset=68 to continue.)
+          </content>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md
+          limit: 15
+          offset: 118
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/general/skill-library-domain-grouping/SKILL.md</path>
+          <type>file</type>
+          <content>
+          118: ├── setup/                    (4)
+          119: │   ├── dev-env-private-config-symlink
+          120: │   ├── google-oauth-setup
+          121: │   ├── tool-config-directory-symlink
+          122: │   └── tool-config-schema-probe
+          123: │
+          124: ├── skill-dev/                (6)
+          125: │   ├── rule-to-skill-industrialization
+          126: │   ├── script-over-instruction-decomposition
+          127: │   ├── script-language-tier-port
+          128: │   ├── script-template-extraction
+          129: │   ├── skill-cross-reference-audit
+          130: │   └── skill-factory
+          131: │
+          132: └── session-audit/            (12)
+
+          (Showing lines 118-132 of 826. Use offset=133 to continue.)
+          </content>
+    time: 10/5/2026, 6:56:07.119 PM UTC
+    response: "\n\n"
+    duration: 1.913s
+    duration_ms: 1913
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have the taxonomy counts:
+      - `cli/` (7 items — flat) → 8 with the new smoke-test base.
+      - `java/` (3 items — flat) → 4 with the JLine composer.
+      - `general/skill-dev/` (6) → 7 with optional coverage-audit composer.
+      - `git/submodule/setup/` (4) → 5 with the submodule resolution skill.
+
+      I don't have the actual names of cli/ and java/ items in §1.2 (the detailed listing). The §1.1 only gives counts; §1.2 gives the tree per domain (like the git/ tree I read at lines 190-218). For cli/ and java/ the tree listing must be elsewhere (probably §1.2 sections). For the plan, I can state the count updates (7→8, 3→4, 4→5, 6→7) and reference "§1.1 + §1.2 listings + §4 Changelog" without enumerating current item names. That's enough for the plan; the actual taxonomy update happens in execution.
+
+      Now I have everything to write the artifacts. Also note: `java/` exists in the taxonomy as a flat group with 3 items — the physical dir may not exist, but per precedent we create it.
+
+      Also note the `.agents/skills/general/skill-library-domain-grouping/AGENTS.md` system reminder loaded automatically — fine.
+
+      One more check: the available_skills list includes `git-atomic-commit-construction`? Let me verify its path with glob since I'll cross-ref it. And `android-feature-to-shared-kotlin-lib` path (top-level `.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md` per system prompt). Also verify `git-submodule-commit-details` path = `.agents/skills/git-submodule-commit-details/SKILL.md`? In available_skills it shows location... scanning: `git-submodule-commit-details` — hmm, the system prompt list shows locations for most skills; for git-submodule-commit-details I don't recall seeing a location (it's listed without? The list entry: "<name>git-submodule-commit-details</name> ... <location>...</location>"). From prior summary: `git-submodule-commit-details` v2.1.0 exists; taxonomy says `git/submodule/lifecycle/` includes commit-details. So path = `.agents/skills/git/submodule/lifecycle/git-submodule-commit-details/SKILL.md`. Wait, the taxonomy tree at line 215: `lifecycle/ (5) — commit-details, commit-reword, removal, readd, git-submodule-history-removal`. And the available_skills locations for git-submodule-commit-reword etc.: e.g. `git-submodule-commit-reword` location shown as `<location>...`? The listing shows for `git-submodule-history-removal`: `/workspaces/ai-suite/.agents/skills/git/submodule/lifecycle/git-submodule-history-removal/SKILL.md`. So commit-details likely `.agents/skills/git/submodule/lifecycle/git-submodule-commit-details/SKILL.md`.
+
+      For cross-references in the plan (and §3.5), I need accurate paths. Let me glob for the few:
+      - `**/git-atomic-commit-construction/SKILL.md`
+      - `**/git-submodule-commit-details/SKILL.md`
+      - `**/git-submodule-addition/SKILL.md` (confirmed absent)
+      - `.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md`
+      - `**/git-pre-execution-safety-stash/SKILL.md` (for coverage claim)
+      - `**/git-hunk-staging-primitives/SKILL.md`
+
+      Batch glob calls. Also check whether `docs/2026-10-05_..._task.md` exists already (no). Let me run these globs in one batch.
+    thinking_duration: 2.850s
+    thinking_duration_ms: 2850
+    tool_calls:
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/**/git-atomic-commit-construction/SKILL.md
+        result: No files found
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/**/git-submodule-commit-details/SKILL.md
+        result: No files found
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md
+        result: No files found
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/**/git-hunk-staging-primitives/SKILL.md
+        result: No files found
+      - tool: glob
+        args:
+          path: /workspaces/ai-suite
+          pattern: .agents/skills/**/git-pre-execution-safety-stash/SKILL.md
+        result: No files found
+    time: 10/5/2026, 6:56:09.082 PM UTC
+    response: "\n\n"
+    duration: 4.870s
+    duration_ms: 4870
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All five globs returned "No files found" — suspicious. Earlier globs worked (e.g., `**/git-submodule-addition/**` returned nothing, but the taxonomy tree read worked). Maybe the glob tool with `**` and a path containing hidden dirs (`.agents`) has an issue? Earlier I globbed `.agents/skills/**/git-submodule-addition/**` → nothing. And `.agents/skills/general/skill-library-domain-grouping/SKILL.md` read worked via read tool.
+
+      Wait — maybe the glob tool excludes hidden directories by default (dot-prefixed paths). The pattern `.agents/skills/**` — the `.agents` prefix might be treated as hidden and skipped. That would explain "No files found" for ALL these globs, including ones that certainly exist (git-hunk-staging-primitives is in available_skills with location `/workspaces/ai-suite/.agents/skills/git-hunk-staging-primitives/SKILL.md`).
+
+      So the glob tool has a dotfile exclusion. Use the bash `ls`? No — AGENTS warns against heavy tree walks, but a targeted `ls` of exact paths is fine (atomized, no chaining). Better: use `read` on the known paths? Or `bash test -f`? Simplest: targeted `ls` per exact directory, or one `ls` per path. But AGENTS reminder #5 warns about `bash ls` on wide fan-out dirs (`.agents/skills/` itself). Exact subpaths like `.agents/skills/git-atomic-commit-construction` are fine.
+
+      Alternatively use the read tool on the candidate paths directly (read returns error if missing, which is itself the check). That's cleaner: read a tiny file (SKILL.md is long though — read with limit 1? read tool requires offset/limit; `limit: 1` gives 1 line). Let me do read with limit 1 on candidates:
+      - `.agents/skills/git-atomic-commit-construction/SKILL.md` (top-level per available_skills location? The system prompt available_skills for git-atomic-commit-construction doesn't show a location... but git-hunk-staging-primitives shows `/workspaces/ai-suite/.agents/skills/git-hunk-staging-primitives/SKILL.md` — top-level. So git-atomic-commit-construction likely also top-level: `.agents/skills/git-atomic-commit-construction/SKILL.md`.)
+      - `.agents/skills/git-submodule-commit-details/SKILL.md` — top-level? The taxonomy tree says `git/submodule/lifecycle/` includes commit-details, but many skills listed in taxonomy subtrees physically live top-level in this checkout (e.g., available_skills shows `git-submodule-commit-reword` location `/workspaces/ai-suite/.agents/skills/git-submodule-commit-reword/SKILL.md`? Let me check the system prompt: for git-submodule-commit-reword the location line reads `<location>/workspaces/ai-suite/.agents/skills/git-submodule-commit-reword/SKILL.md</location>`? I can't scroll the system prompt, but earlier in the available list I saw entries like `git-submodule-commit-details` without visible location in my memory. Hmm.
+
+      The prior summary said: "`git-submodule-commit-details` v2.1.0 EXISTS: extracts metadata..." and earlier exploration found it. I recorded in Relevant Files: `/workspaces/ai-suite/.agents/skills/git-submodule-commit-details/SKILL.md` — that's top-level. Trust that.
+
+      - `android-feature-to-shared-kotlin-lib`: location in system prompt is `/workspaces/ai-suite/.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md` (top-level; I remember this from the available list).
+      - `git-hunk-staging-primitives`: top-level per system prompt.
+      - `git-pre-execution-safety-stash`: top-level per system prompt.
+
+      So the physical library is FLAT at top-level for pre-grouping skills; taxonomy subtrees are as-designed. This matches the prior finding: "pre-grouping skills are NOT moved; only new skills placed in taxonomy slots" — wait, but the 2026-09-27 plan placed new skills INTO taxonomy slots (`.agents/skills/general/skill-dev/`, `.agents/skills/git/repo/`, `.agents/skills/markdown/`) even though those dirs are absent. And recent new skills (email/, calendar/, docker/, eclipse/) were placed in their taxonomy groups physically (the dirs exist for those). So the pattern: NEW skills go into their taxonomy group dirs (creating them if needed); old top-level skills stay.
+
+      Hmm wait, but actually let me reconsider: were the recent skills physically placed in groups? From the physical inventory in prior summary: top-level dirs include `calendar`, `database`, `docker`, `email`, `general`, `git`, `github`, `opencode`, `mcp`, `markdown`, `software-heritage` — yes, these groups exist physically with skills inside. And java-* skills sit top-level. So placement of new skills into `cli/` and `java/` (creating dirs) is consistent with recent precedent. Good.
+
+      Now verify the 5 paths with read(limit 1). Batch 5 reads. Note: read on a missing file errors — that's fine, it's the check. Let me do it.
+    thinking_duration: 4.053s
+    thinking_duration_ms: 4053
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/git-atomic-commit-construction/SKILL.md
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-atomic-commit-construction/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: git-atomic-commit-construction
+          3: description: Analyze, group, and arrange working-tree changes into logical,
+
+          (Showing lines 1-3 of 1670. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-atomic-commit-construction/AGENTS.md
+          ---
+          name: Git Atomic Commit Construction
+          description: Passive context bridge for analyzing, grouping, and arranging working-tree changes into atomic commits.
+          category: Git & Repository Management
+          ---
+
+          # Git Atomic Commit Construction (Ref)
+
+          This bridge provides passive context for the `git-atomic-commit-construction` skill, which analyzes working-tree
+          changes, groups them by logical concern, isolates formatting from semantic edits, performs hunk-based staging, and
+          proposes an authorization-gated commit sequence.
+
+          It should be invoked whenever the user asks to "commit changes," "stage and commit," "arrange commits," or whenever
+          working-tree changes span multiple concerns that need atomic grouping.
+
+          - **Primary Entry Point**: [.agents/skills/git-atomic-commit-construction/SKILL.md](./SKILL.md)
+          - **Related Skills**:
+              - [`git-commit-edit`](../git-commit-edit/SKILL.md) — for editing commits already in history
+              - [`git-history-refinement`](../git-history-refinement/SKILL.md) — for reconstructing diverged history
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/git-submodule-commit-details/SKILL.md
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-submodule-commit-details/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: git-submodule-commit-details
+          3: description: Extract complete commit metadata from a Git submodule by orchestrating the universal git_commit_metadata_extraction primitive, resolving submodule paths, and retrieving registration URLs for parent sync messages.
+
+          (Showing lines 1-3 of 166. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-submodule-commit-details/AGENTS.md
+          # Git Submodule Commit Details — Agent Bridge
+
+          > **Skill Location:** `.agents/skills/git-submodule-commit-details/SKILL.md`
+
+          ## When to Use This Skill
+
+          Invoke this skill whenever **complete submodule commit metadata** is
+          needed — regardless of what the metadata will be used for (rewording,
+          sync message composition, audit, etc.).
+
+          ## Quick Reference
+
+          | Trigger Phrase | Action |
+          | :--- | :--- |
+          | "extract submodule commit details" | Load skill, run Steps 1–6 |
+          | "get commit metadata from submodule" | Load skill, run Steps 1–6 |
+          | "what does this submodule commit contain?" | Load skill, run Steps 1–6 |
+          | "compose submodule sync commit message" | Load skill, pass output to `git_atomic_commit` |
+          | "reword submodule commit with full metadata" | Load skill, pass output to `git_submodule_commit_reword` |
+
+          ## What This Skill Produces
+
+          A single structured record per submodule SHA containing:
+
+          1. Submodule path and SHA
+          2. Parent SHA(s) — merge-aware
+          3. Full commit message body (zero summarization)
+          4. File changes — additions, deletions, per-file classification
+          5. Author name, email, timestamp
+          6. Committer name, email, timestamp
+          7. Registration URL from `.gitmodules`
+
+          ## Key Commands
+
+          ```bash
+          # Step 1 — resolve pointer
+          GIT_PAGER=cat git -C <parent-repo-path> ls-tree HEAD <submodule-name>
+
+          # Step 2 — extract core metadata
+          GIT_PAGER=cat git -C <submodule-path> log \
+            --format=format:"%P%n%an <%ae>%n%ad%n%cn <%ce>%n%cd%n%B" \
+            <submodule-sha> -1
+
+          # Step 3 — file changes (regular commits)
+          GIT_PAGER=cat git -C <submodule-path> diff-tree \
+            --no-commit-id -r --numstat <submodule-sha>
+
+          # Step 3 — file changes (merge commits)
+          GIT_PAGER=cat git -C <submodule-path> diff <parent1> <parent2> --stat
+
+          # Step 4 — classify added vs modified vs deleted
+          GIT_PAGER=cat git -C <submodule-path> ls-tree -r <parent-sha> | grep <filename>
+
+          # Step 5 — registration URL
+          GIT_PAGER=cat git -C <parent-repo-path> config \
+            --file .gitmodules submodule.<submodule-name>.url
+          ```
+
+          ## Consumer Skills
+
+          - [`git-submodule-commit-reword`](../git-submodule-commit-reword/SKILL.md)
+            — passes the record into the amended commit message
+          - [`git-atomic-commit`](../git-atomic-commit-construction/SKILL.md)
+            — passes the record into submodule sync commit messages
+
+          ---
+
+          > **Note:** Full operational details, pedagogical command breakdowns,
+          > and prohibited behaviors are in `SKILL.md`. This file provides passive
+          > context for quick reference only.
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: android-feature-to-shared-kotlin-lib
+          3: description: Industrial protocol for extracting a vertical feature slice from an Android (Java / Kotlin) application and porting it to a shared pure-Kotlin/JVM library that multiple JVM clients (Android, Kotlin CLI, desktop, server) can consume, with JitPack distribution, submodule-first commit discipline, and CRLF/LF working-tree hygiene.
+
+          (Showing lines 1-3 of 279. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/android-feature-to-shared-kotlin-lib/AGENTS.md
+          # android-feature-to-shared-kotlin-lib — Agent Companion
+
+          This is the passive-context companion for the
+          [`android-feature-to-shared-kotlin-lib`](SKILL.md) skill.
+
+          **When to invoke:**
+
+          - A feature exists in an Android app (Java or Kotlin) and needs to be
+            consumed by a non-Android JVM client (Kotlin CLI, desktop, server).
+          - A Kotlin CLI has a `TODO` stub for behaviour that the Android app
+            already implements.
+          - A multi-platform team wants to introduce a shared Kotlin/JVM library
+            consumed by multiple clients (Android + CLI + future desktop / web).
+          - JitPack distribution is desired (no Maven Central setup yet).
+
+          **Refer all operational logic to [SKILL.md](SKILL.md).**
+
+          **Related skills:**
+
+          - [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
+            — atomic commit decomposition for the library + CLI split.
+          - [`git-submodule-commit-details`](../git-submodule-commit-details/SKILL.md)
+            — parent-repo SHA-sync metadata extraction.
+          - [`dev-env-private-config-symlink`](../dev-env-private-config-symlink/SKILL.md)
+            — runtime `.env` / JSON setup for the CLI consumer.
+          - [`redaction-portability`](../redaction-portability/SKILL.md)
+            — path / identity redaction policy.
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/git-hunk-staging-primitives/SKILL.md
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-hunk-staging-primitives/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: git-hunk-staging-primitives
+          3: description: Generic Git hunk-staging primitives for commit construction and history refinement.
+
+          (Showing lines 1-3 of 225. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-hunk-staging-primitives/AGENTS.md
+          # Git Hunk Staging Primitives — Companion Bridge
+
+          ## Purpose
+
+          This file is the passive bridge for non-skill-aware agent runtimes.
+          The operational Single Source of Truth (SSOT) lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - Any workflow needing to stage file content via
+            `git update-index --cacheinfo` or `git apply --cached` without
+            modifying the working tree.
+          - Commit construction, history refinement, patch manipulation,
+            submodule sync.
+          - When `git add -p` hunk splitting fails and programmatic fallback
+            is needed.
+          - AGENTS.md table row registration (interleaving mandate or
+            skill-factory).
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full operational procedure,
+          including all mandates, script invocations, and verification steps.
+          Do NOT execute any step without first loading `SKILL.md` — this
+          bridge is intentionally non-actionable.
+
+          ## Cross-References
+
+          - `git-atomic-commit-construction` — Composer orchestrating these
+            primitives.
+          - `git-history-refinement` — Composer using primitives for commit
+            splitting.
+          - `git-pre-execution-safety-stash` — Uses staging for safety
+            snapshots.
+          - `script-over-instruction-decomposition` — Mandates Tier-A
+            extraction for all primitives.
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/git-pre-execution-safety-stash/SKILL.md
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-pre-execution-safety-stash/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: git-pre-execution-safety-stash
+          3: description: Capture a verifiable working-tree safety snapshot via apply-not-pop stash before executing any multi-commit sequence, with end-of-session no-op verification and gated drop.
+
+          (Showing lines 1-3 of 420. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-pre-execution-safety-stash/AGENTS.md
+          # Git Pre-Execution Safety Stash — Companion Bridge
+
+          ## Purpose
+
+          This file is the companion bridge for non-skill-aware agent runtimes that auto-load `AGENTS.md` by filename convention.
+          The operational SSOT lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - Before any multi-commit sequence (atomic-commit batches, history refinement, rebase chains, hunk-staged splits).
+          - Before any interactive rebase across more than two pick lines against a dirty working tree.
+          - Whenever the user or a composer skill is about to execute two or more consecutive commits.
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full three-phase protocol (Snapshot → Hold → Verify-and-Release), including the new
+          Phase 1g recovery path for stash-apply failures caused by live editor conflicts. Do NOT execute any step without first
+          loading `SKILL.md` — this bridge is intentionally non-actionable.
+
+          ## Cross-References
+
+          - [`git-stash-triage`](../git-stash-triage/SKILL.md) — prerequisite when the stash list is non-empty at Phase 1a
+          - [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) — primary composer that invokes this
+          skill before every qualifying sequence
+          - [`git-commit-edit`](../git-commit-edit/SKILL.md) — invokes this skill before interactive rebase with hunk-splitting
+          - [`git-history-refinement`](../git-history-refinement/SKILL.md) — invokes this skill before destructive history
+          rewrites
+          - [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) — classifies Phase 3a residue
+          - [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) — optional Phase 3c.1 per-file blob-equality audit
+          - [`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md) — read-only
+          byte-level state capture/compare (complementary proof that a tree did not change)
+
+          </system-reminder>
+    time: 10/5/2026, 6:56:14.003 PM UTC
+    response: |+
+      Glob excludes dot-prefixed trees. Verifying candidate cross-ref paths via direct reads:
+
+    duration: 6.504s
+    duration_ms: 6504
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All five confirmed at top-level:
+      - `.agents/skills/git-atomic-commit-construction/SKILL.md` ✓
+      - `.agents/skills/git-submodule-commit-details/SKILL.md` ✓
+      - `.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md` ✓
+      - `.agents/skills/git-hunk-staging-primitives/SKILL.md` ✓
+      - `.agents/skills/git-pre-execution-safety-stash/SKILL.md` ✓
+
+      Interesting: `git-submodule-commit-details/AGENTS.md` references `../git-submodule-commit-reword/SKILL.md` (top-level) and `../git-atomic-commit-construction/SKILL.md` — so commit-reword is top-level too. Good.
+
+      Note: git-pre-execution-safety-stash AGENTS.md references `../git/basic/audit/git-worktree-state-fingerprint/SKILL.md` — so `git/basic/audit/` EXISTS physically. So some grouped dirs do exist. Fine.
+
+      Also important: `git-atomic-commit-construction` SKILL.md is 1670 lines — the detached-HEAD handling at lines 159-162 per prior summary was actually... hmm, prior summary said "git-atomic-commit-construction §line 159-162 (main-repo detached HEAD handling)". OK.
+
+      Now write the artifacts. Also: do I need to check `git-submodule-rules.md` §1/§2/§3 exact section titles for the Rule Compliance Reference? I have §1 Never Commit to Detached HEAD, §2 branch checkout, §3 Recovery. Good enough.
+
+      Also `scripting-language-selection-rules.md` exists ✓ (glob showed it).
+
+      Rule compliance reference links must resolve from `docs/`:
+      - `../ai-agent-rules/ai-agent-planning-rules.md` ✓
+      - `../ai-agent-rules/ai-rule-standardization-rules.md` ✓
+      - `../ai-agent-rules/scripting-language-selection-rules.md` ✓
+      - `../ai-agent-rules/git-submodule-rules.md` ✓
+      - `../ai-agent-rules/git-commit-message-rules.md` ✓
+      - `../ai-agent-rules/redaction-portability-rules.md` ✓ (glob showed)
+      - `../.agents/skills/markdown-generation/SKILL.md` — does markdown-generation exist? Available skills list has `markdown-generation` location `/workspaces/ai-suite/.agents/skills/markdown-generation/SKILL.md`? Hmm, from the system prompt: `<name>markdown-generation</name>` with location... the list shows `<location>/workspaces/ai-suite/.agents/skills/markdown-generation/SKILL.md</location>`? I recall markdown-generation is listed under markdown/ group? The taxonomy says `markdown/ (4 items — flat)` and the prior plan referenced `../.agents/skills/markdown-generation/SKILL.md` (top-level) — and it worked (their plan was linted). Also the taxonomy update line said markdown/ 4→5 for the unexecuted plan (markdown-relative-link-rebase). Current markdown/ items: from my prior physical inventory: `markdown-generation`, `text-block-indent-override`, `markdown-section-to-companion-doc`, `skill-doc-metadata-separation` — but are they physically in `.agents/skills/markdown/` or top-level? The available_skills locations: `markdown-generation` → `<location>/workspaces/ai-suite/.agents/skills/markdown-generation/SKILL.md</location>` (I believe top-level, since the system prompt list has many top-level). Wait, the system prompt available_skills for `markdown-section-to-companion-doc` shows `<location>/workspaces/ai-suite/.agents/skills/markdown/markdown-section-to-companion-doc/SKILL.md</location>` — yes! I recall seeing `markdown/markdown-section-to-companion-doc`. And `skill-doc-metadata-separation` → `.agents/skills/markdown/skill-doc-metadata-separation/SKILL.md`. And `markdown-generation` → `.agents/skills/markdown-generation/SKILL.md` (top-level)? Hmm, the taxonomy says markdown/ (4 items — flat) but physically maybe split.
+
+      For my plan's Rule Compliance Reference, use the exact path that works: prior plan used `../.agents/skills/markdown-generation/SKILL.md` and it linted OK. But wait — prior plan also linked `../.agents/skills/skill-factory/SKILL.md` (top-level) and `../.agents/skills/general/skill-library-domain-grouping/SKILL.md` (grouped). Both exist. For safety, verify markdown-generation path with a quick read(limit 1). Also verify `skill-cross-reference-audit` path used in verification matrix: `.agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py` (prior plan used it; but did it work? The plan was unexecuted, so unknown. Verify now via read). Also `git-commit-dangling-link-audit/scripts/detect-dangling-links.py`, `skill-factory/scripts/verify-doc-invocations.py`. Verify these three script paths with read(limit 1) — quick batch. Also `.agents/skills/redaction-portability/SKILL.md` (available_skills says top-level ✓).
+
+      Also for §6 I might reference `markdownlint-cli2` invocation via mise: `mise x node -- markdownlint-cli2 ...`.
+
+      Let me verify the 4 paths: markdown-generation SKILL.md, audit-cross-refs.py, detect-dangling-links.py, verify-doc-invocations.py. Then write files.
+    thinking_duration: 3.896s
+    thinking_duration_ms: 3896
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py
+          limit: 2
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/markdown-generation/SKILL.md</path>
+          <type>file</type>
+          <content>
+          1: ---
+          2: name: markdown-generation
+
+          (Showing lines 1-2 of 337. Use offset=3 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/markdown-generation/AGENTS.md
+          # AGENTS.md (Markdown Generation)
+
+          Refer to [SKILL.md](./SKILL.md) and [markdown-generation-rules.md](../../../ai-agent-rules/markdown-generation-rules.md)
+          for the active operational protocol for generating lint-compliant documentation.
+
+          ## Mandates
+
+          - **Line Length**: 120-character limit (MD013).
+          - **Lint Fix**: Run the full 3-step
+            **[Markdown Lint Workflow](../general/markdown-lint-workflow/SKILL.md)** pipeline
+            before submission (Step 1: `markdownlint-cli2 --fix`, Step 2: companion scripts
+            in execution order, Step 3: manual fix + audit).
+          - **Zero Angle Brackets**: Escaping all `<` and `>` tags in technical context.
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py
+          limit: 2
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """Audit all skills under .agents/skills/ for cross-reference issues.
+
+          (Showing lines 1-2 of 256. Use offset=3 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/general/skill-cross-reference-audit/AGENTS.md
+          # Skill Cross-Reference Audit — Companion Bridge
+
+          ## Purpose
+
+          This bridge provides passive context for non-skill-aware agent runtimes. The operational Single Source of Truth (SSOT) lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - You need to audit the entire skill library for cross-reference issues: skill names duplicated in both Composition and Related Skills sections, missing AGENTS.md bridge files, missing YAML frontmatter, empty Related Skills sections, or missing Related Skills in skills that have Composition sections.
+          - You are running the skill-factory Post-Drafting Checklist and need to verify the Composition Audit step.
+          - You have renamed a skill and need to confirm all references are clean.
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the audit scan → report review → fix workflow and all CLI flags (`--skills-dir`, `--json`). Do NOT execute any step without first loading `SKILL.md`.
+
+          ## Cross-References
+
+          - [`skill-factory`](../skill-factory/SKILL.md) — consumer of this audit in §3 Composition Audit
+          - [`script-template-extraction`](../../script-template-extraction/SKILL.md) — companion base skill for template extraction
+          - [`script-over-instruction-decomposition`](../../script-over-instruction-decomposition/SKILL.md) — decomposition pattern this skill's audits support
+          - [`directory-tree-audit`](../directory-tree-audit/SKILL.md) — sibling audit skill for folder depth
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/skill-factory/scripts/verify-doc-invocations.py
+          limit: 2
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-commit-dangling-link-audit/scripts/detect-dangling-links.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """Pre-commit dangling markdown link detector (git-aware).
+
+          (Showing lines 1-2 of 192. Use offset=3 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-commit-dangling-link-audit/AGENTS.md
+          # Git Commit Dangling-Link Audit — Companion Bridge
+
+          ## Purpose
+
+          This file is the companion bridge for non-skill-aware agent runtimes.
+          The operational SSOT lives in [`SKILL.md`](SKILL.md).
+
+          ## When This Skill Applies
+
+          - You are about to finalize a commit that moves/reorders paths, and need
+            to verify every markdown relative link survives in the committed tree
+          - A link target is missing from BOTH the working tree and the git index,
+            and you need evidence of which session moved the path
+
+          ## Operational Procedure
+
+          Read [`SKILL.md`](SKILL.md) for the full protocol (scope gate, preview
+          sweep, drift gate, decision gate, prompt gate, verify gate) and the CLI
+          contract of `scripts/detect-dangling-links.py`. Do NOT execute any step
+          without first loading `SKILL.md` — this bridge is intentionally
+          non-actionable.
+
+          ## Cross-References
+
+          - [`opencode-session-path-attribution`](../opencode/opencode-session-path-attribution/SKILL.md)
+            — drift-gate evidence provider
+          - [`opencode-installed-plugin-lookup`](../opencode/opencode-installed-plugin-lookup/SKILL.md)
+            — transitive: logger location for attribution
+          - [`deleted-files-audit`](../deleted-files-audit/SKILL.md) —
+            complementary audit
+          - [`gitignored-reference-detection`](../gitignored-reference-detection/SKILL.md)
+            — sibling audit
+
+          </system-reminder>
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/skill-factory/scripts/verify-doc-invocations.py
+          limit: 2
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/skill-factory/scripts/verify-doc-invocations.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """verify-doc-invocations.py — owned by skill-factory mandate #7.
+
+          (Showing lines 1-2 of 154. Use offset=3 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/skill-factory/AGENTS.md
+          # AGENTS.md (Skill Factory)
+
+          Refer to [SKILL.md](./SKILL.md) for the active operational protocol for generating "Skill-First" AI Agent capabilities with absolute data fidelity and zero-leak portability.
+
+          ## Mandates
+
+          - **Fidelity Scan**: Mandatory identification of all user specifics before drafting.
+          - **Zero Omission**: Technical workflows and dependencies MUST NOT be summarized or removed.
+          - **Redaction Integration**: Automatically apply the **Redaction & Portability** skill to all factory-generated output.
+          - **Invocation Convention** (mandate #7): Skill docs MUST use simplified invocation forms; run `scripts/verify-doc-invocations.py` as a post-creation audit step.
+
+          </system-reminder>
+    time: 10/5/2026, 6:56:20.566 PM UTC
+    response: "\n\n"
+    duration: 6.550s
+    duration_ms: 6550
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All verification paths confirmed. Note interesting details from the auto-loaded AGENTS.md files:
+      - `markdown-generation/AGENTS.md` references `../general/markdown-lint-workflow/SKILL.md` → so markdown-lint-workflow is physically at `.agents/skills/general/markdown-lint-workflow/`. And my verification matrix should use the markdown-lint-workflow 3-step pipeline. Also note markdown-generation is top-level physically.
+      - `skill-cross-reference-audit` is at `.agents/skills/general/skill-cross-reference-audit/` ✓.
+      - `git-commit-dangling-link-audit` top-level ✓.
+      - `skill-factory` top-level ✓.
+
+      Now write the two artifacts. Also note the taxonomy's physical group dirs: `general/` physically has skill-dev? Taxonomy line 124 shows skill-dev (6) but the system reminder from skill-cross-reference-audit AGENTS.md says `../skill-factory/SKILL.md` from general/skill-cross-reference-audit → i.e., `general/skill-factory`? Wait: `skill-cross-reference-audit` is at `.agents/skills/general/skill-cross-reference-audit/` and its AGENTS.md links `../skill-factory/SKILL.md` → that resolves to `.agents/skills/general/skill-factory/SKILL.md`. But we confirmed `skill-factory` exists at top-level `.agents/skills/skill-factory/SKILL.md`. Hmm! So is there ALSO `general/skill-factory`? Or is the link broken (pointing to taxonomy as-designed)? The available_skills location for skill-factory: `<location>&lt;built-in&gt;</location>`? No wait — that's customize-opencode. The skill-factory entry shows `<location>/workspaces/ai-suite/.agents/skills/skill-factory/SKILL.md</location>`? Hmm, I read `.agents/skills/skill-factory/SKILL.md` successfully at top-level (in prior state and just now `verify-doc-invocations.py`). So `general/skill-factory` may not exist and that AGENTS.md link may be a pre-existing dangling (taxonomy as-designed). Not my concern now.
+
+      Actually wait — this matters for placement: taxonomy says `general/skill-dev/` contains skill-factory, script-over-instruction-decomposition, etc. But physically skill-factory is top-level. So the "new skills go into taxonomy slots" precedent — was it really followed for recent skills? email/ and calendar/ dirs exist physically (per prior inventory). So yes for NEW top-level domain dirs. For nested general/skill-dev/ — the unexecuted 2026-09-27 plan would have created it. Since it was never executed, there's no precedent of creating nested group dirs. But taxonomy §1.2 tree shows skill-dev/ under general/. Creating `.agents/skills/general/skill-dev/session-skill-coverage-audit/` follows the taxonomy.
+
+      Hmm, but wait: if `general/skill-factory` doesn't exist physically but the taxonomy says skill-dev contains skill-factory... this is exactly the "as-designed vs as-built" drift documented in the prior plan §2.5. OK.
+
+      For MY plan, keep placements per taxonomy:
+      - `.agents/skills/cli/cli-smoke-test-piped-eof-pty/` (create `cli/`).
+      - `.agents/skills/java/jvm-cli-jline-console-history-integration/` (create `java/`).
+      - `.agents/skills/git/submodule/setup/git-submodule-detached-head-branch-resolution/` (create `git/submodule/setup/`).
+      - Optional: `.agents/skills/general/skill-dev/session-skill-coverage-audit/` (create `general/skill-dev/`).
+
+      Now, the plan's own H1: bracket or not? Let me settle definitively by reading the planning rule §1 H1 mandate directly (I should quote it correctly in Rule Compliance Reference anyway). Read ai-agent-planning-rules.md around the H1 rule. Quick grep for "H1" in the file.
+    thinking_duration: 4.052s
+    thinking_duration_ms: 4052
+    tool_calls:
+      - tool: grep
+        args:
+          path: /workspaces/ai-suite/ai-agent-rules/ai-agent-planning-rules.md
+          pattern: H1|Goal Description
+        result: |
+          Found 11 matches
+          /workspaces/ai-suite/ai-agent-rules/ai-rule-standardization-rules.md:
+            Line 123: 1. **H1 Title**: Matches the YAML title but is more formal (e.g., `# Git Submodule Management Rules`).
+
+
+          /workspaces/ai-suite/ai-agent-rules/ai-agent-planning-rules.md:
+            Line 18: ## 1. Goal Description & Versioning
+
+            Line 22: - **H1 Header Versioning**: Every implementation plan MUST use the format `# [Goal Description] (vN)`
+
+            Line 23:   as its primary H1 title (e.g., `# [Setup Authentication] (v1)`).
+
+            Line 25:   H1 header. It must contain a bulleted list of the specific industrial rules (with relative links) being followed in
+
+
+          /workspaces/ai-suite/ai-agent-rules/markdown-generation-rules-additions.md:
+            Line 41: **Symptom:** Skipped heading levels (e.g., H1 → H3, H2 → H4).
+
+            Line 52: # Main Title       <!-- H1 -->
+
+            Line 59: # Main Title       <!-- H1 -->
+
+            Line 63: **Best Practice:** Maintain strict heading hierarchy: H1 → H2 → H3 → H4.
+
+            Line 384: **Pattern:** H3 headers following H1 (skipped H2).
+
+            Line 388: **Resolution:** Normalized all heading levels to sequential hierarchy (H1 → H2 → H3).
+    time: 10/5/2026, 6:56:27.219 PM UTC
+    response: |+
+      Verifying the exact H1 format mandate in the planning rules before authoring:
+
+    duration: 6.362s
+    duration_ms: 6362
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The rule literally says: `# [Goal Description] (vN)` with example `# [Setup Authentication] (v1)`. So brackets ARE literal. Use:
+
+      `# [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)`
+
+      Hmm — but markdownlint MD037 "spaces inside emphasis markers"? Brackets in H1 are fine. MD036? No. Fine.
+
+      Now write task.md and the plan. Let me compose carefully, keeping lines ≤120 chars.
+
+      First task.md. Precedent format (from prior summary):
+
+      ```
+      # Task — Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills
+
+      Session: `ses_ef32b832fffeev43Kf1fl4CmLw`  
+      Worktree: `/workspaces/ai-suite`
+
+      ## Phase 0 — Planning Artifacts
+      - [ ] Create task.md and implementation-plan_v1.md
+      ...
+      ```
+
+      Wait, the prior summary said task.md format: `# Task — <title>`, Session: `ses_...` + Worktree line, Phase checkboxes with `[x]` timestamps `[2026-09-27 16:25]`. Let me check the actual prior task.md to copy the exact style. Read it.
+    thinking_duration: 937ms
+    thinking_duration_ms: 937
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/docs/2026-09-27_f1dd554edffeIjEwbPkY123xx1_move-planning-artifact-naming-into-planning-subdirectory_task.md
+        result: |-
+          <path>/workspaces/ai-suite/docs/2026-09-27_f1dd554edffeIjEwbPkY123xx1_move-planning-artifact-naming-into-planning-subdirectory_task.md</path>
+          <type>file</type>
+          <content>
+          1: # Task — Document the Skill-Folder Relocation Workflow as Reusable Layered Skills
+          2: 
+          3: Session: `ses_f1dd554edffeIjEwbPkY123xx1` · Worktree: `/Users/dk/lab-data/ai-suite-worktrees/migrate-rule-file-into-skill`
+          4: 
+          5: ## Phase 0 — Planning Artifacts
+          6: 
+          7: - [x] Pre-plan context gathering (skills, scripts, rules, taxonomy, registry) `[2026-09-27 16:25]`
+          8: - [x] Write implementation-plan v1 `[2026-09-27 16:25]`
+          9: - [x] Lint plan + task (markdownlint-cli2) `[2026-09-27 16:28]`
+          10: - [x] Present plan for user approval `[2026-09-27 16:28]`
+          11: 
+          12: ## Phase 1 — C1: NEW base `markdown-relative-link-rebase-on-path-move`
+          13: 
+          14: - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+          15: - [ ] Create `scripts/rebase-relative-links.py` (Tier 1)
+          16: - [ ] Smoke-test: fixture `--check`/`--apply`/re-`--check`; real-map regression `--check`
+          17: - [ ] Taxonomy `markdown/` 4 → 5 + Changelog
+          18: - [ ] Register row in `AGENTS-legacy.md` (alphabetical)
+          19: - [ ] §6 checks + commit C1
+          20: 
+          21: ## Phase 2 — C2: NEW base `git-linked-worktree-root-resolve`
+          22: 
+          23: - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+          24: - [ ] Create `scripts/resolve-worktree-roots.py` (Tier 1)
+          25: - [ ] Smoke-test: worktree run (`is_linked_worktree: true`) + main-repo run (`false`)
+          26: - [ ] Taxonomy `git/repo/` 4 → 5 + Changelog
+          27: - [ ] Register row in `AGENTS-legacy.md` (alphabetical)
+          28: - [ ] §6 checks + commit C2
+          29: 
+          30: ## Phase 3 — C3: NEW composer `skill-library-folder-relocation`
+          31: 
+          32: - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+          33: - [ ] Create `scripts/relocate-skill-folder.py` (Tier 1)
+          34: - [ ] Dry-run composer against scratch fixture skill tree
+          35: - [ ] Taxonomy `general/skill-dev/` 6 → 7 + Changelog
+          36: - [ ] Register row in `AGENTS-legacy.md` (alphabetical, composer annotation)
+          37: - [ ] Cross-references (§3.5): skill-factory §5.1 + §2.4, taxonomy §3.3, dangling-audit, markdown-generation
+          38: - [ ] §6 checks + commit C3
+          39: 
+          40: ## Phase 4 — Enrichments
+          41: 
+          42: - [ ] ENRICH-1 `git-commit-preview-verify`: script fix + SKILL.md edge case → commit C4
+          43: - [ ] ENRICH-2 `opencode-current-session-id`: worktree fallback + SKILL.md → part of C5
+          44: - [ ] ENRICH-3 `scratch-artifact-naming`: worktree-aware discovery + SKILL.md → part of C5
+          45: - [ ] ENRICH-4 `markdown-lint-workflow`: custom-rule prerequisite note → commit C6
+          46: 
+          47: ## Phase 5 — Close-out
+          48: 
+          49: - [ ] Full §6 verification matrix
+          50: - [ ] `task.md` statuses + timestamps
+          51: - [ ] Propose planning-artifact disposition (commit vs trash) — user confirmation
+
+          (End of file - total 51 lines)
+          </content>
+    time: 10/5/2026, 6:56:33.660 PM UTC
+    response: "\n\n"
+    duration: 2.831s
+    duration_ms: 2831
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have the exact task.md format. Now write both files. I'll use the write tool.
+
+      Plan file: `docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md`
+
+      Let me compose the full plan text carefully. Keep lines ≤120 chars. Check MD013: line_length 120, code_blocks false, tables false → prose lines must be ≤120. Also MD007 indent 4 for lists (continuation indent 4? MD007 indent 4 means nested list indentation = 4 spaces). Keep simple.
+
+      Also the relative-links rule: every markdown link target must exist. All my links verified. Careful with links in tables (fine).
+
+      Also MD024 duplicate headings? Config? Unknown — avoid duplicate heading text. MD025 single H1 ✓. MD041 first line H1 ✓.
+
+      Angle brackets: markdown-generation mandates zero raw `<` `>` in technical context — escape them (e.g., `<input>` → `\<input\>` or use backticks; in code spans it's fine? The mandate says escape all `<`/`>` tags in technical context. In backtick code spans, raw `<` is fine per markdownlint MD033 (inline HTML disabled in code). But the mandate says escape. Prior plan used `<worktree>`, `<repo-root>`, `<skill>` etc. raw inside backticks and linted fine. I'll follow prior plan style: raw in code spans, escaped outside.
+
+      Now content. I'll write with `##` sections matching precedent.
+
+      Draft plan:
+
+      ---
+
+      # [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)
+
+      ## Rule Compliance Reference
+
+      - [`ai-agent-planning-rules.md`](../ai-agent-rules/ai-agent-planning-rules.md) — §1 plan versioning/H1,
+        §6 iterative planning, §7 Maximum Literal Detail, §10 artifact location + `task.md`.
+      - [`ai-rule-standardization-rules.md`](../ai-agent-rules/ai-rule-standardization-rules.md) — §2 Skill-First
+        Architecture, Layered Composition Mandate, cross-repository BLOCKING test; §4 Script Delivery /
+        Redaction / Artifact Linting mandates.
+      - [`scripting-language-selection-rules.md`](../ai-agent-rules/scripting-language-selection-rules.md) — four-tier
+        language framework (all new scripts: Tier 1 Python 3.12+).
+      - [`git-submodule-rules.md`](../ai-agent-rules/git-submodule-rules.md) — §1 Never Commit to Detached HEAD,
+        §2 branch checkout, §3 recovery (rule SSOT behind §3.3).
+      - [`git-commit-message-rules.md`](../ai-agent-rules/git-commit-message-rules.md) — §5 submodule sync messages.
+      - [`markdown-generation/SKILL.md`](../.agents/skills/markdown-generation/SKILL.md) — markdown authoring + lint
+        standards (markdownlint-cli2 direct binary; no `npx`).
+      - [`skill-factory/SKILL.md`](../.agents/skills/skill-factory/SKILL.md) — §2.0 layering decision, §2.1–§2.4
+        creation/registration, §2.2.2 script delivery, §3 Post-Drafting Checklist, §5.2.2 composer discipline.
+      - [`skill-library-domain-grouping/SKILL.md`](../.agents/skills/general/skill-library-domain-grouping/SKILL.md) — §1
+        taxonomy placement, §3 change protocol, §4 Changelog discipline.
+      - [`planning-artifact-naming/SKILL.md`](../.agents/skills/general/planning/planning-artifact-naming/SKILL.md) — artifact
+        naming formula + versioning rules.
+      - [`redaction-portability/SKILL.md`](../.agents/skills/redaction-portability/SKILL.md) — portability/PII audit for
+        every produced artifact.
+      - [`git-atomic-commit-construction/SKILL.md`](../.agents/skills/git-atomic-commit-construction/SKILL.md) — atomic
+        commit arrangement + message delivery.
+      - [`script-over-instruction-decomposition/SKILL.md`](../.agents/skills/script-over-instruction-decomposition/SKILL.md)
+        — script-tier extraction mandate + Consumer Discipline.
+
+      Wait — `redaction-portability/SKILL.md` path: available_skills location is `/workspaces/ai-suite/.agents/skills/redaction-portability/SKILL.md` (top-level) ✓.
+
+      `planning-artifact-naming` path: `.agents/skills/general/planning/planning-artifact-naming/SKILL.md` ✓ (taxonomy shows general/planning/ exists — the 2026-09-27 session moved it there).
+
+      `script-over-instruction-decomposition`: available_skills location `/workspaces/ai-suite/.agents/skills/script-over-instruction-decomposition/SKILL.md` (top-level) ✓.
+
+      ## User Questions & Answers
+
+      ### Q1 — "Is this workflow correctly documented?"
+
+      A1: PARTIALLY. The workflow-analysis report
+      (`scratch/ef32b832fffeev43Kf1fl4CmLw/workflow-analysis_2026-10-05_17-54-26.md`) documents WHAT happened,
+      and several sub-workflows are already owned by existing skills (§2.5), but three gaps (§2.1–§2.3) exist:
+      submodule detached-HEAD resolution, JLine console-history integration, and interactive-CLI smoke testing.
+      This plan closes them.
+
+      ### Q2 — "New skills or enrichments?"
+
+      A2: New skills only (no enrichment needed — §2.5 lists the already-covered sub-workflows), decided by the
+      skill-factory §2.0 layering test:
+
+      - NEW base `cli-smoke-test-piped-eof-pty` — generic interactive-CLI harness; JVM-agnostic (§3.1).
+      - NEW composer `jvm-cli-jline-console-history-integration` — composes the base for verification (§3.2).
+      - NEW skill `git-submodule-detached-head-branch-resolution` — rule-backed routine operation, no existing
+        owner (§3.3).
+      - OPTIONAL composer `session-skill-coverage-audit` — the assessment procedure itself (§3.4).
+
+      ### Q3 — Commit/push scope
+
+      A3: Four atomic commits (§5), one per skill, in dependency order (base first). Push is OUT OF SCOPE.
+      The optional §3.4 skill becomes commit C4 only if approved.
+
+      ## 1. Goal & Context
+
+      The session `ses_ef32b832fffeev43Kf1fl4CmLw` ("Fix account-ledger CLI: checks and arrow key") fixed three
+      defects in a Kotlin/JVM CLI application and its shared library submodules:
+
+      1. A "sheet account not configured" error printed multiple times per invocation → deduplicated.
+      2. Account checks validated only one of the from/to/via accounts → aggregation across all accounts.
+      3. Up-arrow did not recall command history → JLine console line-reader integration.
+
+      Delivery: ten atomic commits across the parent repo and two submodules (C1 `ce8fdab`, L1 `c3ea22d`,
+      L2 `a9edbb4`, Lsync `9a904d5`, L3 `36dbd60`, P1 `2764495`, P2 `c306991`, P3 `8ba9356`, R1 `1bc0b54`,
+      R2 `0854fb4`), safety stashes, submodule sync messages, and interactive smoke tests (piped / EOF / pty).
+      P1–P3 + both submodule commits were pushed by the user; R1/R2 remain local.
+
+      The question: is THIS workflow documented as reusable skills? Audit result: partially (§2). This plan
+      converts the three undocumented sub-workflows into layered skills.
+
+      Worktree: `/workspaces/ai-suite` (HEAD `22eec2a6`). All paths below are relative to it.
+
+      ## 2. Gap Analysis
+
+      ### 2.1 G1 — Submodule detached-HEAD resolution: rules exist, no skill
+
+      - Rule SSOT: [`git-submodule-rules.md`](../ai-agent-rules/git-submodule-rules.md) §1 (Never Commit to a
+        Detached HEAD), §2 (checkout the default branch), §3 (recovery from detached HEAD) mandate the behaviour
+        but name no executable procedure.
+      - No skill owns it. Nearest neighbours are different directions:
+        - `git-submodule-missing-revision-recovery` — materializes the detached state at the recorded SHA
+          (opposite direction).
+        - `git-submodule-pointer-repair` — parent-history gitlink repair.
+        - `git-atomic-commit-construction` — handles a detached main repo, not submodules.
+        - `git-submodule-addition` — taxonomy-listed under `git/submodule/setup/` but absent in this checkout;
+          in any case covers addition, not pre-commit branch resolution.
+      - Session evidence: both submodules sat detached at their pinned SHAs (lib `26554d6`, common-lib `fe171ed`)
+        while their `master` branches were ahead (`4f5b63c` / `a041e6e`); the session fetched, checked out
+        `master` carrying local edits, and fast-forwarded when behind — then all subsequent commits landed on
+        branches and the parent gitlinks were synced.
+
+      ### 2.2 G2 — JLine console-history integration is undocumented
+
+      - No skill in the library mentions JLine (`[Jj]line` → zero matches) or console line-reader integration.
+      - Session evidence (from the report + commit P3 `8ba9356`): JLine 3.30.17 integrated into a Kotlin/JVM CLI:
+        - self-contained bundle `org.jline:jline:3.30.17` (reader + terminal + providers + native libs) —
+          `jline-terminal-jni` NOT needed; JLine 4.x exists but 3.x API stability was chosen;
+        - pluggable indirection in the shared JVM library (`ConsoleInputUtils.setLineReader { prompt -> ... }`,
+          commit C1 `ce8fdab`) — the shared library carries NO JLine dependency, preventing propagation to
+          Android consumers;
+        - CLI-side initialization (`TerminalBuilder.builder().system(true).build()` + `LineReaderBuilder`),
+          `EndOfFileException` → `EOFException`, `UserInterruptException` → exit 130, dumb-terminal fallback;
+        - ~72 console-read sites migrated away from `Scanner(System.in)` (which conflicts with JLine raw mode);
+        - GraalVM native-image caveat (the project ships a native-image workflow; JLine may need
+          reflection/resource configuration).
+
+      ### 2.3 G3 — Interactive-CLI smoke testing (piped / EOF / pty) is undocumented
+
+      - No skill covers smoke-testing an interactive CLI (`smoke` matches no skill; no pty/`script` usage).
+      - Session evidence: three modes were exercised and captured under `build/agent/`:
+        1. piped: `printf '0\n' | <jar command>` → `smoke-piped.log`;
+        2. EOF: empty stdin → `smoke-eof.log`;
+        3. pty: `printf '0\n' | script -qec "stty cols 80 rows 24; <jar command>" /dev/null` → `smoke-pty.log`
+           (JLine bracketed-paste escape codes prove the line reader is active; a 0x0 pty size caused rendering
+           artifacts, hence the explicit `stty` sizing).
+
+      ### 2.4 G4 (OPTIONAL) — the coverage-assessment procedure itself has no owner
+
+      - The procedure that produced §2 (workflow report → tool-call inventory → skill-library matching →
+        coverage matrix) is reusable but unowned. A meta composer could automate the deterministic half.
+      - OPTIONAL: included for user decision at approval; not part of the assessed workflow.
+
+      ### 2.5 Already documented (no action)
+
+      - Atomic commit arrangement / safety stash / hunk staging — `git-atomic-commit-construction`,
+        `git-pre-execution-safety-stash`, `git-hunk-staging-primitives`.
+      - Submodule sync-message metadata — `git-submodule-commit-details` (v2.1.0; composes
+        `git-commit-metadata-extraction`; consumed by `git-submodule-commit-reword` and
+        `git-atomic-commit-construction`).
+      - Workflow analysis — `opencode-session-problem-solution-workflow-analysis`.
+
+      ### 2.6 Flagged pre-existing drift (OUT OF SCOPE — do not fix in this plan)
+
+      - Taxonomy §1.1/§1.2 is as-designed for several groups whose folders are absent in this checkout
+        (`cli/`, `java/`, `general/skill-dev/`, `git/submodule/setup/` items); pre-grouping skills live at
+        `.agents/skills/` top level. New skills follow their taxonomy slots (precedent: `email/`, `calendar/`,
+        `docker/` groups were created for new skills; pre-grouping skills are never moved).
+      - Dirty submodule pointers + modified `.opencode/package*.json` in the ai-suite working tree; excluded
+        from all commits.
+
+      ## 3. Deliverables
+
+      ### 3.1 NEW-BASE-1 — `cli-smoke-test-piped-eof-pty`
+
+      Placement: `.agents/skills/cli/cli-smoke-test-piped-eof-pty/` (taxonomy: `cli/` flat group, 7 → 8 items).
+
+      Files:
+
+      - `SKILL.md` — frontmatter, Scope & Intent, Environment & Dependencies, CLI contract, mode semantics,
+        exit codes, Prohibited Actions, Script Reference, `## Composition by Higher-Level Skills` (lists §3.2),
+        Related Skills, pointer-only `## Changelog` / `## Traceability`.
+      - `AGENTS.md` — companion bridge (5 required sections per skill-factory §2.3.2, no frontmatter).
+      - `CHANGELOG.md` — creation entry.
+      - `TRACEABILITY.md` — source session `ses_ef32b832fffeev43Kf1fl4CmLw`, evidence (three smoke logs), extraction rationale.
+      - `scripts/run-cli-smoke-test.py` — Tier 1 Python 3.12+, stdlib only.
+
+      CLI contract:
+
+      ```bash
+      python3 scripts/run-cli-smoke-test.py --command "<shell command>" [--input "<stdin text>"]
+          [--out-dir <dir>] [--mode piped|eof|pty|all] [--rows 24] [--cols 80]
+          [--timeout <sec>] [--json]
+      ```
+
+      Semantics:
+
+      1. `piped` — `printf '<input>' | <command>`; log `<out-dir>/smoke-piped.log`.
+      2. `eof` — empty stdin; log `smoke-eof.log`.
+      3. `pty` — `script -qec "stty cols <cols> rows <rows>; <command>" /dev/null`; log `smoke-pty.log`;
+         document the util-linux vs BSD/macOS `script` invocation difference.
+      4. `--timeout` mandatory (default 60s) — kills hung interactive commands; per-mode exit code + log path
+         reported; `--json` summary; harness exit 0 when all requested modes complete, 1 when any mode times out.
+
+      ### 3.2 NEW-COMPOSER-1 — `jvm-cli-jline-console-history-integration`
+
+      Placement: `.agents/skills/java/jvm-cli-jline-console-history-integration/` (taxonomy: `java/` flat group,
+      3 → 4 items).
+
+      Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`,
+      `scripts/find-console-read-sites.py` (Tier 1 Python 3.12+, stdlib only).
+
+      Composition Rationale (in `SKILL.md`): composes
+
+      - `cli-smoke-test-piped-eof-pty` (base §3.1) — piped / EOF / pty verification of the integrated CLI;
+      - `find-console-read-sites.py` — deterministic inventory of `readLine` / `Scanner(System.in)` /
+        `readln` sites to migrate;
+      - consumers: [`android-feature-to-shared-kotlin-lib`](../.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md)
+        (shared-JVM-library discipline) — cross-reference only.
+
+      Script contract:
+
+      ```bash
+      python3 scripts/find-console-read-sites.py --root <dir> [--json]
+      ```
+
+      Prose steps (gates preserved): dependency selection (self-contained bundle, version catalog entry,
+      CLI module only) → shared-library pluggable reader with NO JLine dependency → CLI-side initialization +
+      exception mapping (`EndOfFileException` → `EOFException`, `UserInterruptException` → exit 130) →
+      site migration → smoke test (delegates to base §3.1) → GraalVM native-image caveat note.
+
+      ### 3.3 NEW-1 — `git-submodule-detached-head-branch-resolution`
+
+      Placement: `.agents/skills/git/submodule/setup/git-submodule-detached-head-branch-resolution/`
+      (taxonomy: `git/submodule/setup/`, 4 → 5 items).
+
+      Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`,
+      `scripts/resolve-submodule-branches.py` (Tier 1 Python 3.12+, stdlib only).
+
+      CLI contract:
+
+      ```bash
+      python3 scripts/resolve-submodule-branches.py [--root <parent-repo>] [--submodule <name>]...
+          [--default-branch master] (--check | --apply) [--json]
+      ```
+
+      Semantics:
+
+      1. Enumerate submodules (recursive optional) via `git submodule status`; classify each: detached at
+         recorded SHA / on branch / uninitialized.
+      2. `--check` — report submodules needing resolution; exit 1 when any found (greppable).
+      3. `--apply` — per submodule: `git fetch origin`; `git checkout <default-branch>` (carries local edits);
+         `git pull --ff-only` when behind; never discards work; never commits; idempotent re-run exits 0.
+      4. Refuses to run when the submodule has uncommitted changes that would conflict with checkout; reports
+         the conflict for judgement.
+
+      Rule linkage: implements `git-submodule-rules.md` §1–§3.
+
+      ### 3.4 OPTIONAL-1 — `session-skill-coverage-audit` (user decides)
+
+      Placement: `.agents/skills/general/skill-dev/session-skill-coverage-audit/` (taxonomy:
+      `general/skill-dev/`, 6 → 7 items).
+
+      Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`, `scripts/audit-skill-coverage.py`
+      (Tier 1 Python 3.12+, stdlib only). Composes `opencode-session-yaml-tool-call-extractor` (tool-call
+      inventory) and `opencode-session-problem-solution-workflow-analysis` (report), plus a skill-inventory
+      scanner (frontmatter name + description); emits a coverage matrix draft (covered / partial / gap) for
+      agent judgement.
+
+      ### 3.5 Cross-reference sweep ("refer the new skill wherever applicable")
+
+      - [`git-atomic-commit-construction`](../.agents/skills/git-atomic-commit-construction/SKILL.md) —
+        submodule detached-HEAD handling section: pointer to §3.3.
+      - [`git-submodule-commit-details`](../.agents/skills/git-submodule-commit-details/SKILL.md) — Related
+        Skills: §3.3 as the prerequisite branch-resolution step before sync-message extraction.
+      - [`android-feature-to-shared-kotlin-lib`](../.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md)
+        — Related Skills: §3.2 for console-reader integration in the shared-library + CLI split.
+      - Taxonomy §1.1/§1.2 + §4 Changelog entries for every new skill (per-skill, in-commit).
+      - `AGENTS-legacy.md`: register every new skill at alphabetically correct positions; composer rows note
+        "Composer — composes ...".
+      - `ai-agent-rules` submodule is NOT edited (rules are SSOT; out of scope §7).
+
+      ### 3.6 Script Tier Declaration (skill-factory §2.2.1.1 mandate #4)
+
+      | Script | Tier-1 (Python) evaluation | Chosen tier | Citation | Deviation reason |
+      | :--- | :--- | :--- | :--- | :--- |
+      | `run-cli-smoke-test.py` | Process spawning + stdio/pty orchestration + log capture + JSON output | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+      | `find-console-read-sites.py` | Text scan + JSON emission; cross-platform | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+      | `resolve-submodule-branches.py` | Git probing/mutation orchestration + JSON reporting | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+      | `audit-skill-coverage.py` (optional) | YAML/JSONL parsing + set matching + report emission | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+
+      ## 4. Execution Phases
+
+      - **Phase 0 — planning artifacts (this step).** Create this plan + `task.md`; lint both with
+        markdownlint-cli2 (direct binary); present for approval. No skill mutation before approval.
+      - **Phase 1 — C1 (base §3.1).** Create the 5 files; smoke-test the script against a scratch fixture
+        interactive command (piped / EOF / pty modes produce logs; timeout path exercised); taxonomy `cli/`
+        7 → 8 + Changelog; `AGENTS-legacy.md` row; §6 checks; commit C1.
+      - **Phase 2 — C2 (composer §3.2).** Create the 5 files; run `find-console-read-sites.py` on a scratch
+        fixture tree (expected counts); taxonomy `java/` 3 → 4; `AGENTS-legacy.md` row; §3.5 cross-refs
+        (android skill); §6 checks; commit C2.
+      - **Phase 3 — C3 (§3.3).** Create the 5 files; run `resolve-submodule-branches.py --check` on a scratch
+        fixture with a detached submodule; taxonomy `git/submodule/setup/` 4 → 5; `AGENTS-legacy.md` row;
+        §3.5 cross-refs (git-atomic-commit-construction, git-submodule-commit-details); §6 checks; commit C3.
+      - **Phase 4 — C4 (optional §3.4, only if approved).** Create the 5 files; fixture run; taxonomy
+        `general/skill-dev/` 6 → 7; `AGENTS-legacy.md` row; §6 checks; commit C4.
+      - **Phase 5 — close-out.** Full §6 matrix; `task.md` statuses `[x]` + timestamps; propose disposition
+        of the planning artifacts (commit vs trash) per planning-rules §10 — explicit user confirmation.
+
+      ## 5. Commit Strategy
+
+      All commits in `/workspaces/ai-suite`, Conventional Commits, no push:
+
+      | # | Message | Scope |
+      | :--- | :--- | :--- |
+      | C1 | `feat(skills): add cli-smoke-test-piped-eof-pty base skill` | §3.1 files + taxonomy + AGENTS-legacy row |
+      | C2 | `feat(skills): add jvm-cli-jline-console-history-integration composer` | §3.2 files + taxonomy + AGENTS-legacy row + §3.5 cross-refs |
+      | C3 | `feat(skills): add git-submodule-detached-head-branch-resolution skill` | §3.3 files + taxonomy + AGENTS-legacy row + §3.5 cross-refs |
+      | C4 | `feat(skills): add session-skill-coverage-audit composer` | §3.4 files + taxonomy + AGENTS-legacy row (optional) |
+
+      Multi-line bodies via the `git-commit-message-delivery` convention; scripts ship in the same commit as
+      their `SKILL.md` (skill-factory §2.2.2). Only planned paths are staged — pre-existing dirty submodule
+      pointers and `.opencode/package*.json` stay excluded.
+
+      ## 6. Verification Matrix
+
+      | Check | Command (from repo root) | Expectation |
+      | :--- | :--- | :--- |
+      | Markdown lint | `mise x node -- markdownlint-cli2 --fix <paths>` then `mise x node -- markdownlint-cli2 <paths>` (direct binary, no npx) | 0 issues |
+      | Cross-reference audit | `python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py` | 0 issues |
+      | Dangling links | `python3 .agents/skills/git-commit-dangling-link-audit/scripts/detect-dangling-links.py <changed md>` | all EXISTS |
+      | Invocation audit | `python3 .agents/skills/skill-factory/scripts/verify-doc-invocations.py` | exit 0 |
+      | Smoke-test fixture | base §3.1 script on a scratch fixture: piped / eof / pty + timeout | logs + expected exits |
+      | Read-site scanner fixture | §3.2 script on a scratch fixture tree | expected counts |
+      | Submodule resolver fixture | §3.3 script `--check` (detached found) → `--apply` → re-`--check` (exit 0) | idempotent |
+      | Redaction scan | Redaction §8 regex inventory over all new/edited files | empty / Tier-C only |
+      | Standalone-clone test | no session IDs, local paths, or external repo names in committed skill files | pass |
+
+      ## 7. Out of Scope
+
+      - `git push`.
+      - Editing the `ai-agent-rules` submodule (rule SSOT stays as-is).
+      - Pre-existing drift §2.6 (taxonomy as-designed vs as-built; dirty working tree entries).
+      - Library-wide metadata-separation sweep of pre-convention skills.
+      - Moving pre-grouping skills into taxonomy groups.
+      - Committing the planning artifacts (Phase 5 user gate).
+
+      ## 8. Guardrails
+
+      - All deterministic mechanics run through shipped scripts (Consumer Discipline) — no inline re-derivation.
+      - markdownlint-cli2 invoked as the direct binary; `npx` forbidden.
+      - `trash` over `rm`; no `.DS_Store` touches; no `/tmp` writes — scratch under
+        `scratch/ef32b832fffeev43Kf1fl4CmLw/`; command output captured per `repo-scratch-output-capture`.
+      - One command per bash call; no chained probes.
+      - Committed skill files carry no session IDs, local paths, or external repository names.
+      - Stop and report if any verification in §6 fails — no silent workarounds.
+
+      ---
+
+      Wait: MD034 bare URLs? None. MD033 inline HTML: none outside code. The `->` arrows in text are fine (not `<`). "→" unicode arrow fine.
+
+      Potential MD013 violations: keep lines ≤120. I'll be careful.
+
+      Potential MD040 fenced code language: code fences need a language (```bash, ```text). All mine have languages. The taxonomy tree in prior docs used ```text. ✓.
+
+      MD024 duplicate headings: none.
+
+      Now task.md:
+
+      # Task — Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills
+
+      Session: `ses_ef32b832fffeev43Kf1fl4CmLw` · Worktree: `/workspaces/ai-suite`
+
+      ## Phase 0 — Planning Artifacts
+
+      - [x] Pre-plan context gathering (workflow report, skills inventory, gap greps, taxonomy, registry) `[2026-10-05 18:xx]`
+
+      Hmm — timestamps. Current time? I don't know exact. Prior task used `[2026-09-27 16:25]`. I can get current time via `date`. Let me include timestamps as I write. Actually simpler: write task.md with `[x]` and timestamp from `date` command. Let me run `date '+%Y-%m-%d %H:%M'` first. Then write both files, then lint.
+
+      Actually order: run date, write files (using timestamp), lint, present. Let me get the time now.
+
+      One more consideration: the plan file references `scratch/ef32b832fffeev43Kf1fl4CmLw/workflow-analysis_2026-10-05_17-54-26.md` — a local-only path. This is a docs/ artifact (local-only by practice; not committed). The global preference says local-only files MAY keep session IDs. Fine.
+
+      Also §2.1 references "lib `26554d6`, common-lib `fe171ed`... master ahead (`4f5b63c` / `a041e6e`)" — accurate per report.
+
+      Also the H1 with brackets: `# [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)`.
+
+      Hmm, one risk: the custom relative-links rule might treat `[Goal Description]` in H1 as a markdown link (reference-style)! `# [Document ...] (v1)` — `[text] (v1)` with a space between `]` and `(` — in CommonMark, a link requires `](` with NO space (inline link: `](...)`). With a space, it's not a link. The rule's example has `(v1)` with a space too. So safe. But wait, is there a space in the rule format? `# [Goal Description] (vN)` — yes, space. OK good — not parsed as a link.
+
+      But hold on — markdownlint-rule-relative-links might still flag it? It parses links per markdown-it; `[text] (url)` with space is not a link. Fine.
+
+      Let me now get the current date/time, then write both files.
+    thinking_duration: 29.594s
+    thinking_duration_ms: 29594
+    tool_calls:
+      - tool: bash
+        args:
+          command: date '+%Y-%m-%d %H:%M'
+        result: |
+          2026-10-05 18:57
+    time: 10/5/2026, 6:56:36.595 PM UTC
+    response: |+
+      Now authoring the two planning artifacts. Getting the current timestamp first:
+
+    duration: 31.445s
+    duration_ms: 31445
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: Now write the plan file. I'll be careful about line lengths (≤120). Let me write it.
+    thinking_duration: 48ms
+    thinking_duration_ms: 48
+    tool_calls:
+      - tool: write
+        args:
+          filePath: /workspaces/ai-suite/docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md
+          content: |
+            # [Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills] (v1)
+
+            ## Rule Compliance Reference
+
+            - [`ai-agent-planning-rules.md`](../ai-agent-rules/ai-agent-planning-rules.md) — §1 plan versioning + H1
+              format, §6 iterative planning, §7 Maximum Literal Detail, §10 artifact location + `task.md`.
+            - [`ai-rule-standardization-rules.md`](../ai-agent-rules/ai-rule-standardization-rules.md) — §2 Skill-First
+              Architecture, Layered Composition Mandate, cross-repository BLOCKING test; §4 Script Delivery /
+              Redaction / Artifact Linting mandates.
+            - [`scripting-language-selection-rules.md`](../ai-agent-rules/scripting-language-selection-rules.md) —
+              four-tier language framework (all new scripts: Tier 1 Python 3.12+).
+            - [`git-submodule-rules.md`](../ai-agent-rules/git-submodule-rules.md) — §1 Never Commit to Detached HEAD,
+              §2 branch checkout, §3 recovery (rule SSOT behind §3.3).
+            - [`git-commit-message-rules.md`](../ai-agent-rules/git-commit-message-rules.md) — §5 submodule sync
+              messages.
+            - [`markdown-generation/SKILL.md`](../.agents/skills/markdown-generation/SKILL.md) — markdown authoring +
+              lint standards (markdownlint-cli2 direct binary; no `npx`).
+            - [`skill-factory/SKILL.md`](../.agents/skills/skill-factory/SKILL.md) — §2.0 layering decision, §2.1–§2.4
+              creation/registration, §2.2.2 script delivery, §3 Post-Drafting Checklist, §5.2.2 composer discipline.
+            - [`skill-library-domain-grouping/SKILL.md`](../.agents/skills/general/skill-library-domain-grouping/SKILL.md)
+              — §1 taxonomy placement, §3 change protocol, §4 Changelog discipline.
+            - [`planning-artifact-naming/SKILL.md`](../.agents/skills/general/planning/planning-artifact-naming/SKILL.md)
+              — artifact naming formula + versioning rules.
+            - [`redaction-portability/SKILL.md`](../.agents/skills/redaction-portability/SKILL.md) — portability/PII
+              audit for every produced artifact.
+            - [`git-atomic-commit-construction/SKILL.md`](../.agents/skills/git-atomic-commit-construction/SKILL.md) —
+              atomic commit arrangement + message delivery.
+            - [`script-over-instruction-decomposition/SKILL.md`](../.agents/skills/script-over-instruction-decomposition/SKILL.md)
+              — script-tier extraction mandate + Consumer Discipline.
+
+            ## User Questions & Answers
+
+            ### Q1 — "Is this workflow correctly documented?"
+
+            A1: PARTIALLY. The workflow-analysis report
+            (`scratch/ef32b832fffeev43Kf1fl4CmLw/workflow-analysis_2026-10-05_17-54-26.md`) documents WHAT happened,
+            and several sub-workflows are already owned by existing skills (§2.5), but three gaps exist (§2.1–§2.3):
+            submodule detached-HEAD resolution, JLine console-history integration, and interactive-CLI smoke testing.
+            This plan closes them.
+
+            ### Q2 — "New skills or enrichments?"
+
+            A2: New skills only (no enrichment needed — §2.5 lists the already-covered sub-workflows), decided by the
+            skill-factory §2.0 layering test:
+
+            - NEW base `cli-smoke-test-piped-eof-pty` — generic interactive-CLI harness; runtime-agnostic (§3.1).
+            - NEW composer `jvm-cli-jline-console-history-integration` — composes the base for verification (§3.2).
+            - NEW skill `git-submodule-detached-head-branch-resolution` — rule-backed routine operation with no
+              existing owner (§3.3).
+            - OPTIONAL composer `session-skill-coverage-audit` — the assessment procedure itself (§3.4).
+
+            ### Q3 — Commit/push scope
+
+            A3: Three atomic commits (§5), one per skill, in dependency order (base first); a fourth only if the
+            optional §3.4 skill is approved. Push is OUT OF SCOPE.
+
+            ## 1. Goal & Context
+
+            The session `ses_ef32b832fffeev43Kf1fl4CmLw` ("Fix account-ledger CLI: checks and arrow key") fixed three
+            defects in a Kotlin/JVM CLI application and its shared-library submodules:
+
+            1. A "sheet account not configured" error printed multiple times per invocation → deduplicated.
+            2. Account checks validated only one of the from/to/via accounts → aggregation across all accounts.
+            3. Up-arrow did not recall command history → JLine console line-reader integration.
+
+            Delivery: ten atomic commits across the parent repo and two submodules (C1 `ce8fdab`, L1 `c3ea22d`,
+            L2 `a9edbb4`, Lsync `9a904d5`, L3 `36dbd60`, P1 `2764495`, P2 `c306991`, P3 `8ba9356`, R1 `1bc0b54`,
+            R2 `0854fb4`), safety stashes, submodule sync messages, and interactive smoke tests (piped / EOF / pty).
+            P1–P3 plus both submodule commits were pushed by the user; R1/R2 remain local.
+
+            The question: is THIS workflow documented as reusable skills? Audit result: partially (§2). This plan
+            converts the three undocumented sub-workflows into layered skills.
+
+            Worktree: `/workspaces/ai-suite` (HEAD `22eec2a6`). All paths below are relative to it.
+
+            ## 2. Gap Analysis
+
+            ### 2.1 G1 — Submodule detached-HEAD resolution: rules exist, no skill
+
+            - Rule SSOT: [`git-submodule-rules.md`](../ai-agent-rules/git-submodule-rules.md) §1 (Never Commit to a
+              Detached HEAD), §2 (checkout the default branch), §3 (recovery from detached HEAD) mandate the behaviour
+              but name no executable procedure.
+            - No skill owns it. Nearest neighbours operate in different directions:
+              - `git-submodule-missing-revision-recovery` — materializes the detached state at the recorded SHA
+                (opposite direction).
+              - `git-submodule-pointer-repair` — parent-history gitlink repair.
+              - `git-atomic-commit-construction` — handles a detached main repo, not submodules.
+              - `git-submodule-addition` — taxonomy-listed under `git/submodule/setup/` but absent in this checkout;
+                in any case covers addition, not pre-commit branch resolution.
+            - Session evidence: both submodules sat detached at their pinned SHAs (lib `26554d6`, common-lib
+              `fe171ed`) while their `master` branches were ahead (`4f5b63c` / `a041e6e`); the session fetched,
+              checked out `master` carrying local edits, and fast-forwarded when behind — then all subsequent commits
+              landed on branches and the parent gitlinks were synced.
+
+            ### 2.2 G2 — JLine console-history integration is undocumented
+
+            - No skill in the library mentions JLine (`[Jj]line` → zero matches) or console line-reader integration.
+            - Session evidence (report + commit P3 `8ba9356`): JLine 3.30.17 integrated into a Kotlin/JVM CLI:
+              - self-contained bundle `org.jline:jline:3.30.17` (reader + terminal + providers + native libs) —
+                `jline-terminal-jni` NOT needed; JLine 4.x exists but 3.x API stability was chosen;
+              - pluggable indirection in the shared JVM library (`ConsoleInputUtils.setLineReader { prompt -> ... }`,
+                commit C1 `ce8fdab`) — the shared library carries NO JLine dependency, preventing propagation to
+                Android consumers;
+              - CLI-side initialization (`TerminalBuilder.builder().system(true).build()` + `LineReaderBuilder`),
+                `EndOfFileException` → `EOFException`, `UserInterruptException` → exit 130, dumb-terminal fallback;
+              - ~72 console-read sites migrated away from `Scanner(System.in)` (which conflicts with JLine raw mode);
+              - GraalVM native-image caveat (the project ships a native-image workflow; JLine may need
+                reflection/resource configuration).
+
+            ### 2.3 G3 — Interactive-CLI smoke testing (piped / EOF / pty) is undocumented
+
+            - No skill covers smoke-testing an interactive CLI (`smoke` matches no skill; no pty / `script` usage).
+            - Session evidence: three modes were exercised and captured under `build/agent/`:
+              1. piped: `printf '0\n' | <jar command>` → `smoke-piped.log`;
+              2. EOF: empty stdin → `smoke-eof.log`;
+              3. pty: `printf '0\n' | script -qec "stty cols 80 rows 24; <jar command>" /dev/null` → `smoke-pty.log`
+                 (JLine bracketed-paste escape codes prove the line reader is active; a 0x0 pty size caused rendering
+                 artifacts, hence the explicit `stty` sizing).
+
+            ### 2.4 G4 (OPTIONAL) — the coverage-assessment procedure itself has no owner
+
+            - The procedure that produced §2 (workflow report → tool-call inventory → skill-library matching →
+              coverage matrix) is reusable but unowned. A meta composer could automate the deterministic half.
+            - OPTIONAL: included for user decision at approval; not part of the assessed workflow.
+
+            ### 2.5 Already documented (no action)
+
+            - Atomic commit arrangement / safety stash / hunk staging — `git-atomic-commit-construction`,
+              `git-pre-execution-safety-stash`, `git-hunk-staging-primitives`.
+            - Submodule sync-message metadata — `git-submodule-commit-details` (v2.1.0; composes
+              `git-commit-metadata-extraction`; consumed by `git-submodule-commit-reword` and
+              `git-atomic-commit-construction`).
+            - Workflow analysis — `opencode-session-problem-solution-workflow-analysis`.
+
+            ### 2.6 Flagged pre-existing drift (OUT OF SCOPE — do not fix in this plan)
+
+            - Taxonomy §1.1/§1.2 is as-designed for several groups whose folders are absent in this checkout
+              (`cli/`, `java/`, `general/skill-dev/`, `git/submodule/setup/` items); pre-grouping skills live at
+              `.agents/skills/` top level. New skills follow their taxonomy slots (precedent: `email/`, `calendar/`,
+              `docker/` groups were created for new skills; pre-grouping skills are never moved).
+            - Dirty submodule pointers plus modified `.opencode/package*.json` in the ai-suite working tree; excluded
+              from all commits.
+
+            ## 3. Deliverables
+
+            ### 3.1 NEW-BASE-1 — `cli-smoke-test-piped-eof-pty`
+
+            Placement: `.agents/skills/cli/cli-smoke-test-piped-eof-pty/` (taxonomy: `cli/` flat group, 7 → 8 items).
+
+            Files:
+
+            - `SKILL.md` — frontmatter, Scope & Intent, Environment & Dependencies, CLI contract, mode semantics,
+              exit codes, Prohibited Actions, Script Reference, `## Composition by Higher-Level Skills` (lists §3.2),
+              Related Skills, pointer-only `## Changelog` / `## Traceability`.
+            - `AGENTS.md` — companion bridge (5 required sections per skill-factory §2.3.2, no frontmatter).
+            - `CHANGELOG.md` — creation entry.
+            - `TRACEABILITY.md` — source session `ses_ef32b832fffeev43Kf1fl4CmLw`, evidence (three smoke logs),
+              extraction rationale.
+            - `scripts/run-cli-smoke-test.py` — Tier 1 Python 3.12+, stdlib only.
+
+            CLI contract:
+
+            ```bash
+            python3 scripts/run-cli-smoke-test.py --command "<shell command>" [--input "<stdin text>"]
+                [--out-dir <dir>] [--mode piped|eof|pty|all] [--rows 24] [--cols 80]
+                [--timeout <sec>] [--json]
+            ```
+
+            Semantics:
+
+            1. `piped` — `printf '<input>' | <command>`; log `<out-dir>/smoke-piped.log`.
+            2. `eof` — empty stdin; log `smoke-eof.log`.
+            3. `pty` — `script -qec "stty cols <cols> rows <rows>; <command>" /dev/null`; log `smoke-pty.log`;
+               document the util-linux vs BSD/macOS `script` invocation difference.
+            4. `--timeout` mandatory (default 60s) — kills hung interactive commands; per-mode exit code + log path
+               reported; `--json` summary; harness exit 0 when all requested modes complete, 1 when any mode times out.
+
+            ### 3.2 NEW-COMPOSER-1 — `jvm-cli-jline-console-history-integration`
+
+            Placement: `.agents/skills/java/jvm-cli-jline-console-history-integration/` (taxonomy: `java/` flat group,
+            3 → 4 items).
+
+            Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`,
+            `scripts/find-console-read-sites.py` (Tier 1 Python 3.12+, stdlib only).
+
+            Composition Rationale (in `SKILL.md`): composes
+
+            - `cli-smoke-test-piped-eof-pty` (base §3.1) — piped / EOF / pty verification of the integrated CLI;
+            - `find-console-read-sites.py` — deterministic inventory of `readLine` / `Scanner(System.in)` / `readln`
+              sites to migrate;
+            - consumer cross-reference:
+              [`android-feature-to-shared-kotlin-lib`](../.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md)
+              (shared-JVM-library discipline).
+
+            Script contract:
+
+            ```bash
+            python3 scripts/find-console-read-sites.py --root <dir> [--json]
+            ```
+
+            Prose steps (gates preserved): dependency selection (self-contained bundle, version catalog entry,
+            CLI module only) → shared-library pluggable reader with NO JLine dependency → CLI-side initialization +
+            exception mapping (`EndOfFileException` → `EOFException`, `UserInterruptException` → exit 130) →
+            site migration → smoke test (delegates to base §3.1) → GraalVM native-image caveat note.
+
+            ### 3.3 NEW-1 — `git-submodule-detached-head-branch-resolution`
+
+            Placement: `.agents/skills/git/submodule/setup/git-submodule-detached-head-branch-resolution/`
+            (taxonomy: `git/submodule/setup/`, 4 → 5 items).
+
+            Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`,
+            `scripts/resolve-submodule-branches.py` (Tier 1 Python 3.12+, stdlib only).
+
+            CLI contract:
+
+            ```bash
+            python3 scripts/resolve-submodule-branches.py [--root <parent-repo>] [--submodule <name>]...
+                [--default-branch master] (--check | --apply) [--json]
+            ```
+
+            Semantics:
+
+            1. Enumerate submodules via `git submodule status`; classify each: detached at recorded SHA / on branch /
+               uninitialized.
+            2. `--check` — report submodules needing resolution; exit 1 when any found (greppable).
+            3. `--apply` — per submodule: `git fetch origin`; `git checkout <default-branch>` (carries local edits);
+               `git pull --ff-only` when behind; never discards work; never commits; idempotent re-run exits 0.
+            4. Refuses to run when the submodule has uncommitted changes that would conflict with checkout; reports
+               the conflict for judgement.
+
+            Rule linkage: implements `git-submodule-rules.md` §1–§3.
+
+            ### 3.4 OPTIONAL-1 — `session-skill-coverage-audit` (user decides)
+
+            Placement: `.agents/skills/general/skill-dev/session-skill-coverage-audit/` (taxonomy:
+            `general/skill-dev/`, 6 → 7 items).
+
+            Files: `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`, `scripts/audit-skill-coverage.py`
+            (Tier 1 Python 3.12+, stdlib only). Composes `opencode-session-yaml-tool-call-extractor` (tool-call
+            inventory) and `opencode-session-problem-solution-workflow-analysis` (report), plus a skill-inventory
+            scanner (frontmatter name + description); emits a coverage-matrix draft (covered / partial / gap) for
+            agent judgement.
+
+            ### 3.5 Cross-reference sweep ("refer the new skill wherever applicable")
+
+            - [`git-atomic-commit-construction`](../.agents/skills/git-atomic-commit-construction/SKILL.md) —
+              submodule detached-HEAD handling section: pointer to §3.3.
+            - [`git-submodule-commit-details`](../.agents/skills/git-submodule-commit-details/SKILL.md) — Related
+              Skills: §3.3 as the prerequisite branch-resolution step before sync-message extraction.
+            - [`android-feature-to-shared-kotlin-lib`](../.agents/skills/android-feature-to-shared-kotlin-lib/SKILL.md)
+              — Related Skills: §3.2 for console-reader integration in the shared-library + CLI split.
+            - Taxonomy §1.1/§1.2 + §4 Changelog entries for every new skill (per-skill, in-commit).
+            - `AGENTS-legacy.md`: register every new skill at alphabetically correct positions; composer rows note
+              "Composer — composes ...".
+            - The `ai-agent-rules` submodule is NOT edited (rules remain the SSOT; out of scope §7).
+
+            ### 3.6 Script Tier Declaration (skill-factory §2.2.1.1 mandate #4)
+
+            | Script | Tier-1 (Python) evaluation | Chosen tier | Citation | Deviation reason |
+            | :--- | :--- | :--- | :--- | :--- |
+            | `run-cli-smoke-test.py` | Process spawning + stdio/pty orchestration + log capture + JSON output | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+            | `find-console-read-sites.py` | Text scan + JSON emission; cross-platform | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+            | `resolve-submodule-branches.py` | Git probing/mutation orchestration + JSON reporting | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+            | `audit-skill-coverage.py` (optional) | YAML/JSONL parsing + set matching + report emission | Tier 1 — Python 3.12+ | `scripting-language-selection-rules` §3 | none |
+
+            ## 4. Execution Phases
+
+            - **Phase 0 — planning artifacts (this step).** Create this plan + `task.md`; lint both with
+              markdownlint-cli2 (direct binary); present for approval. No skill mutation before approval.
+            - **Phase 1 — C1 (base §3.1).** Create the 5 files; smoke-test the script against a scratch fixture
+              interactive command (piped / EOF / pty modes produce logs; timeout path exercised); taxonomy `cli/`
+              7 → 8 + Changelog; `AGENTS-legacy.md` row; §6 checks; commit C1.
+            - **Phase 2 — C2 (composer §3.2).** Create the 5 files; run `find-console-read-sites.py` on a scratch
+              fixture tree (expected counts); taxonomy `java/` 3 → 4; `AGENTS-legacy.md` row; §3.5 cross-refs
+              (android skill); §6 checks; commit C2.
+            - **Phase 3 — C3 (§3.3).** Create the 5 files; run `resolve-submodule-branches.py --check` on a scratch
+              fixture with a detached submodule; taxonomy `git/submodule/setup/` 4 → 5; `AGENTS-legacy.md` row;
+              §3.5 cross-refs (git-atomic-commit-construction, git-submodule-commit-details); §6 checks; commit C3.
+            - **Phase 4 — C4 (optional §3.4, only if approved).** Create the 5 files; fixture run; taxonomy
+              `general/skill-dev/` 6 → 7; `AGENTS-legacy.md` row; §6 checks; commit C4.
+            - **Phase 5 — close-out.** Full §6 matrix; `task.md` statuses `[x]` + timestamps; propose disposition
+              of the planning artifacts (commit vs trash) per planning-rules §10 — explicit user confirmation.
+
+            ## 5. Commit Strategy
+
+            All commits in `/workspaces/ai-suite`, Conventional Commits, no push:
+
+            | # | Message | Scope |
+            | :--- | :--- | :--- |
+            | C1 | `feat(skills): add cli-smoke-test-piped-eof-pty base skill` | §3.1 files + taxonomy + AGENTS-legacy row |
+            | C2 | `feat(skills): add jvm-cli-jline-console-history-integration composer` | §3.2 files + taxonomy + AGENTS-legacy row + §3.5 cross-refs |
+            | C3 | `feat(skills): add git-submodule-detached-head-branch-resolution skill` | §3.3 files + taxonomy + AGENTS-legacy row + §3.5 cross-refs |
+            | C4 | `feat(skills): add session-skill-coverage-audit composer` | §3.4 files + taxonomy + AGENTS-legacy row (optional) |
+
+            Multi-line bodies via the `git-commit-message-delivery` convention; scripts ship in the same commit as
+            their `SKILL.md` (skill-factory §2.2.2). Only planned paths are staged — pre-existing dirty submodule
+            pointers and `.opencode/package*.json` stay excluded.
+
+            ## 6. Verification Matrix
+
+            | Check | Command (from repo root) | Expectation |
+            | :--- | :--- | :--- |
+            | Markdown lint | `mise x node -- markdownlint-cli2 --fix <paths>` then `mise x node -- markdownlint-cli2 <paths>` (direct binary, no npx) | 0 issues |
+            | Cross-reference audit | `python3 .agents/skills/general/skill-cross-reference-audit/scripts/audit-cross-refs.py` | 0 issues |
+            | Dangling links | `python3 .agents/skills/git-commit-dangling-link-audit/scripts/detect-dangling-links.py <changed md>` | all EXISTS |
+            | Invocation audit | `python3 .agents/skills/skill-factory/scripts/verify-doc-invocations.py` | exit 0 |
+            | Smoke-test fixture | base §3.1 script on a scratch fixture: piped / eof / pty + timeout | logs + expected exits |
+            | Read-site scanner fixture | §3.2 script on a scratch fixture tree | expected counts |
+            | Submodule resolver fixture | §3.3 script `--check` (detached found) → `--apply` → re-`--check` (exit 0) | idempotent |
+            | Redaction scan | Redaction §8 regex inventory over all new/edited files | empty / Tier-C only |
+            | Standalone-clone test | no session IDs, local paths, or external repo names in committed skill files | pass |
+
+            ## 7. Out of Scope
+
+            - `git push`.
+            - Editing the `ai-agent-rules` submodule (rule SSOT stays as-is).
+            - Pre-existing drift §2.6 (taxonomy as-designed vs as-built; dirty working-tree entries).
+            - Library-wide metadata-separation sweep of pre-convention skills.
+            - Moving pre-grouping skills into taxonomy groups.
+            - Committing the planning artifacts (Phase 5 user gate).
+
+            ## 8. Guardrails
+
+            - All deterministic mechanics run through shipped scripts (Consumer Discipline) — no inline re-derivation.
+            - markdownlint-cli2 invoked as the direct binary; `npx` forbidden.
+            - `trash` over `rm`; no `.DS_Store` touches; no `/tmp` writes — scratch under
+              `scratch/ef32b832fffeev43Kf1fl4CmLw/`; command output captured per `repo-scratch-output-capture`.
+            - One command per bash call; no chained probes.
+            - Committed skill files carry no session IDs, local paths, or external repository names.
+            - Stop and report if any verification in §6 fails — no silent workarounds.
+        result: Wrote file successfully.
+    time: 10/5/2026, 6:57:08.160 PM UTC
+    response: "\n\n"
+    duration: 31.727s
+    duration_ms: 31727
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: Now write task.md.
+    thinking_duration: 10ms
+    thinking_duration_ms: 10
+    tool_calls:
+      - tool: write
+        args:
+          content: |
+            # Task — Document the Account-Ledger CLI Fix Workflow as Reusable Layered Skills
+
+            Session: `ses_ef32b832fffeev43Kf1fl4CmLw` · Worktree: `/workspaces/ai-suite`
+
+            ## Phase 0 — Planning Artifacts
+
+            - [x] Pre-plan context gathering (workflow report, skills inventory, gap greps, taxonomy, registry) `[2026-10-05 18:57]`
+            - [x] Write implementation-plan v1 `[2026-10-05 18:57]`
+            - [ ] Lint plan + task (markdownlint-cli2)
+            - [ ] Present plan for user approval
+
+            ## Phase 1 — C1: NEW base `cli-smoke-test-piped-eof-pty`
+
+            - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+            - [ ] Create `scripts/run-cli-smoke-test.py` (Tier 1)
+            - [ ] Smoke-test: scratch fixture interactive command, piped / eof / pty + timeout path
+            - [ ] Taxonomy `cli/` 7 → 8 + Changelog
+            - [ ] Register row in `AGENTS-legacy.md` (alphabetical)
+            - [ ] §6 checks + commit C1
+
+            ## Phase 2 — C2: NEW composer `jvm-cli-jline-console-history-integration`
+
+            - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+            - [ ] Create `scripts/find-console-read-sites.py` (Tier 1)
+            - [ ] Fixture run: scratch tree, expected counts
+            - [ ] Taxonomy `java/` 3 → 4 + Changelog
+            - [ ] Register row in `AGENTS-legacy.md` (alphabetical, composer annotation)
+            - [ ] Cross-references (§3.5): android-feature-to-shared-kotlin-lib
+            - [ ] §6 checks + commit C2
+
+            ## Phase 3 — C3: NEW skill `git-submodule-detached-head-branch-resolution`
+
+            - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+            - [ ] Create `scripts/resolve-submodule-branches.py` (Tier 1)
+            - [ ] Fixture run: detached submodule `--check` → `--apply` → re-`--check` (exit 0)
+            - [ ] Taxonomy `git/submodule/setup/` 4 → 5 + Changelog
+            - [ ] Register row in `AGENTS-legacy.md` (alphabetical)
+            - [ ] Cross-references (§3.5): git-atomic-commit-construction, git-submodule-commit-details
+            - [ ] §6 checks + commit C3
+
+            ## Phase 4 — C4 (OPTIONAL): NEW composer `session-skill-coverage-audit`
+
+            - [ ] User decision: include or defer
+            - [ ] Create `SKILL.md`, `AGENTS.md`, `CHANGELOG.md`, `TRACEABILITY.md`
+            - [ ] Create `scripts/audit-skill-coverage.py` (Tier 1)
+            - [ ] Fixture run
+            - [ ] Taxonomy `general/skill-dev/` 6 → 7 + Changelog
+            - [ ] Register row in `AGENTS-legacy.md` (alphabetical, composer annotation)
+            - [ ] §6 checks + commit C4
+
+            ## Phase 5 — Close-out
+
+            - [ ] Full §6 verification matrix
+            - [ ] `task.md` statuses + timestamps
+            - [ ] Propose planning-artifact disposition (commit vs trash) — user confirmation
+          filePath: /workspaces/ai-suite/docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md
+        result: Wrote file successfully.
+    time: 10/5/2026, 6:57:39.939 PM UTC
+    response: "\n\n"
+    duration: 3.980s
+    duration_ms: 3980
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Now lint both files with markdownlint-cli2 (direct binary, via mise node). The custom rule needs node_modules at repo root (installed). Run:
+
+      `mise x node@26.10.0 -- markdownlint-cli2 --fix <plan> <task>`
+
+      then without --fix. markdownlint-cli2 must run from repo root for the config. Workdir repo root. Two commands sequential (second depends on first). Could do one call with `&&`? AGENTS says one command per call, avoid chaining. But `--fix` then verify are dependent; I'll do two calls. First with --fix (should fix line-length wrapping if needed). Note MD013 line_length 120 — my prose lines should be under. Let me lint.
+    thinking_duration: 577ms
+    thinking_duration_ms: 577
+    tool_calls:
+      - tool: bash
+        args:
+          command: mise x node@26.10.0 -- markdownlint-cli2 --fix "docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md" "docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md"
+          workdir: /workspaces/ai-suite
+        result: |
+          markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+          Finding: docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md
+          Linting: 2 files
+          Attempted: 9 fixes in 1 file
+          Summary: 0 issues in 0 files
+    time: 10/5/2026, 6:57:43.974 PM UTC
+    response: |+
+      Linting both artifacts (direct binary, `--fix` then verify):
+
+    duration: 3.460s
+    duration_ms: 3460
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: 9 fixes applied in 1 file (probably MD013 line-length reflow in the plan). Verify clean run now (no --fix) to confirm 0 issues. Then check what the fix changed (diff) — to make sure nothing semantically broken (markdownlint --fix only reflows/wraps). Run the verify lint.
+    thinking_duration: 255ms
+    thinking_duration_ms: 255
+    tool_calls:
+      - tool: bash
+        args:
+          command: mise x node@26.10.0 -- markdownlint-cli2 "docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md" "docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md"
+          workdir: /workspaces/ai-suite
+        result: |
+          markdownlint-cli2 v0.23.3 (markdownlint v0.41.1)
+          Finding: docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md
+          Linting: 2 files
+          Summary: 0 issues in 0 files
+    time: 10/5/2026, 6:57:47.487 PM UTC
+    response: "\n\n\n\n"
+    duration: 2.888s
+    duration_ms: 2888
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Lint clean. Also run the dangling-link detector on the plan file (it has many relative links; the custom rule already passed, meaning links resolve — the relative-links custom rule checks that targets exist. It passed in the lint → all links resolve). Good.
+
+      Also update task.md: mark lint done with timestamp. Get current time and update. Then present the plan summary for approval.
+
+      Let me update task.md line: `- [ ] Lint plan + task (markdownlint-cli2)` → `- [x] ... [timestamp]` and `- [ ] Present plan for user approval` → will mark after presenting? The precedent marked "Present plan for user approval" as `[x]` when presented. I'll mark it now (I'm about to present). Get date first.
+    thinking_duration: 577ms
+    thinking_duration_ms: 577
+    tool_calls:
+      - tool: bash
+        args:
+          command: date '+%Y-%m-%d %H:%M'
+        result: |
+          2026-10-05 18:57
+    time: 10/5/2026, 6:57:50.432 PM UTC
+    response: |+
+      Lint clean. Updating the task checkboxes with completion timestamps:
+
+    duration: 2.130s
+    duration_ms: 2130
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /workspaces/ai-suite/docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md
+          oldString: |-
+            - [ ] Lint plan + task (markdownlint-cli2)
+            - [ ] Present plan for user approval
+          newString: |-
+            - [x] Lint plan + task (markdownlint-cli2) `[2026-10-05 18:57]`
+            - [x] Present plan for user approval `[2026-10-05 18:57]`
+        result: Edit applied successfully.
+    time: 10/5/2026, 6:57:52.603 PM UTC
+    response: "\n\n"
+    duration: 1.760s
+    duration_ms: 1760
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Now present the plan for approval. Per planning rules, present concisely: verdict, gaps, deliverables, commits, and the approval question (including the optional skill decision). Keep it structured but not overly long (CLI output). The user asked earlier for strict & deep planning; the artifacts exist on disk. I'll summarize.
+
+      I should also ask about the optional G4 skill and whether the H1 bracket format is right? No — don't ask about format; follow the rule.
+
+      Approval question options: approve as-is (3 skills), include optional 4th, modify. Use the question tool? The user needs to approve the plan. A concise chat summary + explicit ask is appropriate. The question tool could be used for the optional skill decision. But the plan approval itself is the main gate. I'll present summary and ask via text (user will reply "start" style per precedent). Actually the precedent plan's Phase 5 / user gate: approval via chat. Let me just present.
+
+      Summary:
+      - Verdict: PARTIALLY documented; 3 gaps + 1 optional.
+      - G1 submodule detached-HEAD → new `git-submodule-detached-head-branch-resolution` (git/submodule/setup/).
+      - G2 JLine → new composer `jvm-cli-jline-console-history-integration` (java/).
+      - G3 smoke testing → new base `cli-smoke-test-piped-eof-pty` (cli/).
+      - G4 optional `session-skill-coverage-audit` (general/skill-dev/) — decide.
+      - 3 atomic commits (4 with optional), scripts bundled, taxonomy + AGENTS-legacy updated per commit, verification matrix.
+      - Plan + task paths.
+      - Already documented: atomic commits, safety stash, hunk staging, submodule sync details, workflow analysis.
+
+      Ask: approve? include optional skill? Then "start" to begin.
+    thinking_duration: 1.728s
+    thinking_duration_ms: 1728
+    time: 10/5/2026, 6:57:54.404 PM UTC
+    response: |-
+      Plan artifacts written and lint-clean:
+
+      - `docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_implementation-plan_v1.md`
+      - `docs/2026-10-05_ef32b832fffeev43Kf1fl4CmLw_fix-account-ledger-cli-checks-and-arrow-key_task.md`
+
+      **Verdict: PARTIALLY documented.** Already covered (no action): atomic commits, safety stash, hunk staging, submodule sync-message metadata, workflow analysis. Three gaps + one optional:
+
+      | # | Gap | Deliverable (layer) | Placement | Taxonomy |
+      | :--- | :--- | :--- | :--- | :--- |
+      | G3 | Interactive-CLI smoke testing (piped / EOF / pty) | `cli-smoke-test-piped-eof-pty` (base) | `.agents/skills/cli/` | 7 → 8 |
+      | G2 | JLine console-history integration | `jvm-cli-jline-console-history-integration` (composer, composes G3 base) | `.agents/skills/java/` | 3 → 4 |
+      | G1 | Submodule detached-HEAD → default branch | `git-submodule-detached-head-branch-resolution` | `.agents/skills/git/submodule/setup/` | 4 → 5 |
+      | G4 | Coverage-assessment procedure (OPTIONAL) | `session-skill-coverage-audit` (composer) | `.agents/skills/general/skill-dev/` | 6 → 7 |
+
+      Each skill ships `SKILL.md` + `AGENTS.md` + `CHANGELOG.md` + `TRACEABILITY.md` + a Tier-1 Python script, with taxonomy + `AGENTS-legacy.md` updates and cross-reference sweep in the same atomic commit (C1 base → C2 composer → C3 submodule → C4 optional; no push; planning artifacts not committed without your say-so).
+
+      Approve as-is, or include the optional G4 skill? Reply "start" (with your G4 choice) to begin Phase 1.
+    duration: 4.512s
+    duration_ms: 4512
+

@@ -1,0 +1,2399 @@
+---
+user:
+  text: |-
+    Read the saved file /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et — it is the output of loading the `git-atomic-commit-construction` skill (a long markdown document, ~71KB; the beginning was already read, roughly through "Step 10 — Execution & Verification" / section 9f about stashes, and about 20KB was truncated at the end).
+
+    Your job: extract and summarize EVERYTHING after the truncation point — i.e., the remaining sections of the skill document. I need:
+
+    1. The remaining Step 10+ sections (execution protocol, post-commit verification, push policy, cleanup).
+    2. Any commit message rules/format (Conventional Commits types/scopes), body requirements, and templates.
+    3. Any requirements about the commit-preview artifact: exact filename/path, whether it must use the `planning-artifact-naming` convention / session ID, and its lifecycle (creation, update, verification, deletion).
+    4. Any checklists, common pitfalls, appendices, or verification gates near the end.
+    5. Exact script invocation commands the skill mandates (paths + arguments), e.g. git-commit-preview-verify, git-pre-execution-safety-stash, git-stash-triage, git-commit-message-delivery, planning-version-coverage-audit, etc.
+    6. Anything about single-commit sequences vs multi-commit sequences (whether the safety stash applies to a 1-commit plan).
+    7. Anything about `git-commit-message-delivery` (base primitive) usage for multi-line commit messages.
+
+    Use Grep to find headings (lines starting with `## `, `### `) and Read with offset/limit for the relevant ranges (the file is about 1300-1500 lines; start reading around the section titled "Step 10" onward). Do not dump the whole file. Return a compact but complete structured report with verbatim commands where relevant. Research only — do not write files.
+  time: 10/5/2026, 6:51:49.745 PM UTC
+assistant:
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: Let me start by examining the file. I'll use grep to find headings and then read relevant sections.
+    thinking_duration: 89ms
+    thinking_duration_ms: 89
+    tool_calls:
+      - tool: bash
+        args:
+          command: wc -l -c /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+        result: |2
+           1673 71244 /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+      - tool: grep
+        args:
+          pattern: '^#{1,4} '
+          path: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+        result: |-
+          Found 100 matches (more matches available)
+          /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et:
+            Line 2: # Skill: git-atomic-commit-construction
+
+            Line 4: # Git Atomic Commit Construction Skill
+
+            Line 10: ## Description
+
+            Line 24: ## Source Rules
+
+            Line 38: ## Prerequisites
+
+            Line 47: ## When to Apply
+
+            Line 80: ## Step-by-Step Procedure
+
+            Line 82: ### Step 0 — Environment & Repository Context
+
+            Line 86: #### 0a — Authenticate Services
+
+            Line 96: #### 0b — Identify the Target Repository
+
+            Line 105: #### 0c — Working Directory Persistence (Critical)
+
+            Line 110: # Recommended: git -C with absolute path
+
+            Line 114: # Why this matters: Shell `cd` commands do not persist across tool invocations
+
+            Line 115: # in stateless execution environments. Using git -C ensures consistent behavior
+
+            Line 116: # across all command chains and multi-step workflows.
+
+            Line 118: # Pattern for multi-repo work:
+
+            Line 133: # ❌ May not reliably persist across invocations
+
+            Line 140: # ✅ Reliable and explicit
+
+            Line 144: #### 0d — Verify Build Tool Permissions
+
+            Line 152: #### 0e — Active Branch Verification (Critical)
+
+            Line 162: #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
+
+            Line 182: ### Step 1 — Deep Change Analysis
+
+            Line 187: #### 1a — Detect All Changes
+
+            Line 210: #### 1b — Use `git ls-files` as Source of Truth
+
+            Line 220: #### 1c — Read `.gitignore` for Tracked vs Ignored
+
+            Line 227: # Example: directory ignored, but .zip files are tracked
+
+            Line 232: #### 1d — Analyze Change Dependencies
+
+            Line 242: #### 1e — Workflow-First Priority
+
+            Line 249: #### 1f — Present Complete Inventory
+
+            Line 264: ### 1g — Redaction Pre-Check (Sensitive Content Audit)
+
+            Line 311: ### Step 2 — Logical Grouping (Arrangement)
+
+            Line 315: #### 2a — Independence Principle
+
+            Line 320: #### 2b — Atomic Principle
+
+            Line 325: #### 2c — Buildable State Priority
+
+            Line 332: #### 2d — The Commit Preview (Mandatory Verbose Display)
+
+            Line 368: ## Arranged Commits Preview
+
+            Line 370: ### Commit 1: [type](scope): [title]
+
+            Line 385: ### Commit 2: [type](scope): [title]
+
+            Line 398: #### 2d.1 — Iterative Preview Fixup
+
+            Line 413: #### 2d.2 — Post-Execution Preview Verification
+
+            Line 447: # Automated (with verification gate)
+
+            Line 452: # Manual
+
+            Line 460: #### 2e — Commit Authorization
+
+            Line 466: #### 2f — Interleaving Mandate (Artifact + Registry Registration)
+
+            Line 490: # Dry-run: preview alphabetical position
+
+            Line 495: # Stage exactly one row (default --mode staged: reads HEAD:AGENTS.md,
+
+            Line 496: # inserts row, updates index; working tree is NOT touched)
+
+            Line 519: #### 2f.1 — Deferred Cross-Reference Hunk Pattern
+
+            Line 575: #### 2g — Batch-by-Batch Authorization (Long Sequences)
+
+            Line 593: #### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+
+            Line 625: ### Step 3 — Interactive Hunk-Based Staging
+
+            Line 630: #### 3a — Command
+
+            Line 636: #### 3b — Hunk-by-Hunk Evaluation
+
+            Line 643: #### 3c — Granular Hygiene
+
+            Line 649: #### 3d — Verification After Staging
+
+            Line 657: #### 3e — Discard Rejected Noise
+
+            Line 666: #### 3f — Mixed-Concern Noise Handling Workflow
+
+            Line 695: #### 3g — Post-Edit Indent Verification & Repair
+
+            Line 712: #### 3h — IDE Artifact Bulk Discard
+
+            Line 749: # List tracked files under .settings/
+
+            Line 752: # List untracked files under .settings/
+
+            Line 755: # For modified tracked files, show what changed
+
+            Line 862: #### 3h — Hunk-Stage Backup Cleanup (Sidecar Discipline)
+
+            Line 905: #### 3i — Selective Hunk Extraction via Diff Patching
+
+            Line 919: # Dry-run: preview matched hunks without staging
+
+            Line 925: # Stage only hunks containing a specific substring:
+
+            Line 930: # Stage hunks matching ANY of multiple patterns:
+
+            Line 936: # Stage hunks from a regex pattern:
+
+            Line 941: # Stage hunks from the staged diff (--cached) instead of the working tree:
+
+            Line 982: #### 3i.1 — Adjacent-Lines Isolation (git add -p Split Failure Fallback)
+
+            Line 999: # Commit 1: stage the file minus the second addition
+
+            Line 1006: # Commit 2: HEAD now has the first line; working tree still has both.
+
+            Line 1007: # git add sees only the second line as a delta from HEAD:
+
+            Line 1039: ### Step 4 — Formatting & Structural Partitioning
+
+            Line 1044: #### 4a — Formatting & Stylistic Consolidation
+
+            Line 1060: #### 4b — Structural Refactor Isolation
+
+            Line 1069: #### 4c — Zero Mixture
+
+            Line 1077: ### Step 5 — Configuration Coupling
+
+            Line 1093: ### Step 6 — Submodule Synchronization Protocol
+
+            Line 1114: ### Step 7 — Parent Sync Offer & Change Grouping
+
+            Line 1119: #### 7a — Parent State Analysis
+
+            Line 1124: #### 7b — Related Parent Changes Detection
+
+            Line 1135: #### 7c — Arranged Commit Preview
+
+            Line 1140: #### 7d — Execution Prompt
+
+            Line 1150: #### 7e — Post-Sync Cleanup
+
+            Line 1158: ### Step 8 — Generated vs Custom File Splitting
+
+            Line 1175: ### Step 9 — Commit Message Quality Standards
+
+            Line 1191: ### Step 10 — Execution & Verification
+
+            Line 1193: #### 9a — Step-by-Step Execution
+
+            Line 1201: #### 9b — Recovery
+
+            Line 1210: #### 9c — Pull Before Push
+
+            Line 1215: #### 9d — Opaque Content Analysis
+
+            Line 1221: #### 9e — History Refinement Delegation
+
+            Line 1227: #### 9f — Stash Workflow for Rebase
+
+            Line 1256: #### 9g — Corrupted Rebase State Recovery
+
+            Line 1285: #### 9h — Pre-Existing Staged Content Handling
+
+            Line 1312: #### 9i — Commit Message Delivery (Safe Pattern)
+
+            Line 1334: #### 9j — Post-Commit Verification
+
+            Line 1360: ### Step 11 — Logic-Documentation Compass
+
+            Line 1375: #### External Tool Asset Granularity
+
+
+          (Results truncated. Consider using a more specific path or pattern.)
+    time: 10/5/2026, 6:51:49.815 PM UTC
+    response: |+
+      I'll start by finding the headings and structure of the file.
+
+    duration: 3.424s
+    duration_ms: 3424
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: The file has 1673 lines. Let me get the rest of the headings (from line 1312 onward, and the truncated list). Let me grep more specifically for headings after line 1300.
+    thinking_duration: 154ms
+    thinking_duration_ms: 154
+    tool_calls:
+      - tool: grep
+        args:
+          path: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          pattern: ^#{1,4} .*
+          include: '*'
+        result: |-
+          Found 100 matches (more matches available)
+          /home/vscode/.local/share/opencode/tool-output/tool_10d3b2ac3001f5nfNenHg1JjrO:
+            Line 1: # Dependabot options reference
+
+            Line 9: ### Required keys
+
+            Line 23: # Basic `dependabot.yml` file with
+
+            Line 24: # minimum configuration for two package managers
+
+            Line 47: ## `allow` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 71: ### `dependency-name` (`allow`)
+
+            Line 80: ### `dependency-type` (`allow`)
+
+            Line 90: ### `update-types` (`allow`)
+
+            Line 106: ## `assignees` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 121: ## `commit-message` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 143: ### `prefix`
+
+            Line 150: ### `prefix-development`
+
+            Line 157: ### `include`
+
+            Line 162: ## `cooldown` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 181: ### **Configuration of `cooldown`**
+
+            Line 257: ## `directories` or `directory` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 276: ## `enable-beta-ecosystems` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 280: ## `groups` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 306: ### `dependency-type` (`groups`)
+
+            Line 315: ### `group-by` (`groups`)
+
+            Line 335: ### `patterns` and `exclude-patterns` (`groups`)
+
+            Line 339: ### `update-types` (`groups`)
+
+            Line 349: ## `ignore` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 371: ### `dependency-name` (`ignore`)
+
+            Line 380: ### `versions` (`ignore`)
+
+            Line 392: ### `update-types` (`ignore`)
+
+            Line 400: ## `insecure-external-code-execution` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 419: ## `labels` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 439: ## `milestone` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 456: ## `multi-ecosystem-groups` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 469: ### `multi-ecosystem-group`
+
+            Line 477: # Basic `dependabot.yml` file defining a multi-ecosystem-group
+
+            Line 497: ## `open-pull-requests-limit` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 513: ## `package-ecosystem` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 580: ## `pull-request-branch-name` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 605: ### `separator`
+
+            Line 616: ### `prefix`
+
+            Line 624: ### `max-length`
+
+            Line 635: ### `word-separator`
+
+            Line 644: ### `branch-name-case`
+
+            Line 652: ### `template`
+
+            Line 677: ## `rebase-strategy` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 693: ## `registries` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 715: ## `schedule` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 727: ### `interval`
+
+            Line 746: ### `day`
+
+            Line 752: ### `time`
+
+            Line 758: ### `cronjob`
+
+            Line 785: # Basic `dependabot.yml` file for cronjob
+
+            Line 799: ### `timezone`
+
+            Line 805: ## `target-branch` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 819: ## `exclude-paths` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates only" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg>
+
+            Line 837: ### Example
+
+            Line 852: # Sample patterns that can be used-
+
+            Line 854: # Pattern: docs/*.json
+
+            Line 855: # Matches: docs/foo.json, docs/bar.json
+
+            Line 857: # Pattern: *.lock
+
+            Line 858: # Matches: Gemfile.lock, package.lock, foo.lock (in any directory)
+
+            Line 860: # Pattern: test/**
+
+            Line 861: # Matches: test/foo.rb, test/bar/baz.rb, test/any/depth/file.txt
+
+            Line 863: # Pattern: config/settings.yml
+
+            Line 864: # Matches: config/settings.yml
+
+            Line 866: # Pattern: **/*.md
+
+            Line 867: # Matches: README.md, docs/guide.md, any/depth/file.md
+
+            Line 869: # Pattern: src/*
+
+            Line 870: # Matches: src/main.rb, src/app.js
+
+            Line 871: # Does NOT match: src/utils/helper.rb
+
+            Line 873: # Pattern: hidden/.*
+
+            Line 874: # Matches: hidden/.env, hidden/.secret
+
+            Line 879: ## `vendor` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 900: ## `versioning-strategy` <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-versions" aria-label="Version updates" role="img"><path d="M10 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2Zm-.5-2a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 .5-.5V4a.5.5 0 0 0-.5-.5H10a.5.5 0 0 0-.5.5ZM6.17 4.165a.75.75 0 0 1-.335 1.006c-.228.114-.295.177-.315.201a.035.035 0 0 0-.008.016.423.423 0 0 0-.012.112v13c0 .07.008.102.012.112a.03.03 0 0 0 .008.016c.02.024.087.087.315.201a.749.749 0 1 1-.67 1.342c-.272-.136-.58-.315-.81-.598C4.1 19.259 4 18.893 4 18.5v-13c0-.393.1-.759.355-1.073.23-.283.538-.462.81-.598a.75.75 0 0 1 1.006.336ZM2.15 5.624a.75.75 0 0 1-.274 1.025c-.15.087-.257.17-.32.245C1.5 6.96 1.5 6.99 1.5 7v10c0 .01 0 .04.056.106.063.074.17.158.32.245a.75.75 0 0 1-.752 1.298C.73 18.421 0 17.907 0 17V7c0-.907.73-1.42 1.124-1.65a.75.75 0 0 1 1.025.274Z"></path></svg> <svg version="1.1" width="24" height="24" viewBox="0 0 24 24" class="octicon octicon-shield-check" aria-label="Security updates" role="img"><path d="M16.53 9.78a.75.75 0 0 0-1.06-1.06L11 13.19l-1.97-1.97a.75.75 0 0 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.06 0l5-5Z"></path><path d="m12.54.637 8.25 2.675A1.75 1.75 0 0 1 22 4.976V10c0 6.19-3.771 10.704-9.401 12.83a1.704 1.704 0 0 1-1.198 0C5.77 20.705 2 16.19 2 10V4.976c0-.758.489-1.43 1.21-1.664L11.46.637a1.748 1.748 0 0 1 1.08 0Zm-.617 1.426-8.25 2.676a.249.249 0 0 0-.173.237V10c0 5.46 3.28 9.483 8.43 11.426a.199.199 0 0 0 .14 0C17.22 19.483 20.5 15.461 20.5 10V4.976a.25.25 0 0 0-.173-.237l-8.25-2.676a.253.253 0 0 0-.154 0Z"></path></svg>
+
+            Line 939: ### Versioning tags
+
+            Line 951: #### Supported versioning tags
+
+            Line 1013: #### Ecosystem-specific versioning details
+
+            Line 1069: #### Versioning tag glossary
+
+            Line 1086: ## Top-level `registries` key
+
+            Line 1095: # Minimal settings to update dependencies stored in one private registry
+
+            Line 1128: ### `type` and authentication details
+
+            Line 1155: ### `url` and `replaces-base`
+
+            Line 1159: ### `scope`
+
+            Line 1165: #### Priority order for npm registry resolution
+
+
+          /home/vscode/.local/share/opencode/tool-output/tool_10cf2e094001rjv4dqzztZrvT8:
+            Line 2: # Skill: git-atomic-commit-construction
+
+            Line 4: # Git Atomic Commit Construction Skill
+
+            Line 10: ## Description
+
+            Line 24: ## Source Rules
+
+            Line 38: ## Prerequisites
+
+            Line 47: ## When to Apply
+
+            Line 80: ## Step-by-Step Procedure
+
+            Line 82: ### Step 0 — Environment & Repository Context
+
+            Line 86: #### 0a — Authenticate Services
+
+            Line 96: #### 0b — Identify the Target Repository
+
+            Line 105: #### 0c — Working Directory Persistence (Critical)
+
+            Line 110: # Recommended: git -C with absolute path
+
+            Line 114: # Why this matters: Shell `cd` commands do not persist across tool invocations
+
+            Line 115: # in stateless execution environments. Using git -C ensures consistent behavior
+
+            Line 116: # across all command chains and multi-step workflows.
+
+            Line 118: # Pattern for multi-repo work:
+
+            Line 133: # ❌ May not reliably persist across invocations
+
+            Line 140: # ✅ Reliable and explicit
+
+            Line 144: #### 0d — Verify Build Tool Permissions
+
+
+          (Results truncated. Consider using a more specific path or pattern.)
+      - tool: bash
+        args:
+          command: 'grep -n ''^#\{1,4\} '' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et | awk -F: ''$1 > 1280'''
+        result: |
+          1285:#### 9h — Pre-Existing Staged Content Handling
+          1312:#### 9i — Commit Message Delivery (Safe Pattern)
+          1334:#### 9j — Post-Commit Verification
+          1360:### Step 11 — Logic-Documentation Compass
+          1375:#### External Tool Asset Granularity
+          1389:### Step 12 — Source Logic & Generated Files
+          1391:#### 11a — Update the Source, Not the Output
+          1399:#### 11b — Identify Synchronization Mechanisms
+          1410:#### 11c — CI/CD Managed File Exclusion
+          1427:### Step 13 — Intermediate State Synthesis
+          1435:#### Preferred: Scripted Fallback (no working-tree mutation)
+          1453:#### Fallback: Manual De-construction (The Synthesis Strategy)
+          1476:#### HEAD-Synthesis Staging (cacheinfo-based)
+          1505:### Step 14 — User-Requested Coupling & Deviations
+          1520:### Step 15 — Push Protocol
+          1538:### Step 16 — Guardrail Against Predictive Planning
+          1548:## Scope Coverage
+          1563:## Prohibited Behaviors
+          1595:## Related Skills
+          1624:## Composition Rationale
+          1639:## Common Pitfalls
+    time: 10/5/2026, 6:51:53.259 PM UTC
+    response: |+
+      The file is 1673 lines. Let me get the remaining headings after line 1300.
+
+    duration: 2.060s
+    duration_ms: 2060
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The bash grep worked and showed headings from line 1285 to 1639. But the grep tool seemed to be searching the whole tool-output directory (it found other files). Let me use bash grep with more precise output for the target file only, from line 1285 onward. Actually, I already have the key headings. The file has 1673 lines. So the truncated content likely starts somewhere around line 1191 (Step 10) or maybe later. The user said "roughly through Step 10 — Execution & Verification / section 9f about stashes" was already read, and about 20KB truncated at the end.
+
+      Let me get all headings from line 1150 to end precisely. The bash command gave me 1285+. Let me also get 1150-1285 headings.
+
+      From the first grep (which did target the file), headings up to 1375 were listed but truncated at 100 matches. The bash grep gave from 1285. Let me get the missing range 1150-1290 with bash.
+
+      Actually, I have:
+      - 1158: ### Step 8 — Generated vs Custom File Splitting
+      - 1175: ### Step 9 — Commit Message Quality Standards
+      - 1191: ### Step 10 — Execution & Verification
+      - 1193: #### 9a — Step-by-Step Execution
+      - 1201: #### 9b — Recovery
+      - 1210: #### 9c — Pull Before Push
+      - 1215: #### 9d — Opaque Content Analysis
+      - 1221: #### 9e — History Refinement Delegation
+      - 1227: #### 9f — Stash Workflow for Rebase
+      - 1256: #### 9g — Corrupted Rebase State Recovery
+      - 1285: #### 9h — Pre-Existing Staged Content Handling
+      - 1312: #### 9i — Commit Message Delivery (Safe Pattern)
+      - 1334: #### 9j — Post-Commit Verification
+      - 1360: ### Step 11 — Logic-Documentation Compass
+      - 1375: #### External Tool Asset Granularity
+      - 1389: ### Step 12 — Source Logic & Generated Files
+      - 1391: #### 11a — Update the Source, Not the Output
+      - 1399: #### 11b — Identify Synchronization Mechanisms
+      - 1410: #### 11c — CI/CD Managed File Exclusion
+      - 1427: ### Step 13 — Intermediate State Synthesis
+      - 1435: #### Preferred: Scripted Fallback (no working-tree mutation)
+      - 1453: #### Fallback: Manual De-construction (The Synthesis Strategy)
+      - 1476: #### HEAD-Synthesis Staging (cacheinfo-based)
+      - 1505: ### Step 14 — User-Requested Coupling & Deviations
+      - 1520: ### Step 15 — Push Protocol
+      - 1538: ### Step 16 — Guardrail Against Predictive Planning
+      - 1548: ## Scope Coverage
+      - 1563: ## Prohibited Behaviors
+      - 1595: ## Related Skills
+      - 1624: ## Composition Rationale
+      - 1639: ## Common Pitfalls
+
+      There may be more headings after 1639. Let me grep for headings from 1639 to end with bash.
+
+      The user says the beginning was read roughly through Step 10 / section 9f about stashes, and ~20KB was truncated at the end. 20KB of 71KB is a lot. The file is 1673 lines. So the truncation point could be around line 1200 or so. Let me read from line 1191 onward in chunks. That's about 480 lines. That's fine to read. Actually, to be safe, read from around line 1150 (Step 9) through the end, in a couple of Read calls. The user wants everything after the truncation point, with focus on Step 10+. Reading lines 1150-1673 = ~520 lines. That's acceptable. But instructions say don't dump the whole file. Reading 520 lines in two reads is fine, and I'll summarize.
+
+      Let me first check the headings after 1639.
+    thinking_duration: 3.024s
+    thinking_duration_ms: 3024
+    tool_calls:
+      - tool: bash
+        args:
+          command: 'grep -n ''^#\{1,6\} '' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et | awk -F: ''$1 >= 1150'''
+        result: |
+          1150:#### 7e — Post-Sync Cleanup
+          1158:### Step 8 — Generated vs Custom File Splitting
+          1175:### Step 9 — Commit Message Quality Standards
+          1191:### Step 10 — Execution & Verification
+          1193:#### 9a — Step-by-Step Execution
+          1201:#### 9b — Recovery
+          1210:#### 9c — Pull Before Push
+          1215:#### 9d — Opaque Content Analysis
+          1221:#### 9e — History Refinement Delegation
+          1227:#### 9f — Stash Workflow for Rebase
+          1256:#### 9g — Corrupted Rebase State Recovery
+          1285:#### 9h — Pre-Existing Staged Content Handling
+          1312:#### 9i — Commit Message Delivery (Safe Pattern)
+          1334:#### 9j — Post-Commit Verification
+          1360:### Step 11 — Logic-Documentation Compass
+          1375:#### External Tool Asset Granularity
+          1389:### Step 12 — Source Logic & Generated Files
+          1391:#### 11a — Update the Source, Not the Output
+          1399:#### 11b — Identify Synchronization Mechanisms
+          1410:#### 11c — CI/CD Managed File Exclusion
+          1427:### Step 13 — Intermediate State Synthesis
+          1435:#### Preferred: Scripted Fallback (no working-tree mutation)
+          1453:#### Fallback: Manual De-construction (The Synthesis Strategy)
+          1476:#### HEAD-Synthesis Staging (cacheinfo-based)
+          1505:### Step 14 — User-Requested Coupling & Deviations
+          1520:### Step 15 — Push Protocol
+          1538:### Step 16 — Guardrail Against Predictive Planning
+          1548:## Scope Coverage
+          1563:## Prohibited Behaviors
+          1595:## Related Skills
+          1624:## Composition Rationale
+          1639:## Common Pitfalls
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          offset: 1170
+          limit: 250
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          1170:   portion, separate those alterations from the raw API import if
+          1171:   possible, or document clearly as user-patches.
+          1172: 
+          1173: ---
+          1174: 
+          1175: ### Step 9 — Commit Message Quality Standards
+          1176: 
+          1177: Every commit message MUST meet these quality requirements:
+          1178: 
+          1179: | Requirement | Detail |
+          1180: |---|---|
+          1181: | **Specificity** | Avoid generic titles. List specific components (e.g., `add linux, macos, and windows gitignore rules` not `os-specific`) |
+          1182: | **Anti-Repetition** | The body MUST NOT merely rephrase the title |
+          1183: | **Context Enrichment** | Explain the 'Why' — especially for architectural or security decisions |
+          1184: | **Atomic Rationale** | The body MUST state WHY these specific changes are grouped together. If multiple files, explain their functional coupling |
+          1185: | **Constraint Documentation** | Mention constraints or external dependencies that influenced grouping |
+          1186: | **Contextual Accuracy** | Use precise terms (e.g., "Supabase project-specific" not generic "project-specific") |
+          1187: | **Body/Diff Congruence** | The message body MUST be a complete, accurate summary of ALL changes in the staged hunks. Any discrepancy requires an immediate corrected preview |
+          1188: 
+          1189: ---
+          1190: 
+          1191: ### Step 10 — Execution & Verification
+          1192: 
+          1193: #### 9a — Step-by-Step Execution
+          1194: 
+          1195: Execute commits one-by-one according to the approved arrangement.
+          1196: **Chaining commands (e.g., `git add . && git commit`) is FORBIDDEN.**
+          1197: Each command MUST be issued as a separate step so the user can inspect
+          1198: intermediate state (`git status`, diff, preview) before authorizing the
+          1199: next action. Chaining suppresses this verification window.
+          1200: 
+          1201: #### 9b — Recovery
+          1202: 
+          1203: If a mistake is made during staging:
+          1204: 
+          1205: - **Unstage:** `git reset <file>`
+          1206: - **Selective discard:** `git checkout -p`
+          1207: - **WARNING:** Never use `git reset --hard` for synchronization.
+          1208:   Always prefer `git pull`.
+          1209: 
+          1210: #### 9c — Pull Before Push
+          1211: 
+          1212: Always `git pull` (or `git pull --rebase` upon explicit approval) before
+          1213: pushing to incorporate latest remote changes.
+          1214: 
+          1215: #### 9d — Opaque Content Analysis
+          1216: 
+          1217: For files flagged as binary or large assets (LFS), verify internal
+          1218: consistency by inspecting file contents (e.g., `cat -v` or hex dump) to
+          1219: ensure the commit message accurately reflects the data being stored.
+          1220: 
+          1221: #### 9e — History Refinement Delegation
+          1222: 
+          1223: If existing commits need to be split or refined (e.g., to fix non-atomic
+          1224: changes), delegate to the
+          1225: [`git_history_refinement`](../git-history-refinement/SKILL.md) skill.
+          1226: 
+          1227: #### 9f — Stash Workflow for Rebase
+          1228: 
+          1229: If rebase fails due to unstaged changes:
+          1230: 
+          1231: ```powershell
+          1232: git stash push -m "Descriptive message"
+          1233: git pull --rebase origin <branch>
+          1234: git stash pop
+          1235: ```
+          1236: 
+          1237: If `git stash pop` creates conflicts, resolve manually, then:
+          1238: 
+          1239: ```bash
+          1240: PAGER=cat git add <resolved-files>
+          1241: PAGER=cat git stash drop
+          1242: ```
+          1243: 
+          1244: > **Stash preservation rule:** `git stash drop`/`pop`/`clear` are destructive and require explicit per-stash user
+          1245: > authorization — even inside a "cleanup" batch. See
+          1246: > [`git-operation-rules.md` §5 — Stash Preservation](../../../ai-agent-rules/git-operation-rules.md) for the
+          1247: > Inventory → Inspect → Authorize → Act protocol and recovery window. For triage of pre-existing stashes whose
+          1248: > origin is unclear (Bucket A/B/C/D classification, hang-free inspection, apply-not-pop), use
+          1249: > [`git-stash-triage`](../git-stash-triage/SKILL.md).
+          1250: >
+          1251: > **Stash provenance note:** Before applying or popping a stash, consider checking its origin commit to understand
+          1252: > what state it was created from. Use the [`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md) base skill:
+          1253: > `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}` outputs the commit hash and subject
+          1254: > that was HEAD when the stash was created.
+          1255: 
+          1256: #### 9g — Corrupted Rebase State Recovery
+          1257: 
+          1258: If `git rebase --continue` or `git rebase --abort` fails with
+          1259: `warning: could not read '.git/rebase-merge/head-name'`, the
+          1260: `.git/rebase-merge` directory is likely empty or corrupted.
+          1261: 
+          1262: **Diagnostic:**
+          1263: 
+          1264: ```powershell
+          1265: Test-Path ".git/rebase-merge"           # True = directory exists
+          1266: Get-ChildItem ".git/rebase-merge"       # Empty = corrupted state
+          1267: ```
+          1268: 
+          1269: **Resolution:**
+          1270: 
+          1271: 1. **Verify staged changes are intact** — run `PAGER=cat git diff --cached` to
+          1272:    confirm your staged work is preserved.
+          1273: 2. **Remove the corrupted directory:**
+          1274: 
+          1275:    ```powershell
+          1276:    Remove-Item ".git/rebase-merge" -Recurse -Force
+          1277:    ```
+          1278: 
+          1279: 3. **Verify clean state** — run `PAGER=cat git status` to confirm the rebase
+          1280:    state indicator is gone.
+          1281: 4. **Commit directly** — since the rebase state is cleared, use a
+          1282:    normal `PAGER=cat git commit` with the planned message instead of
+          1283:    `PAGER=cat git rebase --continue`.
+          1284: 
+          1285: #### 9h — Pre-Existing Staged Content Handling
+          1286: 
+          1287: Before staging files for a new commit, check whether the index already
+          1288: contains staged changes from a prior operation (previous commit,
+          1289: interrupted workflow, or manual staging):
+          1290: 
+          1291: ```bash
+          1292: git diff --cached --stat
+          1293: ```
+          1294: 
+          1295: If the output is **non-empty**, pre-existing staged content exists. The
+          1296: agent MUST:
+          1297: 
+          1298: 1. **Present** the pre-existing staged content to the user with a warning.
+          1299: 2. **Unstage** it if it does not belong to the current commit:
+          1300: 
+          1301:    ```bash
+          1302:    git reset HEAD -- .
+          1303:    ```
+          1304: 
+          1305: 3. **Re-verify** with `git diff --cached` that the index is now clean.
+          1306: 4. **Stage only the files intended** for the current atomic commit.
+          1307: 
+          1308: This prevents accidental inclusion of stale staged content. The `git reset
+          1309: HEAD -- .` command only unstages files — it does NOT discard working-tree
+          1310: changes.
+          1311: 
+          1312: #### 9i — Commit Message Delivery (Safe Pattern)
+          1313: 
+          1314: Delegated to the
+          1315: [`git-commit-message-delivery`](../git-commit-message-delivery/SKILL.md)
+          1316: base skill. Apply the **heredoc → `-F`** pattern (§1.2) for all multi-line
+          1317: or special-character commit messages:
+          1318: 
+          1319: ```bash
+          1320: cat > /tmp/commit_msg <<'EOF'
+          1321: <type>(<scope>): <title>
+          1322: 
+          1323: <body>
+          1324: EOF
+          1325: 
+          1326: git commit -F /tmp/commit_msg
+          1327: rm -f /tmp/commit_msg
+          1328: ```
+          1329: 
+          1330: Do NOT use `git commit -m '...'` when the message is multi-line or contains
+          1331: shell-special characters (`'`, `$`, `` ` ``). See the base skill for the
+          1332: complete pattern reference and selection criteria.
+          1333: 
+          1334: #### 9j — Post-Commit Verification
+          1335: 
+          1336: After each commit executes, verify its file set using `--name-only`, not
+          1337: `--stat`:
+          1338: 
+          1339: ```bash
+          1340: git show --name-only HEAD
+          1341: ```
+          1342: 
+          1343: `git show --stat` truncates long file paths with `.../`, which causes `grep`
+          1344: (or `Select-String`) to miss matches. `--name-only` outputs every path in
+          1345: full, one per line, and is safe for programmatic matching.
+          1346: 
+          1347: Verify three things:
+          1348: 
+          1349: 1. **File set is correct** — the committed files match what was staged.
+          1350: 2. **Count matches** — the number of committed files equals the expected
+          1351:    number.
+          1352: 3. **No unintended files** — no sidecar files (`.orig`, `.bak`, `.rej`) or
+          1353:    IDE artifacts leaked into the commit.
+          1354: 
+          1355: If the file set is wrong, diagnose via `git diff HEAD~1..HEAD` and correct
+          1356: before the next commit.
+          1357: 
+          1358: ---
+          1359: 
+          1360: ### Step 11 — Logic-Documentation Compass
+          1361: 
+          1362: Visualize the commit history as a compass where each direction is a
+          1363: logical area:
+          1364: 
+          1365: | Direction | Area |
+          1366: |---|---|
+          1367: | **North** | Architectural / Schema changes |
+          1368: | **East** | Logic / Feature implementation |
+          1369: | **West** | Testing / Verification |
+          1370: | **South** | Documentation / Refinement |
+          1371: 
+          1372: A high-quality commit history moves clearly through these directions
+          1373: without "spinning" (mixing logic and documentation in one commit).
+          1374: 
+          1375: #### External Tool Asset Granularity
+          1376: 
+          1377: When versioning assets for external tools (Postman, Insomnia, DBeaver),
+          1378: maximize granularity by separating:
+          1379: 
+          1380: - **Environments:** Endpoints, variables, credentials
+          1381: - **Collections:** Logical groupings of requests, tests, scripts
+          1382: - **Data Tables:** CSV/JSON templates for bulk-run or validation
+          1383: 
+          1384: Never group these into a single generic `test(tooling)` commit if they
+          1385: serve distinct purposes.
+          1386: 
+          1387: ---
+          1388: 
+          1389: ### Step 12 — Source Logic & Generated Files
+          1390: 
+          1391: #### 11a — Update the Source, Not the Output
+          1392: 
+          1393: Never manually edit generated files. Always update the source logic
+          1394: (templates, scripts, CI/CD workflows) that produces them:
+          1395: 
+          1396: - `README.md` from `templates/README.md.template` → edit the template
+          1397: - Build artifacts, compiled code → edit source code or configuration
+          1398: 
+          1399: #### 11b — Identify Synchronization Mechanisms
+          1400: 
+          1401: Before making changes:
+          1402: 
+          1403: 1. **Detect Generation:** Check for `<!-- AUTO-GENERATED -->` comments,
+          1404:    build scripts, or CI/CD workflows that regenerate files.
+          1405: 2. **Locate Source:** Find the template, script, or configuration that
+          1406:    produces the generated file.
+          1407: 3. **Document Sync:** Note in commit messages if manual synchronization
+          1408:    is required (e.g., "Run `npm run build` to regenerate").
+          1409: 
+          1410: #### 11c — CI/CD Managed File Exclusion
+          1411: 
+          1412: Files managed by CI/CD automation MUST be excluded from manual edits.
+          1413: 
+          1414: - Maintain an explicit exclusion list (e.g., `README.md`,
+          1415:   `agent-rules.md`)
+          1416: - When verifying link updates, use `--exclude` flags:
+          1417: 
+          1418: ```powershell
+          1419: git grep -r "old-name.md" . --exclude-dir=.git --exclude=README.md
+
+          (Showing lines 1170-1419 of 1674. Use offset=1420 to continue.)
+          </content>
+    time: 10/5/2026, 6:51:55.327 PM UTC
+    response: |+
+      The bash grep gave me the full heading map from line 1285 to the end. Let me check for any headings after line 1639, and then read the tail sections. The truncation point is somewhere in Step 10, so I'll read from Step 9/10 onward (~line 1170 to 1673).
+
+    duration: 7.941s
+    duration_ms: 7941
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have lines 1170-1419. Now I need to read the rest: 1420-1673. Let me do that. Also, I need to check the earlier parts for the commit-preview artifact details, safety stash (2h), preview verification (2d.2), planning-artifact-naming convention, etc. The user says beginning was already read through Step 10/9f, but they want exact details on those too. Since I need to report on items 3, 5, 6, 7 which are in earlier sections (2d.2, 2h, etc.), I should read those sections too. But the task says "extract and summarize EVERYTHING after the truncation point". However, the specific questions include things like commit-preview artifact, safety stash applicability to 1-commit plan, and git-commit-message-delivery usage — some of which are earlier in the doc (2d.2, 2h, 2f.1). The user asks to focus after truncation, but also asks specific questions that may be answered anywhere. Let me read the rest first, then check the earlier sections for the specific questions.
+
+      Let me read 1420-1673 and also read the sections 2d.2 (413-460), 2h (593-625), 2f.1 (519-575). Actually, the user said the beginning was already read through Step 10 / 9f, and 20KB truncated. 20KB at ~43 bytes/line ≈ 460 lines. 1673 - 460 = ~1210. So truncation point is likely around line 1210-1230 (9c/9d). But they say "roughly through Step 10 / 9f". I'll summarize from Step 9/10 onward comprehensively. But to answer questions 3, 5, 6 accurately, I should check the earlier sections too since they may hold the preview artifact and safety stash details. The user explicitly asks about "whether the safety stash applies to a 1-commit plan" — that's section 2h. I should read it. Also the commit-preview artifact naming (2d.2 and 2f.1).
+
+      Let me read 1420-end and the earlier relevant sections in parallel.
+    thinking_duration: 1.891s
+    thinking_duration_ms: 1891
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          offset: 1420
+          limit: 260
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          1420: ```
+          1421: 
+          1422: - Before committing, run `git diff --cached` and verify no CI/CD managed files are staged unless
+          1423:   the commit explicitly targets the source logic that generates them.
+          1424: 
+          1425: ---
+          1426: 
+          1427: ### Step 13 — Intermediate State Synthesis
+          1428: 
+          1429: When a file contains interleaved changes or massive structural reorders
+          1430: (50+ lines moved) mixed with functional fixes, hunk-based staging may
+          1431: become unreliable. This also applies when `git add -p` hunk splitting
+          1432: fails on **adjacent added or deleted lines** that must go into separate
+          1433: commits — see §3i.1 for the scripted fallback.
+          1434: 
+          1435: #### Preferred: Scripted Fallback (no working-tree mutation)
+          1436: 
+          1437: When `git add -p` split fails and the unwanted content is isolated to
+          1438: single lines, prefer `stage-file-excluding-lines.py` over manual
+          1439: editing:
+          1440: 
+          1441: 1. **Isolate with script:** Run
+          1442:    `stage-file-excluding-lines.py --file <f> --exclude "<unwanted-line>"`
+          1443:    to stage only the desired line(s) via a cacheinfo blob (§3i.1).
+          1444:    Working tree is untouched — zero risk of forgetting a restore step.
+          1445: 2. **Commit:** Commit the staged intermediate version.
+          1446: 3. **Iterate:** `git add <f>` picks up the remaining lines as unstaged
+          1447:    deltas from the new HEAD. Repeat for the next commit.
+          1448: 
+          1449: See [§3i.1](#3i1--adjacent-lines-isolation-git-add--p-split-failure-fallback)
+          1450: for the full procedure, invocation examples, and the decision of when
+          1451: to fall back to manual editing.
+          1452: 
+          1453: #### Fallback: Manual De-construction (The Synthesis Strategy)
+          1454: 
+          1455: When the scripted fallback is unavailable (no `.agents/` tree, Python
+          1456: not on PATH), or unwanted content spans multiple non-adjacent positions:
+          1457: 
+          1458: 1. **De-construct:** Manually edit the file (or use selective
+          1459:    undo/revert) to match the current atomic goal BEFORE staging.
+          1460: 2. **Stage & Commit:** Stage the "synthesized" intermediate version that
+          1461:    contains ONLY the intended logical unit.
+          1462: 3. **Iterate:** Repeat for remaining changes until the working directory
+          1463:    is clean.
+          1464: 
+          1465: This guarantees that even high-entropy working states can be refactored
+          1466: into pristine, industrial-grade commit history.
+          1467: 
+          1468: **Formatter-mixed files (JSON, YAML, config):** When a tool (editor,
+          1469: runtime, formatter) has also reformatted the file, the diff is too noisy
+          1470: for manual de-construction. Use the dedicated
+          1471: [`separate-content-from-formatting-commits`](../separate-content-from-formatting-commits/SKILL.md)
+          1472: skill, which automates intermediate-state building via Python helpers that
+          1473: preserve the original format across all content commits and optionally
+          1474: append a single `style:` reformat commit at the end.
+          1475: 
+          1476: #### HEAD-Synthesis Staging (cacheinfo-based)
+          1477: 
+          1478: When the desired intermediate state can be expressed as the committed HEAD
+          1479: version with a set of mechanical substitutions (e.g., replace all occurrences
+          1480: of `<private-config-repo>` with `<private-repo>`), use `stage-head-synthesize.py`
+          1481: to stage a HEAD-derived blob directly — no working-tree file is touched.
+          1482: 
+          1483: 1. **Synthesize and stage:** Run
+          1484:    `stage-head-synthesize.py --file <f> --replace "old|new"` to read
+          1485:    HEAD:`<f>`, apply the replacements, write a new blob, and stage it via
+          1486:    `git update-index --cacheinfo`. The working tree remains unchanged.
+          1487: 2. **Commit:** Commit the staged intermediate version.
+          1488: 3. **Iterate:** `git add <f>` picks up the remaining working-tree delta from
+          1489:    the new HEAD. Repeat for the next commit.
+          1490: 
+          1491: This fills the gap between `stage-file-excluding-lines.py` (working-tree-based
+          1492: exclusion) and `agents-md-stage-row.py` (AGENTS.md-row-only). All three scripts
+          1493: are siblings under `scripts/`:
+          1494: 
+          1495: - `agents-md-stage-row.py` — HEAD + one new row, alphabetically inserted.
+          1496: - `stage-file-excluding-lines.py` — working tree minus matching lines.
+          1497: - `stage-head-synthesize.py` — HEAD with mechanical substitutions.
+          1498: - `stage-hunk-from-diff.py` — selective hunk staging from a diff.
+          1499: 
+          1500: See also [`stage-head-synthesize.py`](../git-hunk-staging-primitives/scripts/stage-head-synthesize.py) for
+          1501: invocation examples and safety guards.
+          1502: 
+          1503: ---
+          1504: 
+          1505: ### Step 14 — User-Requested Coupling & Deviations
+          1506: 
+          1507: If the user explicitly requests coupling unrelated changes or deviating
+          1508: from atomic rules:
+          1509: 
+          1510: 1. **Warn First:** Explicitly warn: "This coupling technically violates
+          1511:    Rule [X] because [reason]."
+          1512: 2. **Explicit Override:** Accept the coupling ONLY if the user
+          1513:    re-confirms after the warning.
+          1514: 3. **Documentation:** Document the deviation rationale in the commit
+          1515:    message body (e.g., "Coupled with IDE updates per user request for
+          1516:    atomic convenience").
+          1517: 
+          1518: ---
+          1519: 
+          1520: ### Step 15 — Push Protocol
+          1521: 
+          1522: After commits are complete, follow the push protocol:
+          1523: 
+          1524: - **Explicit Request Required:** Do NOT execute `git push` unless the
+          1525:   user explicitly requests it.
+          1526: - **Offer, Don't Execute:** After commits, OFFER to push. Wait for
+          1527:   explicit "yes" or `git push` command.
+          1528: - **Status Check:** Always run `git status` before push.
+          1529: - **Discover Default Branch:** Do NOT assume the default branch name.
+          1530:   Discover it programmatically:
+          1531: 
+          1532: ```powershell
+          1533: git branch -r
+          1534: ```
+          1535: 
+          1536: ---
+          1537: 
+          1538: ### Step 16 — Guardrail Against Predictive Planning
+          1539: 
+          1540: The agent must never "commit" in a plan to what will be changed in the
+          1541: future. Commit construction is a **Real-Time Analysis** task. The plan
+          1542: serves only as a roadmap for the **Protocol** of commitment, not the
+          1543: **Content** of the commits themselves. Logic for commit construction must
+          1544: be synthesized from real-time analysis, never mocked in a plan.
+          1545: 
+          1546: ---
+          1547: 
+          1548: ## Scope Coverage
+          1549: 
+          1550: | Category | Convention |
+          1551: |---|---|
+          1552: | Functional changes | One logical unit per commit |
+          1553: | Formatting / style | Dedicated `style` commit |
+          1554: | Structural refactors | Dedicated `refactor` commit |
+          1555: | Config updates | Coupled with their functional change |
+          1556: | Submodule pointer updates | Descriptive title, coupled with main-repo config |
+          1557: | Submodule commit auto-sync | Automatic parent repo SHA update offer after every submodule commit; execute on user "yes" |
+          1558: | Generated vs custom content | Split into Foundation + Customization commits |
+          1559: | CI/CD managed files | Excluded from manual edits |
+          1560: 
+          1561: ---
+          1562: 
+          1563: ## Prohibited Behaviors
+          1564: 
+          1565: The agent is **BLOCKED** from:
+          1566: 
+          1567: - **Auto-committing** — Never commit without explicit user "start"
+          1568:   authorization
+          1569: - **Auto-pushing** — Never push without explicit user request
+          1570: - **Mixing concerns** — Never combine formatting + logic + refactor in
+          1571:   one commit
+          1572: - **Staging untracked files without confirmation** — Especially in repos
+          1573:   with minimal `.gitignore`
+          1574: - **Using `git reset --hard` for synchronization** — Use `git pull`
+          1575:   instead
+          1576: - **Skipping the commit preview** — The verbose arranged commits display
+          1577:   is mandatory
+          1578: - **Excluding untracked files from initial analysis** — Untracked files
+          1579:   MUST be included in the Step 1 inventory alongside staged and unstaged
+          1580:   changes; discovering them post-commit is a protocol violation
+          1581: - **Predicting commit content in plans** — Commits are built from
+          1582:   real-time analysis only
+          1583: - **Editing generated files directly** — Update the source logic instead
+          1584: - **Using generic commit messages** — Every message must be specific and
+          1585:   non-repetitive
+          1586: - **Command chaining (`&&`)** — Chaining `git add . && git commit && git push`
+          1587:   (or any variant) suppresses per-step verification and is FORBIDDEN
+          1588: - **Batching hunk responses** — Each hunk must be evaluated individually
+          1589: - **Skipping empty commits without user confirmation** — During rebase
+          1590:   operations
+          1591: - **Bulk-deleting directories with mixed tracked/untracked files** —
+          1592:   Never `Remove-Item` a directory that contains tracked files; remove
+          1593:   only specific untracked files to avoid accidental deletions
+          1594: 
+          1595: ## Related Skills
+          1596: 
+          1597: - **[Git Submodule Commit Details](../git-submodule-commit-details/SKILL.md)**
+          1598:   — MANDATORY for extracting metadata during parent-repo sync commits (Step 6).
+          1599: - **[Git Commit Metadata Extraction](../git-commit-metadata-extraction/SKILL.md)**
+          1600:   — The foundational primitive for all high-fidelity extraction.
+          1601: - **[Git Commit Preview Verify](../git/basic/edit/git-commit-preview-verify/SKILL.md)**
+          1602:   — Base skill for post-execution verification of commit previews (§2d.2).
+          1603: - **[Git History Refinement](../git-history-refinement/SKILL.md)**
+          1604:   — For splitting or refining non-atomic existing commits.
+          1605: - **[Claude Config Change Gate](../claude-config-change-gate/SKILL.md)**
+          1606:   — Pre-flight check: before any commit workflow against a repo with
+          1607:   auto-timestamped claude config files, run this gate first. If it
+          1608:   BLOCKS, only trivial timestamp changes exist and the commit SHOULD
+          1609:   be cancelled. If it PASSES or the repo has no claude config files,
+          1610:   the atomic commit workflow proceeds normally.
+          1611: - **[Repo Scratch Output Capture](../repo-scratch-output-capture/SKILL.md)**
+          1612:   — For writing the commit preview artifact to `scratch/commit-preview.md`
+          1613:   (§2d mandate 4) with the `ensure-scratch-gitignored.py` helper.
+          1614: - **[Git Hunk Staging Primitives](../git-hunk-staging-primitives/SKILL.md)**
+          1615:   — Base skill providing all 5 hunk-staging primitives via public CLI
+          1616:   contract: `stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+          1617:   `agents-md-stage-row.py`, `stage-head-synthesize.py`,
+          1618: `stage-specific-hunks.py`. This skill is a composer: it does NOT
+          1619:    re-implement hunk-staging primitives; it orchestrates the base skill.
+          1620: - **[Git Commit Dangling-Link Audit](../git-commit-dangling-link-audit/SKILL.md)**
+          1621:   — MANDATORY pre-flight before finalizing any preview that
+          1622:   reorders/moves paths: run the link classifier, then Gate 4 on ranges.
+          1623: 
+          1624: ## Composition Rationale
+          1625: 
+          1626: This skill is a **composer**: it does NOT re-implement hunk-staging primitives.
+          1627: It orchestrates the base skill `git-hunk-staging-primitives` via its public
+          1628: CLI contract. The base skill owns the 5 generic primitives
+          1629: (`stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+          1630: `agents-md-stage-row.py`, `stage-head-synthesize.py`,
+          1631: `stage-specific-hunks.py`) as domain-agnostic deterministic Tier-A scripts.
+          1632: This skill adds the domain-specific logic: commit-preview quality mandates
+          1633: (§2d), deferred cross-reference handling (§2f.1), adjacent-lines fallback
+          1634: (§3i.1), HEAD-synthesis (§13), and the full atomic commit construction
+          1635: protocol (§0–§16). Inlining the primitives would split the SSOT and force
+          1636: other composers (`git-history-refinement`, `git-pre-execution-safety-stash`)
+          1637: to duplicate them.
+          1638: 
+          1639: ## Common Pitfalls
+          1640: 
+          1641: | Pitfall | Solution |
+          1642: |---|---|
+          1643: | Scanned with `Get-ChildItem` and got false positives | Use `git ls-files` as source of truth for tracked files |
+          1644: | `.gitignore` negation patterns missed | Read `.gitignore` carefully — `!dir/*.zip` means those zips ARE tracked |
+          1645: | `.gitignore` references to renamed directories not updated | `.gitignore` is a critical blast-radius target — update patterns or tracked files become untracked |
+          1646: | `git mv` failed on empty directory | Empty dirs aren't tracked by Git — use `Rename-Item` or `mv` instead |
+          1647: | `git add -p` split rejected on adjacent added/deleted lines | Use `stage-file-excluding-lines.py --exclude "<unwanted-line>"` (§3i.1) to stage only the desired line(s); commit; then `git add` the remaining lines as the next commit's delta. Prefer this over manual file editing. |
+          1648: | Noise from unrelated hunks leaked into functional commit | Use `git add -p` and verify with `git diff --cached` after staging |
+          1649: | Formatting fix discovered during feature work | Stage and commit separately via hunk-based staging |
+          1650: | Committed half a logical change across two commits | If file A depends on file B's change, they MUST be in the same commit |
+          1651: | Untracked files discovered only after committing staged/unstaged changes | Include ALL three categories (staged + unstaged + untracked) in the initial Step 1 inventory — untracked files are first-class scope members |
+          1652: | CI/CD managed file manually edited | Check for auto-generation markers and CI workflows before editing |
+          1653: | Piped input to `git add -p` didn't register in PowerShell | Use file-based input or discard noise via `git checkout --` after accepting desired hunks |
+          1654: | Corrupted rebase state (`rebase-merge` dir empty) | Remove empty `.git/rebase-merge` directory to clear the broken state |
+          1655: | Commit message body just rephrases the title | Body must add WHY, not repeat WHAT |
+          1656: | Submodule pointer updated without verifying remote | Always verify the referenced commit exists in the remote submodule repo |
+          1657: | Cross-reference row to a not-yet-created artifact leaked into the earlier commit | Use `stage-file-excluding-lines.py --exclude <pointer>` (§2f.1) to stage the file minus the deferred row; the row stays in the working tree for the later commit |
+          1658: | Submodule sync commit follows legacy formatting | Always use 'Changes' and 'Metadata' headers and include chronological logs |
+          1659: | IDE auto-modified 50+ `.project` / `.classpath` files with boilerplate | Present suspected noise to user with sample diff and proposed discard command; never auto-discard — project may intentionally track IDE metadata |
+          1660: | Bulk-deleted `.settings/` directory and a tracked file disappeared | Use `git ls-files .settings/` to identify tracked files first; remove only specific untracked files, never the whole directory |
+          1661: | Assumed Maven nature/builder in `.project` came from `vscjava.vscode-maven` | The `.project` modifications come from **JDT Language Server** (embedded m2e), not the Maven UI extension; attribute correctly when presenting to user |
+          1662: | Indent drift after markdown edit silently staged | Discover correct indent via `pathlib.Path.read_text().splitlines()` `repr` scan of unmodified siblings; repair with a targeted Python `write_text`; re-verify before `git add` — do not stage drifted whitespace. See `§3g`. |
+          1663: | Commit preview shows wrong `@@` line numbers | Verify every `@@` header against actual `git diff --unified=3 -- <file>` before writing the preview — never estimate from memory |
+          1664: | Markdown preview breaks when diff contains fenced code blocks | Wrap the diff in `~~~diff`/`~~~` instead of ` ```diff `/` ``` ` — backtick fences inside a backtick-fenced block terminate the outer block prematurely |
+          1665: | Commit preview lines refer to wrong line numbers after edits | Re-run `git diff` to get fresh `@@` headers after any working-tree change and re-write the preview |
+          1666: 
+          1667: Base directory for this skill: /workspaces/ai-suite/.agents/skills/git-atomic-commit-construction
+          1668: Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.
+          1669: Note: file list is sampled.
+          1670: 
+          1671: <skill_files>
+          1672: <file>/workspaces/ai-suite/.agents/skills/git-atomic-commit-construction/AGENTS.md</file>
+          1673: </skill_files>
+          1674: </skill_content>
+
+          (End of file - total 1674 lines)
+          </content>
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          offset: 398
+          limit: 230
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          398: #### 2d.1 — Iterative Preview Fixup
+          399: 
+          400: After presenting the commit preview, the user may give feedback by line
+          401: number (e.g., "check line 98 — still broken"). Feedbacks typically
+          402: point to one of these issues in the preview:
+          403: 
+          404: - Wrong `@@` header (fix by verifying against actual `git diff`)
+          405: - Truncated content with `...` (restore full hunk)
+          406: - Nested fenced code blocks breaking markdown (switch to `~~~diff`/`~~~`)
+          407: - Missing context lines around changes (include the default 3-line context)
+          408: 
+          409: Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
+          410: Loop until the user confirms the preview is correct. Do NOT begin execution
+          411: until the user says "start".
+          412: 
+          413: #### 2d.2 — Post-Execution Preview Verification
+          414: 
+          415: After all arranged commits have been executed (or when resuming a session
+          416: that may have previously generated a commit preview), verify completion
+          417: by checking the preview against `git log`.
+          418: 
+          419: **Automated verification (preferred):**
+          420: 
+          421: Delegate to the
+          422: [`git-commit-preview-verify`](../git/basic/edit/git-commit-preview-verify/SKILL.md)
+          423: base skill:
+          424: 
+          425: ```bash
+          426: python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          427:     --preview scratch/commit-preview.md \
+          428:     --format text
+          429: ```
+          430: 
+          431: This parses the preview's `Commit N:` sections (any heading level),
+          432: cross-references each commit title against `git log --oneline`, and
+          433: reports done/pending status. Use `--format json` for machine-readable
+          434: output.
+          435: 
+          436: **Manual verification (fallback):**
+          437: 
+          438: 1. Read `scratch/commit-preview.md` and extract each `Commit N:` title
+          439: 2. Run `git log --oneline -20` and check for matching titles
+          440: 3. Report which commits are done and which are pending
+          441: 
+          442: **Cleanup:**
+          443: 
+          444: Once all commits are verified as executed, delete the preview file:
+          445: 
+          446: ```bash
+          447: # Automated (with verification gate)
+          448: python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          449:     --preview scratch/commit-preview.md \
+          450:     --cleanup
+          451: 
+          452: # Manual
+          453: trash scratch/commit-preview.md
+          454: ```
+          455: 
+          456: The preview file MUST NOT be deleted until all commits are confirmed
+          457: executed. If any commits are pending, the preview must be retained for
+          458: the next session.
+          459: 
+          460: #### 2e — Commit Authorization
+          461: 
+          462: The agent **MUST NOT** proceed with any commit execution until the user
+          463: explicitly says **"start"**. Other triggers like "commit" or "go" are
+          464: insufficient.
+          465: 
+          466: #### 2f — Interleaving Mandate (Artifact + Registry Registration)
+          467: 
+          468: Whenever a commit introduces or renames an artifact **and** a shared index /
+          469: registry file (e.g., `AGENTS-legacy.md` skills table, `.gitmodules`, CI
+          470: workflow manifests) needs a corresponding row or entry for that artifact, the
+          471: registry hunk MUST be **staged in the same commit** as the artifact itself —
+          472: never batched into a separate "registration" commit at the end. This applies to:
+          473: 
+          474: - **New skills**: `AGENTS-legacy.md` row for the skill → same commit as the skill
+          475:   `SKILL.md` / `scripts/` files.
+          476: - **Submodule syncs**: `.gitmodules` URL change and any `AGENTS-legacy.md` row
+          477:   referencing the submodule → same commit as the submodule pointer advance.
+          478: - **Any artifact with a shared index entry**: treat the index row as part of the
+          479:   artifact's definition, not as metadata to collect last.
+          480: 
+          481: When the registry file contains mixed hunks (some for this artifact, some
+          482: unrelated): use `git add -p <registry>` to stage only the relevant hunk(s)
+          483: alongside the artifact files; leave unrelated hunks unstaged for their own commits.
+          484: 
+          485: **When `git add -p` hunk boundaries don't align with row boundaries** (e.g.,
+          486: two session rows land in the same hunk as an out-of-scope row), use the
+          487: [`agents-md-stage-row.py`](../git-hunk-staging-primitives/scripts/agents-md-stage-row.py) script instead:
+          488: 
+          489: ```bash
+          490: # Dry-run: preview alphabetical position
+          491: python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+          492:     --row "| My Skill | [path](path) | description |" \
+          493:     --dry-run
+          494: 
+          495: # Stage exactly one row (default --mode staged: reads HEAD:AGENTS.md,
+          496: # inserts row, updates index; working tree is NOT touched)
+          497: python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+          498:     --row "| My Skill | [path](path) | description |"
+          499: ```
+          500: 
+          501: In default `--mode staged`, the script reads `HEAD:AGENTS.md` (not the working
+          502: tree), inserts the row at the alphabetically correct position, writes a new
+          503: blob via `git hash-object -w`, and updates the index via
+          504: `git update-index --cacheinfo` — so only the new row is staged while all other
+          505: working-tree changes remain unstaged.
+          506: 
+          507: The script also supports `--mode worktree` for the skill-factory registration
+          508: case (AGENTS.md is clean and you just want the row written to the working tree
+          509: for ordinary `git status` review and `git add`). See
+          510: [`skill-factory/SKILL.md` §2.4](../skill-factory/SKILL.md) for the registration
+          511: workflow.
+          512: 
+          513: Forbidden anti-pattern: "commit all artifacts first, then one final commit
+          514: registers them all in AGENTS-legacy.md" — this makes individual commits incomplete
+          515: (skill exists but is not discoverable) and destroys per-feature traceability.
+          516: 
+          517: See [Atomic Commit Construction Rules §3.1](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#31-interleaving-mandate-artifact--registry-registration).
+          518: 
+          519: #### 2f.1 — Deferred Cross-Reference Hunk Pattern
+          520: 
+          521: When two new artifacts (X and Y) ship in **separate commits B and C**, and one or
+          522: both files already contain a "Related Skills" / index row referencing the OTHER
+          523: artifact in the working tree, the cross-reference row must be deferred to whichever
+          524: commit lands the artifact it points to. Concretely: commit B (introduces X) MUST
+          525: NOT carry a row that references Y — Y does not yet exist in the tree, and the row
+          526: would dangle until commit C lands.
+          527: 
+          528: Three viable techniques, in order of preference:
+          529: 
+          530: 1. **`stage-file-excluding-lines.py`** (preferred — no working-tree mutation): write
+          531:    a blob equal to the working tree minus the deferred row(s), stage it directly
+          532:    via `git update-index --cacheinfo`, leave the working tree untouched. The
+          533:    deferred rows are picked up cleanly by `git add <file>` for commit C.
+          534: 
+          535:    ```bash
+          536:    python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          537:        --file .agents/skills/X/SKILL.md \
+          538:        --exclude "../Y/SKILL.md" \
+          539:        --dry-run
+          540: 
+          541:    python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          542:        --file .agents/skills/X/SKILL.md \
+          543:        --exclude "../Y/SKILL.md"
+          544:    ```
+          545: 
+          546:    When the deferred row belongs to a larger block (section header + table +
+          547:    trailing blank), append **`--blank-context 1`** to also strip the contiguous
+          548:    blank line after each match so no orphaned section header remains in the
+          549:    staged blob:
+          550: 
+          551:    ```bash
+          552:    python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          553:        --file .agents/skills/cra-reset-mocks-test-strategy/SKILL.md \
+          554:        --exclude "## Composition" \
+          555:        --exclude "Composition Mechanism" \
+          556:        --exclude "mrt-component-test-strategy" \
+          557:        --exclude "--- | ---" \
+          558:        --blank-context 1
+          559:    ```
+          560: 
+          561: 2. **Temporary edit + restore** (when the script is unavailable): edit the file to
+          562:    remove the deferred row, `git add` it, commit B, then re-insert the row in the
+          563:    working tree for commit C. Higher risk of forgetting the restore step; use only
+          564:    as a fallback.
+          565: 
+          566: 3. **`git add -p`** (when hunk boundaries align with row boundaries): split the
+          567:    hunk interactively. Often fails because Markdown table rows pack multiple
+          568:    logical entries into a single hunk; falls back to technique 1 or 2.
+          569: 
+          570: **Forbidden anti-pattern**: staging the deferred row in commit B "to keep the file
+          571: self-consistent" — the row points to an artifact that does not yet exist at
+          572: commit B, breaking checkout-at-B build/lint and destroying per-commit
+          573: traceability.
+          574: 
+          575: #### 2g — Batch-by-Batch Authorization (Long Sequences)
+          576: 
+          577: When the Arranged Commits sequence exceeds **5 commits**, split the preview
+          578: into batches of at most 5 commits and request a separate `"start"` per batch:
+          579: 
+          580: 1. Present each batch in the full §2d verbose format before executing any
+          581:    commit in that batch.
+          582: 2. After each batch executes, emit a one-line summary `Batch N committed:
+          583:    SHA1, SHA2, …` and present the next batch's preview.
+          584: 3. The user MAY abort, reorder, or modify subsequent batches between
+          585:    authorizations — do NOT pre-stage files for batches that have not yet
+          586:    been authorized.
+          587: 4. The first batch MUST include a top-level **Master Plan Table**
+          588:    (`# | type(scope): title | files | batch`) so the user has a single-pane
+          589:    view before authorizing batch 1.
+          590: 
+          591: See [Atomic Commit Construction Rules §3.2](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#32-batch-by-batch-authorization-long-sequences).
+          592: 
+          593: #### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+          594: 
+          595: Before executing the first commit of any sequence of two or more commits
+          596: (including any batch governed by §2g), capture an apply-not-pop safety
+          597: snapshot of the full working-tree state (tracked modifications, staged
+          598: hunks, AND untracked files) and re-apply it immediately so execution
+          599: proceeds against an unchanged tree. The snapshot persists across the
+          600: entire sequence and is verified-then-dropped only at end-of-session.
+          601: 
+          602: Delegate the full three-phase protocol (Snapshot → Hold → Verify-and-
+          603: Release) to [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md):
+          604: 
+          605: - **Phase 1 — Snapshot** before the first commit: classify any
+          606:   pre-existing stashes via [`git-stash-triage`](../git-stash-triage/SKILL.md),
+          607:   push with `git stash push -u -m "safety: ..."`, immediately
+          608:   `git stash apply` (NEVER `pop`), verify parity.
+          609:   > **If `git stash apply` fails** due to live editor conflicts (VS Code,
+          610:   > Copilot, Eclipse, IntelliJ rewriting files between push and apply),
+          611:   > do NOT retry — follow the [Selective File Extraction from Stash
+          612:   > (Phase 1g)](../git-pre-execution-safety-stash/SKILL.md#1g--stash-apply-conflict-recovery-via-selective-file-extraction)
+          613:   > recovery path in `git-pre-execution-safety-stash`.
+          614: - **Phase 2 — Hold** across the sequence: never drop, pop, or clear the
+          615:   `safety:` entry mid-sequence; re-verify presence at batch boundaries.
+          616: - **Phase 3 — Verify-and-Release** after the final commit: `git stash
+          617:   apply` again, confirm the apply is a clean no-op against HEAD, then
+          618:   ask the user explicitly before `git stash drop` per
+          619:   [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md).
+          620: 
+          621: See [Atomic Commit Construction Rules §3.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#33-pre-execution-safety-stash-mandatory-for-multi-commit-sequences).
+          622: 
+          623: ---
+          624: 
+          625: ### Step 3 — Interactive Hunk-Based Staging
+          626: 
+          627: When a file contains mixed concerns, use interactive staging to
+
+          (Showing lines 398-627 of 1674. Use offset=628 to continue.)
+          </content>
+    time: 10/5/2026, 6:52:03.281 PM UTC
+    response: |+
+      Now let me read the final portion (1420–1673) and the earlier sections that directly answer the artifact/stash questions (2d.2, 2f.1, 2h).
+
+    duration: 4.091s
+    duration_ms: 4091
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I now have the tail sections. But I still need to check:
+      1. The commit preview artifact details (2d mandate) — lines 332-398, which I haven't read fully. The user asks about exact filename/path, planning-artifact-naming convention/session ID, and lifecycle. I read 2d.1 and 2d.2. Need 2d (332-398) for the mandate and filename.
+      2. Commit message rules/format (Conventional Commits types/scopes), body requirements, templates — Step 9 gives quality standards, but types/scopes/templates might be elsewhere (maybe in the beginning sections, or a "commit message" template in 2d). Let me search for "Conventional Commits", "type(scope)", "feat", "fix(", etc.
+      3. Script invocation commands mandated — search for `python3 .agents/skills` and `.ps1`, `scripts/`.
+      4. planning-version-coverage-audit mention — search.
+      5. planning-artifact-naming mention — search.
+      6. git-commit-message-delivery — search.
+      7. Single vs multi-commit safety stash — §2h says ≥2 commits; need to check whether there's an explicit exception for 1 commit. Search for "single commit" or "1 commit".
+
+      Let me do these greps in parallel.
+    thinking_duration: 1.465s
+    thinking_duration_ms: 1465
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          limit: 75
+          offset: 325
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          325: #### 2c — Buildable State Priority
+          326: 
+          327: While atomicity is the goal, maintaining a buildable repository takes
+          328: precedence. If a core infrastructure change (e.g., a signature change in
+          329: a shared helper) breaks all consumers, the refactor and the resulting
+          330: fixes in consumer files MUST be consolidated into a single commit.
+          331: 
+          332: #### 2d — The Commit Preview (Mandatory Verbose Display)
+          333: 
+          334: Present the proposed "Arranged Commits" using a structured format with
+          335: **maximum detail**. For files with mixed concerns requiring hunk-based
+          336: staging, the preview **MUST** include the specific git hunks.
+          337: 
+          338: **Mandates for writing the preview:**
+          339: 
+          340: 1. **`@@` Header Verification** — Before writing any `@@ -N,M +N,M @@` line,
+          341:    run `git diff --unified=3 -- <file>` and copy the exact range header from
+          342:    the actual output. Never estimate or compute from memory — wrong headers
+          343:    make the preview useless for verification.
+          344: 
+          345: 2. **Fence Collision Handling** — When a diff hunk contains lines that are
+          346:    themselves triple-backtick fenced code blocks (` ```text`, ` ```bash`,
+          347:    and their closing ` ``` `), wrap the diff in **`~~~diff`** / **`~~~`**
+          348:    instead of ` ```diff ` / ` ``` `. Backtick fences inside a backtick-fenced
+          349:    block terminate the outer block prematurely, breaking the markdown preview.
+          350:    The tilde fence (`~~~`) is only closed by another `~~~`, so inner backtick
+          351:    blocks survive as literal content.
+          352: 
+          353: 3. **No Content Truncation** — All hunks MUST be shown in full. Lines of
+          354:    context MUST NOT be replaced with `...` or any other truncation marker.
+          355:    If the combined diff is too large for one conversation message, split the
+          356:    preview across batches ($2g) and present one batch at a time.
+          357: 
+          358: 4. **Preview Artifact** — Write the full preview to
+          359:    `scratch/commit-preview.md` (use
+          360:    [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
+          361:    to ensure `scratch/` exists and is gitignored). The user can then refer to
+          362:    specific line numbers when giving feedback. Present the summary in the
+          363:    conversation as well.
+          364: 
+          365: Template:
+          366: 
+          367: ````markdown
+          368: ## Arranged Commits Preview
+          369: 
+          370: ### Commit 1: [type](scope): [title]
+          371: - **Files**: [file1.md], [file2.md]
+          372: - **Message**:
+          373:   ```
+          374:   [type](scope): [title]
+          375: 
+          376:   [Body line 1]
+          377:   [Body line 2]
+          378:   ```
+          379: - **Hunks/Preview**:
+          380:   ```diff
+          381:   [Show actual hunks for this commit — use ~~~diff/~~~ if hunks contain ```
+          382:   ]
+          383:   ```
+          384: 
+          385: ### Commit 2: [type](scope): [title]
+          386: - **Files**: [file3.md]
+          387: - **Message**:
+          388:   ```
+          389:   [type](scope): [title]
+          390: 
+          391:   [Body line 1]
+          392:   ```
+          393: ---
+          394: Please say "start" to begin the sequential execution of these atomic
+          395: commits.
+          396: ````
+          397: 
+          398: #### 2d.1 — Iterative Preview Fixup
+          399: 
+
+          (Showing lines 325-399 of 1674. Use offset=400 to continue.)
+          </content>
+      - tool: bash
+        args:
+          command: grep -n -E 'planning-artifact-naming|planning-version-coverage-audit|git-commit-message-delivery|Conventional Commits|conventional commit|type\(scope\)|commit-preview|safety stash|single commit|one commit|≥ 2|>= 2|1 commit' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+        result: |
+          330:fixes in consumer files MUST be consolidated into a single commit.
+          359:   `scratch/commit-preview.md` (use
+          409:Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
+          422:[`git-commit-preview-verify`](../git/basic/edit/git-commit-preview-verify/SKILL.md)
+          426:python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          427:    --preview scratch/commit-preview.md \
+          438:1. Read `scratch/commit-preview.md` and extract each `Commit N:` title
+          448:python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          449:    --preview scratch/commit-preview.md \
+          453:trash scratch/commit-preview.md
+          588:   (`# | type(scope): title | files | batch`) so the user has a single-pane
+          593:#### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+          1315:[`git-commit-message-delivery`](../git-commit-message-delivery/SKILL.md)
+          1373:without "spinning" (mixing logic and documentation in one commit).
+          1571:  one commit
+          1601:- **[Git Commit Preview Verify](../git/basic/edit/git-commit-preview-verify/SKILL.md)**
+          1612:  — For writing the commit preview artifact to `scratch/commit-preview.md`
+          1632:This skill adds the domain-specific logic: commit-preview quality mandates
+    time: 10/5/2026, 6:52:07.389 PM UTC
+    response: |+
+      I have the tail. Now let me check the earlier sections for the commit-preview mandate (2d), commit message format/templates, and all script invocations mentioned across the doc.
+
+    duration: 6.134s
+    duration_ms: 6134
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Interesting — `planning-artifact-naming`, `planning-version-coverage-audit`, `Conventional Commits` are NOT in this file. So the skill does not mention them. I should note that.
+
+      Now let me gather all script invocations. Search for `python3 .agents/skills` and `.ps1` and `scripts/` lines.
+
+      Also need:
+      - Commit message rules/format: Step 9 quality standards; the template uses `[type](scope): [title]`. Is there a list of allowed types? Search for `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore` in the file.
+      - Body requirements: Step 9 table.
+      - Any checklists/appendices: Scope Coverage, Prohibited Behaviors, Related Skills, Composition Rationale, Common Pitfalls. Maybe there are earlier sections like "Quality Gates". Search for "checklist", "Gate", "Verification".
+      - Step 0/1 etc. might have relevant mandates (e.g., Redaction pre-check, pre-edit classification). But user asks after truncation primarily.
+
+      Let me also check whether the doc mentions the commit preview artifact path being session-scoped (`scratch/<session-id>/`) — the repo AGENTS.md says scratch should resolve via scratch-artifact-naming, but this skill says `scratch/commit-preview.md`. So the skill uses a flat path, NOT the session-scoped convention. Good to note: the skill does NOT reference planning-artifact-naming or session IDs; it mandates `scratch/commit-preview.md` via repo-scratch-output-capture.
+
+      Let me search for all script invocation patterns and quality gates.
+    thinking_duration: 1.574s
+    thinking_duration_ms: 1574
+    tool_calls:
+      - tool: bash
+        args:
+          command: grep -n -E '\.py|\.ps1|\.sh' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et | grep -v -E '\.md|SKILL|http|\.json' | head -60
+        result: |
+          171:python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
+          279:   [detect-cross-repo-links.py](../redaction-portability/scripts/detect-cross-repo-links.py)
+          426:python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          448:python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+          487:[`agents-md-stage-row.py`](../git-hunk-staging-primitives/scripts/agents-md-stage-row.py) script instead:
+          491:python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+          497:python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+          530:1. **`stage-file-excluding-lines.py`** (preferred — no working-tree mutation): write
+          536:   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          541:   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          552:   python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          707:**Acceptance criterion:** run `detect-list-indent-drift.py` on the affected
+          909:list items), and the complementary `stage-file-excluding-lines.py` (§2f.1)
+          911:(rather than exclude it), use the `stage-hunk-from-diff.py` script:
+          920:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+          926:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+          931:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+          937:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+          942:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.py \
+          964:| `stage-hunk-from-diff.py` | Stage ONLY matching hunks | §3i (this section) |
+          965:| `stage-file-excluding-lines.py` | Stage file MINUS matching lines | §2f.1 |
+          967:| `stage-head-synthesize.py` | Stage HEAD with substitutions | §13 |
+          968:| `stage-specific-hunks.py` | Stage specific hunk indices | §3i.1, §13 |
+          980:**See also:** `stage-hunk-from-diff.py --help` for full argument docs.
+          987:Git's hunk-split algorithm. `stage-hunk-from-diff.py` (§3i) stages
+          991:**Preferred fallback:** `stage-file-excluding-lines.py` (§2f.1) stages
+          1000:python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+          1253:> `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}` outputs the commit hash and subject
+          1438:single lines, prefer `stage-file-excluding-lines.py` over manual
+          1442:   `stage-file-excluding-lines.py --file <f> --exclude "<unwanted-line>"`
+          1480:of `<private-config-repo>` with `<private-repo>`), use `stage-head-synthesize.py`
+          1484:   `stage-head-synthesize.py --file <f> --replace "old|new"` to read
+          1491:This fills the gap between `stage-file-excluding-lines.py` (working-tree-based
+          1495:- `agents-md-stage-row.py` — HEAD + one new row, alphabetically inserted.
+          1496:- `stage-file-excluding-lines.py` — working tree minus matching lines.
+          1497:- `stage-head-synthesize.py` — HEAD with mechanical substitutions.
+          1498:- `stage-hunk-from-diff.py` — selective hunk staging from a diff.
+          1500:See also [`stage-head-synthesize.py`](../git-hunk-staging-primitives/scripts/stage-head-synthesize.py) for
+          1613:  (§2d mandate 4) with the `ensure-scratch-gitignored.py` helper.
+          1616:  contract: `stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+          1617:  `agents-md-stage-row.py`, `stage-head-synthesize.py`,
+          1618:`stage-specific-hunks.py`. This skill is a composer: it does NOT
+          1629:(`stage-file-excluding-lines.py`, `stage-hunk-from-diff.py`,
+          1630:`agents-md-stage-row.py`, `stage-head-synthesize.py`,
+          1631:`stage-specific-hunks.py`) as domain-agnostic deterministic Tier-A scripts.
+          1647:| `git add -p` split rejected on adjacent added/deleted lines | Use `stage-file-excluding-lines.py --exclude "<unwanted-line>"` (§3i.1) to stage only the desired line(s); commit; then `git add` the remaining lines as the next commit's delta. Prefer this over manual file editing. |
+          1657:| Cross-reference row to a not-yet-created artifact leaked into the earlier commit | Use `stage-file-excluding-lines.py --exclude <pointer>` (§2f.1) to stage the file minus the deferred row; the row stays in the working tree for the later commit |
+      - tool: bash
+        args:
+          command: grep -n -E '^\s*[-*]?\s*(feat|fix|docs|style|refactor|test|chore|build|ci|perf|revert)(\(|:)|`(feat|fix|docs|style|refactor|test|chore|build|ci|perf|revert)`' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et; echo '---GATES---'; grep -n -iE 'gate|checklist|verification gate|quality gate|mandatory' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et | head -50
+        result: |
+          1050:single dedicated commit. Commit type: `style`.
+          1065:**Rule:** Isolate into dedicated commits. Commit type: `refactor`.
+          1553:| Formatting / style | Dedicated `style` commit |
+          1554:| Structural refactors | Dedicated `refactor` commit |
+          ---GATES---
+          21:change. The user retains full control via mandatory preview and explicit
+          332:#### 2d — The Commit Preview (Mandatory Verbose Display)
+          421:Delegate to the
+          447:# Automated (with verification gate)
+          593:#### 2h — Pre-Execution Safety Stash (Mandatory for ≥ 2 Commits)
+          602:Delegate the full three-phase protocol (Snapshot → Hold → Verify-and-
+          621:See [Atomic Commit Construction Rules §3.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#33-pre-execution-safety-stash-mandatory-for-multi-commit-sequences).
+          701:propagates whitespace drift into the commit.
+          703:Delegate detection and repair to the
+          781:**Mandatory User Confirmation Workflow:**
+          960:**Complementary primitives (delegated to base skill `git-hunk-staging-primitives`):**
+          1103:- **Orchestration**: Delegate metadata extraction to the
+          1224:changes), delegate to the
+          1314:Delegated to the
+          1577:  is mandatory
+          1598:  — MANDATORY for extracting metadata during parent-repo sync commits (Step 6).
+          1605:- **[Claude Config Change Gate](../claude-config-change-gate/SKILL.md)**
+          1607:  auto-timestamped claude config files, run this gate first. If it
+          1621:  — MANDATORY pre-flight before finalizing any preview that
+          1622:  reorders/moves paths: run the link classifier, then Gate 4 on ranges.
+    time: 10/5/2026, 6:52:13.581 PM UTC
+    response: |+
+      Now let me collect every script invocation and check for commit-type vocabularies, gates, and any mention of checklists.
+
+    duration: 4.991s
+    duration_ms: 4991
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have most of what I need. Let me check a few remaining things:
+
+      1. The exact git-commit-preview-verify invocation already captured.
+      2. The git-pre-execution-safety-stash invocation — the skill only delegates, no script path given? Search for "pre-execution-safety-stash" and "safety" commands. There's `git stash push -u -m "safety: ..."` and `git stash apply`. Let me check lines 593-621 (already read) — no script path, just delegation.
+      3. git-stash-triage — delegation only.
+      4. The redaction pre-check section (1g) mentions detect-cross-repo-links.py. Let me read 264-311 for that.
+      5. The dangling-link audit Gate 4 mention — line 1620-1622. Maybe there's a section in the doc about "Gate 4"? Search for "Gate".
+      6. Commit message types: only `style` and `refactor` explicitly named; template uses `[type](scope)`. Need to check the Source Rules section (lines 24-38) which may reference commit message rules. Let me read the head sections 1-80 quickly for "Source Rules" and prerequisites, and check if a types list exists elsewhere. Search for "git-commit-message-rules" or "commit-message-rules".
+      7. The "Post-Commit Verification" is 9j. 
+      8. Cleanup: 9h pre-existing staged content, stash release, preview cleanup.
+      9. Single-commit vs multi-commit: §2h says mandatory for ≥2 commits. Is there anything saying it's optional for 1? The title itself implies it. Let me confirm no other mention.
+
+      Let me also read the section around 1g (redaction) since it's a gate, and search for "Gate 4"/"dangling". Also search for "commit-message" rules references.
+    thinking_duration: 1.729s
+    thinking_duration_ms: 1729
+    tool_calls:
+      - tool: bash
+        args:
+          command: grep -n -iE 'Gate 4|dangling|link audit|detect-dangling|commit-message-rules|commit message rules|git-operation-rules|stash preservation' /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+        result: |
+          31:| [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md) | Phase -1, 0, 1 (environment, repo context, change detection) and Sections 2–4 (commit/push/stash protocols) |
+          619:  [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md).
+          1108:  **[Submodule Sync Commits](../../../ai-agent-rules/git-commit-message-rules.md#5-submodule-sync-commits-parent-repository)**.
+          1244:> **Stash preservation rule:** `git stash drop`/`pop`/`clear` are destructive and require explicit per-stash user
+          1246:> [`git-operation-rules.md` §5 — Stash Preservation](../../../ai-agent-rules/git-operation-rules.md) for the
+          1620:- **[Git Commit Dangling-Link Audit](../git-commit-dangling-link-audit/SKILL.md)**
+          1622:  reorders/moves paths: run the link classifier, then Gate 4 on ranges.
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          limit: 50
+          offset: 262
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          24: ## Source Rules
+          25: 
+          26: This skill distills and operationalizes the following rule files:
+          27: 
+          28: | Rule File | Scope Incorporated |
+          29: |---|---|
+          30: | [`git-atomic-commit-construction-rules.md`](../../../ai-agent-rules/git-atomic-commit-construction-rules.md) | All 15 phases (primary source) |
+          31: | [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md) | Phase -1, 0, 1 (environment, repo context, change detection) and Sections 2–4 (commit/push/stash protocols) |
+          32: 
+          33: For history refinement (splitting existing commits), see the
+          34: [`git_history_refinement`](../git-history-refinement/SKILL.md) skill.
+          35: For complex multi-branch rebasing, see the
+          36: [`git_rebase`](../git-rebase-standardization/SKILL.md) skill.
+          37: 
+          38: ## Prerequisites
+          39: 
+          40: | Requirement | Minimum |
+          41: |---|---|
+          42: | VCS | Git 2.x+ |
+          43: | Shell | PowerShell 5.1+ or Bash 4+ |
+          44: | Access | Write access to the project repository |
+          45: | Auth | GitHub CLI authenticated (if pushing to GitHub) |
+          46: 
+          47: ## When to Apply
+          48: 
+          49: Apply this skill when:
+          50: 
+          51: - A user asks to "commit changes," "arrange commits," or "stage and commit"
+          52: - `git status` shows staged, unstaged, or untracked modifications
+          53: - Multiple unrelated changes exist in the working tree and need separation
+          54: - A user asks to review what should be committed
+          55: - **After ANY submodule commit is executed, the skill AUTOMATICALLY checks for
+          56:   and offers the parent repository submodule SHA update (if applicable) and
+          57:   executes it upon user "yes" — no separate user request needed**
+          58: 
+          59: Do NOT apply when:
+          60: 
+          61: - The user asks to refine or split **existing** commits — use
+          62:   [`git_history_refinement`](../git-history-refinement/SKILL.md) instead
+          63: - The user asks to rebase branches — use
+          64:   [`git_rebase`](../git-rebase-standardization/SKILL.md) instead
+          65: - The request is a simple single-file, single-concern commit with no
+          66:   mixed changes (a lightweight commit suffices without the full protocol)
+          67: - The files being committed are **personal-only** and should NOT reach the
+          68:   team's `origin` — route the commit to a personal sandbox branch via
+          69:   [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md)
+          70:   (this skill still applies to the commit itself, but the destination
+          71:   remote/branch changes)
+          72: 
+          73: **Push Policy (GLOBAL)**: The agent MUST NEVER execute `git push` automatically.
+          74: After any commit(s), the agent MAY OFFER to push (e.g., "Push to remote?") but
+          75: MUST WAIT for explicit user approval. Only push when the user explicitly says
+          76: "yes", "push", or issues a direct `git push` command. No exceptions.
+          77: 
+          78: ---
+
+          (Showing lines 24-78 of 1674. Use offset=79 to continue.)
+          </content>
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          limit: 50
+          offset: 262
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          262: ---
+          263: 
+          264: ### 1g — Redaction Pre-Check (Sensitive Content Audit)
+          265: 
+          266: Before any staging or logical grouping, audit all **new/untracked** and
+          267: **modified** files for content that must be redacted per the
+          268: [redaction-portability](../redaction-portability/SKILL.md) skill — especially
+          269: prose-heavy files like skill `SKILL.md`, rule docs, and conversation logs.
+          270: 
+          271: **Scan for:**
+          272: 
+          273: 1. **Organization-specific Jira ticket IDs** (e.g., `PROJ-1234`) — replace with
+          274:    `<TICKET-ID>` or `<TICKET-ID-PROJ>`.
+          275: 2. **Internal repository URLs** (e.g., `github.com/<org>/<repo>`) — replace
+          276:    `<org>/<repo>` with `<ORG>/<REPO>`.
+          277: 3. **Cross-repo relative links** — `../` chains that escape the current repo's
+          278:    root into a sibling directory (no `.gitmodules` registration). Run the
+          279:    [detect-cross-repo-links.py](../redaction-portability/scripts/detect-cross-repo-links.py)
+          280:    script from the redaction-portability skill.
+          281: 4. **Literal organization names, internal codenames, hostnames, and usernames**
+          282:    in prose — replace with canonical placeholders (`<corp>`, `<author>`, etc.).
+          283: 5. **Project-specific skill names / paths** in base-published skills (e.g., a
+          284:    composer row in a base skill referencing a project-specific skill in a
+          285:    different repo).
+          286: 
+          287: **When to run this audit:**
+          288: 
+          289: - **Immediately after Step 1f** (Complete Inventory) — you have the full file
+          290:   list, and no work has been wasted on grouping or staging content that will
+          291:   need post-hoc redaction.
+          292: - **Any time a new file is added** to the working tree mid-session (e.g.,
+          293:   skill-factory generation, conversation export).
+          294: 
+          295: **Remediation workflow:**
+          296: 
+          297: 1. Read each flagged file, identify the violating strings.
+          298: 2. Apply canonical placeholders per
+          299:    [redaction-portability §2](../redaction-portability/SKILL.md#2-canonical-placeholder-vocabulary).
+          300: 3. If the violation is a cross-repo link: either delete the link entirely or
+          301:    replace with a name-only reference (see redaction-portability repair rules).
+          302: 4. Re-run the audit to confirm zero remaining violations.
+          303: 5. Only then proceed to Step 2 (Logical Grouping).
+          304: 
+          305: The redaction-portability skill **MUST** be cited as a dependency in any commit
+          306: that touches skill or rule files, so downstream tooling knows to invoke the
+          307: same audit.
+          308: 
+          309: ---
+          310: 
+          311: ### Step 2 — Logical Grouping (Arrangement)
+
+          (Showing lines 262-311 of 1674. Use offset=312 to continue.)
+          </content>
+    time: 10/5/2026, 6:52:18.760 PM UTC
+    response: |+
+      Let me check a few remaining items: the Source Rules references, the redaction pre-check, any "Gate" references, and commit-type vocabulary.
+
+    duration: 4.658s
+    duration_ms: 4658
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I now have a good picture. Let me verify a few last things:
+
+      1. The git-commit-message-delivery base skill usage — 9i captured. Also maybe there's a reference in Related Skills? Not listed in Related Skills. Only in 9i.
+      2. Commit message format/types: The doc references `git-commit-message-rules.md` (line 1108) for submodule sync commits. No explicit Conventional Commits type list in this skill beyond `style`, `refactor`, and the `[type](scope): [title]` template. Let me double check the submodule section 1093-1158 for message format (Changes/Metadata headers, chronological logs).
+      3. The Step 10 sub-sections are mislabeled 9a-9j (typo in skill). Should note.
+      4. Post-commit verification: 9j.
+      5. Cleanup: preview cleanup in 2d.2, stash release in 2h, hunk-stage backup cleanup 3h. Maybe check 3h briefly for the sidecar cleanup (already saw heading 862). The user asked about cleanup near the end — Step 10+ cleanup includes stash release and preview deletion. Let me quickly check 3h (862-905) for backup cleanup details since it's a "cleanup" protocol.
+
+      Also, I should check the exact 9h/9i/9j content (already read). Also need to check whether there's a "Common Pitfalls" beyond what I read (read fully, 1639-1666).
+
+      Let me read the submodule sync section (1093-1160) and the hunk-stage backup cleanup (862-905) to be thorough. Also check the tail of step 3h at 862. And maybe the Step 8 generated vs custom (1158-1175) — user asked about remaining Step 10+ only, but commit message format is question 2. Let me read those two ranges.
+    thinking_duration: 1.808s
+    thinking_duration_ms: 1808
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          limit: 85
+          offset: 1093
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          1093: ### Step 6 — Submodule Synchronization Protocol
+          1094: 
+          1095: When managing submodules, the main repository's history must remain descriptive and clear.
+          1096: 
+          1097: - **Submodule-First Discipline**: All submodule commits MUST be completed
+          1098:   BEFORE handling any parent-repository work. Submodule work is highest
+          1099:   priority; parent sync follows immediately after.
+          1100: - **Synchronized Commits**: Every functional update in a submodule requiring a
+          1101:   pointer update in the main repo MUST be coupled with its relevant main-repo
+          1102:   configuration changes (e.g., CI scripts or IDE settings).
+          1103: - **Orchestration**: Delegate metadata extraction to the
+          1104:   **[Git Submodule Commit Details](../git-submodule-commit-details/SKILL.md)**
+          1105:   skill to ensure zero-omission fidelity.
+          1106: - **Commit Message Generation**: All submodule sync commits MUST follow the
+          1107:   strict formatting, chronological ordering, and metadata requirements defined in
+          1108:   **[Submodule Sync Commits](../../../ai-agent-rules/git-commit-message-rules.md#5-submodule-sync-commits-parent-repository)**.
+          1109: - **Submodule History Integrity**: Before updating a submodule pointer in the
+          1110:   parent repository, the changes *within* the submodule MUST be committed
+          1111:   according to these exact atomic construction rules. A "dirty" or
+          1112:   uncommitted submodule state is prohibited during a parent-repo sync.
+          1113: 
+          1114: ### Step 7 — Parent Sync Offer & Change Grouping
+          1115: 
+          1116: Immediately after finalizing all submodule commits, the agent MUST evaluate the
+          1117: parent repository.
+          1118: 
+          1119: #### 7a — Parent State Analysis
+          1120: 
+          1121: 1. Check if the containing parent repo exists and tracks current dir as submodule.
+          1122: 2. Verify parent's recorded SHA differs from submodule HEAD → stale pointer confirmed.
+          1123: 
+          1124: #### 7b — Related Parent Changes Detection
+          1125: 
+          1126: - **Inventory parent changes**: Run `git -C <parent-path> status` to list all
+          1127:   modified/untracked files in the parent.
+          1128: - **Determine coupling**: Are any parent changes **directly related** to the
+          1129:   submodule commit (e.g., implementing the rule just added, updating CI to use
+          1130:   the new submodule feature, docs that reference the new behavior)?
+          1131:     - **Yes** → Group with the submodule SHA sync in a **single unified commit**.
+          1132:     - **No** → Keep parent sync minimal (SHA-only), commit related changes
+          1133:     separately afterward.
+          1134: 
+          1135: #### 7c — Arranged Commit Preview
+          1136: 
+          1137: Present the parent sync commit using full arranged commit format (§4). Include
+          1138: both the submodule SHA delta and any grouped parent-side changes in the message body.
+          1139: 
+          1140: #### 7d — Execution Prompt
+          1141: 
+          1142: ```text
+          1143: The parent repository needs a submodule SHA update. Execute sync?
+          1144: ```
+          1145: 
+          1146: - On **"yes"** → Execute the presented commit immediately.
+          1147: - On **"no"** or ambiguous → Do NOT commit; await explicit directive.
+          1148: - **Never auto-push** — push offers come AFTER commit execution, never before.
+          1149: 
+          1150: #### 7e — Post-Sync Cleanup
+          1151: 
+          1152: If parent-side unrelated changes were detected but NOT grouped, they remain in
+          1153: the parent working tree as separate atomic units. Arrange and commit them
+          1154: independently following the standard protocol.
+          1155: 
+          1156: ---
+          1157: 
+          1158: ### Step 8 — Generated vs Custom File Splitting
+          1159: 
+          1160: When a file contains both standard API-generated content (e.g., from
+          1161: gitignore.io) and user-defined custom rules, split into separate commits.
+          1162: 
+          1163: - **Commit A (Foundation):** Commit only the standard, API-generated
+          1164:   portion first. Back up the full file, overwrite with the exact API
+          1165:   content, and commit. This establishes a clean, reproducible baseline.
+          1166: - **Commit B (Customization):** Commit the user-defined sections in a
+          1167:   subsequent commit. This clearly distinguishes "standard boilerplate"
+          1168:   from "project-specific logic."
+          1169: - **User Modifications:** If the user has altered the API-generated
+          1170:   portion, separate those alterations from the raw API import if
+          1171:   possible, or document clearly as user-patches.
+          1172: 
+          1173: ---
+          1174: 
+          1175: ### Step 9 — Commit Message Quality Standards
+          1176: 
+          1177: Every commit message MUST meet these quality requirements:
+
+          (Showing lines 1093-1177 of 1674. Use offset=1178 to continue.)
+          </content>
+      - tool: read
+        args:
+          filePath: /home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et
+          limit: 45
+          offset: 862
+        result: |-
+          <path>/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et</path>
+          <type>file</type>
+          <content>
+          862: #### 3h — Hunk-Stage Backup Cleanup (Sidecar Discipline)
+          863: 
+          864: Every `git add -p` session, every in-editor `e` (edit-hunk) action,
+          865: and every programmatic `git apply` with a manually authored patch
+          866: may leave a sidecar file on disk: `<file>.orig`, `<file>.bak`,
+          867: `<file>.full.bak`, `<file>.rej`, `<file>.staging-tmp`, etc. These
+          868: sidecars MUST be detected and disposed of before the commit lands,
+          869: never absorbed into it.
+          870: 
+          871: Four-step protocol (Detect → Classify → Verify → Never-`add`):
+          872: 
+          873: 1. **Detect** after each `git add -p` and after any `e`/`apply`:
+          874: 
+          875:    ```powershell
+          876:    git status --short | Select-String -Pattern '\.(orig|bak|full\.bak|rej|staging-tmp)$'
+          877:    ```
+          878: 
+          879:    The output MUST be empty before the commit.
+          880: 
+          881: 2. **Classify** every detected sidecar:
+          882:    - **Recoverable** — content the agent or user still needs (e.g., a
+          883:      `.rej` requiring manual re-application, or a `.full.bak` from
+          884:      an aborted edit). Move it OUT of the working tree (e.g., to
+          885:      `<workspace-root>/../scratch/` or a personal-sandbox branch).
+          886:    - **Disposable** — content already represented in the index, HEAD,
+          887:      or another branch. Delete directly.
+          888: 
+          889: 3. **Verify** before committing: re-run the §3h detect command and
+          890:    confirm zero matches. Sidecars MUST NOT be added to `.gitignore`
+          891:    as a substitute for cleanup — that hides the symptom and lets the
+          892:    next session re-encounter the same disposal decision blind.
+          893: 
+          894: 4. **NEVER `git add` a sidecar** "to clean up history later". The
+          895:    commit itself is the disposal decision; once a sidecar reaches the
+          896:    index, the only safe recovery is `git reset HEAD -- <sidecar>`
+          897:    followed by the classification above.
+          898: 
+          899: This rule composes with §2h (Pre-Execution Safety Stash): the safety
+          900: stash captures the pre-execution working tree once; the sidecar
+          901: cleanup happens per `add -p` invocation inside that window.
+          902: 
+          903: See [Atomic Commit Construction Rules §4.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md#43-hunk-stage-backup-cleanup-sidecar-discipline).
+          904: 
+          905: #### 3i — Selective Hunk Extraction via Diff Patching
+          906: 
+
+          (Showing lines 862-906 of 1674. Use offset=907 to continue.)
+          </content>
+    time: 10/5/2026, 6:52:23.459 PM UTC
+    response: |+
+      Let me check the submodule sync commit message format (line ~1093) and the backup cleanup protocol (line ~862) to complete the picture.
+
+    duration: 4.300s
+    duration_ms: 4300
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I now have all the material needed. Let me compile the structured report. A few notes to verify:
+
+      - The `git-pre-execution-safety-stash` skill delegation has no explicit script invocation in this doc; only the three-phase protocol and git commands (`git stash push -u -m "safety: ..."`, `git stash apply`).
+      - `git-stash-triage` — delegation only.
+      - `git-commit-message-delivery` — delegation + heredoc→-F pattern (§1.2 of that base skill).
+      - `planning-artifact-naming` and `planning-version-coverage-audit` are NOT referenced anywhere in this skill. The commit preview path is `scratch/commit-preview.md`, not session-scoped. This is important to report.
+      - The doc's Step 10 subsections are labeled 9a–9j (numbering bug).
+      - No explicit Conventional Commits type list; only `[type](scope): [title]` template and explicit `style` / `refactor` types. The authoritative commit message rules live in `../../../ai-agent-rules/git-commit-message-rules.md` (referenced for submodule sync commits). Maybe I should check if git-commit-message-rules.md exists in the repo to extract types? The user's question 2 asks "Any commit message rules/format (Conventional Commits types/scopes), body requirements, and templates." The skill itself references git-commit-message-rules.md. Should I check that file? The user's task is about extracting from the saved skill output. But item 2 says "Any commit message rules/format". The skill output only has what I found. I could quickly check if the referenced rule file exists to note where the full types live, but the task says research only on the saved file. I can mention the reference. Maybe a quick glob to confirm the rule file exists would be useful for the report. Let me do that quickly — it's cheap.
+
+      Also check `git-operation-rules.md` §5 exists. Not necessary.
+
+      Let me also double-check the exact preview verification script args (captured: `--preview scratch/commit-preview.md --format text`; cleanup: `--cleanup`).
+
+      Also the "trash scratch/commit-preview.md" manual cleanup.
+
+      Also, item 5 asks about `planning-version-coverage-audit` — not mentioned. And `git-pre-execution-safety-stash` — delegated. `git-stash-triage` — delegated. `git-commit-message-delivery` — delegated.
+
+      Let me quickly confirm the referenced rule files exist in the repo to be precise about where full commit-message type list lives. I'll use glob.
+    thinking_duration: 2.134s
+    thinking_duration_ms: 2134
+    tool_calls:
+      - tool: glob
+        args:
+          pattern: ai-agent-rules/git-commit-message-rules.md
+        result: /workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md
+      - tool: glob
+        args:
+          pattern: ai-agent-rules/git-atomic-commit-construction-rules.md
+        result: /workspaces/ai-suite/ai-agent-rules/git-atomic-commit-construction-rules.md
+    time: 10/5/2026, 6:52:27.803 PM UTC
+    response: |+
+      Let me verify the referenced rule files exist in the workspace, since the skill delegates commit-message format details to them.
+
+    duration: 4.228s
+    duration_ms: 4228
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: 'Both referenced rule files exist. The user asked specifically about the saved skill output, but question 2 asks about commit message rules/format. The skill output only references `git-commit-message-rules.md` for submodule sync. I could quickly grep that rule file for Conventional Commits types to complement the report, but the user said "Research only" and the job is about the truncated skill document. However, item 2 says "Any commit message rules/format (Conventional Commits types/scopes), body requirements, and templates." It''s within scope to note the skill''s internal content and point at the delegated rule file. Reading the rule file might be beyond the saved file, but it would make the report complete. Since the user explicitly wants commit message rules, and the skill delegates to the rule file, a quick grep of the types in the rule file is a reasonable value-add. But careful: the user''s instruction is to extract everything after truncation from the saved file. I''ll keep the report focused on the saved file, and note precisely where the full rules live (with absolute path). Maybe a quick grep for "## " headings in git-commit-message-rules.md to name what''s delegated. Let me do a quick grep of headings only — cheap and useful.'
+    thinking_duration: 1.063s
+    thinking_duration_ms: 1063
+    tool_calls:
+      - tool: bash
+        args:
+          command: grep -n '^#\{1,4\} ' /workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md | head -40
+        result: |
+          10:# Git Commit Message Generation Rules
+          17:## 1. Format Specification
+          33:### 2. Title Line (Header)
+          57:### 3. Body (Description)
+          86:### 4. Example
+          119:### 5. Submodule Sync Commits (Parent Repository)
+          158:#### 5.1 Huge-Range Bookend Variant (>500 commits)
+          172:### 6. Summarizing Opaque or Binary Changes
+          191:### 7. Amending Established Commits
+    time: 10/5/2026, 6:52:32.041 PM UTC
+    response: "\n\n"
+    duration: 3.382s
+    duration_ms: 3382
+  - agent: explore
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      I have everything needed. Let me compile the structured report now.
+
+      Key structure:
+
+      **Provenance**: File = saved tool output of loading `git-atomic-commit-construction` SKILL.md; 1674 lines; base dir `/workspaces/ai-suite/.agents/skills/git-atomic-commit-construction`; only one skill file listed (`AGENTS.md`).
+
+      **Section map after truncation** (from ~Step 10 onward):
+      - Step 9 (1175-1189) — commit message quality
+      - Step 10 (1191-1358) — 9a-9j (numbering bug)
+      - Step 11 (1360-1387)
+      - Step 12 (1389-1424)
+      - Step 13 (1427-1503)
+      - Step 14 (1505-1517)
+      - Step 15 (1520-1535)
+      - Step 16 (1538-1544)
+      - Scope Coverage (1548-1560)
+      - Prohibited Behaviors (1563-1593)
+      - Related Skills (1595-1622)
+      - Composition Rationale (1624-1637)
+      - Common Pitfalls (1639-1665)
+      - Footer (1667-1674)
+
+      Now answer the 7 questions.
+
+      1. Remaining Step 10+ sections:
+      - 9a Step-by-Step Execution: one-by-one, chaining FORBIDDEN.
+      - 9b Recovery: git reset <file>, git checkout -p; never git reset --hard.
+      - 9c Pull Before Push.
+      - 9d Opaque Content Analysis.
+      - 9e History Refinement Delegation → git-history-refinement.
+      - 9f Stash Workflow for Rebase: commands.
+      - 9g Corrupted Rebase State Recovery: PowerShell diagnostic and resolution.
+      - 9h Pre-Existing Staged Content Handling: git diff --cached --stat, reset HEAD -- ., re-verify.
+      - 9i Commit Message Delivery: heredoc→-F.
+      - 9j Post-Commit Verification: git show --name-only HEAD; 3 checks.
+      - Step 11 Logic-Documentation Compass: N/E/W/S table; external tool asset granularity.
+      - Step 12 Source Logic & Generated Files: 11a update source not output; 11b sync mechanisms; 11c CI/CD exclusion.
+      - Step 13 Intermediate State Synthesis: preferred scripted fallback stage-file-excluding-lines.py; manual de-construction; HEAD-synthesis stage-head-synthesize.py; sibling scripts list.
+      - Step 14 user-requested coupling.
+      - Step 15 Push Protocol: explicit request, offer don't execute, git status, git branch -r.
+      - Step 16 guardrail.
+      - Tail sections.
+
+      2. Commit message rules/format:
+      - Step 9 table (7 requirements: specificity, anti-repetition, context enrichment, atomic rationale, constraint documentation, contextual accuracy, body/diff congruence).
+      - Template in 2d: `[type](scope): [title]` + body lines.
+      - Explicit types mentioned: `style`, `refactor`; submodule sync format delegated to git-commit-message-rules.md §5 (Changes/Metadata headers, chronological logs — from pitfall line 1658).
+      - No Conventional Commits type list or scope rules in this skill. Full rules at /workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md (sections: 1 Format Spec, 2 Title, 3 Body, 4 Example, 5 Submodule Sync, 5.1 huge-range bookend, 6 opaque/binary, 7 amending).
+      - Preview template with Files/Message/Hunks.
+      - Multi-line delivery via heredoc→-F.
+
+      3. Commit-preview artifact:
+      - Path `scratch/commit-preview.md` (flat, not session-scoped); mandate 4 of §2d; use repo-scratch-output-capture + ensure-scratch-gitignored.py.
+      - NOT tied to planning-artifact-naming, no session ID mention. planning-artifact-naming/planning-version-coverage-audit not referenced at all.
+      - Lifecycle: create after arrangement (§2d), fixup loop re-write (§2d.1), present in conversation too; authorization gate "start"; post-execution verification §2d.2 via verify-commit-preview.py (--preview ... --format text/json), manual fallback git log --oneline -20; cleanup only after all commits verified: `--cleanup` or `trash scratch/commit-preview.md`; MUST NOT delete until all commits confirmed executed, retain if pending for next session.
+      - Batch preview for >5 commits (§2g); master plan table first batch.
+
+      4. Checklists/pitfalls/appendices/gates:
+      - Scope Coverage table.
+      - Prohibited Behaviors list (13 items).
+      - Related Skills list (7).
+      - Composition Rationale.
+      - Common Pitfalls table (24 rows) — summarize key ones.
+      - Gates: commit authorization "start" (§2e); batch authorization (>5); safety stash ≥2; dangling-link audit MANDATORY pre-flight before finalizing preview that reorders/moves paths (run link classifier then Gate 4 on ranges); claude-config-change-gate pre-flight; redaction pre-check 1g; sidecar detect gate 3h; post-commit verification 9j.
+      - Footer: base directory.
+
+      5. Exact script invocations:
+      - verify-commit-preview.py: lines 426-429 and 448-450 (--preview scratch/commit-preview.md --format text; --cleanup).
+      - audit-repo-role.py line 171.
+      - detect-cross-repo-links.py line 279 (relative path).
+      - agents-md-stage-row.py lines 491-499 (--row ..., --dry-run; default --mode staged; --mode worktree).
+      - stage-file-excluding-lines.py lines 536-544, 552-559 (--file, --exclude, --dry-run, --blank-context 1), 1000.
+      - stage-hunk-from-diff.py lines 920-943 (various).
+      - stage-head-synthesize.py line 1484 (--file <f> --replace "old|new").
+      - get-stash-parent.ps1 line 1253: `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}`.
+      - detect-list-indent-drift.py line 707 (acceptance criterion; need to check exact path? line 703-707 says delegate detection/repair. The exact invocation isn't shown in the snippet I read; only "run detect-list-indent-drift.py on the affected...". I'll mention it as named).
+      - ensure-scratch-gitignored.py line 1613 (helper).
+      - stage-specific-hunks.py mentioned as one of 5 primitives (no invocation).
+      - planning-version-coverage-audit: NOT present.
+      - git-pre-execution-safety-stash: delegated, no script path; git commands given.
+      - git-stash-triage: delegated.
+      - git-commit-message-delivery: delegated; pattern.
+
+      Also scripts paths:
+      - `.agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py`
+      - `.agents/skills/git-hunk-staging-primitives/scripts/{agents-md-stage-row,stage-file-excluding-lines,stage-hunk-from-diff,stage-head-synthesize,stage-specific-hunks}.py`
+      - `.agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py`
+      - redaction-portability/scripts/detect-cross-repo-links.py
+
+      6. Single vs multi-commit:
+      - §2h: safety stash "Mandatory for ≥ 2 Commits" — before first commit of any sequence of two or more commits, including batches. For 1-commit plan: not mandated. Also "When to Apply" excludes "simple single-file, single-concern commit with no mixed changes (a lightweight commit suffices without the full protocol)".
+      - Phase 1 snapshot: classify pre-existing stashes via git-stash-triage; `git stash push -u -m "safety: ..."`; immediately `git stash apply` (NEVER pop); verify parity; recovery path if apply fails.
+      - Phase 2 hold; Phase 3 verify-and-release with explicit user authorization before drop.
+
+      7. git-commit-message-delivery:
+      - §9i delegates; heredoc→-F pattern §1.2; exact snippet; do not use -m for multi-line/special chars; rm -f temp.
+      - Note the skill's snippet writes to `/tmp/commit_msg`, which conflicts with repo AGENTS.md scratch rules, but I should just report verbatim.
+
+      I should keep the report compact but complete. Use headings and bullets. Include absolute path of the saved file. No emojis. Also note the numbering inconsistency (Step 10's subsections are 9a-9j).
+
+      I should also mention that after truncation the actual remaining sections start at Step 9 (line 1175), but I read from Step 10 plus tail; I also pulled forward the earlier sections that answer the artifact/stash questions (2d, 2d.1, 2d.2, 2g, 2h) since they were requested.
+
+      Let me write the final report.
+    thinking_duration: 6.948s
+    thinking_duration_ms: 6948
+    time: 10/5/2026, 6:52:35.468 PM UTC
+    response: |-
+      # Report: `git-atomic-commit-construction` skill — tail sections (saved tool output)
+
+      **Source file:** `/home/vscode/.local/share/opencode/tool-output/tool_10d683444001ayJrFzaC0fB5et` (1674 lines, 71,244 bytes)
+      **Skill base dir (from footer):** `/workspaces/ai-suite/.agents/skills/git-atomic-commit-construction` (file list sampled: only `AGENTS.md` alongside `SKILL.md`)
+      **Note:** the saved output wraps the whole SKILL.md in `<skill_content>`; the last line is `</skill_content>`.
+
+      Section map of the tail (line numbers in the saved file):
+      - 1175 `### Step 9 — Commit Message Quality Standards`
+      - 1191 `### Step 10 — Execution & Verification` (subsections mislabeled `9a`–`9j`)
+      - 1360 `### Step 11 — Logic-Documentation Compass`
+      - 1389 `### Step 12 — Source Logic & Generated Files` (subsections `11a`–`11c`)
+      - 1427 `### Step 13 — Intermediate State Synthesis`
+      - 1505 `### Step 14 — User-Requested Coupling & Deviations`
+      - 1520 `### Step 15 — Push Protocol`
+      - 1538 `### Step 16 — Guardrail Against Predictive Planning`
+      - 1548 `## Scope Coverage`, 1563 `## Prohibited Behaviors`, 1595 `## Related Skills`, 1624 `## Composition Rationale`, 1639 `## Common Pitfalls`
+
+      ---
+
+      ## 1. Step 10+ sections (execution, verification, push, cleanup)
+
+      **Step 10 — Execution & Verification** (subsections numbered 9a–9j in the doc):
+
+      - **9a — Step-by-Step Execution:** Execute commits one-by-one per approved arrangement. **Chaining commands (e.g. `git add . && git commit`) is FORBIDDEN.** Each command must be a separate step so the user can inspect intermediate state before authorizing the next action.
+      - **9b — Recovery:** Unstage: `git reset <file>`; selective discard: `git checkout -p`. **WARNING: Never use `git reset --hard` for synchronization. Always prefer `git pull`.**
+      - **9c — Pull Before Push:** Always `git pull` (or `git pull --rebase` upon explicit approval) before pushing.
+      - **9d — Opaque Content Analysis:** For binary/LFS assets, verify internal consistency (`cat -v` or hex dump) so the commit message accurately reflects stored data.
+      - **9e — History Refinement Delegation:** Splitting/refining existing commits delegates to [`git-history-refinement`](../git-history-refinement/SKILL.md).
+      - **9f — Stash Workflow for Rebase:**
+        ```powershell
+        git stash push -m "Descriptive message"
+        git pull --rebase origin <branch>
+        git stash pop
+        ```
+        On pop conflicts, resolve manually, then:
+        ```bash
+        PAGER=cat git add <resolved-files>
+        PAGER=cat git stash drop
+        ```
+        **Stash preservation rule:** `git stash drop`/`pop`/`clear` are destructive and require explicit per-stash user authorization — even inside a cleanup batch (see `ai-agent-rules/git-operation-rules.md` §5 Inventory → Inspect → Authorize → Act). For unclear-origin stashes use [`git-stash-triage`](../git-stash-triage/SKILL.md). Provenance check via [`git-stash-parent-commit`](../git-stash-parent-commit/SKILL.md): `& "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}`.
+      - **9g — Corrupted Rebase State Recovery:** If `git rebase --continue/--abort` fails with `warning: could not read '.git/rebase-merge/head-name'`: diagnose with `Test-Path ".git/rebase-merge"` / `Get-ChildItem ".git/rebase-merge"`; verify staged work via `PAGER=cat git diff --cached`; `Remove-Item ".git/rebase-merge" -Recurse -Force`; verify `PAGER=cat git status`; then commit normally (not `rebase --continue`).
+      - **9h — Pre-Existing Staged Content Handling:** Run `git diff --cached --stat`; if non-empty: present to user with warning, unstage if unrelated with `git reset HEAD -- .`, re-verify with `git diff --cached`, stage only intended files. (Only unstages; does not discard working-tree changes.)
+      - **9i — Commit Message Delivery (Safe Pattern):** delegated to [`git-commit-message-delivery`](../git-commit-message-delivery/SKILL.md), heredoc → `-F` pattern (§1.2) — see item 7 below.
+      - **9j — Post-Commit Verification:** After each commit, verify file set with `git show --name-only HEAD` (NOT `--stat`, which truncates long paths with `.../` and breaks grep/Select-String). Verify: (1) file set correct, (2) count matches expected, (3) no unintended files (no `.orig`, `.bak`, `.rej`, IDE artifacts). If wrong, diagnose via `git diff HEAD~1..HEAD` and correct before the next commit.
+
+      **Step 11 — Logic-Documentation Compass:** commit history visualized as compass — North: architectural/schema; East: logic/feature; West: testing/verification; South: documentation/refinement. No "spinning" (mixing logic and docs in one commit). **External Tool Asset Granularity:** for Postman/Insomnia/DBeaver assets, separate Environments / Collections / Data Tables; never one generic `test(tooling)` commit if purposes differ.
+
+      **Step 12 — Source Logic & Generated Files:** 11a — never manually edit generated files; update the source (templates/scripts/CI). 11b — detect generation (`<!-- AUTO-GENERATED -->`, build scripts, CI), locate source, document sync requirements in messages (e.g. "Run `npm run build` to regenerate"). 11c — CI/CD-managed files excluded from manual edits; maintain explicit exclusion list; verify with `git diff --cached` before committing.
+
+      **Step 13 — Intermediate State Synthesis:** For interleaved changes / 50+ line reorders / failed `git add -p` splits:
+      - Preferred scripted fallback (no working-tree mutation): `stage-file-excluding-lines.py --file <f> --exclude "<unwanted-line>"` → commit → `git add <f>` picks up remaining deltas.
+      - Fallback manual de-construction: edit to match atomic goal before staging, stage/commit, iterate until clean.
+      - Formatter-mixed files: delegate to [`separate-content-from-formatting-commits`](../separate-content-from-formatting-commits/SKILL.md).
+      - HEAD-Synthesis staging: `stage-head-synthesize.py --file <f> --replace "old|new"` reads `HEAD:<f>`, writes a blob, stages via `git update-index --cacheinfo`; working tree untouched.
+      - Sibling scripts listed: `agents-md-stage-row.py` (HEAD + one new row), `stage-file-excluding-lines.py` (working tree minus lines), `stage-head-synthesize.py` (HEAD + substitutions), `stage-hunk-from-diff.py` (selective hunks).
+
+      **Step 14 — User-Requested Coupling:** warn first ("This coupling technically violates Rule [X] because [reason]"), accept only on explicit re-confirmation, document deviation rationale in the body.
+
+      **Step 15 — Push Protocol:** do NOT `git push` unless explicitly requested; after commits OFFER to push and wait for explicit "yes"/command; always `git status` before push; never assume default branch — discover via `git branch -r`.
+
+      **Step 16 — Guardrail Against Predictive Planning:** never pre-commit in a plan to future content; commit construction is real-time analysis; plans are protocol roadmaps only.
+
+      **Cleanup protocols near the end / tail:**
+      - Preview file deletion only after all commits verified (2d.2, see item 3).
+      - Safety-stash release only at end-of-session, verified-then-dropped with explicit user authorization (2h, see item 6).
+      - Sidecar cleanup (3h, line 862): after every `git add -p` / in-editor `e` / programmatic `git apply`, detect `.orig|.bak|.full.bak|.rej|.staging-tmp` via `git status --short | Select-String -Pattern '\.(orig|bak|full\.bak|rej|staging-tmp)$'`; output MUST be empty before commit; classify recoverable (move out) vs disposable (delete); never `git add` a sidecar; never substitute `.gitignore` for cleanup. Composes with §2h (safety stash window).
+
+      ---
+
+      ## 2. Commit message rules / format / templates
+
+      **Step 9 — Commit Message Quality Standards** (table, lines 1179–1187). Every message MUST satisfy:
+
+      | Requirement | Detail |
+      |---|---|
+      | Specificity | Avoid generic titles (e.g. `add linux, macos, and windows gitignore rules`, not `os-specific`) |
+      | Anti-Repetition | Body MUST NOT merely rephrase the title |
+      | Context Enrichment | Explain the "Why", especially architectural/security decisions |
+      | Atomic Rationale | Body MUST state WHY these changes are grouped; explain functional coupling of multiple files |
+      | Constraint Documentation | Mention constraints/external dependencies influencing grouping |
+      | Contextual Accuracy | Precise terms (e.g. "Supabase project-specific" not generic "project-specific") |
+      | Body/Diff Congruence | Body MUST be a complete accurate summary of ALL staged hunks; discrepancy → immediate corrected preview |
+
+      **Format:** template is Conventional-Commits-shaped `[type](scope): [title]` (preview template, §2d). Explicit types named in this skill: `style` (formatting, line 1050), `refactor` (structural, line 1065); Scope Coverage adds dedicated `style`/`refactor` commits. **No full type/scope vocabulary or body-template is defined in this skill** — it delegates submodule sync commit formatting to `ai-agent-rules/git-commit-message-rules.md` §5 ("Changes" and "Metadata" headers, chronological logs; see Common Pitfalls line 1658). That rule file exists at `/workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md` and owns: §1 Format Specification, §2 Title Line, §3 Body (Description), §4 Example, §5 Submodule Sync Commits (+§5.1 huge-range bookend >500 commits), §6 Opaque/Binary Changes, §7 Amending Established Commits.
+
+      **Preview template (verbatim, §2d):**
+      ```markdown
+      ## Arranged Commits Preview
+
+      ### Commit 1: [type](scope): [title]
+      - **Files**: [file1.md], [file2.md]
+      - **Message**:
+        ```
+        [type](scope): [title]
+
+        [Body line 1]
+        [Body line 2]
+        ```
+      - **Hunks/Preview**:
+        ```diff
+        [Show actual hunks for this commit — use ~~~diff/~~~ if hunks contain ```]
+        ```
+
+      ### Commit 2: [type](scope): [title]
+      - **Files**: [file3.md]
+      - **Message**:
+        ```
+        [type](scope): [title]
+
+        [Body line 1]
+        ```
+      ---
+      Please say "start" to begin the sequential execution of these atomic
+      commits.
+      ```
+      (Presentation ends with the mandatory "start" gate.)
+
+      ---
+
+      ## 3. Commit-preview artifact — path, naming, lifecycle
+
+      - **Exact path: `scratch/commit-preview.md`** (§2d mandate 4). Written via [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) which "ensure[s] `scratch/` exists and is gitignored"; the helper named is `ensure-scratch-gitignored.py` (Related Skills line 1613). Summary is also presented in the conversation.
+      - **NOT session-scoped / no session ID.** The skill contains **no reference at all** to `planning-artifact-naming`, `planning-version-coverage-audit`, or session-scoped scratch (`scratch/<session-id>/`). The artifact is the flat `scratch/commit-preview.md`. (Note: this differs from the repo-level AGENTS.md scratch convention, but it is what this skill mandates.)
+      - **Creation:** §2d, after arrangement, full verbose preview with actual hunks; mandates: (1) verify every `@@` header against `git diff --unified=3 -- <file>` (never estimate), (2) use `~~~diff`/`~~~` fences when hunks contain backtick fences, (3) no truncation with `...` — split into batches if too large, (4) write artifact + present summary.
+      - **Update:** §2d.1 — iterative fixup on user line-number feedback; fix and **re-write** `scratch/commit-preview.md`, re-present; loop until user confirms; do NOT begin execution until user says "start".
+      - **Verification:** §2d.2 — after all commits execute (or resuming a session), cross-check preview vs `git log`:
+        ```bash
+        python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+            --preview scratch/commit-preview.md \
+            --format text
+        ```
+        Parses `Commit N:` sections (any heading level), cross-references titles against `git log --oneline`; `--format json` for machine-readable. Manual fallback: read `scratch/commit-preview.md`, extract `Commit N:` titles, run `git log --oneline -20`, report done/pending.
+      - **Deletion (cleanup):**
+        ```bash
+        # Automated (with verification gate)
+        python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+            --preview scratch/commit-preview.md \
+            --cleanup
+
+        # Manual
+        trash scratch/commit-preview.md
+        ```
+        **MUST NOT be deleted until all commits are confirmed executed; if any pending, retain for the next session.**
+      - **Batching (>5 commits, §2g):** split preview into batches of ≤5, separate `"start"` per batch; after each batch emit `Batch N committed: SHA1, SHA2, …`; first batch must include a top-level Master Plan Table (`# | type(scope): title | files | batch`).
+      - **Interleaving/deferred refs (§2f/§2f.1):** registry/index rows ship in the same commit as the artifact; cross-references to not-yet-existing artifacts must be deferred to the commit that lands the target (via `stage-file-excluding-lines.py`).
+
+      ---
+
+      ## 4. Checklists, pitfalls, appendices, verification gates
+
+      - **Scope Coverage table** (1548): functional = one logical unit/commit; formatting = dedicated `style`; refactors = dedicated `refactor`; config coupled with functional change; submodule pointer coupled with main-repo config; submodule auto-sync offer after every submodule commit; generated vs custom = Foundation + Customization commits; CI/CD managed excluded.
+      - **Prohibited Behaviors** (1563–1593, 13 items): auto-committing without explicit "start"; auto-pushing; mixing concerns; staging untracked without confirmation; `git reset --hard` for sync; skipping the commit preview; excluding untracked files from initial analysis; predicting commit content in plans; editing generated files directly; generic commit messages; command chaining (`&&`) — FORBIDDEN; batching hunk responses; skipping empty commits during rebase without user confirmation; bulk-deleting directories with mixed tracked/untracked files.
+      - **Related Skills** (1595–1622): git-submodule-commit-details (MANDATORY for Step 6 metadata); git-commit-metadata-extraction; git-commit-preview-verify (post-execution verification, §2d.2); git-history-refinement; claude-config-change-gate (pre-flight; BLOCKS if only trivial timestamp changes → commit SHOULD be cancelled); repo-scratch-output-capture; git-hunk-staging-primitives (base skill, 5 primitives); **git-commit-dangling-link-audit — MANDATORY pre-flight before finalizing any preview that reorders/moves paths: run the link classifier, then Gate 4 on ranges.**
+      - **Composition Rationale** (1624): this skill is a composer; does NOT re-implement hunk-staging primitives; delegates to `git-hunk-staging-primitives`; adds commit-preview mandates, deferred cross-reference handling, adjacent-lines fallback, HEAD-synthesis.
+      - **Common Pitfalls** (1639–1665, 24 rows). Highlights beyond those already cited: use `git ls-files` as tracked-file source of truth; `.gitignore` negation (`!dir/*.zip`) and renamed-dir references; `git mv` fails on empty dirs; `git add -p` split on adjacent lines → `stage-file-excluding-lines.py`; formatting fix during feature work → separate commit; dependency coupling (A depends on B → same commit); corrupted `rebase-merge` removal; body must add WHY; submodule pointer verify remote; submodule sync uses "Changes"/"Metadata" headers + chronological logs; IDE noise (`.project`/`.classpath`) never auto-discarded, present sample diff; `.settings/` never bulk-deleted; `.project` changes attributed to JDT Language Server (embedded m2e), not the Maven UI extension; indent drift repair before `git add` (§3g); verify `@@` headers; use `~~~diff` fences; re-run `git diff` after edits before rewriting preview.
+      - **Verification gates scattered through the doc:** user "start" authorization (§2e); per-batch "start" (>5 commits, §2g); safety stash ≥2 commits (§2h); dangling-link audit before finalizing reorder/move previews; claude-config-change-gate pre-flight; redaction pre-check (§1g, after Step 1f and any new file mid-session); sidecar-empty gate (§3h); post-commit file-set verification (§9j).
+      - **Redaction pre-check (§1g):** scan new/modified files for org-specific Jira IDs (`PROJ-1234` → `<TICKET-ID>`), internal repo URLs (`<org>/<repo>` → `<ORG>/<REPO>`), cross-repo `../` links (run `detect-cross-repo-links.py` from redaction-portability), org names/codenames/hostnames/usernames, project-specific skill names in base-published skills; remediation via redaction-portability placeholders; re-run audit; cite redaction-portability as a dependency in commits touching skill/rule files.
+
+      ---
+
+      ## 5. Exact mandated script invocations (paths + arguments)
+
+      All are relative to the repo root (`/workspaces/ai-suite`):
+
+      1. **Preview verify / cleanup** (lines 426, 448):
+         ```bash
+         python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+             --preview scratch/commit-preview.md \
+             --format text        # or --format json
+         ```
+         ```bash
+         python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+             --preview scratch/commit-preview.md \
+             --cleanup
+         ```
+      2. **Repo role classification** (line 171):
+         ```bash
+         python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-repo-role.py /path/to/file
+         ```
+      3. **Registry row staging** (lines 491–499):
+         ```bash
+         python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+             --row "| My Skill | [path](path) | description |" \
+             --dry-run
+
+         python3 .agents/skills/git-hunk-staging-primitives/scripts/agents-md-stage-row.py \
+             --row "| My Skill | [path](path) | description |"
+         ```
+         (default `--mode staged`: reads `HEAD:AGENTS.md`, inserts alphabetically, `git hash-object -w` + `git update-index --cacheinfo`; `--mode worktree` supported for skill-factory registration.)
+      4. **Stage file minus lines** (lines 536–558, 1000):
+         ```bash
+         python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-file-excluding-lines.py \
+             --file .agents/skills/X/SKILL.md \
+             --exclude "../Y/SKILL.md" \
+             --dry-run
+         # then same without --dry-run; add --blank-context 1 when removing a whole block
+         ```
+      5. **Selective hunk staging** (lines 920–943) — `stage-hunk-from-diff.py` with pattern/substring/multiple-pattern/regex/`--cached` variants (exact flags are in §3i; doc examples use `--file`/`--include` style per that section).
+      6. **HEAD-synthesis staging** (line 1484):
+         ```bash
+         stage-head-synthesize.py --file <f> --replace "old|new"
+         ```
+      7. **Stash provenance** (line 1253):
+         ```powershell
+         & "<skill-path>/scripts/get-stash-parent.ps1" -StashRef stash@{n}
+         ```
+      8. **Cross-repo link detection** (line 279): `redaction-portability/scripts/detect-cross-repo-links.py`.
+      9. **Indent-drift detection** (line 707): `detect-list-indent-drift.py` (acceptance criterion in §3g; path delegated to the indent-repair skill).
+      10. **Scratch gitignore helper** (line 1613): `ensure-scratch-gitignored.py` from `repo-scratch-output-capture`.
+      11. `stage-specific-hunks.py` is named as one of the 5 base primitives (no invocation shown).
+
+      **Skills referenced but with no direct script invocation in this doc (delegation only):** `git-pre-execution-safety-stash` (git commands only), `git-stash-triage`, `git-commit-message-delivery`, `git-history-refinement`, `separate-content-from-formatting-commits`, `claude-config-change-gate`, `git-commit-dangling-link-audit` (says "run the link classifier, then Gate 4 on ranges"). **`planning-version-coverage-audit` is NOT mentioned anywhere in this file.**
+
+      ---
+
+      ## 6. Single-commit vs multi-commit sequences (safety stash applicability)
+
+      - **§2h — Pre-Execution Safety Stash is "Mandatory for ≥ 2 Commits."** It applies "before executing the first commit of any sequence of two or more commits (including any batch governed by §2g)". It captures an **apply-not-pop** snapshot of the full working-tree state (tracked modifications, staged hunks, AND untracked files), re-applies immediately, and persists across the sequence, verified-then-dropped only at end-of-session.
+      - **A 1-commit plan does NOT require the safety stash** (the mandate threshold is ≥2). Corroborating scope exclusions in "When to Apply": a "simple single-file, single-concern commit with no mixed changes (a lightweight commit suffices without the full protocol)".
+      - Three-phase protocol delegated to [`git-pre-execution-safety-stash`](../git-pre-execution-safety-stash/SKILL.md):
+        - **Phase 1 — Snapshot:** classify pre-existing stashes via `git-stash-triage`; `git stash push -u -m "safety: ..."`; immediately `git stash apply` (NEVER `pop`); verify parity. If apply fails due to live-editor conflicts, do NOT retry — use the skill's Phase 1g "Selective File Extraction from Stash" recovery.
+        - **Phase 2 — Hold:** never drop/pop/clear the `safety:` entry mid-sequence; re-verify presence at batch boundaries.
+        - **Phase 3 — Verify-and-Release:** after final commit, `git stash apply` again, confirm clean no-op vs HEAD, then ask user explicitly before `git stash drop` (per `git-operation-rules.md` §5).
+      - Backing rule citations: `ai-agent-rules/git-atomic-commit-construction-rules.md` §3.3 (multi-commit safety stash), §3.2 (batch authorization), §3.1 (interleaving mandate), §4.3 (sidecar cleanup).
+
+      ---
+
+      ## 7. `git-commit-message-delivery` (multi-line message primitive)
+
+      **§9i — Commit Message Delivery (Safe Pattern)** delegates entirely to [`git-commit-message-delivery`](../git-commit-message-delivery/SKILL.md) and mandates the **heredoc → `-F`** pattern (base skill §1.2) for all multi-line or special-character messages:
+
+      ```bash
+      cat > /tmp/commit_msg <<'EOF'
+      <type>(<scope>): <title>
+
+      <body>
+      EOF
+
+      git commit -F /tmp/commit_msg
+      rm -f /tmp/commit_msg
+      ```
+
+      "Do NOT use `git commit -m '...'` when the message is multi-line or contains shell-special characters (`'`, `$`, `` ` ``)." See the base skill for the complete pattern reference and selection criteria.
+
+      (Observation for the caller: this snippet writes to `/tmp/commit_msg`, which is the skill's verbatim instruction; the repo AGENTS.md scratch rule prefers session-scoped `scratch/<session-id>/`, but the skill itself does not adapt the path.)
+
+      ---
+
+      ### Key gaps / discrepancies worth flagging
+
+      1. **No `planning-artifact-naming` integration** — the preview artifact is flat `scratch/commit-preview.md`, not session-ID scoped; `planning-version-coverage-audit` is absent.
+      2. **No Conventional Commits type/scope list** — only `[type](scope): [title]` shape and explicit `style`/`refactor`; full message rules are in `/workspaces/ai-suite/ai-agent-rules/git-commit-message-rules.md`.
+      3. **Step 10 subsections are numbered `9a`–`9j`** (doc bug), and Step 12 subsections are `11a`–`11c`.
+      4. `git-pre-execution-safety-stash`, `git-stash-triage`, `git-commit-message-delivery`, and the dangling-link audit are invoked by name only — no concrete script paths for them appear in this document.
+

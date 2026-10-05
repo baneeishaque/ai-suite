@@ -1,0 +1,1030 @@
+---
+user:
+  text: if safety stash fully covered - drop that
+  time: 10/5/2026, 7:51:47.908 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The user says: "if safety stash fully covered - drop that". This is about the plan — the safety stash item in §2.5 "Already documented". Wait, what does "drop that" mean? Let me parse.
+
+      In my summary, I listed "Already covered (no action): atomic commits, safety stash, hunk staging, submodule sync-message metadata, workflow analysis." The user says "if safety stash fully covered - drop that".
+
+      Hmm — interpretation: In the session workflow, safety stashes were created and retained (not dropped). The user may be asking: "if the safety stash [content is] fully covered [by the commits], drop that [stash]". That is, if the stashes are fully redundant with what's committed, drop them.
+
+      Wait, but "drop that" could also mean "drop that item from the plan" (the safety stash coverage item). Hmm.
+
+      Let me think about context: Prior session state (from my summary): "safety stashes retained (not dropped) in common-lib, account-ledger-lib, parent." The `git-pre-execution-safety-stash` skill has a Phase 3 "Verify-and-Release" — end-of-session no-op verification and gated drop. The safety stashes were retained because R1/R2 remain unpushed? Or just not dropped.
+
+      The user's message: "if safety stash fully covered - drop that". Most natural reading: if the safety stash is fully covered [by the committed work], drop that [stash]. I.e., the user wants to clean up the safety stashes now — but only if their content is fully captured by the commits.
+
+      But wait — the current task is planning the skills. The stashes belong to `/workspaces/account-ledger-cli-kotlin` and its submodules. The user may be replying to my summary's mention of "safety stash" as an already-documented item — meaning "if the safety stash workflow is fully covered [by the git-pre-execution-safety-stash skill], drop that [from the plan's list of covered items?]" Hmm, that doesn't quite make sense either — it's already in the "no action" list.
+
+      Actually — re-reading: My table of gaps didn't include safety stash. The "Already covered (no action)" line includes safety stash. The user says "if safety stash fully covered - drop that". Maybe they mean: "if [the] safety stash [is] fully covered [in the plan/skill], drop that [stash]" — i.e., they're instructing to drop the actual git stashes in the account-ledger repos, provided the stashed content is fully covered (redundant) — presumably covered by the commits.
+
+      Hmm, but that's a separate operation from the plan. Could the user be connecting: during the prior session, safety stashes were created before the multi-commit sequences; the `git-pre-execution-safety-stash` skill's Phase 3 says verify no-op and drop. Since the session ended without dropping, the stashes remain. Now the user says: if they're fully covered (i.e., the work is committed / pushed), drop them.
+
+      Given ambiguity, I should verify the stash contents vs committed state, then ask/act. But wait — "drop that" might also be a conditional: "if [the] safety stash [workflow is] fully covered [by the existing skill], drop that [from the new plan]" — but safety stash wasn't in the new plan deliverables; it was listed as covered. So dropping from the plan = no-op.
+
+      Hmm. Let me re-read once more: "if safety stash fully covered - drop that". 
+
+      Alternative reading: In my summary I said "safety stashes retained (not dropped)". The user might be responding to that: "if [the] safety stash [content is] fully covered [by commits], drop that [stash]". This is the most actionable reading. The user wants the stashes dropped if redundant.
+
+      But it's risky to drop stashes. The `git-pre-execution-safety-stash` skill has a "gated drop" — requires verification that the stash is a no-op (i.e., applying it changes nothing / content already in working tree/commits). Per the skill: "end-of-session no-op verification and gated drop."
+
+      Also, we have `git-stash-triage` skill: "classifying, disposing, and (when appropriate) promoting pre-existing Git stashes to atomic commits or personal-sandbox branches — covers hang-free inspection, content-based classification, apply-not-pop verification, and rule-driven disposition."
+
+      So the correct procedure: inspect the stashes, verify their content is fully covered by the commits/current tree (no-op verification), then drop (with user authorization — which the user is now giving conditionally: "if fully covered - drop").
+
+      Wait, but should I do this now, before the plan approval? The user gave this as a directive responding to my presentation. The main plan is still awaiting approval ("Approve as-is, or include optional G4?"). The user's reply is not "start" — it's a refinement instruction about the stashes. 
+
+      Hmm, actually — maybe the user means: "if [the] safety stash [workflow is] fully covered [by the existing skill], drop that [from the plan's 'already documented' list and... no]". That reading makes no sense.
+
+      OR: the user might mean the plan's §2.5 item: "Atomic commit arrangement / safety stash / hunk staging — ..." — no.
+
+      I think the stash-drop reading is right: the user is telling me to drop the safety stashes if they're fully covered by committed work. This is a cleanup task on the account-ledger repos.
+
+      But hold on — "fully covered" could mean "fully covered by the commits" OR "fully covered [by the safety-stash skill's verification]". In git-pre-execution-safety-stash, the release phase: verify the stash application is a no-op (everything already in the tree), then drop. If the stash still contains uncommitted-but-needed content, don't drop.
+
+      Given the stakes (dropping stashes is destructive-ish; recoverable via reflog but still), the safe path: 
+      1. List stashes in the three repos (parent, lib, common-lib).
+      2. For each, verify content coverage: compare stash content against current HEAD/tree. The skill's no-op verification: `git stash apply --index <stash>` in a clean tree → if resulting tree == current tree, it's covered. Or simpler: `git stash show -p <stash>` and compare to commits.
+
+      Since the skill `git-pre-execution-safety-stash` owns the protocol, I should load it and follow Phase 3. Also `git-stash-triage` may be relevant. Per AGENTS #4: consumer discipline — before executing deterministic steps, list the skill's scripts/ and invoke matching scripts.
+
+      Actually — wait. Let me reconsider whether the user is talking about the plan at all. The conversation context: I presented the plan summary. User: "if safety stash fully covered - drop that". Perhaps they mean: in the plan's coverage analysis (§2.5), if the safety-stash sub-workflow is fully covered by the existing skill, then drop it from the plan — but it's not IN the plan as a deliverable. So no.
+
+      Hmm, one more possibility: the user wants the safety stashes dropped from the account-ledger repos as part of closing out the prior session, but conditional on verification. This makes practical sense: stashes linger; the user prefers clean state. And they're connecting it to my summary where I explicitly mentioned "safety stashes retained (not dropped)".
+
+      I'll go with: verify stash coverage, then drop if fully covered. But first — should I ask for clarification? The instruction seems clear enough under the stash reading: "if fully covered → drop". The condition itself gates the action. I should perform the verification and only drop when fully covered. That's exactly what the user asked.
+
+      But there's a nuance: "fully covered" by what? By the commits. If a stash contains content that is already in HEAD (or was applied and committed), then it's fully covered → drop. If the stash contains content NOT in HEAD (uncommitted work), then it's not covered → keep and report.
+
+      Plan of action:
+      1. Load `git-pre-execution-safety-stash` skill (it owns the verify-and-release protocol) — read SKILL.md. Also check its scripts/.
+      2. Identify stashes: `git -C <repo> stash list` for the three repos.
+      3. For each stash, do the no-op verification. The skill likely has a script for this. Per Consumer Discipline, list scripts dir first.
+      4. If covered → `git stash drop` (with the user's conditional authorization already given).
+      5. Report.
+
+      Also note: R1/R2 commits are unpushed; the stashes were created before the commit sequences. If the stashes were created before all commits and the tree state at session end matches, then apply would be no-op → drop.
+
+      But careful: the stash may include untracked files (`-u`). The no-op check needs to consider untracked too.
+
+      Let me start by loading the skill. Also — do this in the account-ledger repos, not ai-suite. 
+
+      Wait, actually, should I pause the plan approval for this? The user hasn't approved the plan ("start"). They responded with a directive about stashes. I'll handle the stash question first (it's a direct instruction), then re-ask for plan approval. Actually, the plan is already presented; the user may still be deciding on G4. I'll do the stash verification/drop now and then remind about approval.
+
+      Hmm, but hold on — maybe I'm overcomplicating. Let me re-read one final time: "if safety stash fully covered - drop that". 
+
+      In my summary I wrote: "safety stashes retained (not dropped) in common-lib, account-ledger-lib, parent." The user replies: if [the] safety stash [is] fully covered [by the commits], drop that [stash]. Yes. Actionable, conditional. Proceed.
+
+      One more consideration: "fully covered" — the git-pre-execution-safety-stash skill defines the verification. Let me load it.
+
+      Also, per the skill's own description: "Capture a verifiable working-tree safety snapshot via apply-not-pop stash before executing any multi-commit sequence, with end-of-session no-op verification and gated drop." So the skill has exactly this: no-op verification + gated drop. The user's instruction supplies the gate condition.
+
+      Let me load the skill via the skill tool (name: git-pre-execution-safety-stash). Then follow it. Also list its scripts.
+    thinking_duration: 8.104s
+    thinking_duration_ms: 8104
+    tool_calls:
+      - tool: skill
+        args:
+          name: git-pre-execution-safety-stash
+        result: |-
+          <skill_content name="git-pre-execution-safety-stash">
+          # Skill: git-pre-execution-safety-stash
+
+          # Git Pre-Execution Safety Stash Skill
+
+          > **Skill ID:** `git-pre-execution-safety-stash`<br>
+          > **Version:** 1.0.0<br>
+          > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
+
+          ## Description
+
+          Before executing any multi-step Git commit sequence — atomic commit
+          construction batches, history refinement runs, rebase chains, hunk-staged
+          splits — capture a single high-fidelity snapshot of the full working tree
+          (tracked modifications, staged hunks, AND untracked files), immediately
+          re-apply it, and retain the stash entry until end-of-session verification
+          proves every planned change reached HEAD. The retained stash is the
+          cheapest, highest-fidelity rollback primitive available against accidental
+          `git checkout`, `git reset`, IDE crash, interrupted rebase, or stale-disk
+          recovery loss during long multi-commit sequences.
+
+          This skill is invoked by composer skills (atomic-commit construction,
+          history refinement, rebase standardization) and runs in three phases:
+          **Snapshot** (before execution), **Hold** (during execution — never
+          dropped), **Verify-and-Release** (after execution, only on clean no-op).
+
+          ## Source Rules
+
+          | Rule File | Scope Incorporated |
+          |---|---|
+          | [`git-atomic-commit-construction-rules.md` §3.3](../../../ai-agent-rules/git-atomic-commit-construction-rules.md) | Pre-Execution Safety Stash mandate |
+          | [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md) | Stash preservation — drop / pop / clear require explicit per-stash user authorization |
+
+          ## Prerequisites
+
+          | Requirement | Minimum |
+          |---|---|
+          | VCS | Git 2.x+ |
+          | Shell | PowerShell 5.1+ or Bash 4+ |
+          | State | Working tree may be dirty (the whole point); HEAD on a real branch (not detached) |
+
+          ## When to Apply
+
+          Apply this skill when:
+
+          - About to execute a sequence of two or more commits authored under
+            [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md).
+          - About to execute any batch under §3.2 Batch-by-Batch Authorization.
+          - About to run [`git-history-refinement`](../git-history-refinement/SKILL.md),
+            [`git-rebase-standardization`](../git-rebase-standardization/SKILL.md), or
+            [`git-commit-edit`](../git-commit-edit/SKILL.md) against a dirty working
+            tree where hunk-by-hunk staging will run.
+          - About to run an interactive rebase across more than two pick lines.
+
+          Do NOT apply when:
+
+          - Executing a single-commit, single-file change with no hunk splitting.
+          - The working tree has zero modifications and zero untracked files —
+            `git stash push` would no-op, but the apply-back verification step
+            becomes meaningless.
+          - The destructive disposition of pre-existing stashes is itself the
+            task — invoke [`git-stash-triage`](../git-stash-triage/SKILL.md)
+            first; this skill creates a NEW snapshot, it does not classify
+            legacy ones.
+
+          ---
+
+          ## Step-by-Step Procedure
+
+          ### Phase 1 — Snapshot (before first commit of the sequence)
+
+          #### 1a — Inventory pre-existing stashes
+
+          ```powershell
+          git -C <repo-path> --no-pager stash list
+          ```
+
+          If the output is non-empty, each entry MUST be classified via
+          [`git-stash-triage`](../git-stash-triage/SKILL.md) BEFORE pushing
+          the safety stash. Pushing a safety stash on top of an unclassified
+          stash stack creates ambiguity at verification time about which
+          `stash@{N}` is "ours."
+
+          #### 1b — Author a descriptive snapshot message
+
+          The message MUST encode at minimum:
+
+          - Purpose token `safety:` (distinct from feature WIP, mixed work,
+            triage-bucket markers).
+          - A short description of the upcoming sequence (e.g.,
+            `pre-batch-2 snapshot of commits 7..11 family-unit introduction`).
+          - A change-count summary (e.g., `12 modified + 8 untracked`).
+          - An ISO date (e.g., `2026-05-17`).
+
+          Example:
+
+          ```text
+          safety: pre-batch-1-remainder snapshot of 14 modified + 8 untracked entries before commits 5..N land (2026-05-17)
+          ```
+
+          The `safety:` prefix is the canonical marker that lets the verification
+          phase (and any future triage) identify this stash entry unambiguously.
+
+          #### 1c — Push the snapshot with untracked files included
+
+          ```powershell
+          git -C <repo-path> stash push -u -m "<message-from-1b>"
+          ```
+
+          The `-u` flag is MANDATORY — untracked files are first-class working-tree
+          state per the §3.3 mandate, and a snapshot without them defeats the
+          rollback purpose for any sequence that introduces new files.
+
+          #### 1d — Immediately apply back
+
+          ```powershell
+          git -C <repo-path> stash apply
+          ```
+
+          **Apply, NOT pop.** Pop would drop the stash entry on success, defeating
+          the rollback contract. `apply` leaves the entry intact on the stash stack
+          while restoring every line to the working tree.
+
+          #### 1e — Verify post-apply parity
+
+          ```powershell
+          git -C <repo-path> status --short | Measure-Object | Select-Object -ExpandProperty Count
+          ```
+
+          The line count MUST equal the pre-stash status line count. Any mismatch
+          indicates the apply was partial (typically due to an IDE file-lock —
+          see Phase 1f).
+
+          ```powershell
+          git -C <repo-path> stash list | Select-String '^stash@\{0\}: .* safety: '
+          ```
+
+          The line MUST be present. If absent, the push failed silently — re-run
+          1c and 1d.
+
+          #### 1f — IDE File-Lock Recovery During Apply
+
+          `git stash apply` can fail mid-stream on Windows when the IDE (VS Code,
+          Eclipse, IntelliJ) holds open file handles on a directory the apply
+          needs to delete or restore:
+
+          ```text
+          Deletion of directory '<path>' failed. Should I try again? (y/n)
+          ...
+          warning: failed to remove <path>: Permission denied
+          ```
+
+          The stash push itself succeeded (verify with 1e step 2); only the apply
+          is partial. Recovery options, in order of preference:
+
+          1. **Close the indexing tool window** for the affected workspace (or
+             stop the JDT Language Server / Eclipse builder), then re-run
+             `git stash apply`. The second apply typically succeeds.
+          2. **Move the offending directory out of the way** (`Move-Item`), re-run
+             apply, then restore the moved directory by `git checkout -- <path>`
+             if it is tracked or by `Move-Item` back if untracked.
+          3. **Apply via an isolated worktree** per
+             [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md)
+             §4.6 pattern, then cherry-pick the apply into the main worktree.
+
+          In all cases the stash entry MUST remain on the stack — never `pop`
+          during recovery.
+
+          #### 1g — Stash-Apply Conflict Recovery via Selective File Extraction
+
+          When `git stash apply` fails because a live editor (VS Code, Copilot,
+          Eclipse, IntelliJ) rewrote files between the `push` and `apply` commands,
+          the standard recovery options in 1f (close editor → retry apply, move
+          offending directory) may not work — the editor instantly regenerates the
+          conflicting files. Do NOT retry `git stash apply`; each retry reproduces
+          the same conflicts. Instead, extract files **selectively** from the intact
+          stash entry as each commit in the planned sequence is executed.
+
+          **Prerequisite**: You MUST have an approved Arranged Commits Preview (from
+          [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)
+          §3 — the Verbose Display) that lists every planned commit and the files
+          it needs. Without this plan, selective extraction has no target.
+
+          **Procedure — repeat for each planned commit in sequence:**
+
+          1. **Identify needed files**. From the Arranged Commits Preview, list the
+             exact file paths the current commit requires.
+
+          2. **Compare each file against the stash**. For every file the commit needs:
+             - **If tracked** (exists in HEAD): `git diff stash@{0} -- <file>` shows
+               whether the stash holds a different version. An empty output means the
+               working tree already matches the stash; skip extraction.
+             - **If untracked** (new file not yet in HEAD): `git ls-tree stash@{0}^3`
+               lists untracked files captured by the `-u` flag. Check if `<path>`
+               appears in that listing.
+
+          3. **Extract the desired stash version**:
+             - **Tracked files**: `git checkout stash@{0} -- <file>`
+             - **Untracked files**: `git show stash@{0}^3:<path> > <path>`
+               (The `^3` suffix addresses the untracked-tree parent of a stash —
+               `stash@{0}^3` is the tree object that `git stash push -u` captured.)
+
+          4. **Verify extraction**:
+
+             ```bash
+             git diff <file>
+             # MUST show the stashed content now present in the working tree
+             # (no diff means the working tree already matched stash)
+             ```
+
+          5. **Stage and commit** per the approved plan using normal atomic-commit
+             construction procedures (`git add <file>`, `git commit -m "..."`).
+
+          6. **Repeat** for the next planned commit.
+
+          **Example** — commit 1 needs `src/foo.ts` and `src/bar.ts`:
+
+          ```bash
+          # Compare tracked files against stash
+          git diff stash@{0} -- src/foo.ts       # shows stash has changes
+          git diff stash@{0} -- src/bar.ts       # empty — working tree matches
+
+          # Extract foo.ts from stash
+          git checkout stash@{0} -- src/foo.ts
+
+          # Verify extraction
+          git diff src/foo.ts                    # no diff = correct
+
+          # Stage and commit per plan
+          git add src/foo.ts src/bar.ts
+          git commit -m "feat(foo): implement core logic"
+          ```
+
+          **Safety guarantees**:
+
+          - The stash entry (`stash@{0}`) is NEVER modified by `git checkout
+            stash@{0} -- <file>` or `git show stash@{0}^3:<path>` — these are
+            read-only operations against the stash object. The stash remains
+            intact for end-of-session Phase 3 verification.
+          - Files whose working-tree version was intentionally preferred over
+            the stash version (e.g., because the live editor's changes are
+            desired) are simply skipped in step 2 — no extraction, no conflict.
+          - After all planned commits land, proceed to **Phase 3**
+            (Verify-and-Release) as normal. The stash is retained for the full
+            verification cycle; it MUST NOT be dropped without user authorization
+            per Phase 3d.
+
+          **When NOT to use this procedure**:
+
+          - The stash apply succeeded (even partially). Use Phase 1e/1f instead.
+          - You do not have an Arranged Commits Preview identifying per-commit
+            files. Without a plan, you cannot know which files belong to which
+            commit — abort and re-plan first.
+          - The stash itself is corrupted or missing (`git stash list` shows no
+            `safety:` entry). A fresh Phase 1 capture is required.
+          - The stash is **not a safety stash** (no `safety:` prefix) — it is a
+            stale or pre-existing stash. Delegate to
+            [`git-stash-triage`](../git-stash-triage/SKILL.md) §4d (Selective File
+            Restoration — Per-File Triage) instead, which covers the general
+            per-file extraction protocol for any stash.
+
+          ---
+
+          ### Phase 2 — Hold (during the commit sequence)
+
+          #### 2a — Never drop the safety stash mid-sequence
+
+          The agent MUST NOT run `git stash drop`, `git stash pop`, or
+          `git stash clear` between Phase 1 and Phase 3. If the user requests
+          unrelated stash work mid-sequence, route them through
+          [`git-stash-triage`](../git-stash-triage/SKILL.md) and disambiguate
+          by `safety:` message prefix.
+
+          #### 2b — Re-verify presence at batch boundaries
+
+          For sequences running under §3.2 batch-by-batch authorization, before
+          emitting the next batch preview run:
+
+          ```powershell
+          git -C <repo-path> stash list | Select-String '^stash@\{0\}: .* safety: '
+          ```
+
+          A missing entry MUST halt the sequence — the snapshot has been lost
+          and a fresh Phase 1 capture is required before resuming.
+
+          ---
+
+          ### Phase 3 — Verify-and-Release (after the final commit of the sequence)
+
+          #### 3a — Capture the post-execution working-tree fingerprint
+
+          ```powershell
+          $preApplyStatus = git -C <repo-path> status --short
+          ```
+
+          If the working tree is clean (`$preApplyStatus` empty), every planned
+          change reached HEAD. If non-empty, classify the residue:
+
+          - **Expected**: Files deliberately left unstaged for a later batch (matches
+            the Master Plan Table from §3.2). These remain after release.
+          - **Unexpected**: Files that should be in HEAD but aren't — investigate
+            before release. Do NOT proceed to 3b until resolved.
+
+          #### 3b — Apply the safety stash on top of the current tree
+
+          ```powershell
+          git -C <repo-path> stash apply
+          ```
+
+          #### 3c — Verify the apply is a clean no-op
+
+          ```powershell
+          $postApplyStatus = git -C <repo-path> status --short
+          # Compare line-by-line against $preApplyStatus
+          if (Compare-Object $preApplyStatus $postApplyStatus -SyncWindow 0) {
+            Write-Host '[FAIL] Apply produced a delta — DO NOT drop the stash.'
+          } else {
+            Write-Host '[OK] Apply was a no-op — every planned change is in HEAD.'
+          }
+          ```
+
+          **Interpretation**:
+
+          - **Clean no-op** → Every line in the snapshot is also in HEAD (or in
+            the expected residue). The stash is now redundant and safe to drop
+            after user authorization (Phase 3d).
+          - **Apply produced a delta** → Some snapshot content is NOT in HEAD.
+            Either a planned commit was skipped or partially applied, OR the
+            residue analysis in 3a missed something. The stash MUST be retained
+            for forensic recovery. Re-investigate before any drop.
+          - **Merge conflicts during 3b apply** → The working tree has diverged
+            from the snapshot in a way that would discard snapshot content.
+            Resolve manually using `git checkout -- <file>` from the stash, or
+            abort with `git checkout .` and investigate. The stash MUST be retained.
+
+          #### 3c.1 — Optional: stronger per-file content audit
+
+          The `stash apply` no-op check in 3c proves the working tree didn't *change*
+          when the stash was re-applied — strong evidence that snapshot content is in
+          HEAD, but it is a *delta*-level check. For higher confidence (especially
+          when the stash captured untracked files via `-u`, where `apply` does NOT
+          restore tracked-blob equality information), run the
+          [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) per-file
+          blob-equality audit:
+
+          ```bash
+          python3 .agents/skills/git-ref-content-audit/scripts/audit-ref-content.py \
+              --repo <repo-path> \
+              --stash 0 \
+              --ref-b HEAD \
+              --show-diffs
+          ```
+
+          A `✅ FULLY SUPERSEDED` verdict upgrades 3c from "no delta on re-apply" to
+          "every stashed blob byte-equal at HEAD". A `⚠️ PARTIALLY SUPERSEDED`
+          verdict surfaces deliberate post-stash refinements that the `apply` no-op
+          would have masked silently — inspect each `DIFFERENT` file before deciding.
+          A `❌ NOT SUPERSEDED` verdict is a HARD STOP: do not proceed to 3d.
+
+          #### 3d — Gated drop with explicit user authorization
+
+          ONLY after 3c (and, if used, 3c.1) reports clean no-op / full supersession:
+
+          ```text
+          The safety stash has been verified as a clean no-op against HEAD. Drop
+          stash@{0}? (yes / no / inspect-first)
+          ```
+
+          - **yes** → `git stash drop stash@{0}`.
+          - **no** → Retain indefinitely. Recommend re-running 3b after any
+            further commits to re-verify.
+          - **inspect-first** → Run `git stash show -u stash@{0}` and `git stash
+            show -p stash@{0}` for full content review before deciding.
+
+          The drop MUST NOT be automated even when 3c is clean — per
+          [`git-operation-rules.md` §5](../../../ai-agent-rules/git-operation-rules.md),
+          every destructive stash operation requires explicit per-stash user
+          authorization.
+
+          ---
+
+          ## Composition by Higher-Level Skills
+
+          | Composer Skill | Role of this skill in the pipeline |
+          |---|---|
+          | [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) §3.3 | Mandatory invocation before the first commit of any sequence of ≥ 2 commits, including every batch under §3.2 Batch-by-Batch Authorization. |
+          | [`git-history-refinement`](../git-history-refinement/SKILL.md) | Captures the working tree before destructive history rewrites, providing a rollback path independent of the backup branch (which only covers committed history). |
+          | [`git-rebase-standardization`](../git-rebase-standardization/SKILL.md) | Captures the working tree before any rebase that runs against a dirty tree (the rebase will otherwise refuse or stash-implicitly). |
+          | [`git-commit-edit`](../git-commit-edit/SKILL.md) | Captures the working tree before interactive rebase with hunk-splitting. |
+
+          ## Related Skills
+
+          | Skill | Relationship |
+          |---|---|
+          | [`git-stash-triage`](../git-stash-triage/SKILL.md) | **Prerequisite when stash list is non-empty at Phase 1a.** Classifies pre-existing stash entries so the `safety:` push lands at a known position on the stack. Also provides §4d (Selective File Restoration — Per-File Triage) for stale stashes where Phase 1g does not apply. |
+          | [`untracked-scratch-triage`](../untracked-scratch-triage/SKILL.md) | When Phase 3a residue includes unexpected untracked files (e.g., hunk-stage backup sidecars per §4.3), classifies them before deciding whether to drop the safety stash. |
+          | [`git-ref-content-audit`](../git-ref-content-audit/SKILL.md) | Optional Phase 3c.1 per-file blob-equality audit between the safety stash (including its `^3` untracked tree) and HEAD — upgrades the `apply` no-op check from delta-level to byte-level supersession proof. |
+          | [`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md) | Read-only byte-level worktree state capture/compare (no stash entry involved) — the complementary verification primitive when the proof requirement is "the working tree did not change" rather than "the working tree can be rolled back"; useful for bracketing any multi-commit sequence without touching the stash stack. |
+
+          ## Pitfalls & Recovery
+
+          | Symptom | Recovery |
+          |---|---|
+          | `git stash push -u` returned `No local changes to save` | Sequence has nothing to snapshot — verify the §3.3 mandate even applies (≥ 2 commits AND non-empty working tree). Skip this skill if both conditions don't hold. |
+          | `git stash apply` fails with `CONFLICT` after a successful push | Working tree advanced between push and apply (rare — typically a parallel `git pull`). Resolve conflicts manually, then re-verify 1e. Never `git checkout .` here — it discards the conflict markers. |
+          | `git stash apply` fails because a live editor (VS Code, Copilot, Eclipse, IntelliJ) rewrote files and `git checkout .` / close-editor did not resolve the conflict | Do NOT retry apply. Switch to **Phase 1g** — Selective File Extraction from Stash — to extract per-commit files from `stash@{0}` individually, working through the approved commit plan one commit at a time. The stash remains intact for end-of-session verification. |
+          | Stale stash (not a `safety:` stash) with divergent apply that Phase 1g does not cover (no planned commit sequence) | Delegate to [`git-stash-triage`](../git-stash-triage/SKILL.md) §4d (Selective File Restoration — Per-File Triage) for general per-file extraction without a pre-planned commit sequence. |
+          | Stash list now shows multiple `safety:` entries | A prior sequence's verification was skipped. Inspect each via `git stash show -u stash@{N}` and verify-then-drop oldest-first using Phase 3 against each. |
+          | Phase 3c shows persistent delta on files matching `*.bak` / `*.full.bak` | Hunk-stage backup sidecars per §4.3 were not cleaned up — delete the sidecars, re-run 3b. |
+          | End-of-session verification skipped (agent terminated mid-sequence) | The safety stash remains valid for the recovery window. Resume with Phase 2b verification, then proceed with the remaining commits OR Phase 3 directly if the sequence completed externally. |
+          | Detached HEAD at Phase 1a | `git stash` works in detached HEAD but `stash apply` after a checkout will appear to "lose" the apply on the original commit. Checkout the intended branch first, then capture. |
+
+          ## Source Conversations
+
+          | Date | Topic |
+          |---|---|
+          | 2026-05-17 | First codification — extracted from the batch-1-remainder execution discipline that surfaced a `.bak` sidecar leftover and an IDE file-lock during stash apply. |
+
+          Base directory for this skill: /workspaces/ai-suite/.agents/skills/git-pre-execution-safety-stash
+          Relative paths in this skill (e.g., scripts/, reference/) are relative to this base directory.
+          Note: file list is sampled.
+
+          <skill_files>
+          <file>/workspaces/ai-suite/.agents/skills/git-pre-execution-safety-stash/AGENTS.md</file>
+          </skill_files>
+          </skill_content>
+    time: 10/5/2026, 7:51:48.196 PM UTC
+    response: |+
+      Understood — verify each retained safety stash is fully covered by the committed state, then drop only if the no-op check passes. Loading the owning skill first:
+
+    duration: 12.544s
+    duration_ms: 12544
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The skill is loaded. Note: it says "Note: file list is sampled" and shows only AGENTS.md — so there may be no scripts/ directory (Phase 3c.1 delegates to git-ref-content-audit's script). Per AGENTS #4, I should list the skill's scripts/ directory before executing deterministic steps. The file list is sampled; let me check for scripts/ via glob (dot-path issue — glob won't find `.agents` paths). Use bash `ls` on the exact path (safe, exact path, not a tree walk).
+
+      Actually, the skill procedure itself is mostly git commands, and the only script referenced is `git-ref-content-audit/scripts/audit-ref-content.py`. For the verification, I can use Phase 3c (apply no-op check) and optionally 3c.1 (stronger per-file blob audit). The user said "if fully covered - drop". The strongest proof = 3c.1 full supersession. Let me check the audit script exists (path `.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py` — wait, in the skill text it's referenced as `../git-ref-content-audit/SKILL.md` meaning top-level `.agents/skills/git-ref-content-audit/`. Is git-ref-content-audit in the available_skills list? Yes: `git-ref-content-audit` — location `<location>...` I recall it's listed. From prior work, git-ref-content-audit was top-level? Its available_skills location: `/workspaces/ai-suite/.agents/skills/git-ref-content-audit/SKILL.md`? The skill doc references `../git-ref-content-audit/...` relative to `.agents/skills/git-pre-execution-safety-stash` → `.agents/skills/git-ref-content-audit` — top-level. But the system prompt list shows `git-ref-content-audit` with location... I saw earlier: `<name>git-ref-content-audit</name>` — hmm, I believe it's top-level. Verify by reading the script's first line.
+
+      Now, the stash verification steps:
+      1. Identify the stashes in the three repos: parent `/workspaces/account-ledger-cli-kotlin`, submodules `account-ledger-lib`, `common-lib` (nested inside account-ledger-lib? From prior state: "safety stashes retained (not dropped) in common-lib, account-ledger-lib, parent." The parent contains `account-ledger-lib` which contains `common-lib`? Actually prior summary: "common-lib: C1...; account-ledger-lib: L1...Lsync (common-lib gitlink fe171ed→ce8fdab)" → yes, common-lib is nested inside account-ledger-lib.
+
+      Repo paths: `/workspaces/account-ledger-cli-kotlin`, `/workspaces/account-ledger-cli-kotlin/account-ledger-lib`, `/workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib`.
+
+      2. `git stash list` in each (one command per call; three parallel calls are independent → batch them).
+
+      3. For each safety stash: Phase 3c no-op verification + optional 3c.1 full audit.
+
+      Note: the working tree may currently have residue (the stashes were applied back originally; the tree state at session end = clean? Prior state said trees clean after commits; R1/R2 executed. Actually "All 10 commits executed, verified, trees clean" — so working trees should be clean. If clean, then Phase 3c: `stash apply` → compare status; if the stash contains only content now in HEAD, applying it restores nothing (all files match) → status remains empty → no-op. But careful: applying a stash whose changes are already in HEAD can produce conflicts if the same lines changed differently... Actually `git stash apply` does a three-way merge; if the changes are already present, it typically results in no changes (or conflicts if context diverged). The skill handles conflicts → retain.
+
+      Important caveat: the stash may contain files that were then intentionally modified further in commits (R1/R2 refinements). Then apply might conflict or produce a delta. Then per skill, retain and report.
+
+      Also note: applying the stash modifies the working tree temporarily. If the apply is a no-op, no change. If it produces changes, I must clean up the applied residue afterwards? The skill says on delta: retain stash and investigate; the working tree now has the applied content... For the no-op path, nothing changes. Let me be careful and follow exactly.
+
+      Also the user's instruction supplies the authorization gate ("drop that" = yes if fully covered). The skill mandates explicit per-stash user authorization — the user gave conditional authorization ("if fully covered - drop"). That's explicit enough. But the skill says "The drop MUST NOT be automated even when 3c is clean". Hmm — "must not be automated" means don't drop without user saying yes; the user HAS said yes conditionally on coverage. I'll treat the condition as the gate: if fully covered → drop; else → retain + report. I should NOT ask again if the condition passes, because the user explicitly pre-authorized. Actually... the skill's 3d says the drop must not be automated "even when 3c is clean — every destructive stash operation requires explicit per-stash user authorization". The user's message IS the explicit per-stash authorization, conditioned on full coverage. Fine. But if there are multiple stashes, "per-stash" — the user said "drop that" (singular). Let me first inventory; if there's exactly one per repo, fine. If multiple, I'll drop the safety ones that verify clean and report.
+
+      Hmm, wait. Let me reconsider the possibility that the user meant "drop that [from the plan]". Given the plan is a skill-documentation plan and the safety stash is listed as already-covered, "if safety stash fully covered - drop that" could mean: "if [the] safety stash [sub-workflow is] fully covered [by the existing skill], drop that [item from the 'new skills' consideration]". But it was never a candidate deliverable. So that reading is a no-op — unlikely to be what the user meant to communicate. The stash-cleanup reading is actionable and matches my summary's explicit note "safety stashes retained (not dropped)". Also the user's phrasing "fully covered" mirrors the skill's "FULLY SUPERSEDED" verdict terminology! The skill's 3c.1 audit emits "✅ FULLY SUPERSEDED". So "if safety stash fully covered - drop that" = run the coverage audit; if fully superseded, drop the stash. Strong confirmation.
+
+      So: run Phase 3c.1 (git-ref-content-audit --stash 0 --ref-b HEAD) for each repo's stash — that's the "fully covered" test. If FULLY SUPERSEDED → drop. If PARTIALLY/NOT → retain + report.
+
+      But note the audit script needs the repo's stash. Also for parent repo: stash might include untracked; audit handles stash ^3.
+
+      Let me first inventory: stash lists in 3 repos. Also check working trees are clean (Phase 3a prerequisite — residue classification). Run:
+      - `git -C /workspaces/account-ledger-cli-kotlin --no-pager stash list`
+      - `git -C .../account-ledger-lib --no-pager stash list`
+      - `git -C .../account-ledger-lib/common-lib --no-pager stash list`
+
+      And status checks:
+      - `git -C <each> status --short` — could be long if dirty; bound it. Run separately or combined? Independent → batch 3 calls (stash list). Then status separately.
+
+      Wait, AGENTS shell rules: one command per call, no chaining. Three parallel calls OK. Let me also verify the audit script path exists in the same batch via read(limit 2) — `.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py`. Hmm, but is git-ref-content-audit top-level or in git/basic/audit/? Earlier `git-pre-execution-safety-stash/AGENTS.md` referenced `../git/basic/audit/git-worktree-state-fingerprint/SKILL.md` and `../git-ref-content-audit/SKILL.md` — the latter relative → top-level. But the system prompt available_skills location for git-ref-content-audit: I see `<name>git-ref-content-audit</name>` ... location shows `/workspaces/ai-suite/.agents/skills/git-ref-content-audit/SKILL.md`? I can't scroll. Just read the script path directly.
+
+      Batch: 3 stash lists + 1 script read. Let me do it.
+    thinking_duration: 8.137s
+    thinking_duration_ms: 8137
+    tool_calls:
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin --no-pager stash list
+        result: |
+          stash@{0}: On master: safety: pre-atomic-commit batch1-2 parent P1-P3 2026-10-05
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib --no-pager stash list
+        result: |
+          stash@{0}: On master: safety: pre-atomic-commit batch1 account-ledger-lib L1-L2 2026-10-05
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib --no-pager stash list
+        result: |
+          stash@{0}: On master: safety: pre-atomic-commit batch1 common-lib C1 2026-10-05
+      - tool: read
+        args:
+          filePath: /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py
+          limit: 3
+        result: |-
+          <path>/workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py</path>
+          <type>file</type>
+          <content>
+          1: #!/usr/bin/env python3
+          2: """
+          3: audit-ref-content.py — Bulk per-file blob-equality audit between two Git refs.
+
+          (Showing lines 1-3 of 275. Use offset=4 to continue.)
+          </content>
+
+          <system-reminder>
+          Instructions from: /workspaces/ai-suite/.agents/skills/git-ref-content-audit/AGENTS.md
+          ---
+          name: git-ref-content-audit (bridge)
+          description: AGENTS.md bridge directing agents to SKILL.md for the bulk per-file blob-equality audit between two Git refs.
+          category: Git & Repository Management
+          ---
+
+          # Git Ref Content Audit — Skill Bridge
+
+          This file is a thin pointer. The active source-of-truth is [`SKILL.md`](SKILL.md).
+
+          ## When to use
+
+          Apply [`git-ref-content-audit`](SKILL.md) when you need to verify, file-by-file, that
+          every path captured by one Git ref (most often a stash with an untracked tree) is
+          present byte-identically in another ref (most often `HEAD`). Produces an
+          IDENTICAL / DIFFERENT / MISSING classification and a disposition verdict.
+
+          ## Trigger phrases
+
+          - "Is this stash safe to drop?"
+          - "Has commit X been fully absorbed into branch Y?"
+          - "Compare every file in stash@{N} with HEAD."
+          - "Verify supersession before retiring this backup branch."
+
+          ## Quick-start
+
+          ```bash
+          python3 .agents/skills/git-ref-content-audit/scripts/audit-ref-content.py \
+              --repo /path/to/repo \
+              --stash "<message substring or index or stash@{N}>" \
+              --show-diffs
+          ```
+
+          For ref-vs-ref (no stash):
+
+          ```bash
+          python3 .agents/skills/git-ref-content-audit/scripts/audit-ref-content.py \
+              --repo /path/to/repo \
+              --ref-a <commit-or-branch> \
+              --ref-b <commit-or-branch>
+          ```
+
+          See [`SKILL.md`](SKILL.md) for the full procedure, exit codes, and the disposition matrix.
+
+          </system-reminder>
+    time: 10/5/2026, 7:52:00.785 PM UTC
+    response: |+
+      Skill loaded. Per Consumer Discipline, checking its referenced audit script and inventorying the stashes in all three repos (Phase 3a):
+
+    duration: 11.435s
+    duration_ms: 11435
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All three repos have exactly one safety stash each (stash@{0}), with clear `safety:` prefixes. Working trees: need to check they're clean (Phase 3a). Prior state said trees clean after commits. Let me verify status for each repo, and also the current HEAD/branch. Also need to determine the audit script's exact CLI: `--repo`, `--stash`, `--ref-b`? The SKILL text said `--stash 0 --ref-b HEAD --show-diffs`. The bridge says `--stash "<message substring or index or stash@{N}>" --show-diffs` (no --ref-b in quick-start, defaults to HEAD presumably).
+
+      Plan:
+      1. Phase 3a: status --short for each repo (expect empty or expected residue). Batch 3 calls.
+      2. Phase 3c.1: run audit script for each repo: `--repo <path> --stash 0 --ref-b HEAD --show-diffs`. This is read-only, no working-tree change. If FULLY SUPERSEDED → proceed to drop. This is stronger than the apply no-op and doesn't touch the tree — better choice (avoids any risk of apply conflicts/dirtying).
+      3. Phase 3c (apply no-op) — do I need it if 3c.1 gives FULLY SUPERSEDED? The skill says 3c.1 is optional stronger proof. If 3c.1 says FULLY SUPERSEDED, that's byte-level proof — stronger than the delta-level apply check. I can rely on it. But the procedure's canonical path is 3c then optional 3c.1. Running apply is riskier (could conflict) but is the canonical gate. Hmm. The skill: "For higher confidence ... run the per-file blob-equality audit". If I run only 3c.1 and it's FULLY SUPERSEDED, the conclusion "every stashed blob byte-equal at HEAD" is exactly "fully covered". The user's condition = fully covered. I'll run 3c.1 as primary; if FULLY SUPERSEDED → drop. If PARTIAL/NOT → retain, and then optionally run 3c for additional info. Actually running 3c (apply) on a clean tree whose stash is fully superseded: apply would be a no-op. Fine either way. I'll do 3c.1 first (read-only, safest), and if FULL, drop without the apply dance? The skill says "ONLY after 3c (and, if used, 3c.1) reports clean no-op / full supersession". Hmm — "(and, if used, 3c.1)" implies 3c is required and 3c.1 optional. Strictly: run 3c too. But 3c requires applying the stash — modifies the tree temporarily; if no-op, nothing changes. Since the stashes were originally applied back and the trees are clean, apply should be a clean no-op. I'll follow the full procedure: 3c apply + compare status, then 3c.1 audit. Order: do 3c first? If 3c produces a delta, don't drop; still run 3c.1 for evidence. But 3c modifies the working tree when there IS a delta — need cleanup. The skill doesn't explicitly say to clean up applied content on failure; it says investigate. Safer order: run 3c.1 (read-only) FIRST; if NOT FULLY SUPERSEDED → retain + report (no apply, no tree mutation). If FULLY SUPERSEDED → then run 3c apply-no-op as final confirmation (should be no-op), then drop.
+
+      Hmm, but actually — do I even need 3c if 3c.1 is full? The point of the gate is to ensure no content loss. 3c.1 full supersession is strictly stronger. The skill's "ONLY after 3c (and, if used, 3c.1) reports clean no-op / full supersession" — the parenthetical suggests 3c.1 upgrades. I'll run both when full (apply is harmless no-op), to follow the letter. Actually wait: if 3c.1 says full supersession, applying the stash should be a no-op, but there's a subtle case: stash apply does a merge against HEAD; even if all stash blobs equal HEAD blobs, the merge is trivially no-op. Yes safe.
+
+      Also Phase 3a residue: check status first. If non-empty, classify before proceeding. Prior state says clean, but verify.
+
+      Let me also get the current branch/HEAD for context (master? parent on master with R1/R2 ahead of origin). Batch: 3 status calls. Then audits (3 calls). Then possibly 3 apply calls. Then drops (3 calls). That's up to 12 calls — fine but keep outputs bounded (status should be empty).
+
+      Wait — one important detail: the stashes were created BEFORE the commits; during the session, further changes happened (R1/R2 were later refinements). If the stash content includes intermediate versions of files that were later refined (e.g., JLine version or code changed between stash capture and final R1/R2 commits), then per-file blobs may differ → PARTIALLY SUPERSEDED. The skill says PARTIAL surfaces "deliberate post-stash refinements that the apply no-op would have masked" → inspect DIFFERENT files before deciding. The user said "if fully covered - drop". If PARTIAL, I retain and report; no drop.
+
+      Let me proceed: Phase 3a status checks (3 parallel).
+    thinking_duration: 5.035s
+    thinking_duration_ms: 5035
+    tool_calls:
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin status --short
+        result: |2
+           M .devcontainer/devcontainer.json
+           M .vscode/settings.json
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib status --short
+        result: (no output)
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib status --short
+        result: (no output)
+    time: 10/5/2026, 7:52:12.276 PM UTC
+    response: |+
+      All three repos have exactly one `safety:` stash. Checking working-tree state (Phase 3a) before the coverage audit:
+
+    duration: 7.166s
+    duration_ms: 7166
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Parent repo has residue: `.devcontainer/devcontainer.json` and `.vscode/settings.json` modified. These are IDE/devcontainer files — likely post-session edits by the user (or pre-existing). The stash captured state before the commits; these two files may or may not be part of the stash.
+
+      Per Phase 3a: classify residue — "Expected: files deliberately left unstaged (matches master plan) — remain after release. Unexpected: files that should be in HEAD but aren't — investigate." These two files look like local environment files intentionally left uncommitted (the session's commits were about code; devcontainer/settings changes are personal/local). Prior session summary: "harness git committer identity" and such; the R2 commit involved mise.toml (Java 27). Hmm, R2 `0854fb4` — what was it? "R2" in parent; prior summary: "R2 (mise.toml Java 27.0.0?)" Actually: "mise.toml says Java 27.0.0 after R2". So R2 was a mise.toml change. These two modified files are probably user's local edits (devcontainer + vscode settings) that were never part of the session commits.
+
+      Question: were they captured by the safety stash? If the stash includes them with a different version, the audit will show DIFFERENT (since working tree now differs from stash). Wait — the audit compares stash content vs HEAD (not vs working tree). `.devcontainer/devcontainer.json` and `.vscode/settings.json` are modified in the working tree but NOT in HEAD (probably). The stash was created when the tree had those modifications too (if they existed then). So stash contains modified versions; HEAD doesn't have them → audit would report MISSING (not in HEAD) → NOT FULLY SUPERSEDED → don't drop.
+
+      Hmm, but wait: are these two files even in the stash? The safety stash captured "14 modified + 8 untracked" or whatever at session time. If devcontainer/settings were modified at that time, yes they're in the stash. The current working tree also has them modified — maybe identically (the apply-back in Phase 1d restored them, and nobody changed them since). If identical to stash, then the stash's version of these files equals the working tree but NOT HEAD → the stash is NOT fully superseded by HEAD (some stashed content isn't in HEAD) → per the strict "fully covered [by commits]" condition, we must NOT drop.
+
+      Hmm, but the user's intent might be: "if the safety stash [content] is fully covered [by the current tree + HEAD], drop it". The skill's 3c apply no-op compares against the working tree, not HEAD: applying the stash on top of the current tree — if the working tree already contains the same modifications (because they were applied back and never reverted), the apply is a no-op → "every planned change is in HEAD (or in the expected residue)" → drop is OK. The 3c.1 audit compares stash vs HEAD: `.devcontainer`/`.vscode` would show MISSING from HEAD → NOT FULLY SUPERSEDED → hard stop per skill.
+
+      So which does the user mean by "fully covered"? Given they said "if safety stash fully covered - drop that", and the skill's own semantics: the stash is safe to drop when its content is redundant — i.e., nothing in the stash would be lost. If the devcontainer/settings modifications exist in the current working tree (residue), dropping the stash loses nothing because the working tree still has them. The 3c apply no-op check accounts for exactly this: expected residue stays. But 3c.1's "NOT SUPERSEDED" verdict for files not in HEAD is a hard stop per the skill...
+
+      Hmm. Let me think about what's really in the stash. Actually, I need data. Let me run the audit and see. Also run `git stash show -u stash@{0} --stat`-ish to see file list. The audit script `--show-diffs` will give per-file classifications.
+
+      Actually, the correct reading of the skill: 3c.1 is for "higher confidence" when the apply no-op is insufficient (especially untracked files). The disposition matrix: FULLY SUPERSEDED → drop safe; PARTIALLY → inspect DIFFERENT files; NOT → hard stop. But files that are still present in the working tree (residue) are "expected" per 3a and remain after release — the skill says "These remain after release", meaning the stash drop doesn't affect them. So the audit verdict needs interpretation in light of residue.
+
+      Let me gather evidence:
+      1. `git stash show -u --stat stash@{0}` per repo (or `git stash show --stat` + check untracked via `stash@{0}^3`).
+      2. Run the audit script with `--show-diffs` per repo.
+
+      Then interpret: if the only non-superseded files are exactly the expected working-tree residue (devcontainer/settings in parent; nothing in submodules), then dropping loses nothing → "fully covered" in the effective sense. But per the strict skill matrix, NOT FULLY SUPERSEDED is a hard stop... but that's for content NOT in HEAD and NOT accounted as expected residue. The skill's 3a explicitly handles "Expected: Files deliberately left unstaged ... These remain after release." So expected residue is accounted for.
+
+      Hmm wait, actually — I need to be careful: the residue in the working tree (devcontainer/settings) — are they part of the safety stash? If they were modified BEFORE the stash snapshot, yes. If modified AFTER (e.g., by the user post-session), they might differ from the stash version. Let me check `git diff stash@{0} -- .devcontainer/devcontainer.json .vscode/settings.json` (compares stash's version of those files against working tree). If empty → working tree matches stash → dropping loses nothing. If non-empty → investigate.
+
+      Let me run the audits first. The audit script CLI: `--repo`, `--stash`, `--ref-b`? The bridge quick-start omits --ref-b (defaults to HEAD). SKILL text: `--stash 0 --ref-b HEAD --show-diffs`. I'll pass `--repo <path> --stash 0 --ref-b HEAD --show-diffs`.
+
+      Three audit runs (read-only) — batch them. Output could be sizable if many files; with --show-diffs maybe long. Repos: parent stash may have many files. Let me bound by not using --show-diffs first? The skill recommends --show-diffs. Output likely a table of files; the session had maybe ~20 files per stash. Fine. But to protect the renderer, maybe redirect to scratch and view? AGENTS rule: prefer redirect for large outputs. These are probably small. I'll run directly; if output is huge, the tool truncates to file.
+
+      Actually, let me think about expected file counts:
+      - common-lib stash: C1 touched ConsoleInputUtils + maybe build files. ~2-5 files.
+      - lib stash: L1-L2: sheet error + checks; ~5-15 files (13 commits? no, L1/L2). 
+      - parent stash: P1-P3: Screens.kt, JLine files (15 files in P3) + build files + mise.toml? ~20-30 files.
+
+      With --show-diffs, output could be a few hundred lines total. Acceptable, but three parallel outputs in one batch could pressure scrollback. AGENTS #3: never combine "produce a large output" with "read a large file" in same batch — fine here. I'll run them in parallel; if concerned, run without --show-diffs first (summary verdict per file still shown? The audit outputs classification per file regardless; --show-diffs adds actual diffs for DIFFERENT files). Better: omit --show-diffs initially (less output); only if DIFFERENT/MISSING appear, re-run targeted with diffs. The disposition matrix needs per-file classes, which come without --show-diffs. Do that.
+    thinking_duration: 8.542s
+    thinking_duration_ms: 8542
+    tool_calls:
+      - tool: bash
+        args:
+          command: python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin --stash 0 --ref-b HEAD
+        result: |
+          /bin/bash: line 1: python3: command not found
+      - tool: bash
+        args:
+          command: python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin/account-ledger-lib --stash 0 --ref-b HEAD
+        result: |
+          /bin/bash: line 1: python3: command not found
+      - tool: bash
+        args:
+          command: python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib --stash 0 --ref-b HEAD
+        result: |
+          /bin/bash: line 1: python3: command not found
+    time: 10/5/2026, 7:52:19.493 PM UTC
+    response: |+
+      Parent has expected residue (IDE/devcontainer files, likely personal-local). Running the byte-level coverage audit (Phase 3c.1) on all three stashes:
+
+    duration: 43.984s
+    duration_ms: 43984
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: 'Right — no python3 on PATH in this container; must use `mise x python@3.13 -- python3 ...`. Prior state: "no java/python3 on PATH → mise x ...". Re-run with mise.'
+    thinking_duration: 162ms
+    thinking_duration_ms: 162
+    tool_calls:
+      - tool: bash
+        args:
+          command: mise x python@3.13 -- python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin --stash 0 --ref-b HEAD
+          workdir: /workspaces/ai-suite
+        result: |
+          Ref A: stash@{0}
+          Ref B: HEAD
+          Files audited: 17
+
+          === ✅ IDENTICAL (17) ===
+            .devcontainer/README.md
+            cli-app/build.gradle.kts
+            cli-app/src/main/kotlin/accountLedgerCli/cli/AccountOperations.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/App.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/CheckingOperationsInteractive.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/HandleInputs.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/HandleResponsesInteractiveCli.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/HandleSpecialTransactionTypesInteractive.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/HandleTransactionsInteractive.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/InputOperations.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/InsertOperationsInteractive.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/Screens.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/SearchOperations.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/TransactionViews.kt
+            cli-app/src/main/kotlin/accountLedgerCli/cli/UserOperationsInterActiveWithApiService.kt
+            gradle/libs.versions.toml
+            mise.toml
+
+
+          VERDICT: ✅ FULLY SUPERSEDED — every Ref-A file is byte-identical in Ref-B.
+      - tool: bash
+        args:
+          command: mise x python@3.13 -- python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin/account-ledger-lib --stash 0 --ref-b HEAD
+          workdir: /workspaces/ai-suite
+        result: |
+          Ref A: stash@{0}
+          Ref B: HEAD
+          Files audited: 3
+
+          === ✅ IDENTICAL (3) ===
+            account-ledger-lib/src/main/kotlin/account/ledger/library/operations/CheckingOperations.kt
+            account-ledger-lib/src/main/kotlin/account/ledger/library/operations/LedgerSheetOperations.kt
+            account-ledger-lib/src/main/kotlin/account/ledger/library/utils/UserUtilsInteractive.kt
+
+
+          VERDICT: ✅ FULLY SUPERSEDED — every Ref-A file is byte-identical in Ref-B.
+      - tool: bash
+        args:
+          command: mise x python@3.13 -- python3 /workspaces/ai-suite/.agents/skills/git-ref-content-audit/scripts/audit-ref-content.py --repo /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib --stash 0 --ref-b HEAD
+          workdir: /workspaces/ai-suite
+        result: |
+          Ref A: stash@{0}
+          Ref B: HEAD
+          Files audited: 5
+
+          === ✅ IDENTICAL (5) ===
+            common-lib/src/main/kotlin/common/utils/library/utils/ApiUtilsInteractiveCommon.kt
+            common-lib/src/main/kotlin/common/utils/library/utils/ChooseUtilsInteractive.kt
+            common-lib/src/main/kotlin/common/utils/library/utils/ConsoleInputUtils.kt
+            common-lib/src/main/kotlin/common/utils/library/utils/InputUtilsInteractive.kt
+            common-lib/src/main/kotlin/common/utils/library/utils/ListUtilsInteractive.kt
+
+
+          VERDICT: ✅ FULLY SUPERSEDED — every Ref-A file is byte-identical in Ref-B.
+    time: 10/5/2026, 7:53:03.519 PM UTC
+    response: "\n\n"
+    duration: 10.004s
+    duration_ms: 10004
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All three stashes are FULLY SUPERSEDED:
+      - Parent: 17 files audited, all byte-identical in HEAD (including `.devcontainer/README.md` — interesting, that file IS in HEAD; the currently-modified files `.devcontainer/devcontainer.json` and `.vscode/settings.json` are NOT in the stash — meaning they were modified AFTER the stash snapshot, or weren't modified at snapshot time. Either way, not stash content).
+      - lib: 3 files, all identical.
+      - common-lib: 5 files, all identical.
+
+      Wait — the parent audit lists 17 files, but P3 alone touched 15 files. Where's the untracked tree? The stash had `-u`; the audit covers stash including ^3 (per skill description). 17 files total. All identical.
+
+      The parent residue (`.devcontainer/devcontainer.json`, `.vscode/settings.json`) is NOT part of the stash (not audited) — so dropping the stash does not affect them. Good.
+
+      Now Phase 3c (apply no-op) — the canonical gate. The skill says drop only after 3c (and if used 3c.1) reports clean no-op / full supersession. 3c.1 = FULL. Should I still run 3c apply? The skill's parenthetical suggests 3c.1 is an upgrade. Running `git stash apply` on parent would apply 17 files whose content == HEAD, on a tree with 2 modified unrelated files → no-op, status stays ` M .devcontainer...`, ` M .vscode...`. For submodules, trees clean → apply no-op → status stays clean.
+
+      Risk of apply: it's a merge; if content already in HEAD, it should be no-op. If any conflict arises, skill says retain. Given 3c.1 proved byte-identical, apply is mathematically a no-op. Running it adds little. But to follow the procedure faithfully (and the user said "if fully covered - drop"), I'll run the apply no-op check for each repo to confirm the working tree doesn't change, then drop.
+
+      Hmm — one concern: `git stash apply` on the parent with the two modified files: the stash doesn't include those files, so no interaction. Status comparison: pre-apply status = 2 lines; post-apply = 2 lines → no-op. Good.
+
+      Submodules: pre-apply status empty; post-apply empty → no-op.
+
+      Then Phase 3d: user authorization. The user pre-authorized conditionally ("if fully covered - drop that"). The condition is met (byte-level FULLY SUPERSEDED). I'll drop all three safety stashes.
+
+      Actually — should I ask again? The skill says explicit per-stash user authorization; the user's message is exactly that, conditional on coverage. Re-asking would be redundant. I'll proceed with drops, but note in the report that the condition was verified. Hmm, the skill also says "The drop MUST NOT be automated even when 3c is clean". "Automated" = without a human gate. The user's instruction IS the human gate. OK.
+
+      But wait — do I run 3c at all, or is 3c.1 sufficient? Let me just run 3c (apply) to be faithful, since it's cheap and safe given full supersession. Actually... one subtle risk: if a merge during apply has any quirk (e.g., file mode differences, CRLF normalization), it could produce spurious changes. Then I'd have to clean up. But content identical → three-way merge no-op. Proceed.
+
+      Hmm, actually — is running apply necessary? The skill text: "3c.1 — Optional: stronger per-file content audit... A ✅ FULLY SUPERSEDED verdict upgrades 3c from 'no delta on re-apply' to 'every stashed blob byte-equal at HEAD'." This implies 3c runs first, 3c.1 upgrades. To be compliant, run 3c too. Let me do it: three repos, apply, compare status.
+
+      Sequence per repo:
+      1. `git -C <repo> stash apply` (no pop).
+      2. `git -C <repo> status --short` — compare to pre-apply status.
+
+      Pre-apply statuses: parent = 2 modified files; lib = empty; common-lib = empty.
+
+      Run applies (3 parallel calls), then statuses (3 parallel calls). Then drops (3 parallel calls).
+
+      Actually, I could combine apply+status per repo in one command? AGENTS says one command per call, no chaining. Keep separate. But 3 applies + 3 statuses + 3 drops = 9 calls. Alternatively skip 3c since 3c.1 full — I keep going back and forth. Decision: run 3c for procedure fidelity. It's the gate the skill mandates. 
+
+      Hmm, one more consideration: the stash apply on the parent — if it's a no-op, the stash remains on the stack (apply doesn't drop). Then drop. Fine.
+
+      Wait, also: should I use `git stash apply --index`? No — skill says plain `git stash apply`.
+
+      Let me run the three applies in parallel.
+    thinking_duration: 3.668s
+    thinking_duration_ms: 3668
+    tool_calls:
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin stash apply
+        result: "On branch master\nYour branch is up to date with 'origin/master'.\n\nChanges not staged for commit:\n  (use \"git add <file>...\" to update what will be committed)\n  (use \"git restore <file>...\" to discard changes in working directory)\n\tmodified:   .devcontainer/devcontainer.json\n\tmodified:   .vscode/settings.json\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n"
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib stash apply
+        result: |
+          On branch master
+          Your branch is up to date with 'origin/master'.
+
+          nothing to commit, working tree clean
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib stash apply
+        result: |
+          common-lib/src/main/kotlin/common/utils/library/utils/ConsoleInputUtils.kt already exists, no checkout
+          error: could not restore untracked files from stash
+          On branch master
+          Your branch is up to date with 'origin/master'.
+
+          nothing to commit, working tree clean
+    time: 10/5/2026, 7:53:13.577 PM UTC
+    response: |+
+      Byte-level audit: all three stashes are ✅ FULLY SUPERSEDED (17 + 3 + 5 files, zero divergence). Running the Phase 3c apply no-op confirmation:
+
+    duration: 6.116s
+    duration_ms: 6116
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Interesting results:
+      - Parent: apply no-op; tree still has only the 2 pre-existing modified files. ✓
+      - lib: apply no-op; clean. ✓
+      - common-lib: `ConsoleInputUtils.kt already exists, no checkout` + `error: could not restore untracked files from stash` — because the stash captured ConsoleInputUtils.kt as an UNTRACKED file (it was newly created in the session), and now it exists in HEAD (committed). So the untracked-restore portion failed, but the tracked portion is fine and the working tree is clean. The error is expected for a fully-superseded stash containing untracked files that are now committed. The tree is unchanged (clean). ✓ no-op effectively.
+
+      Note the parent branch line: "Your branch is up to date with 'origin/master'." Hmm! Prior state said parent ahead 2 (R1/R2 unpushed). But now it says up to date?? Wait — this is the parent `/workspaces/account-ledger-cli-kotlin` (the CLI app), and R1/R2... Prior summary: "R1 `1bc0b54` / R2 `0854fb4` still local (parent ahead 2, unpushed)". But now "up to date with origin/master". Did the user push R1/R2 since? Possibly (time passed; user pushed). Or... wait, R1/R2 might be in a different repo (the CLI parent? yes parent). The status says up to date — so R1/R2 were pushed by the user at some point, or the branch tracking changed. Not my concern now, but interesting. Actually hold on — maybe I misremember which repo had R1/R2. Whatever — not needed for the stash drop.
+
+      Also parent `git stash apply` output shows "Changes not staged" listing the 2 pre-existing modifications — same as pre-apply. No delta. ✓
+
+      Now Phase 3c verify: post-apply statuses:
+      - Parent: same 2 modified files (pre-existing residue, expected) → no-op ✓
+      - lib: clean ✓
+      - common-lib: clean ✓
+
+      The common-lib apply error on untracked restore: does that count as a failure requiring retain? The skill's interpretation: "Clean no-op → every line in the snapshot is also in HEAD (or in the expected residue)." Here the tree didn't change; the untracked file exists in HEAD. The 3c.1 audit already proved byte-identical supersession (ConsoleInputUtils.kt identical). The error is the expected artifact of applying a stash whose untracked file is now tracked+committed. No content loss. Drop is safe.
+
+      Now Phase 3d: user authorization — given conditionally. Condition met (FULLY SUPERSEDED + no-op apply). Drop all three safety stashes.
+
+      Drops:
+      - `git -C /workspaces/account-ledger-cli-kotlin stash drop stash@{0}`
+      - `git -C .../account-ledger-lib stash drop stash@{0}`
+      - `git -C .../common-lib stash drop stash@{0}`
+
+      Then verify stash lists empty. 3 drops (parallel) + 3 list verifications (parallel). Let me do drops now.
+    thinking_duration: 2.802s
+    thinking_duration_ms: 2802
+    tool_calls:
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin stash drop stash@{0}
+        result: |
+          Dropped stash@{0} (ba375ea84954f4e827b22dabc10e118459faa06c)
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib stash drop stash@{0}
+        result: |
+          Dropped stash@{0} (c55e274123780cd1e9acad6b24af0d982616e210)
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib stash drop stash@{0}
+        result: |
+          Dropped stash@{0} (a82f9c92f2b9eeb54fd543435d076a0408b211ff)
+    time: 10/5/2026, 7:53:19.757 PM UTC
+    response: |+
+      All three applies were no-ops (parent residue unchanged; common-lib's untracked-file notice is expected since that file is now committed). Condition met — dropping the three safety stashes per your authorization:
+
+    duration: 8.731s
+    duration_ms: 8731
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: Dropped. Verify stash lists are empty (Phase 3 final verification) and working trees unchanged. 3 stash list calls. Also could confirm the two parent residue files still modified. Let me batch 3 stash lists.
+    thinking_duration: 174ms
+    thinking_duration_ms: 174
+    tool_calls:
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin --no-pager stash list
+        result: (no output)
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib --no-pager stash list
+        result: (no output)
+      - tool: bash
+        args:
+          command: git -C /workspaces/account-ledger-cli-kotlin/account-ledger-lib/common-lib --no-pager stash list
+        result: (no output)
+    time: 10/5/2026, 7:53:28.538 PM UTC
+    response: |+
+      Verifying the stash stacks are now empty and trees unchanged:
+
+    duration: 3.601s
+    duration_ms: 3601
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      All stash stacks empty. Safety stashes fully covered and dropped:
+      - parent: ba375ea8 (17 files, all byte-identical in HEAD)
+      - lib: c55e2741 (3 files)
+      - common-lib: a82f9c92 (5 files)
+      All drops were authorized conditionally and the condition passed.
+
+      Now, back to the plan approval. The user hasn't said "start" yet, and the G4 optional question is pending. I should report the stash outcome concisely and re-ask for plan approval (as-is vs include G4).
+
+      Also note: should I update anything in the plan because of this? No — the plan lists safety stash as already documented (covered). The drop was a session-cleanup action, not a skill. No DOX changes needed.
+
+      One question: the user's "drop that" instruction — did they also intend "drop that [item from the plan]"? No; the plan's §2.5 mention is accurate. No change.
+
+      Report: 3 stashes verified FULLY SUPERSEDED (byte-level) + no-op apply → dropped; stacks empty; parent tree retains only the 2 pre-existing local file modifications (untouched). Then remind: plan awaiting approval; G4 optional decision.
+    thinking_duration: 1.158s
+    thinking_duration_ms: 1158
+    time: 10/5/2026, 7:53:32.195 PM UTC
+    response: |-
+      Done. All three safety stashes were verified byte-level ✅ FULLY SUPERSEDED by HEAD (parent: 17 files, lib: 3, common-lib: 5 — zero divergence), apply no-op confirmed, then dropped per your authorization:
+
+      | Repo | Dropped stash | Coverage |
+      | :--- | :--- | :--- |
+      | account-ledger-cli-kotlin | `ba375ea8` | 17/17 identical |
+      | account-ledger-lib | `c55e2741` | 3/3 identical |
+      | common-lib | `a82f9c92` | 5/5 identical |
+
+      All stash stacks now empty; parent working tree retains only its pre-existing local edits (`.devcontainer/devcontainer.json`, `.vscode/settings.json`), untouched.
+
+      Back to the plan: approve as-is (3 skills), or include the optional `session-skill-coverage-audit` (G4)? Reply "start" with your choice to begin Phase 1.
+    duration: 3.869s
+    duration_ms: 3869
+

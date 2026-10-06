@@ -1,0 +1,1040 @@
+---
+user:
+  text: is there any free services which can be used as repalcement of AI Scan?
+  time: 10/5/2026, 9:17:32.418 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The user asks: are there free services that can replace AI Scan (AI-based security scanning on PRs for languages not covered by CodeQL, e.g., PHP, Shell/Bash, Terraform, Dockerfiles, with findings posted to PRs and suggested fixes)?
+
+      Context: They're on GitHub Free personal plan, no purchases. Public repos (presumably). They want AI-powered security detection in PRs, ideally free.
+
+      I should provide free alternatives. Let me think about what's genuinely free and fits:
+
+      Free/open-source or free-tier tools that can run in CI and post findings to PRs:
+
+      1. **Semgrep OSS (Community Edition)** — free, open source. Supports many languages including PHP, Bash/Shell, Terraform, Dockerfiles, JS/TS, Python, Go, Java, etc. Can run in GitHub Actions; `semgrep ci` posts findings as PR comments (requires SEMGREP_APP_TOKEN for the app integration; the OSS CLI can output SARIF). Free tier of Semgrep AppSec Platform for up to 10 contributors on public repos? Semgrep has a free tier (Community). Actually Semgrep AppSec Platform free tier: up to 10 developers, public/private repos? Historically free for up to 10 contributors. Semgrep OSS is fully free; `semgrep ci` with app token requires account; free tier available. Also Semgrep has "Semgrep Assistant" (AI) — that's a paid feature. But OSS rules are free.
+
+      2. **CodeQL on public repos** — free, already covered, but not for the languages CodeQL doesn't support. CodeQL supports many compiled/interpreted languages: C/C++, C#, Go, Java/Kotlin, JS/TS, Python, Ruby, Swift. Not PHP, Bash, Terraform, Dockerfile.
+
+      3. **Trivy** (Aqua Security) — free open source; IaC misconfiguration scanning (Terraform, Dockerfile, K8s), secrets, vulnerabilities, SBOM. Can run in GitHub Actions and upload SARIF to code scanning (public repos) or post comments via actions like `aquasecurity/trivy-action` + `github/codeql-action/upload-sarif`. Trivy has misconfig scanners for Dockerfile, Terraform, CloudFormation, K8s. Not AI-based but covers the IaC gap.
+
+      4. **Checkov** (Prisma Cloud / Palo Alto) — free open source IaC scanning: Terraform, CloudFormation, K8s, Dockerfile, ARM, Serverless, Helm. Runs in GitHub Actions; SARIF output supported; can post PR comments via `bridgecrewio/checkov-action`.
+
+      5. **tfsec** — merged into Trivy; free.
+
+      6. **Gitleaks** — free secret scanning, runs in CI. (But secret scanning free on public repos anyway; Gitleaks useful for private.)
+
+      7. **ShellCheck** — free, Shell/Bash static analysis (correctness + some security like SC2086). Not security-focused per se but covers Shell.
+
+      8. **PHP: Psalm, PHPStan** — static analysis; not security-specific. **PHP Security Checker / local-php-security-checker** (composer audit) — dependency vulnerabilities. **progpilot**, **RIPS** (paid), **WAP** (old). **SonarQube Community Edition** — free, self-hosted; supports PHP, JS/TS, Java, etc.; has some security rules (taint analysis in commercial editions; CE has limited security rules). SonarCloud is free for public repos — that's a strong option! SonarCloud free for public repositories, has security hotspots/vulnerabilities, PR decoration (comments/checks on PRs), supports PHP, Shell? SonarCloud supports many languages: PHP yes, Terraform (community plugin?), Docker (some rules), Bash (community). SonarCloud PR analysis free for public repos. It's not AI but provides PR-annotated findings and quality gates.
+
+      9. **GitHub Actions + CodeQL for supported languages; for others, use pattern-based linters.**
+
+      10. **OpenAI/LLM-based DIY**: Use free LLM APIs? Not really free reliably. But one can build a custom GitHub Action that runs an LLM over the PR diff using a free API tier (e.g., Google AI Studio Gemini free tier, Groq free tier, GitHub Models free tier!). **GitHub Models** — free tier for GitHub users, provides access to various models (GPT-4o, Llama, etc.) with rate limits; available on GitHub.com for personal accounts. You could write a GitHub Action that calls GitHub Models to review PRs for security issues. There are existing open-source actions like "ai-code-review", "pr-agent" (CodiumAI PR-Agent — free open source, can use any LLM incl. free tiers). **PR-Agent** (Qodo Merge open source) supports self-hosted with your own API keys; can run security-focused review. That's a plausible DIY replacement.
+
+      11. **Danger + custom rules** — not security.
+
+      12. **Bandit** — Python security (free). Not needed for AI Scan gaps though.
+
+      13. **Bearer** — free tier? Bearer CLI is open source (data flow security for JS/TS, Ruby, PHP, Java, Go, Python). Bearer CLI is free/OSS (the company pivoted; Bearer CLI still on GitHub, open source). Supports PHP? Bearer supports PHP? I think Bearer supports Ruby, JS/TS, Java, Go, Python, PHP maybe. It has security rules (SQL injection, etc.).
+
+      14. **MobSF** — mobile.
+
+      15. **Nuclei** — DAST, not code.
+
+      16. **CodeRabbit** — AI code review; free for open-source repos (free forever for public repos). CodeRabbit does security-ish review and posts PR comments with AI suggestions. That's probably the closest free AI replacement: CodeRabbit Free for open source. It's not a dedicated security scanner but AI reviews catch security issues.
+
+      17. **GitHub Copilot Free** — includes Copilot code review? Copilot code review is available in Copilot Free? GitHub Copilot Free includes limited code review? Let me recall: Copilot Free (Dec 2024) includes 2,000 completions/month, 50 chat requests/month; Copilot code review is included for Copilot Pro/Business/Enterprise, and I believe Copilot Free got code review? Not sure. Copilot Free does include Copilot code review for VS Code? Actually GitHub announced Copilot code review available for Copilot Free users? I recall "GitHub Copilot code review" is available with Copilot Pro, Business, Enterprise. Copilot Free may have limited access. Also, does Copilot code review catch security issues? It's AI review. This could be the closest "AI Scan replacement" if free. Let me verify. I believe as of 2025, Copilot Free users can use Copilot code review? Hmm. I'm not certain. GitHub docs: "Copilot code review is available for Copilot Pro, Copilot Pro+, Copilot Business, Copilot Enterprise." There was an announcement that Copilot code review is available in Copilot Free? I don't think so. Let me check docs quickly.
+
+      18. **Snyk Free** — free tier for open source: limited tests/month (e.g., 100 tests/month? Snyk Free: 200 tests/month for open source?), supports code scanning (Snyk Code) with PR checks. Snyk Free plan supports up to 5 users? Snyk free for open source projects, unlimited? Snyk has a free plan with limited tests. Snyk Code is AI-based (deep learning) — actually Snyk Code is a symbolic AI/ML-based SAST; it supports many languages including PHP? Snyk Code supports Apex, C#, C/C++, Go, Java, JS/TS, Kotlin, PHP, Python, Ruby, Swift, VB.NET. Free tier may apply. Snyk Free: "Free plan: 1 user, 100 tests/month"? Something like that. For public repos maybe free. This is a good option to mention.
+
+      19. **Aikido Security** — free tier for developers (one repo?), AI-based scanner. Free plan: 1 repository? Aikido offers free tier.
+
+      20. **DeepSource** — free for open source (public repos), static analysis; supports many languages; PR checks. Security rules exist.
+
+      21. **Codacy** — free for open source; static analysis with security rules; PR checks.
+
+      22. **SonarCloud** — free for public repos; PR analysis; security hotspots.
+
+      23. **Socket.dev** — free for open source; supply chain security (matches AI Scan's supply chain category). Socket GitHub app free for public repos. Detects malicious packages.
+
+      24. **StepSecurity Harden-Runner** — free for public repos; GitHub Actions security (unpinned actions detection, etc.).
+
+      25. **OpenSSF Scorecard** — free; supply chain posture; GitHub Action. Not PR-specific.
+
+      26. **GitHub Models + custom Action** — DIY.
+
+      27. **Zizmor** — free static analysis for GitHub Actions workflows (security). Posts SARIF.
+
+      28. **Poutine** — free supply chain security scanner for CI/CD (BoostSecurity).
+
+      29. **Bearer** as mentioned.
+
+      30. **Trunk Code Quality** — free tier? Trunk.io free for open source? It has security linters.
+
+      Given the user's context (Free personal, likely public repos), the practical answer:
+
+      Best free replacements (grouped):
+      - **AI-based PR review**: CodeRabbit (free for public repos), GitHub Copilot Free? (check), PR-Agent (self-hosted, free OSS; needs LLM key, can use GitHub Models free tier), Snyk Code Free (AI-based SAST, limited free tests).
+      - **Static/SAST by language gap**:
+        - PHP: Semgrep OSS rules, SonarCloud (free public), Snyk Code free, PHPStan/Psalm + security rules.
+        - Shell/Bash: ShellCheck (+ Semgrep).
+        - Terraform/Dockerfile/IaC: Trivy, Checkov, tfsec, Kics.
+        - Secrets: Gitleaks (private), free secret scanning on public.
+      - **Supply chain**: Socket.dev free for OSS, OpenSSF Scorecard, zizmor for workflows, Dependabot (already).
+      - **Platform**: SonarCloud (free public repos, PR decoration), Semgrep AppSec Platform free tier? (Semgrep free tier: 10 contributors? not sure), Codacy/DeepSource free for OSS.
+
+      Since the user asked "is there any free services which can be used as replacement of AI Scan?" — they want AI Scan replacement: AI-powered, PR-based, covers CodeQL gaps, suggests fixes. Closest free equivalents:
+
+      1. **CodeRabbit** — free for open-source repos; AI code review with security focus; posts PR comments; supports many languages; suggests fixes. This is probably the #1 direct replacement.
+      2. **GitHub Copilot Free** — if it includes code review... need to verify. Actually, I recall GitHub announced in 2025 that Copilot code review is available for Copilot Free? Let me verify quickly with a fetch of the Copilot code review docs.
+      3. **PR-Agent (Qodo Merge OSS)** — free self-hosted AI review; BYO key; can use free GitHub Models or Gemini free tier.
+      4. **Snyk Code Free** — AI-powered SAST, PR checks; free tier limits.
+      5. **Semgrep + Semgrep Assistant** — Assistant is paid; OSS rules free; Semgrep AppSec Platform free tier may include Assistant? Semgrep Assistant is available on paid tiers (Teams/Enterprise). Free tier has basic.
+      6. **Aikido / DeepSource / Codacy / SonarCloud** — free for OSS with PR decoration, not necessarily AI.
+
+      I should verify a few claims: CodeRabbit free for open source (yes, "CodeRabbit is free for open source projects" — free for public repos, unlimited? I believe free tier for open-source repos includes AI reviews). Snyk free plan specifics. Copilot code review in Free. Let me do a few fetches to be accurate.
+
+      Fetches:
+      - https://docs.github.com/en/copilot/concepts/code-review/code-review (does Copilot Free include it?)
+      - https://docs.coderabbit.ai/ (pricing)
+      - Snyk pricing page might be blocked/JS heavy.
+
+      Given time, maybe fetch Copilot code review docs (most important since they're in GitHub ecosystem and free). And CodeRabbit docs pricing.
+
+      Actually, let me be careful about scope creep. The user just wants to know free replacements. I can answer with a curated list, marking what's verified vs. "check current terms". But accuracy matters. Let me do 2-3 fetches in parallel:
+
+      1. GitHub Copilot code review docs — availability/plans.
+      2. CodeRabbit pricing page.
+      3. Snyk plans page.
+
+      Let me try:
+      - https://docs.github.com/en/copilot/concepts/code-review/code-review
+      - https://docs.coderabbit.ai/guides/pricing (or https://www.coderabbit.ai/pricing)
+      - https://docs.snyk.io/implementation-and-setup/enterprise-setup/plans-and-pricing (maybe)
+
+      I'll do GitHub docs first plus coderabbit. If they fail, fall back.
+    thinking_duration: 17.752s
+    thinking_duration_ms: 17752
+    tool_calls:
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://www.coderabbit.ai/pricing
+        result: |-
+          CodeRabbit Pricing | AI Code Review Plans
+
+          [Skip to content](#main-content)
+
+          [![](/redesign/cr-logo-name.svg?dpl=dpl_2YYASoamwN3ZXjEMuNGUJgSgzthp)](/)
+
+          [Enterprise](/enterprise)[Triage](/triage)[Change Stack](/change-stack)[Security](/security)[Customers](/customers)[Pricing](/pricing)[Blog](/blog)
+
+          Resources
+
+          [Log In](https://app.coderabbit.ai/login)[Get a free trial](https://app.coderabbit.ai/login?free-trial=)
+
+          # All plans include a 14-day free trial
+
+          No credit card required
+
+          AnnualSave 20%Monthly
+
+          ## Essentials
+
+          Agentic code reviews for every PR.
+
+          $24/ developer / month
+
+          Billed annually
+
+          -   AI Code Review
+          -   Triage
+          -   Change Stack
+          -   Continuous Security Monitoring
+
+          -   Agentic AI reviews on PRs & CLI
+          -   1-click fixes
+          -   Learnings
+          -   Loops with coding agents
+          -   MCP connections
+          -   Agentic chat
+          -   Linters and SAST tools support
+          -   Jira and Linear integrations
+
+          [Get a free trial](https://app.coderabbit.ai/login?free-trial=)
+
+          ## Team
+
+          More context and control with triage, custom checks and higher limits.
+
+          $48/ developer / month
+
+          Billed annually
+
+          -   AI Code Review
+          -   Triage
+          -   Change Stack
+          -   Continuous Security Monitoring
+
+          -   All features in Essentials
+          -   Multi-repo analysis
+          -   Custom pre-merge checks
+          -   Finishing touches: unit tests, merge conflict resolution, simplify
+          -   Post-merge actions
+          -   Higher limits across the product
+
+          [Get a free trial](https://app.coderabbit.ai/login?free-trial=)
+
+          ## Advanced
+
+          Deeper code review with architectural insights and continuous security monitoring.
+
+          $72/ developer / month
+
+          Billed annually
+
+          -   AI Code Review
+          -   Triage
+          -   Change Stack
+          -   Continuous Security Monitoring
+
+          -   Everything in Team
+          -   Blast radius and architectural impact analysis
+          -   Security review of every PR
+          -   Continuous security monitoring
+          -   Higher limits across the product
+
+          [Get a free trial](https://app.coderabbit.ai/login?free-trial=)
+
+          ## Enterprise
+
+          Our most comprehensive plan, with enterprise controls, flexible deployment and dedicated support.
+
+          Custom
+
+          Billed annually
+
+          -   AI Code Review
+          -   Triage
+          -   Change Stack
+          -   Continuous Security Monitoring
+
+          -   All Advanced plan features
+          -   Custom RBAC, SSO and audit logging
+          -   API access
+          -   Self-hosting option
+          -   Multi-org support
+          -   SLA support
+          -   Technical enablement and dedicated CSM
+          -   Pay via Claude/AWS/GCP marketplace
+          -   Vendor security review and agreement redlines
+          -   Custom setup including ALB, etc.
+          -   EU SaaS deployment
+
+          [Contact us](https://www.coderabbit.ai/contact-us/sales)
+
+          ## On demand products
+
+          [
+
+          ![](/images/coderabbit-for-slack-rabbit.png?dpl=dpl_2YYASoamwN3ZXjEMuNGUJgSgzthp)
+
+          ## CodeRabbit Security Scan
+
+          AI-native security scanning that traces data flow across your codebase to find exploitable vulnerabilities and help you fix them.
+
+          -   Scan your full codebase
+          -   Variable, usage-based pricing
+
+          Get a free trial
+
+
+
+          ](https://app.coderabbit.ai/login?free-trial=)[
+
+          ![](/images/coderabbit-for-slack-rabbit.png?dpl=dpl_2YYASoamwN3ZXjEMuNGUJgSgzthp)
+
+          ## CodeRabbit Agent
+
+          Run coding tasks in the cloud, use CodeRabbit in Slack, and build automations. Billed based on how many minutes your agents run.
+
+          -   $0.40 per agent minute
+          -   Trial and free minutes are used before paid usage
+          -   Paid access for everyone in your organization when enabled
+          -   Set a monthly spending cap
+
+          Try CodeRabbit Agent
+
+
+
+          ](https://app.coderabbit.ai/code)
+
+          ## Compare plans
+
+          Essentials
+
+          Agentic AI reviews on PRs & CLI
+
+          Included
+
+          1-click fixes
+
+          Included
+
+          Learnings
+
+          Included
+
+          Loops with coding agents
+
+          Included
+
+          MCP connections
+
+          5
+
+          Multi-repo analysis
+
+          1
+
+          Built-in pre-merge checks
+
+          Included
+
+          Agentic chat
+
+          Included
+
+          Linters and SAST tools support
+
+          Included
+
+          Jira and Linear integrations
+
+          Included
+
+          [Triage: Opens in a new tab](https://docs.coderabbit.ai/triage)
+
+          Not included
+
+          [Custom pre-merge checks: Opens in a new tab](https://docs.coderabbit.ai/pr-reviews/custom-checks)
+
+          Not included
+
+          Finishing touches: unit tests, merge conflict resolution, simplify
+
+          Not included
+
+          Post-merge actions
+
+          Not included
+
+          Rate limits: PR reviews per developer per hour
+
+          5\*
+
+          [Reviews beyond included limits: Opens in a new tab](https://docs.coderabbit.ai/management/usage-based-addon)
+
+          Pay as you go†
+
+          [Blast radius: Opens in a new tab](https://docs.coderabbit.ai/security/blast-radius)
+
+          Not included
+
+          Architectural impact
+
+          Not included
+
+          Continuous security monitoring
+
+          Not included
+
+          Security review of each PR
+
+          Not included
+
+          Essentials
+
+          Team
+
+          Advanced
+
+          Enterprise
+
+          Agentic AI reviews on PRs & CLI
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          1-click fixes
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          Learnings
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          Loops with coding agents
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          MCP connections
+
+          5
+
+          10
+
+          15
+
+          20
+
+          Multi-repo analysis
+
+          1
+
+          5
+
+          10
+
+          20
+
+          Built-in pre-merge checks
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          Agentic chat
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          Linters and SAST tools support
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          Jira and Linear integrations
+
+          Included
+
+          Included
+
+          Included
+
+          Included
+
+          [Triage: Opens in a new tab](https://docs.coderabbit.ai/triage)
+
+          Not included
+
+          Included
+
+          Included
+
+          Included
+
+          [Custom pre-merge checks: Opens in a new tab](https://docs.coderabbit.ai/pr-reviews/custom-checks)
+
+          Not included
+
+          10
+
+          20
+
+          20
+
+          Finishing touches: unit tests, merge conflict resolution, simplify
+
+          Not included
+
+          Included
+
+          Included
+
+          Included
+
+          Post-merge actions
+
+          Not included
+
+          Included
+
+          Included
+
+          Included
+
+          Rate limits: PR reviews per developer per hour
+
+          5\*
+
+          8\*
+
+          10\*
+
+          12\*
+
+          [Reviews beyond included limits: Opens in a new tab](https://docs.coderabbit.ai/management/usage-based-addon)
+
+          Pay as you go†
+
+          Pay as you go†
+
+          Pay as you go†
+
+          Contact sales
+
+          [Blast radius: Opens in a new tab](https://docs.coderabbit.ai/security/blast-radius)
+
+          Not included
+
+          Not included
+
+          Included
+
+          Included
+
+          Architectural impact
+
+          Not included
+
+          Not included
+
+          Included
+
+          Included
+
+          Continuous security monitoring
+
+          Not included
+
+          Not included
+
+          Included
+
+          Included
+
+          Security review of each PR
+
+          Not included
+
+          Not included
+
+          Included
+
+          Included
+
+          \* Subject to [Fair Usage Policy: Opens in a new tab](https://docs.coderabbit.ai/management/plans#fair-usage-limits-policy)
+
+          † Optional usage-based billing with a configurable monthly spending cap. Eligibility applies. Enterprise usage is arranged with your account team.
+
+          ## Frequently Asked Questions
+
+          -   ### Are Essentials and Team new plans?
+              
+              Essentials is the new name for Pro, and Team is the new name for Pro Plus. Existing subscriptions will automatically display the new plan name. No action is required.
+              
+          -   ### Will the plan renaming change my price?
+              
+              No. Essentials retains the current Pro price of $30 per developer per month, or $24 per developer per month when billed annually. Team retains the current Pro Plus price of $60 per developer per month, or $48 per developer per month when billed annually.
+              
+          -   ### What’s the difference between Essentials and Team?
+              
+              Essentials includes AI reviews for pull requests and the CLI, one-click fixes, learnings, coding-agent loops, built-in pre-merge checks, and limited Change Stack access. Team includes everything in Essentials, plus Triage, expanded Change Stack capabilities, custom pre-merge checks, finishing touches such as unit-test generation and merge-conflict resolution, post-merge actions, and higher limits for connections and multi-repository analysis.
+              
+          -   ### If reviews are unlimited, why are there hourly review limits?
+              
+              There is no total limit on the number of pull requests or repositories you can review. Each plan does include a per-developer hourly review allowance to manage bursts of activity. These allowances are subject to our [Fair Usage Policy](https://docs.coderabbit.ai/management/plans#fair-usage-limits-policy). Usage-based reviews can continue eligible reviews after the included allowance is reached.
+              
+          -   ### How do usage-based reviews work?
+              
+              Usage-based reviews let eligible PR and CLI reviews continue after your plan’s included limit is reached. Admins can choose Automatic, On demand, or Off and set a monthly spending cap. Continued reviews cost $0.25 per reviewed file and are added to the monthly invoice. Enterprise customers can arrange usage-based billing with their account team.
+              
+          -   ### How are on demand products priced?
+              
+              Charges for on demand products are separate from your base plan. CodeRabbit Security Scan uses variable pricing based on the scan. CodeRabbit Agent costs $0.40 per agent minute for cloud coding tasks, Slack, and automations. You are billed based on how many minutes your agents run, after applicable trial and free minutes are used. Enabling paid Agent usage gives everyone in your organization access, with a configurable monthly spending cap.
+              
+          -   ### Which plans include CodeRabbit Security?
+              
+              Continuous security monitoring and security reviews on pull requests are included with Advanced and Enterprise. Full codebase scans are available separately with usage-based pricing.
+              
+          -   ### Will I be charged for all the developers in my organization?
+              
+              No, you will only be charged for developers who create pull requests. You can also manually assign purchased seats to specific developers.
+              
+          -   ### Is it possible to reassign seats to other developers?
+              
+              Yes, seats can be reassigned at any time.
+              
+          -   ### Can I switch between Essentials and Team?
+              
+              Yes. You can change plans from Subscription and Billing. Upgrades take effect immediately, with prorated billing for the remainder of the current billing cycle. Downgrades take effect at the end of the current billing cycle.
+              
+          -   ### How do I sign up for the free open-source plan?
+              
+              Sign up for CodeRabbit using GitHub or GitLab, install CodeRabbit on a public repository, and receive free reviews forever for public repositories. No additional setup is required.
+              
+
+          [View all questions](https://www.coderabbit.ai/faq)
+
+          [](/)
+
+          English
+
+          [](https://discord.gg/coderabbit)[](https://x.com/coderabbitai)[](https://www.linkedin.com/company/coderabbitai)[](https://bsky.app/profile/coderabbitai.bsky.social)[](https://www.coderabbit.ai/feed)
+
+          Products
+
+          [Pull Request Reviews](/lp/ai-code-reviews)[Triage](/triage)[Change Stack](/change-stack)[Security](/security)[Plan](/plan)[IDE Reviews](/ide)[CLI Reviews](/cli)[Slack Agent](/agent)[Discord Agent](/discord)
+
+          Navigation
+
+          [About Us](/about-us)[Features](/#features)[FAQ](/faq)[System Status](https://status.coderabbit.ai)[Careers](/careers)[DPA](/legal/dpa)[Startup Program](/startup-program)[Vulnerability Disclosure](/vulnerability-disclosure)
+
+          Resources
+
+          [Blog](/blog)[Docs](https://docs.coderabbit.ai/)[Changelog](https://docs.coderabbit.ai/changelog/)[Case Studies](/case-studies)[Events & Webinars](/events)[Newsroom](/newsroom)[Trust Center](https://trust.coderabbit.ai/)[Brand Guidelines](/brand)[Reports & Guides](/whitepapers)[OSS](/oss)
+
+          Contact
+
+          [Support](/contact-us/support)[Sales](/contact-us/sales)[Pricing](/pricing)[Partnerships](/partnership)[Press Kit](/press-kit)
+
+          Subscribe
+
+          By signing up you agree to our [Terms of Use](/legal/terms-of-service) and authorize CodeRabbit to provide occasional updates about products and solutions. You understand that you can opt out at any time and that your data will be handled in accordance with [CodeRabbit Privacy Policy](/privacy-policy)
+
+          ![footer-logo shape](/_next/image?url=%2Fimages%2Fshapes%2Ffooter-logo.png&w=3840&q=75&dpl=dpl_2YYASoamwN3ZXjEMuNGUJgSgzthp)
+
+          [Legal](/legal)[Privacy Policy](/privacy-policy)
+
+          CodeRabbit Inc. © 2026
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://docs.github.com/en/copilot/concepts/code-review/code-review
+        result: |-
+          # About GitHub Copilot code review
+
+          Copilot reviews your pull requests, identifies issues, and suggests fixes you can apply in a couple of clicks.
+
+          ## Introduction
+
+          Copilot code review reviews code written in any language, and provides feedback. It reviews your code from multiple angles to identify issues and suggest fixes. You can apply suggested changes with a couple of clicks.
+
+          This article provides an overview of Copilot code review. To learn how to request a code review from Copilot, see [Using GitHub Copilot code review](/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review).
+
+          ## Availability
+
+          Copilot code review is supported in:
+
+          * GitHub.com
+          * GitHub CLI
+          * GitHub Mobile
+          * VS Code
+          * Visual Studio
+          * Xcode
+          * JetBrains IDEs
+          * Azure DevOps (public preview)
+
+          > \[!NOTE]
+          > If you receive Copilot from an organization, your organization must enable the **Copilot code review** option in the Copilot policy settings. This applies to reviews on GitHub.com or in GitHub Mobile. See [Managing policies and features for GitHub Copilot in your organization](/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-policies).
+
+          ## Copilot code review without a Copilot license
+
+          Organization members **without a Copilot license** can use Copilot code review on GitHub.com. An enterprise administrator or organization owner must enable it. This capability is available to organizations on **Copilot Business** and **Copilot Enterprise** plans.
+
+          ### Enabling code review for users without a license
+
+          To allow organization members without a Copilot license to use Copilot code review, you must enable two policies:
+
+          1. **AI credits paid usage**. Enable this policy first. It allows the enterprise or organization to incur charges for Copilot code review AI credits usage.
+          2. **Allow members without a Copilot license to use Copilot code review in GitHub.com**. This sub-policy enables Copilot code review for users without a license.
+
+          The second policy has these characteristics:
+
+          * It is disabled by default.
+          * Once this policy is set at the enterprise level, it becomes **visible, but not editable** at the organization level.
+          * The policy is **most restrictive**. Copilot code review is only available in repositories under an organization where you have explicitly enabled the policy.
+
+          ### How it works for users without a license
+
+          When both policies are enabled, users without a Copilot license can request a review from Copilot code review on their pull requests in the organization's repositories.
+
+          In repositories where automatic code review is enabled, Copilot automatically reviews all pull requests. This happens regardless of whether the author has a Copilot license. For more information about how to configure automatic code review, see [Configuring code review by GitHub Copilot](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review).
+
+          Copilot code review for users without a license is not available in IDEs.
+
+          ## Agentic capabilities for Copilot code review
+
+          Copilot code review utilizes agentic capabilities to extend its functionality.
+
+          * **Full project context gathering**. This provides more specific, accurate, and contextually aware code reviews. This capability analyzes your entire repository to better understand the context of code changes.
+          * **The ability to pass suggestions to Copilot cloud agent**. This automates creating a new pull request against your branch with the suggested fixes applied. Passing suggestions to Copilot cloud agent is in public preview and subject to change.
+
+          These capabilities are enabled automatically for all plans that include Copilot code review. See [Review effort level](#review-effort-level) later in this article for information about choosing between Lite and Balanced analysis levels.
+
+          If GitHub Actions is unavailable or if Actions workflows used by Copilot code review fail, reviews will still be generated. However, they will not include the additional features provided by the agentic capabilities.
+
+          ### Usage of GitHub Actions runners for agentic capabilities in code review
+
+          Copilot code review uses GitHub Actions to run the agentic capabilities, including full project context gathering and passing suggestions to Copilot cloud agent. By default, Copilot code review uses standard GitHub-hosted runners. You can also upgrade to larger GitHub-hosted runners for better performance, or use self-hosted runners.
+
+          > \[!NOTE]
+          > Usage of larger GitHub-hosted runners is billed at a higher per-minute rate. Self-hosted runners do not consume GitHub Actions minutes.
+
+          You do not need to have GitHub Actions enabled in your organization or enterprise to use the agentic capabilities in code review.
+
+          If your organization has disabled GitHub-hosted runners, the agentic capabilities will not be available. In this case, code reviews will fall back to a more limited review. Organizations in this situation can use self-hosted runners.
+
+          For more information on configuring runners, see [Configuring runners for GitHub Copilot code review](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-runners).
+
+          You can view the GitHub Actions minutes associated with Copilot code review runs. For more information, see [GitHub Actions minutes for code review](/en/copilot/reference/copilot-billing/models-and-pricing#pricing-and-usage-cost-considerations-for-copilot-code-review).
+
+          ### Estimated consumption
+
+          A review typically consumes an estimated $0.05 USD to $1 USD worth of AI credits with "Lite" effort, and $0.25 USD to $5 USD worth of AI credits with "Balanced" effort.
+
+          Consumption generally increases with pull request size and repository custom instructions, and the ranges may change as models evolve. These estimates do not include GitHub Actions minutes.
+
+          Repository and organization administrators can set the default review effort level for automatic code reviews. For configuration steps, see [Configuring code review by GitHub Copilot](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review#customizing-copilot-code-review-1).
+
+          ## Code review usage
+
+          Each time Copilot reviews a pull request or reviews code in your IDE, the interaction consumes AI credits. The amount depends on the model used and the number of tokens processed.
+
+          Code reviews have two cost components: AI credits for the model interaction (the review itself), and GitHub Actions minutes for the agentic capabilities (context gathering and tool use). For more information on GitHub Actions usage, see [Usage of GitHub Actions runners for agentic capabilities in code review](#usage-of-github-actions-runners-for-agentic-capabilities-in-code-review).
+
+          If a repository is configured to automatically request a code review from Copilot for all new pull requests, the AI credits consumption is attributed to the pull request author. If a review is manually requested by another user, the consumption is attributed to that user instead.
+
+          For pull requests authored by Copilot cloud agent, usage is attributed first to the human co-author associated with the change. If the co-author cannot be billed, usage is billed directly to the organization.
+
+          For pull requests authored by other bots, or when a bot requests the review, usage is billed directly to the organization. These pull requests are eligible for agentic review.
+
+          ### What happens when a budget is reached
+
+          For Copilot Business and Copilot Enterprise, code review access is governed by budget controls. If a user reaches their user-level budget, or if the enterprise or cost center spending limit is exhausted, code reviews are blocked along with other AI credits-consuming features. See [Budgets for usage-based billing](/en/copilot/concepts/billing-and-usage/organizations-and-enterprises/budgets#what-happens-when-a-user-is-blocked).
+
+          ### Users without a Copilot license or plan that includes Copilot code review
+
+          Users without access to Copilot code review do not have a monthly allowance of AI credits for it. This includes users who have no Copilot license and users on the Copilot Free plan, which does not include Copilot code review.
+
+          When Copilot code review is enabled for these users, any AI credits they consume are billed directly to the organization or enterprise as paid additional usage. This applies to both manually requested reviews and automatic code reviews.
+
+          AI credits consumed by these users are not attributed to any individual user's budget. They appear as additional usage in billing reports. Users with a Copilot license that includes code review consume AI credits from the shared pool, subject to any user-level budgets configured by their administrator.
+
+          ## Model usage
+
+          Copilot code review is a purpose-built product that uses a carefully tuned mix of models, prompts, and system behaviors to deliver consistent, high-quality feedback across a wide range of codebases. Model switching is not supported, as changing the model is likely to compromise reliability, user experience, and the quality of review comments.
+
+          > \[!NOTE]
+          > Copilot code review may use models that are not enabled on your organization's "Models" settings page. The "Models" settings page only controls Copilot Chat.
+          >
+          > Since Copilot code review is generally available, all model usage will be subject to the generally available terms. See [Managing policies and features for GitHub Copilot in your organization](/en/copilot/how-tos/administer-copilot/manage-for-organization/manage-policies).
+
+          ## Automatic pull request reviews
+
+          By default, Copilot only reviews a pull request if you assign it to the pull request. However, you can configure automatic reviews.
+
+          * **Users** can configure Copilot to automatically review the pull requests they create. This is available on the Copilot Pro, Copilot Pro+, and Copilot Max plans, and with a Copilot Business or Copilot Enterprise license. It is not available for managed user accounts.
+          * **Repository owners** can configure Copilot to automatically review all pull requests in the repository that are created by people with access to Copilot.
+          * **Organization owners** can configure Copilot to automatically review all pull requests in some or all of the repositories in the organization where the pull request is created by a Copilot user.
+
+          Copilot evaluates pull requests against two separate configurations: a user's settings and any applicable ruleset. These configurations are not hierarchical; neither inherits from or overrides the other. A pull request is reviewed automatically when at least one configuration is enabled. If both configurations are enabled on a pull request, Copilot still posts only one review.
+
+          If your organization has enabled Copilot code review without a Copilot license, automatic reviews also apply to pull requests created by organization members without a license. This applies to repositories covered by a policy where automatic reviews are enabled. For more information, see [Copilot code review without a Copilot license](#copilot-code-review-without-a-copilot-license).
+
+          ### Triggering an automatic pull request review
+
+          The triggers for automatic code review depend on the configuration settings.
+
+          * Basic setting:
+            * When you create a pull request as an "Open" pull request.
+            * The first time you switch a "Draft" pull request to "Open".
+          * Review new pushes:
+            * Every time you push a new commit to the pull request.
+          * Review draft pull requests:
+            * Pull requests are automatically reviewed while they are still drafts, before you switch them to "Open".
+
+          When a pull request qualifies for automatic review, **Review new pushes** and **Review draft pull requests** apply if either the author's settings or an applicable ruleset turns them on. You cannot use your own settings to turn off push or draft reviews that a ruleset has turned on.
+
+          For full instructions, see [Configuring code review by GitHub Copilot](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review).
+
+          > \[!NOTE]
+          > Unless Copilot has been configured to review each push to a pull request, it will only review a pull request once. If you make changes to the pull request after it has been automatically reviewed and you want Copilot to re-review it, you can request this manually. Click the <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-sync" aria-label="Re-request review" role="img"><path d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z"></path></svg> button next to Copilot's name in the **Reviewers** menu.
+
+          ## Review effort level
+
+          Copilot code review supports multiple Copilot review effort levels, so you can choose the level of thoroughness that matches the criticality of your code.
+
+          * **Lite**: Standard review. Provides fast, targeted feedback on common issues such as bugs, security vulnerabilities, and style inconsistencies.
+          * **Balanced**: Routes pull requests to a higher-reasoning model for longer analysis of complex logic, security-sensitive code, and cross-service changes (default). Balanced reviews use more AI credits, and may consume marginally more GitHub Actions minutes, than Lite reviews.
+
+          Use Balanced for security-sensitive code, multi-service pull requests, or repositories with strict quality standards. Use Lite for routine changes where fast feedback is more important than exhaustive analysis.
+
+          You can select Copilot review effort when requesting a review in the pull request, under the **Reviewers** section where Copilot appears as a reviewer. You can also set a default Copilot review effort in your Copilot code review settings. Organization owners can set a default Copilot review effort for automatic code reviews in their organization. Repository administrators can override the organization default for a specific repository.
+
+          When Copilot determines which review effort to use, it checks the following options in order and uses the first one that applies:
+
+          1. A Copilot review effort chosen when the review is requested
+          2. A Copilot review effort previously used on this pull request
+          3. The requestor's Copilot review effort. For a new pull request, the requestor is the author. When someone marks a draft ready for review, that person is the requestor.
+          4. A Copilot review effort set for the repository
+          5. A Copilot review effort set for the organization, or the repository owner's Copilot review effort on a user-owned repository
+          6. GitHub's built-in default, which is Balanced.
+
+          After Copilot code review reviews a pull request, the pull request overview comment shows the effort level used for each review run.
+
+          For configuration steps, see [Configuring code review by GitHub Copilot](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review).
+
+          ## Copilot approvals
+
+          > \[!NOTE]
+          > Copilot approvals are in public preview and subject to change.
+
+          Every Copilot code review includes an approval assessment in the overview comment, indicating whether Copilot has determined the pull request ready to approve after reviewing it. By default, Copilot's reviews do not count toward required approvals for the pull request.
+
+          When Copilot approvals are enabled in repository, organization, and enterprise settings, Copilot can submit an approving review that satisfies your repository's required-approval rule the same way a teammate's approval would. If new commits are pushed after Copilot approves, the approval is dismissed, and you can re-request a review.
+
+          ## MCP servers and agent skills for code review
+
+          Copilot code review can use repository-level agent skills and MCP servers when they are relevant to the review.
+
+          Copilot code review is more likely to use skills and MCP context when your repository or pull request gives clear signals, including review-focused skill directory names, custom instructions that reference MCP context, and pull request descriptions that include identifiers referencing configured MCP servers such as issue keys or incident IDs.
+
+          ### Agent skills
+
+          If your repository includes agent skills, Copilot code review can automatically use relevant skills when reviewing a pull request, extending Copilot beyond its built-in analysis.
+
+          When reviewing a pull request, Copilot reads repository custom instructions, agent instructions, and agent skills from the head branch (the branch with your changes), not the base branch. For example, when merging `my-feature-branch` into `main`, Copilot uses the instructions and skills in `my-feature-branch`, so you can test changes to them in the same pull request without merging them first.
+
+          For setup details, see [Adding agent skills for GitHub Copilot](/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills).
+
+          ### MCP servers
+
+          Copilot code review can use MCP servers to pull context directly into the review from the third-party platforms and internal systems your team uses, including issue tracking, documentation, service catalogs, and incident tooling.
+
+          The GitHub MCP server and Playwright MCP server are enabled by default.
+
+          You can configure MCP servers in your repository settings. Repository MCP configuration on GitHub applies to both Copilot cloud agent and Copilot code review. Changes you make to repository MCP settings affect both features. For setup details, see [Configure MCP servers for your repository](/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers).
+
+          In repository settings, **Allow Copilot to use MCP tools when reviewing pull requests** is enabled by default. Disable this setting if you want MCP servers available only for Copilot cloud agent, and not for Copilot code review. For step-by-step instructions, see [Configure MCP servers for your repository](/en/copilot/how-tos/copilot-on-github/customize-copilot/configure-mcp-servers#disabling-mcp-tools-for-code-review).
+
+          ## Excluded files
+
+          Some file types are excluded from Copilot code review:
+
+          * Dependency management files, such as package.json and Gemfile.lock
+          * Log files
+          * SVG files
+
+          If you include these file types in a pull request, Copilot code review will not review the file.
+
+          For more information, see [Files excluded from GitHub Copilot code review](/en/copilot/reference/review-excluded-files).
+
+          ## Enhancing Copilot's knowledge of a repository
+
+          The more Copilot knows about the code in your repository, the tools you use, and your coding standards and practices, the more accurate and useful its reviews will become. You can enhance Copilot's knowledge of your repositories in two ways.
+
+          ### Custom instructions
+
+          These are short, natural-language statements that you write and store as one or more files in a repository. If you are the owner of an organization on GitHub, you can also define custom instructions in the settings for your organization. For more information, see [About customizing GitHub Copilot responses](/en/copilot/concepts/prompting/response-customization?tool=webui#about-repository-custom-instructions).
+
+          ### Choosing between custom instructions, AGENTS.md, and skills
+
+          Copilot code review can draw on several sources of customization, and each serves a different purpose. Use `.github/copilot-instructions.md` for repository-wide rules specific to Copilot, use path-specific `*.instructions.md` files under `.github/instructions/` for rules that apply only to certain files or directories, use `AGENTS.md` for standing rules you want to share across AI tools and agents, and use skills for task-specific workflows that Copilot runs on demand. The following table summarizes when to use each and how to provide rules.
+
+          | Use        | `copilot-instructions.md`                                  | Path-specific `*.instructions.md`                                                   | `AGENTS.md`                                                    | Skills                                                                                   |
+          | ---------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+          | Best for   | Repository-wide, always-on rules for Copilot               | Always-on rules for specific paths, file types, or directories                      | Always-on rules shared across AI agents                        | Task-specific review workflows                                                           |
+          | Stored in  | `.github/copilot-instructions.md`                          | `.github/instructions/**/*.instructions.md`                                         | Repository root (`AGENTS.md`)                                  | `.github/skills/...`                                                                     |
+          | Examples   | Coding standards, architecture defaults, test expectations | `content/**` writing rules, `src/**` coding conventions, language-specific guidance | Shared repository conventions that should apply beyond Copilot | Reviews, releases, migrations, analysis                                                  |
+          | Activation | Automatic                                                  | Automatic when the changed files match the instruction scope                        | Automatic (read from repository root)                          | Automatic when relevant (e.g. review-focused skills such as `code-review`), or on demand |
+          | Scope      | Repository-wide and Copilot-specific                       | Repository sub-paths and Copilot-specific                                           | Cross-tool / agent-agnostic                                    | Invoked per task                                                                         |
+          | Rule       | "Copilot, always know this for this repository"            | "Copilot, always know this when working in these paths"                             | "Any agent, always know this"                                  | "Do this when needed"                                                                    |
+
+          For more information, see [Adding agent skills for GitHub Copilot](/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills) and [Adding repository custom instructions for GitHub Copilot](/en/copilot/how-tos/copilot-on-github/customize-copilot/add-custom-instructions/add-repository-instructions).
+
+          ### Copilot Memory (public preview)
+
+          If you have a Copilot Pro, Copilot Pro+, or Copilot Max plan, you can enable Copilot Memory. This allows Copilot to store useful details it has learned about a repository. Copilot can then use this information when it reviews pull requests in that repository. For more information, see [About GitHub Copilot Memory](/en/copilot/concepts/agents/copilot-memory).
+
+          ## Getting detailed code quality feedback across your repository
+
+          GitHub Copilot code review reviews the changes in a pull request and suggests fixes. To add systematic feedback on the reliability and maintainability of your code, on pull requests and across your default branch, enable GitHub Code Quality.
+
+          GitHub Code Quality complements Copilot code review by adding:
+
+          * **Rules-based  CodeQL-powered analysis** on pull requests and on your default branch.
+          * **Test-coverage metrics** on pull requests, so you can see whether a change maintains or reduces coverage.
+          * **One-click, Copilot-powered fixes**, including delegating remediation to Copilot cloud agent.
+          * **Optional merge gating** with rulesets, so pull requests with unresolved rules-based findings (or that miss a coverage threshold) can be blocked from merging.
+
+          For more information, see [GitHub Code Quality](/en/code-security/concepts/code-quality/code-quality).
+
+          ## Validating Copilot code reviews
+
+          Copilot is not guaranteed to spot all problems or issues in a pull request. Sometimes it will make mistakes. Always validate Copilot's feedback carefully. Supplement Copilot's feedback with a human review.
+
+          For more information, see [Application card: GitHub Copilot Agents](/en/copilot/responsible-use/agents).
+
+          ## Next steps
+
+          * [Using GitHub Copilot code review](/en/copilot/how-tos/use-copilot-agents/request-a-code-review/use-code-review)
+          * [Configuring code review by GitHub Copilot](/en/copilot/how-tos/copilot-on-github/set-up-copilot/configure-code-review)
+    time: 10/5/2026, 9:17:32.441 PM UTC
+    response: "\n\n"
+    duration: 20.367s
+    duration_ms: 20367
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Good data. Key findings:
+
+      - **Copilot code review**: Not included in Copilot Free ("users on the Copilot Free plan, which does not include Copilot code review"). For users without a license, org must enable and it's billed to org (paid). So not free for personal.
+      - **CodeRabbit**: Free forever for public repos ("Sign up ... install CodeRabbit on a public repository, and receive free reviews forever for public repositories"). This is a strong AI Scan replacement for public repos — agentic AI reviews, security issues, 1-click fixes, linters/SAST support. The dedicated "Security Scan" (full codebase, data flow) is usage-based paid, but the PR reviews are free for OSS.
+
+      Now let me compile the answer. The user wants free replacements for AI Scan specifically:
+      - AI-powered
+      - PR-based (findings on PRs)
+      - Covers CodeQL gaps: PHP, Bash/Shell, Terraform, Dockerfiles, JSP, Blazor
+      - Suggests fixes
+      - Advisory, doesn't block
+
+      Free options:
+
+      **Closest AI replacements:**
+      1. **CodeRabbit free for open source** — AI PR reviews forever free on public repos; catches security issues; 1-click fixes; supports linters/SAST; multi-language. This is the #1 direct replacement.
+      2. **Qodo Merge (PR-Agent) OSS** — self-hosted, free open source; needs an LLM key. Free options for the key: GitHub Models (free tier with rate limits for GitHub users), Google AI Studio Gemini free tier, Groq free tier, OpenRouter free models. Posts PR comments, security-focused review tool. Runs as GitHub Action. Free as in no service fee, but LLM API may cost unless free tier.
+      3. **Snyk Code Free** — AI/ML-based SAST (deep learning), PR checks; free tier limited (I believe free plan allows limited tests/month; for public repos maybe unlimited?). I need to be careful. Snyk Free: "Free plan includes 1 user, 100 tests/month" or similar. Snyk Code supports PHP. Free tier for open source: Snyk offers free unlimited tests for public repos? Historically Snyk had "unlimited tests for open source projects" via their free plan for public repos? I'm not fully sure. I'll mention it with a caveat to check limits.
+      4. **SonarCloud** — free for public repos; not AI (some AI features paid), PR decoration, security hotspots, supports PHP, JS/TS, Java, etc. Good non-AI substitute.
+      5. **Semgrep OSS** — free; rules for PHP, Bash, Terraform, Dockerfile; runs in CI; can post PR comments via `semgrep ci` (needs app account; free tier exists) or SARIF to code scanning on public repos. Semgrep Assistant (AI) is paid.
+      6. **Aikido Security** — free tier? Aikido has a free plan for solo devs (1 repo?). It's AI-based scanning. I'm not 100% sure of current free tier. Maybe skip or mention as "free tier".
+      7. **GitHub Models-based DIY action** — free tier via GitHub Models, custom action to review diffs. More effort.
+
+      **Free specialized (gap coverage):**
+      - PHP: **SonarCloud**, Semgrep rules, Snyk Code free, PHPStan/Psalm (not security per se).
+      - Shell/Bash: **ShellCheck** + Semgrep.
+      - Terraform/Dockerfile/IaC: **Trivy**, **Checkov**, **KICS** — all free OSS, SARIF → code scanning (public repos) or PR comments.
+      - Supply chain: **Socket.dev free for OSS**, **OpenSSF Scorecard**, **zizmor** (workflow security).
+      - Secrets: Gitleaks free (though public repo secret scanning is free anyway).
+
+      **Important caveats:**
+      - All free options on GitHub Free personal require **public repos** for the GitHub-integrated bits (SARIF upload). CI-only tools work on private repos too (Actions minutes limited to 2,000/month).
+      - None will be identical to AI Scan: no GHAS integration, no AI credits, findings may be PR comments/checks rather than Security tab.
+      - CodeRabbit free = public repos only. This is likely the best answer for them.
+
+      Also **GitHub Copilot Free** does NOT include code review (explicitly stated in docs). Good to mention to prevent them from trying.
+
+      Also **Copilot code review without a license** is org-only (Business/Enterprise), paid by org — not applicable to personal.
+
+      Should I mention **Sweep, Greptile, Ellipsis**? Greptile has free for OSS? Greptile free for open-source repos (yes, Greptile offers free for public repos historically). Maybe mention briefly. But let's not overload; a focused list is better.
+
+      Also **Gemini Code Assist for GitHub** — free for individuals (Gemini Code Assist individual edition, free), has GitHub PR review? Gemini Code Assist has a GitHub app that reviews PRs? There's "Gemini Code Assist" with code review on GitHub for free? Google's Gemini Code Assist Individual is free with high limits; the GitHub integration reviews PRs (I believe the GitHub app supports code reviews, and the individual free tier includes it). This could be a free AI replacement. I'm not 100% sure. Let me not assert without verification; could mention "Gemini Code Assist (free individual tier) offers PR review" with a caveat. Hmm. Risk of inaccuracy. Maybe do a quick fetch? I've already done several fetches. The answer doesn't need exhaustive verification of every third-party. I'll present the well-established ones: CodeRabbit (verified free OSS), PR-Agent (verified OSS), Semgrep OSS, Trivy/Checkov/KICS, SonarCloud, Snyk free, Socket free OSS, zizmor/Scorecard. Mark uncertainty where needed.
+
+      Let me structure:
+
+      **Best match: CodeRabbit free for public repos** — AI reviews, security, fixes, free forever. Verify by installing on public repo.
+
+      **Self-hosted AI: PR-Agent (Qodo Merge OSS)** — free, bring your own LLM; free key options: GitHub Models (free tier), Gemini free tier. Action posts PR comments.
+
+      **AI-based SAST with free tiers**: Snyk Code (check free limits), Aikido (check).
+
+      **Free non-AI gap-fillers mapped to AI Scan categories/languages:**
+      - Semgrep OSS (PHP, Bash, Terraform, Dockerfile, JS/TS, Python, Java...) → SARIF to code scanning on public repos.
+      - ShellCheck (Bash)
+      - Trivy / Checkov / KICS (Terraform, Dockerfile, K8s, CloudFormation)
+      - Gitleaks (secrets)
+      - Socket.dev free OSS / OpenSSF Scorecard / zizmor (supply chain, actions pinning)
+
+      **Platforms with free-for-OSS**: SonarCloud (PR decoration), Codacy, DeepSource, CodeRabbit.
+
+      **Caveats**: public repos; not identical to AI Scan; PR-only GitHub integration; some free tiers have limits; verify current terms.
+
+      Also mention: Copilot Free does NOT include code review (so don't count on it).
+
+      Keep it reasonably concise but informative. The user has asked a sequence of detailed questions; they seem to want practical guidance. A structured answer ~40 lines is fine.
+
+      One more thing: AI Scan's specific value = languages CodeQL misses + PR-native + AI + fix suggestions. So map replacements to that. Good.
+
+      Let me write the final answer.
+    thinking_duration: 7.943s
+    thinking_duration_ms: 7943
+    time: 10/5/2026, 9:17:52.821 PM UTC
+    response: |-
+      Yes — several free options get you most of what AI Scan does. Here's the practical map:
+
+      ## Closest AI replacements (free)
+
+      | Service | Free deal | Notes |
+      |---|---|---|
+      | **CodeRabbit** | **Free forever on public repos** (install on any public repo) | AI PR review with 1-click fixes, catches security issues, supports linters/SAST. Its dedicated "Security Scan" (data-flow, full codebase) is paid, but PR reviews are the free part — closest analog to AI Scan |
+      | **Qodo Merge / PR-Agent (OSS)** | Open source, self-hosted GitHub Action | AI review with a `security` focus mode, posts PR comments. Bring your own LLM key — can use **GitHub Models free tier**, Google AI Studio Gemini free tier, or Groq free tier |
+      | **Snyk Code (Free plan)** | Free tier with monthly test limits | ML/AI-based SAST; supports PHP. Check current free limits |
+      | **SonarCloud** | Free for public repos | Not AI, but PR decoration + security hotspots/vulnerabilities; PHP/JS/TS/Java/etc. |
+
+      Note: **Copilot Free does NOT include Copilot code review** (docs explicitly exclude it), so don't count on that.
+
+      ## Free gap-fillers by AI Scan language/category
+
+      - **Semgrep OSS** — free rules for PHP, Bash, Terraform, Dockerfiles, JS/TS, Python, Java; run in Actions and upload SARIF to code scanning (public repos) or just fail the build. Its AI "Assistant" is paid, but rules are free.
+      - **ShellCheck** — Shell/Bash (catches injection-prone quoting bugs).
+      - **Trivy / Checkov / KICS** — Terraform, Dockerfile, K8s, CloudFormation misconfig; all free OSS, SARIF-capable.
+      - **Gitleaks** — secrets in CI (useful for private repos; public repos already get free secret scanning).
+      - **Supply chain**: **Socket.dev** (free for OSS), **OpenSSF Scorecard**, **zizmor** (unpinned-action/workflow security) — covers AI Scan's supply-chain category.
+      - **Secrets/logging**: keep GitHub's free secret scanning + push protection on public repos.
+
+      ## Caveats
+
+      - Free tiers are mostly **public-repo-only** (you're on Free personal anyway, so this fits). CI-only tools also work on private repos within your 2,000 free Actions minutes.
+      - None integrate like GHAS: expect PR comments/checks/SARIF, not Security-tab alerts or Copilot Autofix.
+      - Self-hosted PR-Agent is free software but needs an LLM key — free tiers have rate limits.
+      - Free plans/limits change; verify terms at signup.
+
+      **Suggested stack for your situation**: CodeRabbit (public repos) + Semgrep OSS + Trivy/Checkov + ShellCheck in Actions + Dependabot (already) — that covers most of AI Scan's detection categories at $0.
+    duration: 12.844s
+    duration_ms: 12844
+

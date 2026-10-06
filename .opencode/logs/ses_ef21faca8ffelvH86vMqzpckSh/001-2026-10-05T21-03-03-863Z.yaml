@@ -1,0 +1,241 @@
+---
+user:
+  text: explain https://docs.github.com/en/code-security/concepts/code-scanning/ai-powered-security-detections in maximum details
+  time: 10/5/2026, 9:02:47.675 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: The user wants me to explain a GitHub docs page in maximum detail. Let me fetch the URL.
+    thinking_duration: 66ms
+    thinking_duration_ms: 66
+    tool_calls:
+      - tool: webfetch
+        args:
+          url: https://docs.github.com/en/code-security/concepts/code-scanning/ai-powered-security-detections
+          format: markdown
+        result: |-
+          # AI Scan for pull requests
+
+          AI Scan uses an AI-based scanning engine to find security vulnerabilities in pull requests for languages and frameworks not covered by CodeQL.
+
+          > \[!NOTE]
+          > AI Scan is currently in public preview and subject to change.
+
+          AI Scan produces additional security findings with an AI-based scanning engine that runs on pull requests and complements CodeQL. Unlike CodeQL alerts, AI Scan findings are only available on pull requests and do not appear as backlog alerts in the repository's security view.
+
+          While CodeQL provides high-precision static analysis for a specific set of supported languages and queries, many repositories use languages and frameworks that CodeQL does not cover. AI Scan expands code scanning coverage into these areas, helping you find vulnerabilities without adding new tools or configuration.
+
+          During the public preview, AI Scan requires a GitHub Advanced Security license and a GitHub Copilot license.
+
+          Usage consumes AI credits. See [Usage-based billing for organizations and enterprises](/en/copilot/concepts/billing-and-usage/organizations-and-enterprises/billing).
+
+          ## How AI Scan works
+
+          AI Scan runs automatically when code scanning is enabled for a repository, the repository's effective AI Scan setting is enabled, and an eligible pull request contains qualifying changes in a supported language or framework that CodeQL does not cover. These conditions also determine when AI Scan usage begins. The scan is triggered on pull request creation and after each new commit, the same as CodeQL.
+
+          AI Scan does not require CodeQL default setup and does not depend on the state of CodeQL analysis. If CodeQL analysis fails or is in a waiting state, AI Scan will still run.
+
+          AI Scan findings are advisory and do not block pull request merges. They provide signals about where code security can be improved without interrupting your workflow.
+
+          The AI scanning engine works directly with the code in the pull request and does not require a build system. It uses tools such as code search to gather additional context from the repository when deciding whether to flag an issue. It uses its own specialized prompts and does not use custom instruction files such as `/.github/copilot-instructions.md` or `/CLAUDE.md`.
+
+          Results are posted to the pull request as they are found. If the CodeQL scan takes longer to complete, you may see AI Scan findings before CodeQL results appear, or vice versa.
+
+          ## How AI Scan findings appear on pull requests
+
+          AI Scan findings appear alongside CodeQL alerts on the **Conversation** and **Files changed** tabs of a pull request. Each finding is labeled with an "AI" indicator so you can distinguish it from CodeQL alerts.
+
+          Each finding includes a description of the security issue and an explanation of the risk. Most findings also include a suggested remediation, but not every finding has one. Where a suggested remediation is available, Copilot Autofix is included and provides a recommended code change to fix the issue, the same way it does for CodeQL alerts. Findings also include a thumbs up/down feedback mechanism that helps improve detection quality over time.
+
+          ## Limitations
+
+          * AI Scan analyzes pull requests only. Full repository scans are not supported.
+          * AI Scan findings cannot yet be used in rulesets to enforce merge requirements.
+          * AI Scan does not run on pull requests from forks or pull requests created by Dependabot.
+          * Detection categories and supported languages may change as the feature evolves.
+          * As with any AI-based tool, AI Scan findings may include false positives. Use the feedback mechanism to report inaccurate results.
+
+          ## Supported languages
+
+          AI Scan is designed to cover languages and frameworks that are not currently supported by CodeQL. This includes, but is not limited to, languages such as PHP, Shell/Bash, Terraform configuration (HCL), and Dockerfiles, as well as framework coverage gaps such as JSP for Java and Blazor for C#.
+
+          For a full list of languages supported by CodeQL, see [Code scanning with CodeQL](/en/code-security/concepts/code-scanning/codeql/codeql-code-scanning).
+
+          ## Detection categories
+
+          AI Scan currently covers the following categories. These categories describe how findings are classified. The scanning engine may evolve over time as models improve.
+
+          * **String injection** — Unsafe string-built SQL, HTML, shell, JSON, or YAML with missing or incorrect escaping or sanitization.
+          * **Weak cryptography** — Weak algorithms, small keys, insecure randomness, missing encryption, or weak password hashing.
+          * **Broken access control** — Path traversal, CSRF gaps, or user-driven open redirects.
+          * **Sensitive data exposure** — Secrets, tokens, passwords, or stack traces stored, logged, or sent without adequate protection.
+          * **Security misconfiguration** — Risky defaults or settings, such as disabling security controls or enabling debug features.
+          * **Authentication failures** — Missing TLS or validation, insecure authentication flows, or missing rate limiting.
+          * **Data integrity failures** — Unsafe deserialization, HTTP for sensitive actions, prototype pollution, or executing untrusted content.
+          * **Server-side request forgery (SSRF)** — Server fetches attacker-controlled URLs, hosts, or protocols.
+          * **Supply chain risks** — Unpinned third-party actions, packages, or images, or downloads without integrity checks.
+
+          ## Enabling AI Scan
+
+          AI Scan is not allowed at the enterprise level by default and disabled at the organization and repository levels. Enterprise owners must allow AI Scan before organization administrators can enable it. Enabling AI Scan for an organization applies it to eligible repositories where code scanning is enabled. Repository administrators can opt out for individual repositories. For an eligible public repository owned by a personal account, a repository administrator must enable AI Scan directly for the repository.
+
+          You do not need to select a model to enable AI Scan.
+
+          * **Enterprise**: The **AI Scan** policy under "Code Security" controls whether organizations can enable the feature. See [Enforcing policies for code security and analysis for your enterprise](/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-code-security-and-analysis-for-your-enterprise#enforcing-a-policy-to-manage-ai-scan-in-your-enterprises-repositories).
+          * **Organization**: The **AI Scan** setting under "Code scanning" enables AI Scan for eligible repositories in the organization where code scanning is enabled. See [Configuring global security settings for your organization](/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/configure-global-settings#enabling-ai-scan).
+          * **Repository**: For an organization-owned repository, the **AI Scan for pull requests** toggle under "Code scanning" lets repository administrators opt out when AI Scan is enabled for the organization. For an eligible public repository owned by a personal account, the toggle enables or disables AI Scan directly.
+
+          You can use the REST API to manage the organization or repository `ai-scan` setting. See [REST API endpoints for code scanning](/en/rest/code-scanning/code-scanning#get-the-ai-scan-setting-for-an-organization).
+    time: 10/5/2026, 9:02:47.727 PM UTC
+    response: "\n\n"
+    duration: 5.215s
+    duration_ms: 5215
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The user wants a maximum-detail explanation of this GitHub docs page. This is a documentation explanation task, not a coding task. I should provide a thorough explanation. The instruction says keep responses concise (<4 lines) unless the user asks for detail. Here the user explicitly asks for "maximum details", so a long detailed response is warranted.
+
+      Let me structure a comprehensive explanation of the page: AI Scan for pull requests (AI-powered security detections).
+
+      I could just explain the fetched content in maximum detail. No need for extra tool calls. Let me write a detailed, well-structured explanation.
+
+      Key points to cover:
+
+      1. What it is: AI-based scanning engine for PRs, complements CodeQL, covers languages/frameworks CodeQL doesn't.
+      2. Status: public preview, subject to change.
+      3. Licensing: GHAS license + Copilot license; AI credits usage-based billing.
+      4. How it works: triggers, conditions (code scanning enabled, effective AI Scan setting enabled, eligible PR with qualifying changes in supported language not covered by CodeQL). Runs on PR creation and each new commit. Independent of CodeQL default setup/state. Findings advisory, don't block merges. No build system required; uses code search for context; own specialized prompts; ignores copilot-instructions.md/CLAUDE.md. Results posted as found, may interleave with CodeQL.
+      5. Findings appearance: Conversation + Files changed tabs, "AI" label, description, risk explanation, sometimes remediation with Copilot Autofix, thumbs up/down feedback.
+      6. Limitations: PR-only (no full repo scans), can't be used in rulesets to enforce merges, no fork PRs or Dependabot PRs, categories/languages may change, false positives possible.
+      7. Supported languages: PHP, Shell/Bash, Terraform HCL, Dockerfiles, framework gaps like JSP for Java, Blazor for C#. Full list at CodeQL docs.
+      8. Detection categories: 9 categories with details.
+      9. Enabling: hierarchy enterprise → org → repo. Not allowed at enterprise by default, disabled at org/repo. Enterprise policy controls. Org setting applies to eligible repos with code scanning enabled. Repo admins can opt out; personal public repos enable directly. No model selection. REST API `ai-scan` setting.
+
+      I should present this in maximum detail but still organized. Since the user asked for detail, a long response is fine. I'll write it as a structured markdown explanation, perhaps expanding with implications and clarifications. Let me be careful not to add false info—stick to the source, with reasonable interpretation. I can add "implications" clearly marked as interpretation.
+
+      Let me write it well-structured with headers and tables. Since this is a CLI display, markdown formatting is fine.
+
+      I'll cover:
+      - Overview / What it is
+      - Key characteristics at a glance
+      - Licensing & billing
+      - Triggering logic (conditions)
+      - Independence from CodeQL
+      - Analysis mechanics
+      - How findings surface in PRs
+      - Limitations
+      - Language coverage
+      - Detection categories (table)
+      - Enablement hierarchy (enterprise/org/repo)
+      - REST API
+      - Practical implications / mental model
+
+      That should be maximum detail. No need for tool calls beyond the fetch.
+    thinking_duration: 3.175s
+    thinking_duration_ms: 3175
+    time: 10/5/2026, 9:02:52.954 PM UTC
+    response: |-
+      # AI Scan for pull requests — complete breakdown
+
+      This page documents **GitHub's "AI Scan"** feature (the URL slug is `ai-powered-security-detections`): an AI-based scanning engine that finds security vulnerabilities in **pull requests**, intended to *complement* CodeQL rather than replace it. It is in **public preview** and subject to change.
+
+      ## 1. Core concept
+
+      - CodeQL is a **high-precision static analysis** engine, but only supports a specific set of languages/queries.
+      - Many repos use languages/frameworks CodeQL doesn't cover. AI Scan extends code-scanning coverage into those gaps **without new tools or configuration**.
+      - The AI engine analyzes PR code directly; findings are **advisory** — they never block merges and do **not** appear as backlog alerts in the repo's security view (unlike CodeQL alerts, which do).
+
+      ## 2. Licensing and billing
+
+      - Requires **both** a GitHub Advanced Security (GHAS) license **and** a GitHub Copilot license (during public preview).
+      - Usage **consumes AI credits**, billed under usage-based billing for organizations/enterprises.
+
+      ## 3. Trigger conditions — when a scan runs
+
+      AI Scan runs automatically only when **all** of these hold:
+
+      1. Code scanning is enabled for the repository.
+      2. The repository's **effective AI Scan setting** is enabled.
+      3. An **eligible** pull request contains **qualifying changes** in a **supported language/framework not covered by CodeQL**.
+
+      Trigger points: on **PR creation** and after **each new commit** — same cadence as CodeQL. These same conditions determine when *usage/billing begins*.
+
+      ## 4. Independence from CodeQL
+
+      - Does **not** require CodeQL default setup and does **not** depend on CodeQL's analysis state.
+      - If CodeQL fails or is queued/waiting, AI Scan still runs.
+      - Results post **as they are found**, so ordering vs. CodeQL results is nondeterministic (AI findings may appear before or after CodeQL's).
+
+      ## 5. Analysis mechanics
+
+      - Works directly on PR code — **no build system required** (a key contrast with compiled-language static analysis).
+      - Uses tools like **code search** to gather extra repository context when deciding whether to flag an issue.
+      - Uses **its own specialized prompts**; it deliberately ignores custom instruction files such as `/.github/copilot-instructions.md` or `/CLAUDE.md`.
+
+      ## 6. How findings appear
+
+      - Shown alongside CodeQL alerts on the PR's **Conversation** and **Files changed** tabs.
+      - Each finding carries an **"AI" indicator** to distinguish it from CodeQL alerts.
+      - Content: a description of the issue + explanation of the risk; **most** (not all) include a suggested remediation.
+      - Where remediation exists, **Copilot Autofix** proposes the concrete code change (same behavior as for CodeQL alerts).
+      - Each finding has a **thumbs up/down feedback** mechanism to improve detection quality over time.
+
+      ## 7. Limitations
+
+      - PR-only analysis — **no full-repository scans**.
+      - Findings **cannot yet be used in rulesets** to enforce merge requirements.
+      - Does **not run on PRs from forks** or PRs created by **Dependabot**.
+      - Detection categories and supported languages may change as the feature evolves.
+      - Like any AI tool, it can produce **false positives** (report via feedback).
+
+      ## 8. Supported languages
+
+      Targets gaps CodeQL doesn't cover, "including but not limited to":
+
+      - **PHP**
+      - **Shell/Bash**
+      - **Terraform configuration (HCL)**
+      - **Dockerfiles**
+      - Framework gaps such as **JSP for Java** and **Blazor for C#**
+
+      (Full CodeQL-supported list lives in the "Code scanning with CodeQL" docs.)
+
+      ## 9. Detection categories
+
+      | Category | What it covers |
+      |---|---|
+      | **String injection** | Unsafe string-built SQL, HTML, shell, JSON, YAML — missing/incorrect escaping or sanitization |
+      | **Weak cryptography** | Weak algorithms, small keys, insecure randomness, missing encryption, weak password hashing |
+      | **Broken access control** | Path traversal, CSRF gaps, user-driven open redirects |
+      | **Sensitive data exposure** | Secrets, tokens, passwords, stack traces stored/logged/sent without adequate protection |
+      | **Security misconfiguration** | Risky defaults/settings, e.g. disabling security controls, enabling debug features |
+      | **Authentication failures** | Missing TLS or validation, insecure auth flows, missing rate limiting |
+      | **Data integrity failures** | Unsafe deserialization, HTTP for sensitive actions, prototype pollution, executing untrusted content |
+      | **Server-side request forgery (SSRF)** | Server fetches attacker-controlled URLs, hosts, or protocols |
+      | **Supply chain risks** | Unpinned third-party actions/packages/images, downloads without integrity checks |
+
+      ## 10. Enabling — three-level hierarchy
+
+      Default state: **not allowed at enterprise level**, and **disabled** at org and repo levels. Flow:
+
+      1. **Enterprise**: the **AI Scan** policy under "Code Security" must first *allow* organizations to enable it.
+      2. **Organization**: the **AI Scan** setting under "Code scanning" enables it for eligible repos in the org **where code scanning is enabled**. Applies broadly to eligible repos.
+      3. **Repository**:
+         - Org-owned repo: an **"AI Scan for pull requests"** toggle lets repo admins **opt out**.
+         - Eligible **public repo owned by a personal account**: the toggle **enables/disables** AI Scan directly.
+
+      No model selection is needed. The org/repo `ai-scan` setting is manageable via the **REST API** (code scanning endpoints).
+
+      ## 11. Mental model / practical implications
+
+      - Treat it as a **PR-time, best-effort, advisory layer** that widens language coverage where CodeQL can't go — not a gate and not a backlog alert source.
+      - You get coverage "for free" once enabled (if licensed), but it's **metered by AI credits**.
+      - Expect **noise** (false positives) and **no enforcement capability** yet; the feedback button is the tuning loop.
+      - Security-relevant blind spots remain: **fork PRs, Dependabot PRs, and whole-repo scans**.
+    duration: 10.896s
+    duration_ms: 10896
+

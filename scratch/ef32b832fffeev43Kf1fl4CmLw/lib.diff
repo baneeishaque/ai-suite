@@ -1,0 +1,259 @@
+diff --git a/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/CheckingOperations.kt b/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/CheckingOperations.kt
+index 8662c55..8a73152 100644
+--- a/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/CheckingOperations.kt
++++ b/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/CheckingOperations.kt
+@@ -12,12 +12,12 @@ import io.github.cdimascio.dotenv.Dotenv
+ object CheckingOperations {
+ 
+     /*
+-    Receives fromAccount, viaAccount, toAccount & Checks them.
++    Receives fromAccount, viaAccount, toAccount & Checks all of them.
+     Returns 0 if all are available.
+-        1 if fromAccount is unavailable & toAccount available.
+-        2 if toAccount available.
+-        3 if transactionType is Via, viaAccount unavailable & toAccount & fromAccounts are there.
+-      It also executes actions on missing desired account.
++        1 if fromAccount is unavailable.
++        2 if toAccount is unavailable.
++        3 if transactionType is Via / Cyclic Via & viaAccount is unavailable.
++      It also executes actions on every missing desired account.
+     */
+     @JvmStatic
+     fun isAccountsAreAvailable(
+@@ -32,22 +32,30 @@ object CheckingOperations {
+ 
+     ): Int {
+ 
+-        if (toAccount.id == 0u) {
++        val isFromAccountMissing: Boolean = fromAccount.id == 0u
++        val isToAccountMissing: Boolean = toAccount.id == 0u
++        val isViaAccountMissing: Boolean =
++            ((transactionType == TransactionTypeEnum.VIA) || (transactionType == TransactionTypeEnum.CYCLIC_VIA)) && (viaAccount.id == 0u)
+ 
+-            fromAccountMissingActions.invoke()
+-            return 1
++        if (isFromAccountMissing) {
+ 
+-        } else if (fromAccount.id == 0u) {
++            fromAccountMissingActions.invoke()
++        }
++        if (isToAccountMissing) {
+ 
+             toAccountMissingActions.invoke()
+-            return 2
+-
+-        } else if (((transactionType == TransactionTypeEnum.VIA) || (transactionType == TransactionTypeEnum.CYCLIC_VIA)) && (viaAccount.id == 0u)) {
++        }
++        if (isViaAccountMissing) {
+ 
+             viaAccountMissingActions.invoke()
+-            return 3
+         }
+-        return 0
++        return when {
++
++            isFromAccountMissing -> 1
++            isToAccountMissing -> 2
++            isViaAccountMissing -> 3
++            else -> 0
++        }
+     }
+ 
+     @JvmStatic
+diff --git a/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/LedgerSheetOperations.kt b/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/LedgerSheetOperations.kt
+index 067d79e..3a304df 100644
+--- a/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/LedgerSheetOperations.kt
++++ b/account-ledger-lib/src/main/kotlin/account/ledger/library/operations/LedgerSheetOperations.kt
+@@ -23,6 +23,41 @@ import kotlin.math.absoluteValue
+ 
+ object LedgerSheetOperations {
+ 
++    private var lastPrintedError: String? = null
++    private var isErrorPrintDeduplicationEnabled: Boolean = false
++
++    @JvmStatic
++    fun <T> withSheetErrorPrintDeduplication(sheetOperations: () -> T): T {
++
++        if (isErrorPrintDeduplicationEnabled) {
++
++            return sheetOperations.invoke()
++        }
++        isErrorPrintDeduplicationEnabled = true
++        lastPrintedError = null
++        try {
++
++            return sheetOperations.invoke()
++
++        } finally {
++
++            isErrorPrintDeduplicationEnabled = false
++            lastPrintedError = null
++        }
++    }
++
++    private fun printSheetError(error: String) {
++
++        if (!isErrorPrintDeduplicationEnabled || (error != lastPrintedError)) {
++
++            println(error)
++        }
++        if (isErrorPrintDeduplicationEnabled) {
++
++            lastPrintedError = error
++        }
++    }
++
+     @JvmStatic
+     fun balanceSheetOfUser(
+ 
+@@ -103,7 +138,7 @@ object LedgerSheetOperations {
+             },
+             errorOperation = fun(error: String) {
+ 
+-                println(error)
++                printSheetError(error)
+                 isOkModel.error = error
+             }
+         )
+@@ -663,26 +698,35 @@ object LedgerSheetOperations {
+         balanceSheetOkModelToSubtract: (String, UInt, Boolean, Boolean, Boolean, Dotenv) -> IsOkModel<List<BalanceSheetDataRowModel>>,
+         dotEnv: Dotenv
+     ) {
++        val balanceSheetResults: Pair<IsOkModel<List<BalanceSheetDataRowModel>>, IsOkModel<List<BalanceSheetDataRowModel>>> =
++            withSheetErrorPrintDeduplication {
++
++                Pair(
++
++                    balanceSheetOkModelFromSubtract.invoke(
++
++                        currentUserName,
++                        currentUserId,
++                        isNotApiCall,
++                        isConsoleMode,
++                        isDevelopmentMode,
++                        dotEnv
++                    ),
++                    balanceSheetOkModelToSubtract.invoke(
++
++                        currentUserName,
++                        currentUserId,
++                        isNotApiCall,
++                        isConsoleMode,
++                        isDevelopmentMode,
++                        dotEnv
++                    )
++                )
++            }
+         val balanceSheetOkModelFromSubtractResult: IsOkModel<List<BalanceSheetDataRowModel>> =
+-            balanceSheetOkModelFromSubtract.invoke(
+-
+-                currentUserName,
+-                currentUserId,
+-                isNotApiCall,
+-                isConsoleMode,
+-                isDevelopmentMode,
+-                dotEnv
+-            )
++            balanceSheetResults.first
+         val balanceSheetOkModelToSubtractResult: IsOkModel<List<BalanceSheetDataRowModel>> =
+-            balanceSheetOkModelToSubtract.invoke(
+-
+-                currentUserName,
+-                currentUserId,
+-                isNotApiCall,
+-                isConsoleMode,
+-                isDevelopmentMode,
+-                dotEnv
+-            )
++            balanceSheetResults.second
+         if (balanceSheetOkModelFromSubtractResult.isOK && balanceSheetOkModelToSubtractResult.isOK) {
+ 
+             println(ConstantsCommon.DOUBLE_DASHED_LINE_SEPARATOR)
+@@ -787,7 +831,7 @@ object LedgerSheetOperations {
+                         do {
+ 
+                             print("Retry (Y/N) ? : ")
+-                            when (readln()) {
++                            when (ConsoleInputUtils.readln()) {
+ 
+                                 "Y", "" -> {
+ 
+@@ -1120,37 +1164,35 @@ object LedgerSheetOperations {
+             }
+ 
+         val accounts: MutableMap<UInt, String> = mutableMapOf()
++        val unconfiguredAccounts: MutableMap<UInt, String> = mutableMapOf()
+         selectUserTransactionsAfterSpecifiedDateResult.transactions.forEach { transaction: TransactionResponse ->
+ 
+-            fun validateAccountDetails(accountId: UInt, accountName: String): IsOkModel<MutableMap<UInt, String>>? {
++            fun collectAccountDetails(accountId: UInt, accountName: String) {
+ 
+-                return if (accountsToInclude.contains(accountId.toString())) {
++                if (accountsToInclude.contains(accountId.toString())) {
+ 
+                     accounts.putIfAbsent(accountId, accountName)
+-                    null
+ 
+-                } else if (accountsToIgnore.contains(accountId.toString())) {
++                } else if (!accountsToIgnore.contains(accountId.toString())) {
+ 
+-                    null
+-
+-                } else {
+-
+-                    IsOkModel(
+-                        isOK = false,
+-                        error = "Account $accountId : $accountName not available in configuration"
+-                    )
++                    unconfiguredAccounts.putIfAbsent(accountId, accountName)
+                 }
+             }
+ 
+-            val validateAccountResult =
+-                validateAccountDetails(transaction.fromAccountId, transaction.fromAccountFullName)
+-                    ?: validateAccountDetails(transaction.toAccountId, transaction.toAccountFullName)
+-                    ?: IsOkModel(isOK = true)
++            collectAccountDetails(transaction.fromAccountId, transaction.fromAccountFullName)
++            collectAccountDetails(transaction.toAccountId, transaction.toAccountFullName)
++        }
++        if (unconfiguredAccounts.isNotEmpty()) {
+ 
+-            if (IsOkUtils.isNotOk(validateAccountResult)) {
++            return IsOkModel(
+ 
+-                return validateAccountResult
+-            }
++                isOK = false,
++                error = unconfiguredAccounts.entries
++                    .sortedBy { account: Map.Entry<UInt, String> -> account.key }
++                    .joinToString(separator = "\n") { account: Map.Entry<UInt, String> ->
++                        "Account ${account.key} : ${account.value} not available in configuration"
++                    }
++            )
+         }
+ 
+         if (isDevelopmentMode) {
+diff --git a/account-ledger-lib/src/main/kotlin/account/ledger/library/utils/UserUtilsInteractive.kt b/account-ledger-lib/src/main/kotlin/account/ledger/library/utils/UserUtilsInteractive.kt
+index 455fab1..38a02b0 100644
+--- a/account-ledger-lib/src/main/kotlin/account/ledger/library/utils/UserUtilsInteractive.kt
++++ b/account-ledger-lib/src/main/kotlin/account/ledger/library/utils/UserUtilsInteractive.kt
+@@ -1,6 +1,7 @@
+ package account.ledger.library.utils
+ 
+ import account.ledger.library.models.UserCredentials
++import common.utils.library.utils.ConsoleInputUtils
+ 
+ object UserUtilsInteractive {
+ 
+@@ -9,9 +10,9 @@ object UserUtilsInteractive {
+ 
+         val user = UserCredentials(username = "", passcode = "")
+         print("Enter Your Username : ")
+-        user.username = readlnOrNull().toString()
++        user.username = ConsoleInputUtils.readlnOrNull().toString()
+         print("Enter Your Password : ")
+-        user.passcode = readlnOrNull().toString()
++        user.passcode = ConsoleInputUtils.readlnOrNull().toString()
+         return user
+     }
+ }

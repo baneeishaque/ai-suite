@@ -1,0 +1,766 @@
+diff --git a/cli-app/build.gradle.kts b/cli-app/build.gradle.kts
+index 474b15d..af9d7b5 100644
+--- a/cli-app/build.gradle.kts
++++ b/cli-app/build.gradle.kts
+@@ -27,6 +27,8 @@ dependencies {
+ 
+     implementation(dependencyNotation = libs.dotenv.kotlin)
+ 
++    implementation(dependencyNotation = libs.jline)
++
+     implementation(dependencyNotation = project(path = ":account-ledger-lib:account-ledger-lib"))
+     implementation(dependencyNotation = project(path = ":account-ledger-lib-multi-platform:lib"))
+     implementation(dependencyNotation = project(path = ":common-lib:common-lib"))
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/AccountOperations.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/AccountOperations.kt
+index 7aba2e1..4c19793 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/AccountOperations.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/AccountOperations.kt
+@@ -15,6 +15,7 @@ import account.ledger.library.utils.TransactionUtils
+ import account.ledger.library.utils.TransactionUtilsInteractive
+ import common.utils.library.constants.ConstantsCommon
+ import common.utils.library.models.IsOkModel
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import common.utils.library.utils.MysqlUtils
+ import io.github.cdimascio.dotenv.Dotenv
+@@ -62,7 +63,7 @@ internal fun checkAffectedAccountsAfterSpecifiedDate(
+             println("Error : ${(apiResponse.exceptionOrNull() as Exception).localizedMessage}")
+             do {
+                 print("Retry (Y/N) ? : ")
+-                when (readln()) {
++                when (ConsoleInputUtils.readln()) {
+ 
+                     "Y", "" -> {
+ 
+@@ -240,7 +241,7 @@ internal fun viewChildAccounts(
+         println("Error : ${(apiResponse.exceptionOrNull() as Exception).localizedMessage}")
+         do {
+             print("Retry (Y/N) ? : ")
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+                 "Y", "" -> {
+                     return viewChildAccounts(
+                         username = username, userId = userId,
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/App.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/App.kt
+index 1cfba91..a1fd1b3 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/App.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/App.kt
+@@ -15,7 +15,13 @@ import io.github.cdimascio.dotenv.Dotenv
+ import io.github.cdimascio.dotenv.dotenv
+ import kotlinx.cli.ArgParser
+ import kotlinx.cli.ExperimentalCli
++import org.jline.reader.EndOfFileException
++import org.jline.reader.LineReaderBuilder
++import org.jline.reader.UserInterruptException
++import org.jline.terminal.TerminalBuilder
++import java.io.EOFException
+ import java.nio.file.Paths
++import kotlin.system.exitProcess
+ 
+ class App {
+     companion object {
+@@ -98,6 +104,7 @@ class App {
+         @JvmStatic
+         fun main(args: Array<String>) {
+ 
++            initializeConsoleInputWithHistory()
+             if (args.isEmpty()) {
+ 
+                 do {
+@@ -122,7 +129,7 @@ class App {
+                             "Enter Your Choice : "
+                         )
+                     )
+-                    when (readln()) {
++                    when (ConsoleInputUtils.readln()) {
+                         "1", "" -> {
+ 
+                             processInsertTransactionResult(
+@@ -236,6 +243,34 @@ class App {
+             }
+         }
+ 
++        private fun initializeConsoleInputWithHistory() {
++
++            runCatching {
++
++                val terminal = TerminalBuilder.builder()
++                    .system(true)
++                    .build()
++                val lineReader = LineReaderBuilder.builder()
++                    .terminal(terminal)
++                    .build()
++                ConsoleInputUtils.setLineReader {
++
++                    try {
++
++                        lineReader.readLine()
++
++                    } catch (exception: EndOfFileException) {
++
++                        throw EOFException()
++
++                    } catch (exception: UserInterruptException) {
++
++                        exitProcess(130)
++                    }
++                }
++            }
++        }
++
+         private fun processInsertTransactionResult(insertTransactionResult: InsertTransactionResult) {
+ 
+             dateTimeInText = insertTransactionResult.dateTimeInText
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/CheckingOperationsInteractive.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/CheckingOperationsInteractive.kt
+index d755622..42d425e 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/CheckingOperationsInteractive.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/CheckingOperationsInteractive.kt
+@@ -8,6 +8,7 @@ import account.ledger.library.models.SpecialTransactionTypeModel
+ import account.ledger.library.operations.CheckingOperations
+ import account.ledger.library.utils.TransactionUtils
+ import accountLedgerCli.cli.App.Companion.commandLinePrintMenuWithContinuePrompt
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import io.github.cdimascio.dotenv.Dotenv
+ 
+@@ -47,7 +48,7 @@ internal fun transactionContinueCheck(
+                 "", "Continue (Y/N) : "
+             )
+         )
+-        when (readln()) {
++        when (ConsoleInputUtils.readln()) {
+             "Y", "" -> {
+ 
+                 return CheckingOperations.addTransactionWithAccountAvailabilityCheck(
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleInputs.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleInputs.kt
+index 8142d7d..6dbfc8c 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleInputs.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleInputs.kt
+@@ -6,6 +6,7 @@ import account.ledger.library.models.InsertTransactionResult
+ import account.ledger.library.models.ViewTransactionsOutput
+ import account.ledger.library.operations.InsertOperations
+ import account.ledger.library.utils.AccountUtils
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import common.utils.library.utils.ListUtilsInteractive
+ import io.github.cdimascio.dotenv.Dotenv
+@@ -26,7 +27,7 @@ fun processChildAccountScreenInput(
+ 
+ ): ViewTransactionsOutput {
+ 
+-    val choice: String = readln()
++    val choice: String = ConsoleInputUtils.readln()
+     var accountHomeOutput = InsertTransactionResult(
+ 
+         isSuccess = false,
+@@ -160,7 +161,7 @@ internal fun addAccountInteractive(
+ 
+ ) {
+     print("Account Name : ")
+-    val name: String = readln().trim()
++    val name: String = ConsoleInputUtils.readln().trim()
+     if (name.isEmpty()) {
+ 
+         println("A/C Name cannot be empty.")
+@@ -168,22 +169,22 @@ internal fun addAccountInteractive(
+     }
+ 
+     print("Notes (optional) : ")
+-    val notes: String = readln().trim()
++    val notes: String = ConsoleInputUtils.readln().trim()
+ 
+     print("Account Type [GROUP] : ")
+-    val accountType: String = readln().trim().ifEmpty { "GROUP" }
++    val accountType: String = ConsoleInputUtils.readln().trim().ifEmpty { "GROUP" }
+ 
+     print("Commodity Type [CURRENCY] : ")
+-    val commodityType: String = readln().trim().ifEmpty { "CURRENCY" }
++    val commodityType: String = ConsoleInputUtils.readln().trim().ifEmpty { "CURRENCY" }
+ 
+     print("Commodity Value [INR] : ")
+-    val commodityValue: String = readln().trim().ifEmpty { "INR" }
++    val commodityValue: String = ConsoleInputUtils.readln().trim().ifEmpty { "INR" }
+ 
+     print("Taxable (y/N) : ")
+-    val taxable: Boolean = readln().trim().equals(other = "y", ignoreCase = true)
++    val taxable: Boolean = ConsoleInputUtils.readln().trim().equals(other = "y", ignoreCase = true)
+ 
+     print("Place Holder (y/N) : ")
+-    val placeHolder: Boolean = readln().trim().equals(other = "y", ignoreCase = true)
++    val placeHolder: Boolean = ConsoleInputUtils.readln().trim().equals(other = "y", ignoreCase = true)
+ 
+     val fullName: String = "${parentAccount.fullName}:$name"
+ 
+@@ -219,29 +220,29 @@ internal fun editAccountInteractive(
+     println("Editing Account [${account.fullName}] (press Enter to keep current value)")
+ 
+     print("Account Name [${account.name}] : ")
+-    val name: String = readln().trim().ifEmpty { account.name }
++    val name: String = ConsoleInputUtils.readln().trim().ifEmpty { account.name }
+ 
+     val currentNotes: String = account.notes ?: ""
+     print("Notes [${currentNotes}] : ")
+-    val notes: String = readln().trim().ifEmpty { currentNotes }
++    val notes: String = ConsoleInputUtils.readln().trim().ifEmpty { currentNotes }
+ 
+     print("Account Type [${account.accountType}] : ")
+-    val accountType: String = readln().trim().ifEmpty { account.accountType }
++    val accountType: String = ConsoleInputUtils.readln().trim().ifEmpty { account.accountType }
+ 
+     print("Commodity Type [${account.commodityType}] : ")
+-    val commodityType: String = readln().trim().ifEmpty { account.commodityType }
++    val commodityType: String = ConsoleInputUtils.readln().trim().ifEmpty { account.commodityType }
+ 
+     print("Commodity Value [${account.commodityValue}] : ")
+-    val commodityValue: String = readln().trim().ifEmpty { account.commodityValue }
++    val commodityValue: String = ConsoleInputUtils.readln().trim().ifEmpty { account.commodityValue }
+ 
+     val currentTaxable: Boolean = account.taxable.equals(other = "T", ignoreCase = true)
+     print("Taxable (y/N) [${if (currentTaxable) "Y" else "N"}] : ")
+-    val taxableInput: String = readln().trim()
++    val taxableInput: String = ConsoleInputUtils.readln().trim()
+     val taxable: Boolean = if (taxableInput.isEmpty()) currentTaxable else taxableInput.equals(other = "y", ignoreCase = true)
+ 
+     val currentPlaceHolder: Boolean = account.placeHolder.equals(other = "T", ignoreCase = true)
+     print("Place Holder (y/N) [${if (currentPlaceHolder) "Y" else "N"}] : ")
+-    val placeHolderInput: String = readln().trim()
++    val placeHolderInput: String = ConsoleInputUtils.readln().trim()
+     val placeHolder: Boolean = if (placeHolderInput.isEmpty()) currentPlaceHolder else placeHolderInput.equals(other = "y", ignoreCase = true)
+ 
+     val parentFullName: String = account.fullName.substringBeforeLast(delimiter = ":", missingDelimiterValue = "")
+@@ -277,7 +278,7 @@ internal fun deleteAccountInteractive(
+ ) {
+     println("About to delete Account [${account.fullName}] (id=${account.id}).")
+     print("Are you sure? (y/N) : ")
+-    val confirm: String = readln().trim()
++    val confirm: String = ConsoleInputUtils.readln().trim()
+     if (!confirm.equals(other = "y", ignoreCase = true)) {
+ 
+         println("Delete cancelled.")
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleResponsesInteractiveCli.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleResponsesInteractiveCli.kt
+index 7b33b48..1461b69 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleResponsesInteractiveCli.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleResponsesInteractiveCli.kt
+@@ -126,7 +126,7 @@ object HandleResponsesInteractiveCli {
+                             "Enter Your Choice : "
+                         )
+                     )
+-                    when (readln()) {
++                    when (ConsoleInputUtils.readln()) {
+                         "1" -> {
+                             return getHandleAccountsResponseFromApiResult(
+ 
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleSpecialTransactionTypesInteractive.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleSpecialTransactionTypesInteractive.kt
+index 943a90d..b4b2bb6 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleSpecialTransactionTypesInteractive.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleSpecialTransactionTypesInteractive.kt
+@@ -5,6 +5,7 @@ import account.ledger.library.models.SpecialTransactionTypeModel
+ import account.ledger.library.utils.SpecialTransactionTypeUtils
+ import account_ledger_library.constants.ConstantsNative
+ import common.utils.library.constants.ConstantsCommon
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import common.utils.library.utils.ListUtilsInteractive
+ 
+@@ -32,7 +33,7 @@ object HandleSpecialTransactionTypesInteractive {
+                     "Enter Your Choice : "
+                 )
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+                 "1" -> {
+                     return handleSpecialTransactionTypesWithZeroAsBackValue(
+ 
+@@ -97,7 +98,7 @@ object HandleSpecialTransactionTypesInteractive {
+         App.commandLinePrintMenuWithEnterPrompt.printMenuWithEnterPromptFromListOfCommands(
+             listOf("\nEnter Search Key : ")
+         )
+-        val searchKeyInput: String = readln()
++        val searchKeyInput: String = ConsoleInputUtils.readln()
+ 
+         if (isDevelopmentMode) {
+ 
+@@ -134,7 +135,7 @@ object HandleSpecialTransactionTypesInteractive {
+                     )
+                 )
+ 
+-                val input: String = readln()
++                val input: String = ConsoleInputUtils.readln()
+ 
+                 if (input == "1") return searchInSpecialTransactionTypes(
+ 
+@@ -158,7 +159,7 @@ object HandleSpecialTransactionTypesInteractive {
+                         "Enter Your Choice : "
+                     )
+                 )
+-                val input: String = readln()
++                val input: String = ConsoleInputUtils.readln()
+                 if (input == "1") {
+ 
+                     return ListUtilsInteractive.getValidIndexFromCollectionWithSelectionPromptAndZeroAsBack(
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleTransactionsInteractive.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleTransactionsInteractive.kt
+index ea6e795..bbbaf5c 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleTransactionsInteractive.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/HandleTransactionsInteractive.kt
+@@ -5,6 +5,7 @@ import account.ledger.library.models.ChooseTransactionResultModel
+ import account.ledger.library.utils.TransactionUtils.transactionsToTextFromList
+ import account_ledger_library.constants.ConstantsNative
+ import common.utils.library.constants.ConstantsCommon
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import common.utils.library.utils.ListUtilsInteractive
+ 
+@@ -30,7 +31,7 @@ object HandleTransactionsInteractive {
+                     "Enter Your Choice : "
+                 )
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+                 "1" -> {
+                     return handleTransactionsWithZeroAsBackValue(
+ 
+@@ -94,7 +95,7 @@ object HandleTransactionsInteractive {
+ 
+             listOf("\nEnter Search Key (Part of Particulars) : ")
+         )
+-        val searchKeyInput: String = readln()
++        val searchKeyInput: String = ConsoleInputUtils.readln()
+ 
+         if (isDevelopmentMode) {
+ 
+@@ -132,7 +133,7 @@ object HandleTransactionsInteractive {
+                     )
+                 )
+ 
+-                val input: String = readln()
++                val input: String = ConsoleInputUtils.readln()
+ 
+                 if (input == "1") return searchInTransactions(
+ 
+@@ -160,7 +161,7 @@ object HandleTransactionsInteractive {
+                     )
+                 )
+ 
+-                val input: String = readln()
++                val input: String = ConsoleInputUtils.readln()
+ 
+                 if (input == "1") {
+ 
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/InputOperations.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/InputOperations.kt
+index 12e768a..5b77f7c 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/InputOperations.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/InputOperations.kt
+@@ -7,6 +7,7 @@ import account.ledger.library.operations.ServerOperations
+ import account.ledger.library.utils.ApiUtilsInteractive
+ import accountLedgerCli.cli.App.Companion.commandLinePrintMenuWithBackPrompt
+ import account_ledger_library.constants.ConstantsNative
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.InputUtilsInteractive
+ import common.utils.library.utils.ErrorUtilsInteractive
+ 
+@@ -181,7 +182,7 @@ object InputOperations {
+                     "\tB to Back : "
+         )
+ 
+-        when (val userInput = readlnOrNull()) {
++        when (val userInput = ConsoleInputUtils.readlnOrNull()) {
+ 
+             "Y", "" -> {
+ 
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/InsertOperationsInteractive.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/InsertOperationsInteractive.kt
+index 4ea0e48..178c78b 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/InsertOperationsInteractive.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/InsertOperationsInteractive.kt
+@@ -257,7 +257,7 @@ object InsertOperationsInteractive {
+                     "Enter Your Choice : "
+                 )
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+ 
+                 "1" -> {
+ 
+@@ -1460,7 +1460,7 @@ object InsertOperationsInteractive {
+ 
+                     inputUInt = InputUtilsInteractive.getValidUnsignedInt(
+ 
+-                        inputText = readln(), invalidMessage = "Please Enter Valid Unsigned Integer"
++                        inputText = ConsoleInputUtils.readln(), invalidMessage = "Please Enter Valid Unsigned Integer"
+ 
+                     ), thresholdValue = thresholdValue, constructInvalidMessage = fun(currentUInt: UInt): String {
+ 
+@@ -2087,7 +2087,7 @@ object InsertOperationsInteractive {
+ 
+                 print("Enter Particulars (Current Value - $localTransactionParticulars), R to Reverse (Reversed Value - $reversedTransactionParticulars), AS to Add Suffix, AP to Add Prefix : ")
+ 
+-                val transactionParticularsInput: String = readln()
++                val transactionParticularsInput: String = ConsoleInputUtils.readln()
+                 if (transactionParticularsInput.isNotEmpty()) {
+ 
+                     localTransactionParticulars = if (transactionParticularsInput == "R") {
+@@ -2097,13 +2097,13 @@ object InsertOperationsInteractive {
+                     } else if (transactionParticularsInput == "AS") {
+ 
+                         print("Enter Suffix : ")
+-                        val transactionSuffixInput: String = readln()
++                        val transactionSuffixInput: String = ConsoleInputUtils.readln()
+                         val suffixedTransactionParticulars = "$localTransactionParticulars$transactionSuffixInput"
+ 
+                         do {
+                             print("Particulars (Current Value - $localTransactionParticulars), (Suffixed Value - $suffixedTransactionParticulars), Do you want to Continue (Y/N) : ")
+ 
+-                            when (readln()) {
++                            when (ConsoleInputUtils.readln()) {
+ 
+                                 "Y", "" -> {
+ 
+@@ -2128,13 +2128,13 @@ object InsertOperationsInteractive {
+                     } else if (transactionParticularsInput == "AP") {
+ 
+                         print("Enter Prefix : ")
+-                        val transactionPrefixInput: String = readln()
++                        val transactionPrefixInput: String = ConsoleInputUtils.readln()
+                         val prefixedTransactionParticulars = "$transactionPrefixInput$localTransactionParticulars"
+ 
+                         do {
+                             print("Particulars (Current Value - $localTransactionParticulars), (Prefixed Value - $prefixedTransactionParticulars), Do you want to Continue (Y/N) : ")
+ 
+-                            when (readln()) {
++                            when (ConsoleInputUtils.readln()) {
+ 
+                                 "Y" -> {
+ 
+@@ -2169,7 +2169,7 @@ object InsertOperationsInteractive {
+                 }
+ 
+                 print("Enter Amount (Current Value - $localTransactionAmount) : ")
+-                val transactionAmountInput: String = readln()
++                val transactionAmountInput: String = ConsoleInputUtils.readln()
+                 if (transactionAmountInput.isNotEmpty()) {
+ 
+                     localTransactionAmount = InputUtilsInteractive.getValidFloat(
+@@ -2190,7 +2190,7 @@ object InsertOperationsInteractive {
+                         "C to continue as it is / P to continue using it's pattern : "
+                     )
+                 )
+-                when (readln()) {
++                when (ConsoleInputUtils.readln()) {
+ 
+                     "C" -> {
+ 
+@@ -2225,14 +2225,14 @@ object InsertOperationsInteractive {
+                                 PatternQuestionAnswerTypesEnum.Number -> {
+ 
+                                     print("Enter ${patternQuestion.question} : ")
+-                                    answer = InputUtilsInteractive.getValidUnsignedInt(inputText = readln()).toString()
++                                    answer = InputUtilsInteractive.getValidUnsignedInt(inputText = ConsoleInputUtils.readln()).toString()
+ 
+                                 }
+ 
+                                 PatternQuestionAnswerTypesEnum.Float -> {
+ 
+                                     print("Enter ${patternQuestion.question} : ")
+-                                    answer = InputUtilsInteractive.getValidFloat(inputText = readln()).toString()
++                                    answer = InputUtilsInteractive.getValidFloat(inputText = ConsoleInputUtils.readln()).toString()
+ 
+                                 }
+ 
+@@ -2470,7 +2470,7 @@ object InsertOperationsInteractive {
+ 
+                 listOfCommands = menuItems
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+ 
+                 "Y", "" -> {
+ 
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/Screens.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/Screens.kt
+index f166bf2..765449b 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/Screens.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/Screens.kt
+@@ -189,7 +189,7 @@ object Screens {
+                     "Enter Your Choice : "
+                 )
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+ 
+                 "1" -> {
+ 
+@@ -774,68 +774,71 @@ object Screens {
+ 
+                 "50" -> {
+ 
+-                    LedgerSheetOperations.printProfitSheetOfUser(
++                    LedgerSheetOperations.withSheetErrorPrintDeduplication {
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printProfitSheetOfUser(
+ 
+-                    LedgerSheetOperations.printNotConsiderForIncomeExpenseSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printNotConsiderForIncomeExpenseSheetOfUser(
+ 
+-                    LedgerSheetOperations.printDebitCreditSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printDebitCreditSheetOfUser(
+ 
+-                    LedgerSheetOperations.printNotConsiderForIncomeExpenseOrDebitCreditSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printNotConsiderForIncomeExpenseOrDebitCreditSheetOfUser(
+ 
+-                    LedgerSheetOperations.printAssetSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printAssetSheetOfUser(
+ 
+-                    LedgerSheetOperations.printNotConsiderForIncomeExpenseDebitCreditOrAssetSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printNotConsiderForIncomeExpenseDebitCreditOrAssetSheetOfUser(
+ 
+-                    LedgerSheetOperations.printDebitCreditBalanceSheetOfUser(
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
+ 
+-                        currentUserName = username,
+-                        currentUserId = userId,
+-                        isConsoleMode = true,
+-                        isDevelopmentMode = false,
+-                        dotEnv = App.reloadDotEnv()
+-                    )
++                        LedgerSheetOperations.printDebitCreditBalanceSheetOfUser(
++
++                            currentUserName = username,
++                            currentUserId = userId,
++                            isConsoleMode = true,
++                            isDevelopmentMode = false,
++                            dotEnv = App.reloadDotEnv()
++                        )
++                    }
+                 }
+ 
+                 "0" -> {
+@@ -1472,7 +1475,7 @@ object Screens {
+                     "Enter Your Choice : "
+                 )
+             )
+-            when (readln()) {
++            when (ConsoleInputUtils.readln()) {
+ 
+                 "1" -> {
+                     localInsertTransactionResult = TransactionViews.viewTransactionsForAnAccount(
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/SearchOperations.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/SearchOperations.kt
+index 47b7180..e3c7a38 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/SearchOperations.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/SearchOperations.kt
+@@ -5,6 +5,7 @@ import account.ledger.library.enums.AccountsListSortMode
+ import account.ledger.library.utils.AccountUtils
+ import account_ledger_library.constants.ConstantsNative
+ import common.utils.library.constants.ConstantsCommon
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import common.utils.library.utils.ListUtilsInteractive
+ 
+@@ -19,7 +20,7 @@ fun searchAccount(
+     App.commandLinePrintMenuWithEnterPrompt.printMenuWithEnterPromptFromListOfCommands(
+         listOf("\nEnter Search Key : ")
+     )
+-    val searchKeyInput: String = readln()
++    val searchKeyInput: String = ConsoleInputUtils.readln()
+ 
+     val searchResult: LinkedHashMap<UInt, AccountResponse> = searchOnHashMapValues(
+ 
+@@ -41,7 +42,7 @@ fun searchAccount(
+                 )
+             )
+ 
+-            val input: String = readln()
++            val input: String = ConsoleInputUtils.readln()
+ 
+             if (input == "1") return searchAccount(
+                 userAccountsMap = userAccountsMap,
+@@ -68,7 +69,7 @@ fun searchAccount(
+                     "Enter Your Choice : "
+                 )
+             )
+-            val input: String = readln()
++            val input: String = ConsoleInputUtils.readln()
+             if (input == "1") {
+ 
+                 return ListUtilsInteractive.getValidIndexFromCollectionWithSelectionPromptAndZeroAsBack(
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/TransactionViews.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/TransactionViews.kt
+index d487e6d..9860993 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/TransactionViews.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/TransactionViews.kt
+@@ -285,7 +285,7 @@ object TransactionViews {
+                     }
+                     commandLinePrintMenuWithEnterPrompt.printMenuWithEnterPromptFromListOfCommands(menuItems)
+ 
+-                    choice = readln()
++                    choice = ConsoleInputUtils.readln()
+ 
+                     var addTransactionResult = InsertTransactionResult(
+ 
+@@ -470,7 +470,7 @@ object TransactionViews {
+                                         userAccountsMap[selectedTransaction.fromAccountId]!!
+                                     do {
+                                         println("Do you want to change Withdraw A/C (Y/N) (Default : N) : ")
+-                                        when (readln()) {
++                                        when (ConsoleInputUtils.readln()) {
+                                             "Y" -> {
+ 
+                                                 val chooseAccountResult: ChooseAccountResult =
+@@ -500,7 +500,7 @@ object TransactionViews {
+                                         userAccountsMap[selectedTransaction.toAccountId]!!
+                                     do {
+                                         print("Do you want to change Deposit A/C (Y/N) (Default : N) : ")
+-                                        when (readln()) {
++                                        when (ConsoleInputUtils.readln()) {
+                                             "Y" -> {
+ 
+                                                 val chooseAccountResult: ChooseAccountResult =
+@@ -1113,7 +1113,7 @@ object TransactionViews {
+ 
+     ) {
+         print("Enter Account Index or 0 to Back : A")
+-        val userInputForAccountIndex: String = readln()
++        val userInputForAccountIndex: String = ConsoleInputUtils.readln()
+         if (userInputForAccountIndex != "0") {
+ 
+             AccountUtilsInteractive.processUserAccountsMap<Any>(
+diff --git a/cli-app/src/main/kotlin/accountLedgerCli/cli/UserOperationsInterActiveWithApiService.kt b/cli-app/src/main/kotlin/accountLedgerCli/cli/UserOperationsInterActiveWithApiService.kt
+index 26368d7..a438d5c 100644
+--- a/cli-app/src/main/kotlin/accountLedgerCli/cli/UserOperationsInterActiveWithApiService.kt
++++ b/cli-app/src/main/kotlin/accountLedgerCli/cli/UserOperationsInterActiveWithApiService.kt
+@@ -19,6 +19,7 @@ import account.ledger.library.utils.UserUtils
+ import account.ledger.library.utils.UserUtilsInteractive
+ import accountLedgerCli.cli.App.Companion.commandLinePrintMenuWithEnterPrompt
+ import common.utils.library.models.CommonDataModel
++import common.utils.library.utils.ConsoleInputUtils
+ import common.utils.library.utils.ErrorUtilsInteractive
+ import io.github.cdimascio.dotenv.Dotenv
+ import kotlinx.coroutines.runBlocking
+@@ -78,7 +79,7 @@ class UserOperationsInterActiveWithApiService {
+                     do {
+                         displayCurrentUser(user)
+                         print("Do you want to continue (Y/N) : ")
+-                        when (readlnOrNull().toString()) {
++                        when (ConsoleInputUtils.readlnOrNull().toString()) {
+                             "Y", "" -> {
+                                 break
+                             }
+@@ -109,7 +110,7 @@ class UserOperationsInterActiveWithApiService {
+                     println("Error : ${(apiResponse.getValue() as Exception).localizedMessage}")
+                     do {
+                         print("Retry (Y/N) ? : ")
+-                        when (readln()) {
++                        when (ConsoleInputUtils.readln()) {
+                             "Y", "" -> {
+                                 return login(
+                                     username = username,
+@@ -396,7 +397,7 @@ class UserOperationsInterActiveWithApiService {
+                 println("Error : ${(apiResponse.getValue() as Exception).localizedMessage}")
+                 do {
+                     print("Retry (Y/N) ? : ")
+-                    when (readln()) {
++                    when (ConsoleInputUtils.readln()) {
+                         "Y", "" -> {
+                             return listUsers(
+                                 fromAccount = fromAccount,
+@@ -469,7 +470,7 @@ class UserOperationsInterActiveWithApiService {
+                                 "Enter Your Choice : "
+                             )
+                         )
+-                        when (readln()) {
++                        when (ConsoleInputUtils.readln()) {
+ 
+                             "1" -> {
+ 
+diff --git a/gradle/libs.versions.toml b/gradle/libs.versions.toml
+index 290651a..1ebc0f7 100644
+--- a/gradle/libs.versions.toml
++++ b/gradle/libs.versions.toml
+@@ -2,6 +2,7 @@
+ kotlin = "2.4.20-tethys-25"
+ ktor = "3.6.0-typed-auth-dsl-eap-1641"
+ agp = "8.13.2"
++jline = "3.30.17"
+ 
+ [libraries]
+ kotlinx-cli = { module = "org.jetbrains.kotlinx:kotlinx-cli", version = "0.3.6" }
+@@ -15,6 +16,7 @@ ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
+ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ dotenv-kotlin = { module = "io.github.cdimascio:dotenv-kotlin", version = "6.5.1" }
++jline = { module = "org.jline:jline", version.ref = "jline" }
+ 
+ [plugins]
+ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

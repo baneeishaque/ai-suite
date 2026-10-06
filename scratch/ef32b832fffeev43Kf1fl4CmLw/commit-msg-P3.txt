@@ -1,0 +1,11 @@
+feat(cli): add command history to console input via JLine
+
+- Install a JLine line reader with history and line editing at startup
+  through ConsoleInputUtils.setLineReader, so prompts accept arrow-key
+  history navigation; fall back to the standard reader when the
+  terminal is unavailable.
+- Translate reader end-of-file into EOFException and Ctrl+C into exit
+  code 130 for the interactive loop.
+- Route every console prompt in the CLI through
+  ConsoleInputUtils.readln/readlnOrNull.
+- Add JLine 3.30.17 to the version catalog and the cli-app module.

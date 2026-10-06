@@ -1,0 +1,200 @@
+---
+user:
+  text: |-
+    we are on free personal plan. and we are not going to purchase anything. can we use AI Scan, GitHub Code Security, GitHub Secret Protection, CodeQL code scanning, Secret scanning + push protection, Third party scanners in CI, Free risk assessments?
+
+    we are already using Dependabot Alerts + Security Updates, 
+  time: 10/5/2026, 9:13:52.519 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The user is on a free personal plan (GitHub Free for personal accounts), no purchases. They want to know which of these they can use:
+
+      1. AI Scan — No (needs GHAS/Code Security + Copilot license, paid; personal free plan no)
+      2. GitHub Code Security — No (paid, Team/Enterprise required)
+      3. GitHub Secret Protection — No (paid, Team/Enterprise required)
+      4. CodeQL code scanning — Yes, free on public repos; No on private repos
+      5. Secret scanning + push protection — Yes, free on public repos; No on private repos
+      6. Third-party scanners in CI — Yes, free (GitHub Actions free minutes for public repos; private repos get 2000 min/month free on Free plan). Can run Semgrep etc. in Actions and fail build. Uploading SARIF to Security tab requires code scanning which is not available on private repos without paid plan.
+      7. Free risk assessments — These are for organizations on GitHub Team/Enterprise. A personal free account is not an organization on Team/Enterprise plan, so no. The docs say "Organizations on GitHub Team and GitHub Enterprise can run free security risk assessments". Actually the code security risk assessment is available for organizations on GitHub.com — let me check: "Secret risk assessment is available for organizations on GitHub.com" and "Code security risk assessment is available for organizations on GitHub.com". Hmm, the billing page says free use: "Secret risk assessment is available for organizations on GitHub.com" — but the About page says "Organizations on GitHub Team and GitHub Enterprise can run free security risk assessments". There's ambiguity. A free personal plan can create organizations for free (GitHub Free for organizations). The about page states Team and Enterprise. The billing page says "available for organizations on GitHub.com" without plan qualifier. To be safe: likely requires an org; personal accounts can't run it; and per the About page, it's Team/Enterprise orgs. Actually there's a nuance: the risk assessment is for organizations on GitHub.com — a free org might qualify? The About page explicitly says "Organizations on GitHub Team and GitHub Enterprise can run free security risk assessments". I'll say: not for personal accounts; requires an organization (per docs, Team/Enterprise; free orgs may or may not qualify — worth checking). Let me not overclaim. I could quickly fetch the risk assessment docs to be precise. That would be helpful.
+
+      Also important caveats:
+      - Free plan private repos: code scanning and secret scanning are not available (unless... secret scanning on private repos requires Secret Protection). Public repos only.
+      - Public repos: CodeQL default setup is free, secret scanning + push protection free, dependency review free.
+      - Third-party scanners: run in GitHub Actions. Public repos = unlimited free Actions minutes. Private repos = 2,000 minutes/month free on Free plan. SARIF upload to code scanning tab only works where code scanning is enabled (public repos). On private repos, you can still run the scanner and fail the build, but no Security tab integration.
+      - Dependabot alerts/updates: free everywhere — already using.
+      - AI Scan: no.
+      - Also Copilot Free exists (limited) but AI Scan requires a Copilot license and GHAS anyway, so no.
+
+      Let me verify the risk assessment eligibility. Fetch https://docs.github.com/en/code-security/concepts/code-scanning/risk-assessment and maybe secret risk assessment page. Let me fetch both in parallel.
+
+      Actually, the question is simple enough, but accuracy matters. Let me fetch the risk assessment page.
+    thinking_duration: 3.497s
+    thinking_duration_ms: 3497
+    tool_calls:
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://docs.github.com/en/code-security/concepts/secret-security/secret-security-with-github
+        result: |-
+          # Code security risk assessment
+
+          Generate a free code security risk assessment to understand your organization's exposure to vulnerabilities.
+
+          The code security risk assessment is a free, self-serve scan that helps you understand your organization's exposure to code vulnerabilities. The assessment scans up to 20 of your organization's repositories and produces a report showing the vulnerabilities found, their severity, and how many can be fixed with Copilot Autofix.
+
+          The assessment is completely free. You won't be charged for any GitHub Code Security licenses, and the GitHub Actions minutes used during the scan are provided at no cost.
+
+          ## Who can run the assessment
+
+          **Organization owners** and **security managers** can run the code security risk assessment for organizations on GitHub Team or GitHub Enterprise Cloud plans.
+
+          ## What the assessment scans
+
+          By default, the assessment pre-selects up to 20 of your organization's private and internal repositories based on commit activity in the last 90 days. You can change this selection before running the scan. Only repositories containing at least one language supported by code scanning can be selected.
+
+          Scans have a one-hour timeout. If all languages in a repository fail to scan, that repository is counted as failed. If at least one language scans successfully, the repository's results are included in the report.
+
+          You can rerun the assessment every 90 days. For each rerun, you can change which repositories are scanned.
+
+          ## Relationship to the secret risk assessment
+
+          GitHub offers two free security risk assessments for organizations: the code security risk assessment and the secret risk assessment. The two assessments run independently and their results are displayed in separate tabs in the Assessments view. Each assessment can be rerun every 90 days.
+
+          For more information about the secret risk assessment, see [Secret security with GitHub](/en/code-security/concepts/secret-security/secret-security-with-github#secret-risk-assessment).
+
+          ## Next steps
+
+          To generate a code security risk assessment for your organization, see [Running the code security risk assessment for your organization](/en/code-security/how-tos/secure-at-scale/configure-organization-security/configure-specific-tools/assess-your-vulnerability-risk).
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://docs.github.com/en/code-security/concepts/secret-security/secret-security-with-github
+        result: |-
+          # Secret security with GitHub
+
+          Learn how GitHub's security tools can help you identify, remediate, and prevent secret leaks.
+
+          Hardcoded credentials in your repositories can lead to credential leaks, unauthorized access, data breaches, and significant costs to your organization. For details about these risks and how to protect against them, see [Secret leakage risks](/en/code-security/concepts/secret-security/secret-leakage-risks).
+
+          GitHub provides tools to help you understand and address your organization's exposure to leaked secrets:
+
+          * **Secret risk assessment**: A free, on-demand scan that reveals your organization's current exposure to leaked secrets.
+          * **GitHub Secret Protection**: A comprehensive suite of features that detects existing secrets and prevents new leaks across your repositories.
+
+          ## Secret risk assessment
+
+          The secret risk assessment provides organization owners and security managers with a free point-in-time scan of their organization's repositories to identify hardcoded credentials like API keys, tokens, and passwords, and understand the extent of secret sprawl across your organization.
+
+          <a href="https://github.com/get_started?with=risk-assessment" class="btn btn-primary mt-3 mr-3 no-underline"><span>Run a security risk assessment</span></a>
+
+          ### What the assessment shows
+
+          The assessment report includes:
+
+          * **Total secrets detected**: The aggregate count of exposed secrets in your organization.
+          * **Public leaks**: Secrets found in public repositories that are accessible to anyone.
+          * **Preventable leaks**: Secrets that could have been blocked with push protection enabled.
+          * **Secret categories**: The distribution of secret types (such as AWS keys, GitHub tokens, or AI-detected secrets).
+
+          ### Why assess your risk
+
+          Regular assessment helps prevent:
+
+          * Unauthorized access to your systems and data
+          * Service disruptions from compromised credentials
+          * Regulatory compliance issues
+          * Financial loss from resource misuse
+          * Reputational damage from security incidents
+
+          ## GitHub Secret Protection
+
+          GitHub Secret Protection is a GitHub Advanced Security product containing a suite of features designed to prevent, detect, and assist in remediating secret leaks in your organization.
+
+          While the secret risk assessment provides a point-in-time view of your organization's current secret exposure, GitHub Secret Protection:
+
+          * **Implements continuous monitoring** and expands scanned surfaces beyond code to include pull requests, issues, wikis, and discussions
+          * **Prevents credential leaks** by blocking commits containing hardcoded secrets before they are saved to GitHub
+          * **Creates actionable alerts** that can be grouped into campaigns and assigned to team members for remediation
+          * **Meets your specific needs** by scanning for patterns unique to your organization and unstructured secrets like passwords
+          * **Supports governance at scale** with settings dictating who can bypass protections and dismiss alerts
+          * **Surfaces key analytics** through a view dedicated to your organization's secret security
+
+          Through these features, GitHub Secret Protection provides complete coverage for your organization, reducing the risk of costly credential leaks, secret sprawl, and high-effort remediation.
+
+          For more information about the specific features of GitHub Secret Protection, see [GitHub security features](/en/code-security/getting-started/github-security-features#available-with-github-secret-protection).
+
+          ## Next steps
+
+          Now that you know how GitHub can help keep your secrets safe, you should assess your organization's current exposure to leaked secrets. See [Running the secret risk assessment for your organization](/en/code-security/how-tos/secure-at-scale/configure-organization-security/configure-specific-tools/assess-your-secret-risk).
+    time: 10/5/2026, 9:13:52.553 PM UTC
+    response: "\n\n"
+    duration: 5.924s
+    duration_ms: 5924
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Now I have precise info. The user is on GitHub Free for personal accounts (not an organization). Let me answer each item clearly.
+
+      1. **AI Scan** — No. Requires Code Security (GHAS) license + Copilot license. Free personal plan has neither, and these can't be purchased on Free personal.
+
+      2. **GitHub Code Security** — No. Paid product; must be on Team or Enterprise plan to purchase. Free personal can't buy.
+
+      3. **GitHub Secret Protection** — No. Same.
+
+      4. **CodeQL code scanning** — Yes on **public** repos (free, all public repos get code scanning). No on private repos (would need Code Security). Note: on a personal free account, private repos don't get it.
+
+      5. **Secret scanning + push protection** — Yes on **public** repos (free). No on private repos (needs Secret Protection).
+
+      6. **Third-party scanners in CI** — Yes, always possible via GitHub Actions. Public repos: unlimited free Actions minutes. Private repos: 2,000 free minutes/month on Free plan. Caveat: uploading SARIF to the Security tab (code scanning) isn't available for private repos without paid Code Security; but you can still run the scanner and fail the build / emit artifacts. On public repos you can upload SARIF via code scanning API and get results in the Security tab.
+
+      Actually wait — can you upload SARIF to public repos on a personal account? Yes, code scanning (including third-party SARIF upload) is available on public repos free.
+
+      7. **Free risk assessments** — No for personal account. Code security risk assessment: org owners/security managers for orgs on **GitHub Team or GitHub Enterprise Cloud**. Secret risk assessment: "organization owners and security managers" — the page says for organizations. Personal account is not an org. Also, the about page said "Organizations on GitHub Team and GitHub Enterprise can run free security risk assessments." So on a free personal plan: no. Caveat: if they create a free organization (GitHub Free for orgs), the docs say Team/Enterprise for code risk assessment; the secret risk assessment docs say "organization owners and security managers" without explicit plan, but the About page groups both under Team/Enterprise. I'll say: not on a personal account; requires an org, and per docs Team/Enterprise. If they made a free org, likely not eligible — but the secret one might be? To be safe: "not available to personal accounts; docs scope both to organizations (About page says Team/Enterprise)". 
+
+      8. **Dependabot alerts + security updates** — already using, free everywhere (all repos, public/private), keep it. Also dependency graph free. Dependency *review* is free on public repos only.
+
+      Also worth noting: public repos also get dependency review for free, and secret scanning has free "public leak" monitoring. And CodeQL default setup works on public repos with zero config.
+
+      I should present a table: Feature | Usable? | Notes.
+
+      Keep it concise but clear. The user asked a direct question, so a table is ideal.
+
+      Also clarify "free personal plan" means: GitHub Free for personal accounts. Public repos get the free features; private repos don't.
+
+      One more nuance: push protection is now free on all repos? GitHub made push protection free for all public repos. Private repos: push protection is part of Secret Protection. Actually in 2024 GitHub made push protection free for all public repositories. Yes.
+
+      Also: secret scanning alerts for public repos — free. Partners/generic patterns. On private repos, requires Secret Protection.
+
+      Let me write the answer.
+    thinking_duration: 3.212s
+    thinking_duration_ms: 3212
+    time: 10/5/2026, 9:13:58.486 PM UTC
+    response: |-
+      Here's the breakdown for a **GitHub Free personal account**, no purchases:
+
+      | Feature | Usable? | Why |
+      |---|---|---|
+      | **AI Scan** | ❌ No | Requires Code Security (GHAS) **+** Copilot license |
+      | **GitHub Code Security** | ❌ No | Paid SKU; only purchasable on Team/Enterprise plans |
+      | **GitHub Secret Protection** | ❌ No | Same — paid SKU, Team/Enterprise only |
+      | **CodeQL code scanning** | ✅ **Public repos only** | Free for all public repos; private repos would need Code Security |
+      | **Secret scanning + push protection** | ✅ **Public repos only** | Free on public repos; private repos need Secret Protection |
+      | **Third-party scanners in CI** | ✅ Yes (both public & private) | Run Semgrep/Trivy/etc. in GitHub Actions; public = unlimited free minutes, private = 2,000 min/month. Caveat: **SARIF upload to the Security tab** only works where code scanning is enabled (public repos); on private repos just fail the build / save artifacts |
+      | **Free risk assessments** | ❌ No | Docs scope both to **organizations** (Team/Enterprise); not available to personal accounts |
+      | **Dependabot alerts + security updates** | ✅ Already using | Free on all repos, including private — keep it |
+
+      Practical takeaways:
+
+      - The **free tier is real but public-repo-only** for scanning: enable **CodeQL default setup** and **push protection** on your public repos today — zero config, zero cost.
+      - Your private repos get **Dependabot only**. For scanning there, run third-party tools in Actions (Semgrep CE, Trivy, Gitleaks, etc.) as a build-failing step.
+      - If you ever want private-repo coverage without paying: run a **free organization**? No — risk assessments and paid SKUs still need Team/Enterprise; CodeQL on private repos requires Code Security regardless of org.
+      - AI Scan is doubly out of reach: it needs Code Security *and* Copilot, neither available on Free personal.
+    duration: 6.482s
+    duration_ms: 6482
+

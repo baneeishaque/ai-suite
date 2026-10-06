@@ -1,0 +1,9 @@
+fix(account): aggregate unconfigured sheet accounts and dedupe errors
+
+- Report every account missing from the sheet configuration in one
+  sorted multi-line error instead of stopping at the first one.
+- Add withSheetErrorPrintDeduplication so batched sheet runs print a
+  repeated configuration error only once; wrap the summarized
+  balance flow's two sheet invocations in the same scope.
+- Route the sheet error through printSheetError to enable the
+  deduplication without changing IsOkModel error propagation.

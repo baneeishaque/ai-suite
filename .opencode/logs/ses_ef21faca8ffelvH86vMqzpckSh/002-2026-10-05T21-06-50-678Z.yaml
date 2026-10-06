@@ -1,0 +1,425 @@
+---
+user:
+  text: GHAS license? i am new to that. also we don't have Copilot license
+  time: 10/5/2026, 9:06:26.303 PM UTC
+assistant:
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      The user says they're new to GHAS (GitHub Advanced Security) and they don't have a Copilot license. They want an explanation of what GHAS is, and presumably what it means for them (AI Scan requires both GHAS and Copilot license, so they can't use AI Scan).
+
+      I should explain GHAS clearly: what it is, what it includes, licensing model, and then tie back to AI Scan requirements. Keep it reasonably concise but informative since they're new. The instruction says answer concisely with fewer than 4 lines unless detail is asked. They're asking to be taught about GHAS — some detail is warranted, but I shouldn't write an essay. Let me give a focused, well-structured explanation.
+
+      Key facts about GHAS:
+      - GitHub Advanced Security is a paid add-on for GitHub (Enterprise Cloud, Team/Enterprise plans; free for public repos on GitHub.com).
+      - It's a suite of security features: Code scanning (CodeQL), Secret scanning, Dependency review, Dependabot (partially free), security overview, etc.
+      - Pricing: per committer (active committer) per month for private repositories. Historically $49/committer/month for GHAS. Public repos get GHAS features free.
+      - Secret scanning + push protection free for all public repos; secret scanning for private repos requires GHAS.
+      - Code scanning with CodeQL is free for public repos; requires GHAS for private repos.
+      - On GitHub Enterprise Cloud, GHAS is billed per active committer.
+      - Note: There have been changes — GitHub announced "GitHub Secret Protection" and "GitHub Code Security" as separate products (2024/2025), replacing/repackaging GHAS. Let me recall: In March 2025, GitHub announced GitHub Secret Protection and GitHub Code Security as standalone products, with GHAS continuing for existing customers. Pricing: Code Security $30/committer/month, Secret Protection $19/committer/month, GHAS bundle $49. This is relevant to a "new to GHAS" user. I should mention that GHAS is being repackaged into GitHub Code Security and GitHub Secret Protection.
+
+      Also Copilot license: Copilot Business $19/user/month, Copilot Enterprise $39/user/month. AI Scan requires GHAS + Copilot license during preview. So without Copilot license, they can't use AI Scan.
+
+      Alternatives for them:
+      - CodeQL code scanning (free on public repos, GHAS needed for private) — no AI credits, high precision.
+      - Secret scanning / push protection (free public).
+      - Dependabot alerts/updates — free for all repos.
+      - Copilot Autofix requires GHAS Code Security for CodeQL alerts? Autofix is available with GHAS / Code Security for code scanning alerts in private repos; public repos free. Actually Copilot Autofix for code scanning is available with GitHub Code Security. Without Copilot subscription? Autofix for code scanning doesn't require a Copilot license — it's part of GHAS/Code Security. Let me be careful.
+      - Third-party: Semgrep, Snyk, etc.
+      - Copilot Free tier exists (limited), Copilot Pro $10/month for individuals. But AI Scan requires Copilot license — likely Business/Enterprise? The doc says "a GitHub Copilot license" — during preview probably Business/Enterprise. I shouldn't overclaim; say at minimum Copilot Pro might not qualify; the docs say "a GitHub Copilot license" and it's aimed at org/enterprise (GHAS is org/enterprise). Actually GHAS is available for organizations on Team/Enterprise; personal accounts can have GHAS? GHAS is available for GitHub Enterprise Cloud and Team? Historically GHAS available for Enterprise Cloud and GitHub Team? Let me recall: GHAS is available for GitHub Enterprise Cloud and GitHub Team? I believe GHAS add-on is available for organizations on GitHub Team and GitHub Enterprise Cloud. Yes — GHAS can be purchased for orgs on Team/Enterprise plans. The doc mentions "an eligible public repository owned by a personal account" for AI Scan, so personal accounts can have AI Scan on public repos — interesting. For personal accounts, GHAS features on public repos are free, and Copilot license... maybe Copilot Pro? Unclear. I should avoid over-speculating; note that exact SKU eligibility during preview is worth checking.
+
+      Since I might be outdated on pricing (my knowledge), I could fetch GitHub docs for GHAS to be accurate. The user is asking a factual question about licensing. Let me fetch the GHAS docs page and maybe Copilot plans page. That would be helpful and accurate. The system says don't guess URLs unless confident for programming help — these are known docs URLs. Let me fetch:
+
+      - https://docs.github.com/en/get-started/learning-about-github/about-github-advanced-security
+      - https://docs.github.com/en/copilot/get-started/plans (maybe)
+
+      Also maybe https://docs.github.com/en/billing/concepts/product-billing/github-advanced-security
+
+      Let me fetch a couple in parallel to be accurate. Given "maximum details" earlier, a detailed answer is fine.
+
+      Let me do parallel webfetch calls.
+    thinking_duration: 9.024s
+    thinking_duration_ms: 9024
+    tool_calls:
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://docs.github.com/en/billing/concepts/product-billing/github-advanced-security
+        result: |-
+          # About GitHub Advanced Security
+
+          GitHub makes extra security features available to customers who purchase GitHub Code Security or GitHub Secret Protection. Some features are enabled for public repositories by default.
+
+          ## About GitHub Advanced Security products
+
+          GitHub has many features that help you improve and maintain the quality of your code. Some of these are included in all plans, such as dependency graph and Dependabot alerts.
+
+          Other security features require you to purchase one of GitHub's Advanced Security products:
+
+          * **GitHub Secret Protection**, which includes features that help you detect and prevent secret leaks, such as secret scanning and push protection.
+          * **GitHub Code Security**, which includes features that help you find and fix vulnerabilities, like code scanning, premium Dependabot features, and dependency review.
+
+          Some of these features, such as code scanning and secret scanning, are enabled for public repositories by default. To run the feature on your private or internal repositories, you must purchase the relevant GitHub Advanced Security product.
+
+          You must be on a GitHub Team or GitHub Enterprise plan in order to purchase GitHub Code Security or GitHub Secret Protection. For more information, see [GitHub's plans](/en/get-started/learning-about-github/githubs-plans) and [GitHub Advanced Security license billing](/en/billing/concepts/product-billing/github-advanced-security).
+
+          ## GitHub Code Security
+
+          You get the following features with GitHub Code Security:
+
+          * **Code scanning**: Search for potential security vulnerabilities and coding errors in your code using CodeQL or a third-party tool.
+
+          * **CodeQL CLI**: Run CodeQL processes locally on software projects or to generate code scanning results for upload to GitHub.
+
+          * **Copilot Autofix**: Get automatically generated fixes for code scanning alerts.
+
+          * **AI Scan**: Find vulnerabilities in languages and frameworks not covered by CodeQL with an AI-based scanning engine that runs during pull request review.
+
+          * **Security campaigns**: Reduce security debt at scale.
+
+          * **Custom auto-triage rules for Dependabot**: Manage your Dependabot alerts at scale, by automating which alerts you want to ignore, snooze, or trigger a Dependabot security update for.
+
+          * **Dependency review**: Show the full impact of changes to dependencies and see details of any vulnerable versions before you merge a pull request.
+
+          * **Security overview**: Understand the distribution of risk across your organization.
+
+          The table below summarizes the availability of GitHub Code Security features for public and private repositories.
+
+          <div class="ghd-tool rowheaders">
+
+          |                          | Public repository <br>without GitHub Code Security                                                                                                                                                                                                                                                                                                                                                                       | Private repository <br>without GitHub Code Security                                                                                                                                                                                                                                                                                                                                                                      | Public or private repository <br>with GitHub Code Security                                                                                                                                                                                                                                                         |
+          | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+          | Code scanning            | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>                                                                                                       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          | CodeQL CLI               | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>                                                                                                       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Copilot Autofix          | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>                                                                                                       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          |                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Security campaigns       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Custom auto-triage rules | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          | Dependency review        | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          | Security overview        | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+
+          </div>
+
+          For more information about features, see [GitHub security features](/en/code-security/getting-started/github-security-features).
+
+          ## GitHub Secret Protection
+
+          You get the following features with GitHub Secret Protection:
+
+          * **Secret scanning**: Detect secrets, for example keys and tokens, that have been checked into a repository and receive alerts.
+          * **Push protection**: Prevent secret leaks before they happen by blocking commits containing secrets.
+          * **AI-detected secrets**: Leverage AI to detect unstructured credentials, such as passwords, that have been checked into a repository.
+          * **Custom patterns**: Detect and prevent leaks for organization-specific secrets.
+          * **Delegated bypass for push protection** and **Delegated alert dismissal**:  Implement an approval process for better control over who in your enterprise can perform sensitive actions, supporting governance at scale.
+          * **Security campaigns**: Remediate exposed secrets at scale by creating a campaign and collaborating to fix them.
+          * **Security overview**: Understand the distribution of risk across your organization.
+
+          The table below summarizes the availability of GitHub Secret Protection features for public and private repositories.
+
+          <div class="ghd-tool rowheaders">
+
+          |                                      | Public repository <br>without GitHub Secret Protection                                                                                                                                                                                                                                                                                                                                                                   | Private repository <br>without GitHub Secret Protection                                                                                                                                                                                                                                                                                                                                                                  | Public or private repository <br>with GitHub Secret Protection                                                                                                                                                                                                                                                     |
+          | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+          | Secret scanning                      | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>                                                                                                       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          | Push protection                      | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg>                                                                                                       | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                                      |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | AI-detected secrets                  | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                                      |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Custom patterns                      | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          | Delegated bypass for push protection | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                                      |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Security campaigns                   | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+          |                                      |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                                                                                                                          |                                                                                                                                                                                                                                                                                                                    |
+          | Security overview                    | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-x" aria-label="No" role="img"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.749.749 0 0 1 1.275.326.749.749 0 0 1-.215.734L9.06 8l3.22 3.22a.749.749 0 0 1-.326 1.275.749.749 0 0 1-.734-.215L8 9.06l-3.22 3.22a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"></path></svg> | <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-check" aria-label="Yes" role="img"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"></path></svg> |
+
+          </div>
+
+          For more information about individual features, see [GitHub security features](/en/code-security/getting-started/github-security-features).
+
+          ## Run a free security risk assessment
+
+          <a href="https://github.com/get_started?with=risk-assessment&ref_product=code-scanning&ref_type=engagement&ref_style=button" target="_blank" class="btn btn-primary mt-3 mr-3 no-underline"><span>Get started with security risk assessments</span> <svg version="1.1" width="16" height="16" viewBox="0 0 16 16" class="octicon octicon-link-external" aria-label="link external icon" role="img"><path d="M3.75 2h3.5a.75.75 0 0 1 0 1.5h-3.5a.25.25 0 0 0-.25.25v8.5c0 .138.112.25.25.25h8.5a.25.25 0 0 0 .25-.25v-3.5a.75.75 0 0 1 1.5 0v3.5A1.75 1.75 0 0 1 12.25 14h-8.5A1.75 1.75 0 0 1 2 12.25v-8.5C2 2.784 2.784 2 3.75 2Zm6.854-1h4.146a.25.25 0 0 1 .25.25v4.146a.25.25 0 0 1-.427.177L13.03 4.03 9.28 7.78a.751.751 0 0 1-1.042-.018.751.751 0 0 1-.018-1.042l3.75-3.75-1.543-1.543A.25.25 0 0 1 10.604 1Z"></path></svg></a>
+
+          Organizations on GitHub Team and GitHub Enterprise can run free security risk assessments to understand their exposure to security vulnerabilities:
+
+          * **Secret leaks**: Scan your organization for leaked secrets and see how many could have been prevented by GitHub Secret Protection. See [Secret security with GitHub](/en/code-security/concepts/secret-security/secret-security-with-github#secret-risk-assessment).
+
+          * **Code vulnerabilities**: Scan up to 20 of your most active repositories and see how many vulnerabilities could be automatically fixed with Copilot Autofix if you enable GitHub Code Security. See [Code security risk assessment](/en/code-security/concepts/code-scanning/risk-assessment).
+
+          ## Deploying GitHub Code Security and GitHub Secret Protection
+
+          To learn about what you need to know to plan your deployment of GitHub Code Security and GitHub Secret Protection at a high level and to review the rollout phases we recommended, see [Adopting GitHub Advanced Security at scale](/en/code-security/tutorials/adopting-github-advanced-security-at-scale).
+
+          ## Enabling features
+
+          You can quickly enable security features at scale with a security configuration, a collection of security enablement settings you can apply to repositories in an organization. You can customize Advanced Security features at the organization level with global settings. See [Enabling security features at scale](/en/code-security/concepts/security-at-scale/organization-security).
+
+          If you are on a GitHub Team or GitHub Enterprise plan, license use for the entire team or enterprise is shown on your license page. See [Viewing your usage of metered products and licenses](/en/billing/how-tos/products/view-productlicense-use).
+
+          ## Managing GitHub Advanced Security
+
+          Enterprise owners can manage GitHub Advanced Security licensing and access for their enterprise, including disabling GitHub Advanced Security across all repositories and preventing future re-enablement. See [Disabling GitHub Advanced Security for your enterprise](/en/billing/how-tos/products/disable-ghas-for-enterprise).
+
+          For information about managing your GitHub Advanced Security license, see [Managing your paid use of Advanced Security](/en/code-security/how-tos/secure-at-scale/configure-organization-security/manage-usage-and-access/managing-your-github-advanced-security-license-usage).
+
+          ## About GitHub Advanced Security Certification
+
+          You can highlight your knowledge by earning a GitHub Advanced Security certificate with GitHub Certifications. The certification validates your expertise in vulnerability identification, workflow security, and robust security implementation. See [About GitHub Certifications](/en/get-started/showcase-your-expertise-with-github-certifications/about-github-certifications).
+
+          ## About GitHub Advanced Security with Azure Repos
+
+          If you want to use GitHub Advanced Security with Azure Repos, see [GitHub Advanced Security & Azure DevOps](https://resources.github.com/topics/github-advanced-security/) in our resources site. For documentation, see [Configure GitHub Advanced Security for Azure DevOps](https://learn.microsoft.com/en-us/azure/devops/repos/security/configure-github-advanced-security-features) in Microsoft Learn.
+
+          ## Further reading
+
+          * [GitHub security features](/en/code-security/getting-started/github-security-features)
+          * [GitHub public roadmap](https://github.com/github/roadmap)
+      - tool: webfetch
+        args:
+          format: markdown
+          url: https://docs.github.com/en/billing/concepts/product-billing/github-advanced-security
+        result: |-
+          # GitHub Advanced Security license billing
+
+          Learn how usage of Advanced Security features is measured and how to pay for additional licenses.
+
+          ## Licenses for GitHub Advanced Security
+
+          The Advanced Security product has two license SKUs (stock keeping units):
+
+          * **GitHub Secret Protection**, which includes features that help you detect and prevent secret leaks, such as secret scanning and push protection.
+          * **GitHub Code Security**, which includes features that help you find and fix vulnerabilities, like code scanning, premium Dependabot features, and dependency review.
+
+          For more information, see [feature summary and pricing information](https://github.com/enterprise/advanced-security#pricing) and [About GitHub Advanced Security](/en/get-started/learning-about-github/about-github-advanced-security).
+
+          ## How usage of GitHub Advanced Security licenses is measured
+
+          A subset of Advanced Security features are available to **all public repositories** on GitHub.com **free of charge**. If you change the visibility of a public repository to private and don't pay for Advanced Security, Advanced Security features will be disabled for that repository.
+
+          Use of Advanced Security features in **all other repositories requires a license**. Your license usage is calculated based on the number of **unique, active committers** to repositories with GitHub Secret Protection or GitHub Code Security features enabled. GitHub App bots are ignored. For information about differences between bot and machine accounts, see [Differences between GitHub Apps and OAuth apps](/en/apps/oauth-apps/building-oauth-apps/differences-between-github-apps-and-oauth-apps#machine-vs-bot-accounts).
+
+          ### Active and unique committers
+
+          Each **active committer** to at least one repository with an Advanced Security feature enabled uses **one license**. A committer is considered active if one of their commits has been pushed to the repository within the last 90 days, regardless of when it was originally authored.
+
+          * **Active committers** are committers who contributed to at least one repository  and have a GitHub Team or GitHub Enterprise license with your organization or enterprise. That is, they are also a member, an enterprise-managed user, an external collaborator, or have a pending invitation to join your organization or enterprise.
+          * **Unique committers** is the number of active committers who contributed only to one repository, or only to repositories in one organization. You can free up this number of licenses by disabling GitHub Secret Protection or GitHub Code Security for that repository or organization.
+
+          > \[!NOTE] When a repository is migrated to GitHub using GitHub Enterprise Importer, GitHub Advanced Security only consumes licenses for commits and pushes made *after* migration. Historic contributions from *before* the migration are not considered. For more information, see [About GitHub Enterprise Importer](/en/migrations/using-github-enterprise-importer/understanding-github-enterprise-importer/about-github-enterprise-importer).
+
+          You can see the active and unique committers to an organization on the Global settings page for Advanced Security. Under "Secret Protection repositories" and "Code Security repositories", summaries and repository-level details are reported. See [Configuring global security settings for your organization](/en/code-security/how-tos/secure-at-scale/configure-organization-security/establish-complete-coverage/configure-global-settings).
+
+          ## Free use of GitHub Advanced Security features
+
+          GitHub makes some Advanced Security features available free of charge on GitHub.com.
+
+          * **All public repositories** have access to code scanning, secret scanning, and dependency review.
+          * **Secret risk assessment** is available for organizations on GitHub.com. See [Viewing your security risk assessment reports](/en/code-security/how-tos/secure-at-scale/configure-organization-security/configure-specific-tools/viewing-your-security-risk-assessment-reports).
+          * **Code security risk assessment** is available for organizations on  GitHub.com. See [Code security risk assessment](/en/code-security/concepts/code-scanning/risk-assessment).
+
+          For full details of available features, see [About GitHub Advanced Security](/en/get-started/learning-about-github/about-github-advanced-security).
+
+          You need to **pay** to use Advanced Security features in **private repositories** on GitHub.com, and in all repositories hosted by GHE.com and GitHub Enterprise Server.
+
+          ## Using more than your planned licenses
+
+          Your account may have a limit on the number of licenses you can use. For example, volume billing specifies a set number of licenses.
+
+          If your number of unique, active committers exceeds your license limit, features controlled by Advanced Security licensing continue to work on all repositories where they are already enabled.
+
+          However, you will not be able to enable GitHub Secret Protection, GitHub Code Security, or GitHub Advanced Security on any additional repositories. Any new repositories created in organizations where GitHub Secret Protection, GitHub Code Security, or GitHub Advanced Security are configured to be enabled automatically will be created with the products disabled.
+
+          ## Paying for GitHub Advanced Security licenses
+
+          You pay for additional licenses using the payment method set up for your GitHub account. See [Managing your payment and billing information](/en/billing/how-tos/set-up-payment/manage-payment-info).
+
+          There are two different ways to pay for licenses.
+
+          * **Metered billing** available for GitHub Enterprise Cloud and from GitHub Enterprise Server 3.13 onward with GitHub Connect
+
+            * Users can enable GitHub Secret Protection or GitHub Code Security independently.
+            * Monthly bill for the number of licenses used by active committers.
+            * No pre-defined license limit.
+            * No overage state, you pay only for what you use.
+
+            > \[!NOTE]
+            > On GitHub Enterprise Server, metered use of Advanced Security products is billed through the linked enterprise account on GitHub Enterprise Cloud.
+
+          * **Volume/subscription billing** available for GitHub Enterprise plans only
+
+            * Purchase a specific number of GitHub Secret Protection, GitHub Code Security, or GitHub Advanced Security licenses that last for a defined period, typically at least a year, see [Buying Advanced Security for your organization or enterprise](/en/billing/how-tos/products/buy-advanced-security).
+            * If the usage of Advanced Security by active committers exceeds the number of licenses purchased, you need to purchase additional licenses to cover this overage usage.
+
+          To view your current license usage, see [Viewing your usage of metered products and licenses](/en/billing/how-tos/products/view-productlicense-use).
+
+          ### Understanding usage
+
+          Users can contribute to multiple repositories or organizations. Usage is measured across the whole organization or enterprise to ensure that each member uses one license regardless of how many repositories or organizations the user contributes to.
+
+          When you enable or disable GitHub Secret Protection or GitHub Code Security for one or more repositories, GitHub displays an overview of how this will change your usage.
+
+          * Metered billing, showing an increase or reduction in the number of active committers using licenses.
+          * Volume/subscription billing, showing the number of licenses used or freed by unique active committers.
+
+          ### Example showing how the active committer count changes over time
+
+          The following example timeline demonstrates how the unique, active committer count for Advanced Security licenses could change over time in an organization or enterprise. For each month, you will find events, along with the resulting committer count and the effect on usage-based billing.
+
+          | Date                                                | Events during the month                                                                                                                                                                                                                                                                                              | Unique, active committers | Effect on usage-based billing                                                                                                                                   |
+          | :-------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+          | <span style="white-space: nowrap;">April 15</span>  | A member of your enterprise enables GitHub Secret Protection and GitHub Code Security for repository **X**. Repository **X** has 50 committers over the past 90 days.                                                                                                                                                |                    **50** | Billing begins for 50 committers.                                                                                                                               |
+          | <span style="white-space: nowrap;">May 1</span>     | Developer **A** switches teams and stops committing to repository **X**. Developer **A**'s contributions continue to count for 90 days.                                                                                                                                                                              |                    **50** | No immediate change. Developer **A** continues to be billed until their contributions are inactive for 90 days.                                                 |
+          | <span style="white-space: nowrap;">August 1</span>  | Developer **A**'s contributions no longer count towards the licenses required, because 90 days have passed.                                                                                                                                                                                                          |        50 - 1 =<br>**49** | Developer **A** is removed from the billing count, reducing the billable committers to 49.                                                                      |
+          | <span style="white-space: nowrap;">August 15</span> | A member of your enterprise enables GitHub Secret Protection and GitHub Code Security for a second repository, repository **Y**. In the last 90 days, a total of 20 developers contributed to that repository. Of those 20 developers, 10 also recently worked on repo **X** and do not require additional licenses. |       49 + 10 =<br>**59** | Billing increases to 59 committers, accounting for the 10 additional unique contributors.                                                                       |
+          | <span style="white-space: nowrap;">August 16</span> | A member of your enterprise disables GitHub Secret Protection and GitHub Code Security for repository **X**. Of the 49 developers who were working on repository **X**, 10 still also work on repository **Y**, which has a total of 20 developers contributing in the last 90 days.                                 |       49 - 29 =<br>**20** | Billing for repository **X** continues until the end of the monthly billing cycle, but the overall billing count decreases to 20 committers for the next cycle. |
+
+          ## Managing your budget for Advanced Security
+
+          The options available for managing committers and costs depend on your billing model.
+
+          ### Metered billing
+
+          You can control usage and costs with budgets and alerts. If you use GitHub Enterprise Cloud, then you can also use cost centers and policies to control costs.
+          See [Setting up budgets to control spending on metered products](/en/billing/how-tos/set-up-budgets)
+          .
+
+          #### Hard budgets for GitHub Advanced Security SKUs
+
+          SKU-level budgets for Advanced Security products (Secret Protection and Code Security) support the **Limit usage when budget limit is reached** option. For Advanced Security, this option prevents new enablement. It does **not** disable Advanced Security on repositories where it is already active.
+
+          When the budget limit is reached:
+
+          * Repositories where Advanced Security is already enabled continue to function normally. Active committers in those repositories are still counted and billed.
+          * Advanced Security cannot be enabled on any additional repositories until the budget is increased or a new billing cycle begins.
+
+          There are two scenarios where usage may exceed the budget:
+
+          * A new committer becomes active in a repository where Advanced Security is already enabled. You are billed for the additional license cost.
+          * When you enable Advanced Security on a repository with more active committers than the remaining budget allows, the enablement succeeds but you are billed for any usage beyond the budget limit.
+
+          For more information about budgets, see [Budgets and alerts](/en/billing/concepts/budgets-and-alerts).
+
+          > \[!NOTE] When you enable GitHub Secret Protection, GitHub Code Security, or GitHub Advanced Security, there is a delay of up to two hours before the change is shown in the usage data on the "Billing and licensing" tab.
+
+          If your enterprise uses Advanced Security on both GitHub Enterprise Server and GitHub Enterprise Cloud, you can ensure users don't consume multiple licenses unnecessarily by synchronizing license usage between environments. See [Syncing license usage from GitHub Enterprise Server to Cloud](/en/enterprise-cloud@latest/billing/how-tos/manage-server-licenses/sync-license-usage).
+
+          ### Volume/subscription billing
+
+          Each license specifies a maximum number of accounts that can use Advanced Security. Each active committer to at least one repository with the product enabled consumes one license. When you remove a user from your organization account, the user's license is freed within 24 hours.
+
+          As soon as you make licenses available, by disabling GitHub Secret Protection, GitHub Code Security, or GitHub Advanced Security in some repositories, or by increasing your license size, the options for enabling GitHub Secret Protection, GitHub Code Security, and GitHub Advanced Security will work again as normal.
+
+          You can enforce policies to allow or disallow the use of Advanced Security by organizations owned by your enterprise account. See [Enforcing policies for code security and analysis for your enterprise](/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-code-security-and-analysis-for-your-enterprise).
+
+          > \[!TIP]
+          > All standalone instances of GitHub Enterprise Server use volume/subscription licenses. Contact [GitHub's Sales team](https://enterprise.github.com/contact) if you want to make changes to your license.
+
+          ## Disabling GitHub Advanced Security in an enterprise
+
+          To disable GitHub Advanced Security and prevent accidental re-enablement across your enterprise, enterprise owners can use the **Disable Advanced Security** option available in the enterprise licensing page. This is particularly useful for metered users who want to ensure GitHub Advanced Security is completely disabled and cannot be re-enabled without explicit approval.
+
+          The **Disable Advanced Security** option:
+
+          * Disables GitHub Advanced Security in all private and internal repositories
+          * Sets a policy to prevent future paid adoption
+          * Stops billing for future usage (metered billing only)
+
+          See [Disabling GitHub Advanced Security for your enterprise](/en/billing/how-tos/products/disable-ghas-for-enterprise).
+
+          ## Further reading
+
+          * [Planning a trial of GitHub Advanced Security](/en/code-security/tutorials/trialing-github-advanced-security/planning-a-trial-of-ghas)
+
+          * [Enabling security features at scale](/en/code-security/concepts/security-at-scale/organization-security)
+
+          * [Enforcing policies for code security and analysis for your enterprise](/en/enterprise-cloud@latest/admin/enforcing-policies/enforcing-policies-for-your-enterprise/enforcing-policies-for-code-security-and-analysis-for-your-enterprise)
+    time: 10/5/2026, 9:06:26.321 PM UTC
+    response: "\n\n"
+    duration: 12.746s
+    duration_ms: 12746
+  - agent: build
+    model:
+      id: deepseek-ai/DeepSeek-V4.1-Flash
+      provider: tokenjuice
+    thinking: |-
+      Now let me answer. The user is new to GHAS and says they don't have a Copilot license. I should explain GHAS in plain terms, note the key point: "GHAS" is now actually two products (Code Security + Secret Protection), and AI Scan requires GitHub Code Security (the successor to the code-scanning half of GHAS) plus a Copilot license. Without Copilot license, AI Scan is unavailable. But what they can still use for free, and alternatives.
+
+      Key facts from the fetched pages:
+
+      GHAS:
+      - Historically "GitHub Advanced Security" (GHAS) — now repackaged into two SKUs: GitHub Secret Protection and GitHub Code Security. GHAS bundle still exists (for volume/subscription). Docs say "GitHub Advanced Security product has two license SKUs: Secret Protection, Code Security."
+      - Requires GitHub Team or GitHub Enterprise plan to purchase.
+      - Free for public repos: code scanning, secret scanning, dependency review on all public repos.
+      - Private/internal repos require paid license.
+      - Pricing measured by unique, active committers (pushed commit in last 90 days) to repos with features enabled; GitHub App bots ignored.
+      - Two billing models: metered (GHEC, and GHES 3.13+ via GitHub Connect) and volume/subscription (Enterprise only; all standalone GHES).
+      - Budgets can limit new enablement.
+      - Features: Code Security = code scanning, CodeQL CLI, Copilot Autofix, AI Scan, security campaigns, custom auto-triage rules for Dependabot, dependency review, security overview. Secret Protection = secret scanning, push protection, AI-detected secrets, custom patterns, delegated bypass/dismissal, security campaigns, security overview.
+      - Free risk assessments available for Team/Enterprise orgs.
+
+      AI Scan specifically:
+      - Requires GHAS license AND GitHub Copilot license during public preview.
+      - Since GHAS is now Code Security, AI Scan is listed as a GitHub Code Security feature (from the about page: "AI Scan: Find vulnerabilities in languages and frameworks not covered by CodeQL with an AI-based scanning engine that runs during pull request review." under GitHub Code Security).
+      - So they'd need GitHub Code Security (not Secret Protection) + Copilot license (likely Copilot Business/Enterprise for orgs).
+      - Usage consumes AI credits.
+
+      Without Copilot license: cannot use AI Scan. But what can they do:
+      - If their repos are public: code scanning (CodeQL), secret scanning, push protection, dependency review are free — no GHAS purchase needed.
+      - Dependabot alerts and version updates are free for all repos (not part of GHAS).
+      - If private repos and no GHAS: can still run CodeQL via GitHub Actions on public repos; for private repos, CodeQL code scanning needs Code Security. Alternatives: third-party scanners via SARIF upload (Semgrep, Snyk, Trivy, etc.) — code scanning with third-party tools also requires GHAS for private repos? Actually uploading SARIF results via code scanning API requires code scanning enabled, which for private repos requires GHAS/Code Security. Hmm — the docs table says code scanning: private repo without GitHub Code Security = No. But there's a nuance: you can run third-party tools in Actions and upload SARIF... requires code scanning which is the GHAS feature. However, you can always run Semgrep/etc. in CI without uploading to the Security tab, just fail the build. That's a free alternative.
+      - Secret scanning on private repos requires Secret Protection.
+      - Copilot free tier exists for individuals; but AI Scan eligibility likely needs Copilot Business/Enterprise since it's org/enterprise-level. I should be careful: docs say "requires a GitHub Advanced Security license and a GitHub Copilot license". I can say "a paid Copilot plan (Business/Enterprise for org use; individual Copilot Free/Pro may not satisfy the org-level requirement — verify with GitHub)".
+
+      Actually, I should be careful not to overstate. Let me just say: during preview, you need both; without any Copilot license, AI Scan won't be available to you. And note GHAS itself must be purchased (Code Security SKU) on Team/Enterprise plan for private repos.
+
+      Also worth clarifying pricing figures — I didn't fetch pricing, and docs link to github.com/enterprise/advanced-security#pricing. Known figures: Code Security $30/committer/month, Secret Protection $19/committer/month, GHAS bundle $49 (volume/subscription). Metered billing introduced different pricing? I recall GitHub announced metered billing for Code Security/Secret Protection at $30/$19 per committer/month with annual commitment discounts. To avoid stale numbers, I'll cite the docs URL rather than hard numbers, or mention approximate with caveat. Better to say "check the pricing page" and give the known ballpark carefully. I'll avoid exact numbers or clearly mark them as "as of my knowledge, verify". Given the user is new, exact numbers help, but wrong numbers hurt. I'll say pricing is per active committer per month and point to the pricing page; mention commonly quoted $30/$19/$49 with a verify caveat.
+
+      Keep response structured but not overly long. The user asked a question ("GHAS license? i am new to that. also we don't have Copilot license"), so answer: explain GHAS briefly, then the implication: AI Scan is off the table for you unless you buy Code Security + Copilot. Then what you CAN use free.
+
+      I'll keep it reasonably detailed since they're learning, but not a wall. Use headers/bullets. Aim ~30-40 lines.
+    thinking_duration: 5.696s
+    thinking_duration_ms: 5696
+    time: 10/5/2026, 9:06:39.079 PM UTC
+    response: |-
+      ## GHAS in plain terms
+
+      **GitHub Advanced Security (GHAS)** is GitHub's paid security add-on suite. It used to be one bundle; it's now sold as **two separate SKUs** (a legacy GHAS bundle still exists for volume/subscription customers):
+
+      | Product | What it gives you |
+      |---|---|
+      | **GitHub Code Security** | Code scanning (CodeQL), CodeQL CLI, **Copilot Autofix**, **AI Scan**, security campaigns, Dependabot auto-triage rules, dependency review, security overview |
+      | **GitHub Secret Protection** | Secret scanning, push protection, AI-detected secrets, custom patterns, delegated bypass/dismissal, security campaigns, security overview |
+
+      Key licensing facts:
+
+      - **Must be on GitHub Team or Enterprise plan** to buy either SKU.
+      - **Free on all public repos**: code scanning, secret scanning, dependency review — no GHAS needed.
+      - **Private/internal repos require the paid license** (and on GHE.com / GHES, everything is paid).
+      - Billing is **per unique active committer** — anyone with a push to a repo with the feature enabled in the last 90 days; GitHub App bots don't count.
+      - Two payment models: **metered** (pay for what you use, GHEC) or **volume/subscription** (prepaid licenses, Enterprise/GHES). Budgets can cap new enablement.
+      - Note: AI Scan is a **Code Security** feature, so **Secret Protection alone won't unlock it**.
+
+      ## What this means for you
+
+      - **AI Scan requires BOTH a Code Security (GHAS) license AND a Copilot license.** With no Copilot license, you cannot use AI Scan today — full stop, regardless of GHAS.
+      - If you have neither GHAS nor Copilot, you're looking at purchasing **two products**: Code Security + Copilot (Business/Enterprise for org-level features). Pricing is per committer/user/month — check <https://github.com/enterprise/advanced-security#pricing> for current numbers (commonly quoted around $30 Code Security / $19 Secret Protection / $49 legacy bundle, plus ~$19–39/user for Copilot Business/Enterprise — verify, these change).
+      - Public repos on a personal account are the exception: CodeQL code scanning, secret scanning, and dependency review are **free**, and the AI Scan docs mention personal-account public repos being eligible — but the Copilot license requirement still applies.
+
+      ## Free things you can use right now
+
+      - **Dependabot alerts + security updates** — free on all repos, not part of GHAS.
+      - **CodeQL code scanning** — free on public repos (needs Code Security for private).
+      - **Secret scanning + push protection** — free on public repos (needs Secret Protection for private).
+      - **Third-party scanners in CI** (Semgrep, Trivy, Snyk, etc.) — run them in Actions and fail the build; no license needed if you skip uploading SARIF to the Security tab.
+      - **Free risk assessments** for Team/Enterprise orgs (secret leaks + up to 20 repos' code vulnerabilities).
+
+      Bottom line: GHAS is the umbrella name; for AI Scan you specifically need **GitHub Code Security + Copilot**. Without Copilot, plan around CodeQL/Dependabot/third-party scanners instead.
+    duration: 11.586s
+    duration_ms: 11586
+

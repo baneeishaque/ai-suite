@@ -1,0 +1,10 @@
+fix(account): validate all from, to, and via accounts in checks
+
+- Evaluate fromAccount, toAccount, and viaAccount independently so a
+  transaction with multiple missing accounts reports and invokes
+  actions for each of them.
+- Fix the swapped from/to missing-account action mapping: the
+  toAccount branch previously invoked fromAccountMissingActions and
+  vice versa.
+- Correct the return-code documentation to match the new checks
+  (1 = from missing, 2 = to missing, 3 = via missing).

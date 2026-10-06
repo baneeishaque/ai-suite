@@ -1,0 +1,198 @@
+diff --git a/common-lib/src/main/kotlin/common/utils/library/utils/ApiUtilsInteractiveCommon.kt b/common-lib/src/main/kotlin/common/utils/library/utils/ApiUtilsInteractiveCommon.kt
+index 81c2116..262c771 100644
+--- a/common-lib/src/main/kotlin/common/utils/library/utils/ApiUtilsInteractiveCommon.kt
++++ b/common-lib/src/main/kotlin/common/utils/library/utils/ApiUtilsInteractiveCommon.kt
+@@ -35,7 +35,7 @@ object ApiUtilsInteractiveCommon {
+             println("Error : ${(apiResponse.exceptionOrNull() as Exception).localizedMessage}")
+             do {
+                 print("Retry (Y/N) ? : ")
+-                when (readln()) {
++                when (ConsoleInputUtils.readln()) {
+                     "Y", "" -> {
+ 
+                         return makeApiRequestWithOptionalRetries(
+diff --git a/common-lib/src/main/kotlin/common/utils/library/utils/ChooseUtilsInteractive.kt b/common-lib/src/main/kotlin/common/utils/library/utils/ChooseUtilsInteractive.kt
+index 4c8753c..2ae5c05 100644
+--- a/common-lib/src/main/kotlin/common/utils/library/utils/ChooseUtilsInteractive.kt
++++ b/common-lib/src/main/kotlin/common/utils/library/utils/ChooseUtilsInteractive.kt
+@@ -2,7 +2,6 @@ package common.utils.library.utils
+ 
+ import common.utils.library.models.ChooseByIdResult
+ import common.utils.library.models.FailureWithoutExplanationBasedOnIsOkModel
+-import java.util.*
+ 
+ object ChooseUtilsInteractive {
+ 
+@@ -17,39 +16,34 @@ object ChooseUtilsInteractive {
+ 
+     ): ChooseByIdResult<T> {
+ 
+-        var idInput: UInt
+-        val reader = Scanner(System.`in`)
+-
+         while (true) {
+ 
+             print("Enter $prefixForPrompt$itemSpecification ID or 0 to Back : ")
+ 
+-            try {
+-
+-                idInput = reader.nextInt().toUInt()
+-                if (idInput == 0u) {
+-
+-                    return ChooseByIdResult(
++            val idInput: UInt? = ConsoleInputUtils.readlnOrNull()?.trim()?.toUIntOrNull()
++            if (idInput == null) {
+ 
+-                        isOkWithData = FailureWithoutExplanationBasedOnIsOkModel()
+-                    )
+-                }
++                println("Invalid $itemSpecification ID...")
++                continue
++            }
++            if (idInput == 0u) {
+ 
+                 return ChooseByIdResult(
+ 
+-                    isOkWithData = ApiUtilsInteractiveCommon.makeApiRequestWithOptionalRetries(
+-
+-                        apiCallFunction = apiCallFunction,
+-                        isConsoleMode = isConsoleMode,
+-                        isDevelopmentMode = isDevelopmentMode
+-                    ),
+-                    id = idInput
++                    isOkWithData = FailureWithoutExplanationBasedOnIsOkModel()
+                 )
++            }
+ 
+-            } catch (exception: InputMismatchException) {
++            return ChooseByIdResult(
+ 
+-                println("Invalid $itemSpecification ID...")
+-            }
++                isOkWithData = ApiUtilsInteractiveCommon.makeApiRequestWithOptionalRetries(
++
++                    apiCallFunction = apiCallFunction,
++                    isConsoleMode = isConsoleMode,
++                    isDevelopmentMode = isDevelopmentMode
++                ),
++                id = idInput
++            )
+         }
+     }
+ }
+diff --git a/common-lib/src/main/kotlin/common/utils/library/utils/InputUtilsInteractive.kt b/common-lib/src/main/kotlin/common/utils/library/utils/InputUtilsInteractive.kt
+index 542d5c5..f8281f4 100644
+--- a/common-lib/src/main/kotlin/common/utils/library/utils/InputUtilsInteractive.kt
++++ b/common-lib/src/main/kotlin/common/utils/library/utils/InputUtilsInteractive.kt
+@@ -28,7 +28,7 @@ object InputUtilsInteractive {
+             println(invalidMessage)
+             return getValidFloat(
+ 
+-                inputText = readln(),
++                inputText = ConsoleInputUtils.readln(),
+                 invalidMessage = invalidMessage
+             )
+         }
+@@ -52,7 +52,7 @@ object InputUtilsInteractive {
+             print(constructInvalidMessage.invoke(inputText))
+             return getValidFloat(
+ 
+-                inputText = readln(),
++                inputText = ConsoleInputUtils.readln(),
+                 constructInvalidMessage = constructInvalidMessage
+             )
+         }
+@@ -73,7 +73,7 @@ object InputUtilsInteractive {
+         print(message = invalidMessage)
+         getValidUnsignedInt(
+ 
+-            inputText = readln(),
++            inputText = ConsoleInputUtils.readln(),
+             invalidMessage = invalidMessage
+         )
+     }
+@@ -105,7 +105,7 @@ object InputUtilsInteractive {
+                 print(message = "$invalidMessage Or $backIndicator to back : ")
+                 getValidUnsignedIntOrBack(
+ 
+-                    inputText = readln(),
++                    inputText = ConsoleInputUtils.readln(),
+                     invalidMessage = invalidMessage,
+                     backIndicator = backIndicator
+                 )
+@@ -125,7 +125,7 @@ object InputUtilsInteractive {
+         print("Enter $dataSpecification ${if (dataIndex == null) "" else "($dataIndex) "} Or $backIndicator to back : ")
+         return getValidUnsignedIntOrBack(
+ 
+-            inputText = readln(),
++            inputText = ConsoleInputUtils.readln(),
+             invalidMessage = "Please Enter Valid $dataSpecification",
+             backIndicator = backIndicator
+         )
+@@ -151,7 +151,7 @@ object InputUtilsInteractive {
+ 
+                 inputUInt = getValidUnsignedInt(
+ 
+-                    inputText = readln(),
++                    inputText = ConsoleInputUtils.readln(),
+                     invalidMessage = "Please Enter Valid Unsigned Integer"
+                 ),
+                 thresholdValue = thresholdValue,
+@@ -167,7 +167,7 @@ object InputUtilsInteractive {
+         print("Enter ${promptPrefix}Time (DD/MM/YYYY HH:MM:SS) : ")
+         return try {
+ 
+-            LocalDateTime.parse(readlnOrNull().toString(), DateTimeUtils.normalDateTimePattern)
++            LocalDateTime.parse(ConsoleInputUtils.readlnOrNull().toString(), DateTimeUtils.normalDateTimePattern)
+                 .format(DateTimeUtils.normalDateTimePattern)
+ 
+         } catch (e: DateTimeParseException) {
+@@ -184,7 +184,7 @@ object InputUtilsInteractive {
+         print("Enter ${promptPrefix}Date (DD/MM/YYYY) : ")
+         return try {
+ 
+-            LocalDate.parse(readlnOrNull().toString(), DateTimeUtils.normalDatePattern)
++            LocalDate.parse(ConsoleInputUtils.readlnOrNull().toString(), DateTimeUtils.normalDatePattern)
+                 .format(DateTimeUtils.normalDatePattern)
+ 
+         } catch (e: DateTimeParseException) {
+@@ -201,7 +201,7 @@ object InputUtilsInteractive {
+         print("Enter ${promptPrefix}Date (DD/MM/YYYY) : ")
+         return try {
+ 
+-            LocalDate.parse(readlnOrNull().toString(), DateTimeUtils.normalDatePattern)
++            LocalDate.parse(ConsoleInputUtils.readlnOrNull().toString(), DateTimeUtils.normalDatePattern)
+ 
+         } catch (e: DateTimeParseException) {
+ 
+@@ -222,7 +222,7 @@ object InputUtilsInteractive {
+         var localData: T = data
+         do {
+             print("Please confirm $dataSpecification (Y/N or B for Back) -> $localData : ")
+-            when (readlnOrNull().toString()) {
++            when (ConsoleInputUtils.readlnOrNull().toString()) {
+ 
+                 "Y", "" -> {
+                     break
+diff --git a/common-lib/src/main/kotlin/common/utils/library/utils/ListUtilsInteractive.kt b/common-lib/src/main/kotlin/common/utils/library/utils/ListUtilsInteractive.kt
+index 93630fe..170f1ae 100644
+--- a/common-lib/src/main/kotlin/common/utils/library/utils/ListUtilsInteractive.kt
++++ b/common-lib/src/main/kotlin/common/utils/library/utils/ListUtilsInteractive.kt
+@@ -22,7 +22,7 @@ object ListUtilsInteractive {
+         } else {
+ 
+             println("Invalid $itemSpecification Index, Try again ? (Y/N) : ")
+-            return when (readlnOrNull()) {
++            return when (ConsoleInputUtils.readlnOrNull()) {
+ 
+                 "Y", "" -> {
+ 
+@@ -185,7 +185,7 @@ object ListUtilsInteractive {
+         return getValidIndexWithOptionalBackValue(
+ 
+             inclusionCheckFunction = inclusionCheckFunction,
+-            inputForIndex = readln(),
++            inputForIndex = ConsoleInputUtils.readln(),
+             itemSpecification = itemSpecification,
+             items = items,
+             isCollection = isCollection,

@@ -1,0 +1,13 @@
+feat(utils): add ConsoleInputUtils console reader abstraction
+
+- Add a pluggable readln/readlnOrNull entry point that delegates to
+  an injectable line reader and falls back to the Kotlin standard
+  library when no reader is installed.
+- Route ApiUtilsInteractiveCommon, InputUtilsInteractive,
+  ListUtilsInteractive, and ChooseUtilsInteractive through the new
+  abstraction so consumers can install a history-aware reader.
+- Replace the Scanner-based numeric parsing in ChooseUtilsInteractive
+  with toUIntOrNull on the shared reader, preserving invalid-input
+  retry behavior.
+- Keep common-lib free of JLine so non-CLI consumers (Android, KMP)
+  are unaffected.

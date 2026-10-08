@@ -162,7 +162,7 @@ The agent MUST ensure the repository is not in a "detached HEAD" state before co
 2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST
    identify and checkout the appropriate branch (usually the default branch,
    e.g., `main`) before proceeding.
-3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts.
+3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts. This planning-stage check goes stale — it does NOT replace the mandatory pre-commit refresh in §9a.1 before every `git commit`.
 
 #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
 
@@ -1202,6 +1202,21 @@ Execute commits one-by-one according to the approved arrangement.
 Each command MUST be issued as a separate step so the user can inspect
 intermediate state (`git status`, diff, preview) before authorizing the
 next action. Chaining suppresses this verification window.
+
+#### 9a.1 — Pre-Commit Sync Refresh (Mandatory before every commit)
+
+The Step 0e upstream check goes stale the moment time passes (preview,
+user authorization, staging). Planning-stage sync is NOT enough. After
+`git diff --cached` verification and BEFORE each `git commit`:
+
+1. Run `git fetch origin` (non-mutating, safe without approval) and
+   compare `HEAD` against `origin/<branch>`.
+2. If the branch is behind, STOP — do NOT commit. Report the divergence
+   and ask the user whether to `git pull --rebase` or merge (per
+   [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md),
+   pull/rebase requires explicit approval). Commit only after sync.
+3. Repeat this refresh before EVERY commit in a multi-commit sequence,
+   not just the first — each commit gets its own fetch-and-compare.
 
 #### 9b — Recovery
 

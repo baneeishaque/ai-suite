@@ -428,6 +428,31 @@ $RECYCLE.BIN/
 
 scratch/
 
+
+# --- graphify continuity state: surface 4 small files, keep outputs ignored ---
+# Line-by-line contract (order matters: gitignore applies last-match-wins):
+#   graphify-out/*                  ignore everything inside: graph.json, graph.html,
+#                                   GRAPH_REPORT.md, cache/, dated snapshot dirs,
+#                                   .DS_Store, and any future output file. Trailing /*
+#                                   matches children only, never the dir itself, so
+#                                   git still descends and the ! lines take effect.
+#                                   Same shape as the .vscode/* block above.
+#   The four ! lines re-include the incremental-build continuity set (~800KB):
+#   .graphify_labels.json           1,744 curated labels (preserves curation across machines)
+#   .graphify_labels.json.sig       integrity signature for the labels file
+#   manifest.json                   per-file mtime/ast_hash change state (drives incrementality)
+#   .graphify_root                  graph root marker
+# Proven 2026-10-10: `git ls-files --others --exclude-standard -- graphify-out/`
+# returns exactly these 4 files; graph.json, cache/, dated dirs stay ignored.
+# Staging rule: this comment block plus the six patterns stage together with
+# the 4 files (functional pairing); the surrounding hunks are unrelated
+# and stay unstaged.
+graphify-out/*
+!graphify-out/.graphify_labels.json
+!graphify-out/.graphify_labels.json.sig
+!graphify-out/manifest.json
+!graphify-out/.graphify_root
+
 # WhatsApp chat reader runtime output (private chat content). Folder itself is NOT
 # ignored so future, unknown sibling files surface for review.
 scripts/wa-chat-read/logs/*.json

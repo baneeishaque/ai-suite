@@ -1,0 +1,62 @@
+---
+user:
+  text: what is the algo?
+  time: 7/28/2026, 7:50:59.893 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is asking about the steganography algorithm used in this project. Let me explain how it works at a high level before making more changes.
+
+      The algorithm is **LSB (Least Significant Bit) steganography** in the spatial domain. Here's how it works:
+
+      **Embedding:**
+      1. Read the payload file
+      2. Split it into N equal chunks (one per cover image)
+      3. For each cover image:
+         a. Load the PNG, convert to RGB (3 channels)
+         b. Each byte of the image (R, G, B values) stores 1 bit of payload data
+         c. Format per chunk: filename_len(4) + filename + total_len(4) + chunk_offset(4) + chunk_data_len(4) + chunk_data
+         d. Write metadata + chunk data bit-by-bit into consecutive image bytes' LSBs
+         e. Save as PNG (lossless, so LSBs survive)
+
+      **Extracting:**
+      1. Load each stego PNG as RGB
+      2. Read bits from consecutive image bytes' LSBs
+      3. Parse the header: filename, total_len, chunk_offset, chunk_data_len
+      4. Sort chunks by (filename, chunk_offset)
+      5. Group by filename, check continuity, write complete files
+
+      **Capacity:**
+      - Each image byte holds 1 bit
+      - For a W×H RGB image: W × H × 3 bits = W × H × 3 / 8 bytes capacity
+      - Overhead: 4 + filename_len + 4 + 4 + 4 = 16 + filename_len bytes of metadata per chunk
+
+      **Detection avoidance:**
+      - Only 1 LSB modified per byte → minimal visual distortion
+      - PNG lossless format preserves LSB changes exactly
+      - No statistical analysis markers (no sequential embedding, no specific patterns)
+
+      That's the algorithm. Let me answer the user's question.
+    thinking_duration: 3.785s
+    thinking_duration_ms: 3785
+    time: 7/28/2026, 7:51:00.010 AM GMT+5:30
+    response: |-
+      LSB (Least Significant Bit) steganography in the spatial domain:
+
+      **Embed:**
+      - Each RGB pixel byte (R/G/B) stores 1 payload bit in its LSB
+      - Metadata header per chunk: filename, total file size, byte offset, chunk size — all LSB-encoded the same way
+      - Payload split equally across N cover images
+      - Output saved as PNG (lossless → LSBs preserved exactly)
+
+      **Capacity:**
+      - W×H RGB image: `W × H × 3` bits = `W × H × 3 / 8` bytes payload
+      - Metadata overhead: 16 + filename_len bytes per chunk
+
+      **The 7.2 MB limit:** that's about the output PNG file size (some platform limit). Since LSB changes barely affect PNG compression, the stego ≈ cover in file size. The check I'll add: abort if any cover image file exceeds 7.2 MB, and abort if payload doesn't fit across all carriers. Continue?
+    duration: 8.652s
+    duration_ms: 8652
+

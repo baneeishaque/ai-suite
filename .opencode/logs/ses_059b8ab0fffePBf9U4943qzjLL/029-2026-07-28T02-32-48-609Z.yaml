@@ -1,0 +1,72 @@
+---
+user:
+  text: algorithm?
+  time: 7/28/2026, 8:02:39.591 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is asking me to explain the algorithm before writing code. Let me describe the `fill` mode algorithm clearly.
+
+      The key difference from `embed`:
+      - `embed` splits payload equally across N specified carriers
+      - `fill` takes a folder, processes carriers one by one, filling each to its maximum pixel capacity before moving to the next
+
+      Algorithm:
+
+      ```
+      fill payload.txt carriers_folder/
+
+      1. Load entire payload file, get fsize
+      2. Scan carriers_folder for all .png files, sort alphabetically
+      3. For each carrier (in sorted order):
+         a. Load image, get w, h, channels (force 3)
+         b. Calculate max_data = w * h * 3 - (16 + strlen(filename))
+            - (16 = 4 bytes fn_len + 4 total_len + 4 offset + 4 data_len)
+         c. If max_data <= 0, skip (can't fit even the header)
+         d. chunk = min(max_data, remaining_payload_bytes)
+         e. Embed chunk at current offset
+         f. Write stego PNG to output path (with -p/-o rules, overwrite confirm)
+         g. Track the written path for Phase 2 size check
+         h. off += chunk
+         i. If off >= fsize → done (all payload embedded)
+      4. If carriers exhausted before off == fsize → error
+      5. Phase 2: stat every written file; if any > 7.2 MB → delete all, abort
+      6. Print success summary
+      ```
+
+      The extract is unchanged — it already handles chunks with arbitrary offsets and sizes, so fill-produced outputs extract identically to embed-produced ones.
+    thinking_duration: 3.473s
+    thinking_duration_ms: 3473
+    time: 7/28/2026, 8:02:39.714 AM GMT+5:30
+    response: |-
+      Sure. The `embed` equal-split vs `fill` per-carrier:
+
+      **`embed`** (existing):  
+      `fsize / N` bytes per carrier, regardless of carrier size. If carrier is too small → error. If carrier is huge → unused capacity wasted.
+
+      **`fill`** (new):  
+      Each carrier is filled to its pixel capacity (`w × h × 3 - header_overhead`) before moving to the next.  
+
+      ```
+      payload = read(file-to-embed)
+      imgs = sort(list-pngs(carriers_folder))
+
+      offset = 0
+      for img in imgs:
+          capacity = img.width * img.height * 3 - (16 + len(basename))
+          chunk = min(capacity, remaining(payload, offset))
+          embed(payload[offset..offset+chunk]) into img
+          write stego PNG
+          offset += chunk
+          if offset >= len(payload): done
+
+      if offset < len(payload): error("ran out of carriers")
+      ```
+
+      Extract unchanged — same chunk metadata format, so `extract *.png` works identically whether produced by `embed` or `fill`. Want me to write it?
+    duration: 8.611s
+    duration_ms: 8611
+

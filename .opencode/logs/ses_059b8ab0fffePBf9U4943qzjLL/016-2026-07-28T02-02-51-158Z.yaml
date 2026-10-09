@@ -1,0 +1,335 @@
+---
+user:
+  text: |-
+    user have to choose the stegged file names.
+
+    user can chooose the prefix. if no prefix, use the same name - but on another appr. folder to avoid overwrite
+  time: 7/28/2026, 7:32:20.710 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants to be able to specify the output naming scheme when extracting:
+
+      1. User chooses the stego file names (already the case - they pass them as arguments)
+      2. User can choose a **prefix** for the output reconstructed files
+      3. If no prefix is given, use the original filename but put it in `extracted/` folder (already the case)
+
+      So the extract command should support:
+      - `./diststego extract stego1.png stego2.png` → writes to `extracted/<original_name>`
+      - `./diststego extract -p recovered_ stego1.png stego2.png` → writes to `extracted/recovered_<original_name>`
+
+      Wait, or maybe the prefix means the output filename prefix for the stego images when embedding? Let me re-read:
+
+      "user have to choose the stegged file names" - this is about EMBED. The user wants to control the output stego filenames when embedding.
+
+      "user can choose the prefix. if no prefix, use the same name - but on another appr. folder to avoid overwrite" - This is about EXTRACT. User wants a prefix option for output filenames. If no prefix, default to `extracted/<original_name>`.
+
+      Actually, re-reading again more carefully:
+
+      "user have to choose the stegged file names" - currently in embed, the output is hardcoded as `stego_<cover>`. The user wants to control this.
+
+      "user can choose the prefix" - in embed, the prefix is `stego_` by default. User wants to customize it.
+
+      Wait, let me think about this differently. The current embed always produces `stego_<cover_path>`. The user wants to:
+      1. Choose their own output filenames for the stego images
+      2. Or set a custom prefix instead of `stego_`
+
+      And in extract, they want to control the output filenames too.
+
+      Let me re-read one more time:
+
+      "user have to choose the stegged file names." - In embed, user provides cover images, output is `stego_<cover>`. They want to control output names.
+
+      "user can choose the prefix." - In extract, they can add a prefix to the recovered files. Like `recovered_` → `recovered_file1.txt`.
+
+      "if no prefix, use the same name - but on another appr. folder to avoid overwrite" - This is the current behavior: extract to `extracted/<original_name>`.
+
+      So I need to add:
+      1. **Embed**: option to specify output stego filenames (either individually or via a prefix flag)
+      2. **Extract**: option to add a prefix to output filenames (optional, default none → writes to `extracted/`)
+
+      Let me add a `-p <prefix>` option to embed for customizing the stego filename prefix. And a `-p <prefix>` option to extract for customizing the output filename prefix.
+
+      Actually, for embed, the user might want to specify exact filenames OR just a prefix. Let me add:
+      - Embed: `-p <prefix>` — use `<prefix>_<cover>` instead of `stego_<cover>`
+
+      For extract:
+      - Extract: `-p <prefix>` — prepend `<prefix>` to original filename (e.g., `recovered_` → `recovered_file1.txt`)
+
+      Let me implement both.
+    thinking_duration: 6.112s
+    thinking_duration_ms: 6112
+    tool_calls:
+      - tool: read
+        args:
+          offset: 250
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 85
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          250:     *out_filename_len = 0;
+          251:     *out_total_len = 0;
+          252:     *out_chunk_offset = 0;
+          253:     *out_data_len = 0;
+          254:     return NULL;
+          255: }
+          256: 
+          257: int main(int argc, char **argv) {
+          258:     if (argc < 3) {
+          259:         fprintf(stderr, "Usage:\n");
+          260:         fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+          261:         fprintf(stderr, "          (writes stego_<cover> for each)\n");
+          262:         fprintf(stderr, "  Extract: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]);
+          263:         fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+          264:         return 1;
+          265:     }
+          266: 
+          267:     if (!strcmp(argv[1], "embed")) {
+          268:         if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+          269:         const char *payload_file = argv[2];
+          270:         // Read entire payload
+          271:         FILE *f = fopen(payload_file, "rb");
+          272:         if (!f) { perror(payload_file); return 1; }
+          273:         fseek(f, 0, SEEK_END);
+          274:         long fsize = ftell(f);
+          275:         fseek(f, 0, SEEK_SET);
+          276:         unsigned char *payload = malloc(fsize);
+          277:         fread(payload, 1, fsize, f);
+          278:         fclose(f);
+          279: 
+          280:         // Compute SHA-256 of payload for later verification
+          281:         SHA256_CTX sha;
+          282:         sha256_init(&sha);
+          283:         sha256_update(&sha, payload, fsize);
+          284:         uint8_t orig_hash[32];
+          285:         sha256_final(&sha, orig_hash);
+          286:         printf("Original payload SHA-256: ");
+          287:         for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+          288:         printf("\n");
+          289: 
+          290:         // Extract basename from payload path
+          291:         const char *payload_basename = strrchr(payload_file, '/');
+          292:         payload_basename = payload_basename ? payload_basename + 1 : payload_file;
+          293:         size_t name_len = strlen(payload_basename);
+          294: 
+          295:         int num_covers = argc - 3;
+          296:         // Split payload into equal chunks, last chunk may be smaller
+          297:         size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+          298:         size_t offset = 0;
+          299: 
+          300:         for (int i = 0; i < num_covers; i++) {
+          301:             const char *cover_path = argv[3+i];
+          302:             int w, h, ch;
+          303:             unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+          304:             if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+          305:             // Force RGB (ch=3) to keep things consistent; stb will convert if needed
+          306:             if (ch != 3) {
+          307:                 unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          308:                 stbi_image_free(cover);
+          309:                 cover = rgb;
+          310:                 ch = 3;
+          311:             }
+          312: 
+          313:             size_t remaining = fsize - offset;
+          314:             size_t this_chunk = chunk_size;
+          315:             if (this_chunk > remaining) this_chunk = remaining;
+          316:             if (this_chunk == 0) {
+          317:                 printf("No data left for %s, skipping\n", cover_path);
+          318:                 stbi_image_free(cover);
+          319:                 continue;
+          320:             }
+          321: 
+          322:             size_t capacity;
+          323:             unsigned char *stego = embed_data(cover, w, h, ch,
+          324:                                               payload_basename, name_len,
+          325:                                               (uint32_t)fsize, (uint32_t)offset,
+          326:                                               payload + offset, this_chunk,
+          327:                                               &capacity);
+          328:             if (!stego) {
+          329:                 fprintf(stderr, "Embedding failed for %s (need %zu bytes)\n", cover_path, this_chunk);
+          330:                 stbi_image_free(cover);
+          331:                 return 1;
+          332:             }
+          333:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+          334:                    this_chunk, cover_path, capacity);
+
+          (Showing lines 250-334 of 447. Use offset=335 to continue.)
+          </content>
+    time: 7/28/2026, 7:32:20.928 AM GMT+5:30
+    response: I'll add `-p <prefix>` to both **embed** (customize stego output prefix, default `stego_`) and **extract** (prefix recovered filenames, default none).
+    duration: 11.055s
+    duration_ms: 11055
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me see the rest of the embed loop and the beginning of the extract section to understand the current argument handling.
+    thinking_duration: 559ms
+    thinking_duration_ms: 559
+    tool_calls:
+      - tool: read
+        args:
+          offset: 335
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 60
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          335: 
+          336:             // Write stego image as PNG (lossless)
+          337:             char out_name[1024];
+          338:             snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+          339:             if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          340:                 fprintf(stderr, "Failed to write %s\n", out_name);
+          341:                 return 1;
+          342:             }
+          343:             printf(" -> saved %s\n", out_name);
+          344:             free(stego);
+          345:             stbi_image_free(cover);
+          346:             offset += this_chunk;
+          347:         }
+          348:         printf("Embedding complete.\n");
+          349: 
+          350:     } else if (!strcmp(argv[1], "extract")) {
+          351:         int stego_start = 2;
+          352:         const char *out_dir = "extracted";
+          353:         if (argc > 3 && !strcmp(argv[2], "-o")) {
+          354:             out_dir = argv[3];
+          355:             stego_start = 4;
+          356:         }
+          357:         if (argc <= stego_start) { fprintf(stderr, "Usage: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          358: 
+          359:         struct Chunk *chunks = NULL;
+          360:         int num_chunks = 0;
+          361: 
+          362:         for (int i = stego_start; i < argc; i++) {
+          363:             int w, h, ch;
+          364:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          365:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); goto cleanup; }
+          366: 
+          367:             char *fn; size_t fn_len; uint32_t total_len, chunk_offset; size_t data_len;
+          368:             unsigned char *data = extract_data(img, w, h, 3, &fn, &fn_len, &total_len, &chunk_offset, &data_len);
+          369:             stbi_image_free(img);
+          370:             if (!data) {
+          371:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          372:                 goto cleanup;
+          373:             }
+          374:             printf("Extracted %zu bytes from %s (file=%s, offset=%u, total=%u)\n",
+          375:                    data_len, argv[i], fn, chunk_offset, total_len);
+          376: 
+          377:             chunks = realloc(chunks, (num_chunks + 1) * sizeof(struct Chunk));
+          378:             chunks[num_chunks].filename = fn;
+          379:             chunks[num_chunks].total_len = total_len;
+          380:             chunks[num_chunks].chunk_offset = chunk_offset;
+          381:             chunks[num_chunks].data = data;
+          382:             chunks[num_chunks].data_len = data_len;
+          383:             num_chunks++;
+          384:         }
+          385: 
+          386:         qsort(chunks, num_chunks, sizeof(struct Chunk), chunk_cmp);
+          387: 
+          388:         mkdir(out_dir, 0755);
+          389:         int idx = 0;
+          390:         while (idx < num_chunks) {
+          391:             const char *fn = chunks[idx].filename;
+          392:             uint32_t total_len = chunks[idx].total_len;
+          393:             int end = idx;
+          394:             uint32_t got = 0;
+
+          (Showing lines 335-394 of 447. Use offset=395 to continue.)
+          </content>
+    time: 7/28/2026, 7:32:32.118 AM GMT+5:30
+    duration: 4.451s
+    duration_ms: 4451
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I have a clear picture. I need to:
+
+      1. **Embed**: Add `-p <prefix>` option. Current:
+         - argv[2] = payload file
+         - argv[3+] = cover images
+         
+         New: handle `-p <prefix>` before payload
+         - argv[2] could be `-p`, argv[3] = prefix, argv[4] = payload, argv[5+] = covers
+         - Or: argv[2] = payload, argv[3+] = covers (no prefix, default `stego_`)
+
+      2. **Extract**: Add `-p <prefix>` option. Current:
+         - Already has `-o <dir>`
+         
+         New: also accept `-p <prefix>`
+         - e.g., `./diststego extract -o out -p recovered_ stego1.png stego2.png`
+         
+         Or: `-p <prefix>` before the stego files but after `-o` if present.
+
+      Let me handle the argument parsing. For simplicity:
+      - Embed: `./diststego embed [-p <prefix>] <payload> <cover1> [cover2 ...]`
+      - Extract: `./diststego extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]`
+
+      For embed, I'll parse -p before the payload position. Let me update the argument index logic.
+
+      For embed:
+      ```
+      argv[0] = ./diststego
+      argv[1] = embed
+      argv[2] = -p (optional)
+      argv[3] = <prefix> (if -p)
+      argv[2 or 4] = <payload>
+      argv[3 or 5+] = <cover1> [cover2 ...]
+      ```
+
+      Let me implement this.
+    thinking_duration: 3.107s
+    thinking_duration_ms: 3107
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |-
+            int main(int argc, char **argv) {
+                if (argc < 3) {
+                    fprintf(stderr, "Usage:\n");
+                    fprintf(stderr, "  Embed:  %s embed [-p <prefix>] <payload> <cover1> [cover2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (writes <prefix><cover> for each, default prefix 'stego_')\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+                    fprintf(stderr, "          (-p <prefix> prepended to output filename)\n");
+                    return 1;
+                }
+
+                if (!strcmp(argv[1], "embed")) {
+                    const char *stego_prefix = "stego_";
+                    int arg_idx = 2;
+                    if (argc > 3 && !strcmp(argv[2], "-p")) {
+                        stego_prefix = argv[3];
+                        arg_idx = 4;
+                    }
+                    if (argc < arg_idx + 2) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+                    const char *payload_file = argv[arg_idx];
+          oldString: |-
+            int main(int argc, char **argv) {
+                if (argc < 3) {
+                    fprintf(stderr, "Usage:\n");
+                    fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (writes stego_<cover> for each)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+                    return 1;
+                }
+
+                if (!strcmp(argv[1], "embed")) {
+                    if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+                    const char *payload_file = argv[2];
+        result: The user rejected permission to use this specific tool call.
+    time: 7/28/2026, 7:32:36.693 AM GMT+5:30
+    duration: 14.335s
+    duration_ms: 14335
+

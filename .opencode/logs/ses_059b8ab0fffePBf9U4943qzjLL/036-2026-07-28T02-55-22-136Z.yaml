@@ -1,0 +1,514 @@
+---
+user:
+  text: why looped?
+  time: 7/28/2026, 8:23:55.888 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The output shows infinite "ERROR: file1.txt — gap at offset 17 (expected 0)" messages. This is happening because the `embdir` command reuses the same carriers for different files, but the carriers already have data from a previous file. When extracting, it's finding chunks from multiple files in the same carrier images and getting confused.
+
+      Wait, let me think about this more carefully. The test sequence was:
+
+      1. `embed file1.txt cover1.png cover2.png` — embeds file1.txt split across cover1.png and cover2.png
+      2. `fill file2.txt carriers/` — carriers dir has cover3.png cover4.png
+      3. `embdir payloads/ carriers/` — payloads has file1.txt and file3.txt, carriers has cover3.png and cover4.png
+
+      But step 2 already embedded file2.txt into carriers/cover3.png and carriers/cover4.png. Then step 3 tries to embdir with those same carriers — they already have data! The carriers are being reused, and each carrier has chunks from a different file embedded into it.
+
+      Actually wait, the carriers/ directory has copies of cover3.png and cover4.png. Step 2 embedded file2.txt into them. Then step 3 tries to embed file1.txt and file3.txt into the same carriers. But the carriers already have file2.txt data in them!
+
+      The issue is that LSB steganography doesn't erase old data — it overwrites bits. If file2.txt used 33 bytes of payload, that's 33*8 = 264 bits in cover3.png. file1.txt (19 bytes) needs 19*8 = 152 bits. So file1.txt would write its data in the first 152 LSB bits of cover3.png, overwriting file2.txt's first 152 bits. But file2.txt's remaining 112 bits would remain.
+
+      That's the source of corruption — mixing old and new data. But that's expected when reusing carriers.
+
+      The infinite loop, though, is the real problem. Why is it looping infinitely?
+
+      The output shows "ERROR: file1.txt — gap at offset 17 (expected 0)" repeating forever. This is the extraction step. The extract is reading from `stego_output/`, which contains outputs from all three commands (embed, fill, embdir) mixed together.
+
+      But wait, the infinite loop... let me think about the extract code. Looking at the extract code:
+
+      ```c
+      int idx = 0;
+      while (idx < n) {
+          const char *fn = chunks[idx].filename;
+          uint32_t total = chunks[idx].total_len;
+          int end = idx; uint32_t got = 0; int ok = 1;
+          while (end < n && !strcmp(chunks[end].filename,fn)) {
+              ...
+          }
+          ...
+          for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+          idx = end;
+      }
+      ```
+
+      If there are duplicate filenames that are NOT contiguous (because they were sorted by filename first, then by offset), then the `while (end < n && !strcmp(...))` loop might advance `end` but `idx` also gets set to `end`, and if the same filename appears later again... wait, no. After sorting by `chunk_cmp` (filename first, then offset), all chunks for the same filename should be contiguous. Unless there's something weird with the sort.
+
+      Wait, actually the issue might be different. The output shows:
+      ```
+      Extracted 17 bytes from ... (file=file1.txt, offset=0, total=34)
+      ```
+
+      Total is 34 for file1.txt (from step 1 embed with equal split across 2 carriers: 34/2 = 17 each). But then there are MORE chunks with file1.txt filename — from the embdir step. These have different total_len values.
+
+      When sorting, they'd be grouped by filename, but they have different total_len values. The code checks:
+      ```c
+      if (chunks[end].chunk_offset != got) {
+          printf("ERROR: %s — gap at offset %u (expected %u)\n", ...);
+          ok=0; break;
+      }
+      ```
+
+      But then after the break, the code does:
+      ```c
+      if (ok) { ... reconstruct ... }
+      for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+      idx = end;
+      ```
+
+      It still advances `idx = end`. But if it broke because of the gap, then `end` might not point past all the chunks for that filename. Actually, `end` is the value at the time of the break. It was incremented in the while loop condition check. So `end` points to the chunk that caused the gap. But `idx` is set to `end`, skipping that chunk.
+
+      But then there are MORE file1.txt chunks after that! Those would be processed in the next iteration of the outer while loop. And since they have different offsets, they'd also fail.
+
+      But this shouldn't cause an INFINITE loop. It should process all chunks and then exit. Unless `end` and `idx` aren't advancing properly...
+
+      Actually, wait. The condition is `while (end < n && !strcmp(chunks[end].filename, fn))`. If the same filename appears in two non-contiguous groups after sorting... but they should be contiguous after qsort with chunk_cmp.
+
+      Let me think about what's happening with the infinite output. The output was saved to a file, suggesting it was very large. The truncated output showed the same error repeating. This might be because:
+      1. Multiple stego_images were created with file1.txt chunks at different offsets
+      2. The sort puts them together because same filename
+      3. But offsets are `0, 17, 0, 17` (from embed and embdir)
+      4. After sort: file1.txt offset=0 (total=34), file1.txt offset=0 (total=19), file1.txt offset=17 (total=19), file1.txt offset=17 (total=34)
+      5. Wait, the qsort uses `chunk_cmp` which sorts by filename then offset
+      6. So: file1.txt(0,34), file1.txt(0,19), file1.txt(17,34), file1.txt(17,19)
+      7. Processing: idx=0, start with total=34, look at end
+         - chunks[0]: file1.txt, offset=0, total=34 -> got=0, ok
+         - chunks[1]: file1.txt, offset=0, total=19 -> offset=0 == got=0, got+=data_len of chunk[1] (17? or 19?)
+         
+      Wait, the data_len for embed chunks is 17 (fsize 34 / 2 = 17 per carrier). And for the embdir chunks, file1.txt is 19 bytes which fits in one carrier, so data_len=19.
+
+      So after sort by filename then offset:
+      - chunks[0]: file1.txt, total=34, offset=0, data_len=17 (from embed carrier1)
+      - chunks[1]: file1.txt, total=19, offset=0, data_len=19 (from embdir carrier3 — wait, embdir uses carriers from the carriers folder, which were already modified by fill! So these carriers have mixed data)
+        
+      Hmm, actually I think the root issue is that the test reused carriers that were already modified by previous commands. The data is corrupted because of double-embedding into the same carriers.
+
+      But the INFINITE LOOP is the critical issue. Let me look at the extract code more carefully:
+
+      ```c
+      int idx = 0;
+      while (idx < n) {
+          const char *fn = chunks[idx].filename;
+          uint32_t total = chunks[idx].total_len;
+          int end = idx; uint32_t got = 0; int ok = 1;
+          while (end < n && !strcmp(chunks[end].filename,fn)) {
+              if (chunks[end].chunk_offset != got) {
+                  printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+                  ok=0; break;
+              }
+              got += chunks[end].data_len; end++;
+          }
+          if (ok && got < total) { printf("ERROR: %s — incomplete: got %u of %u bytes\n",fn,got,total); ok=0; }
+          if (ok) {
+              // write file
+          }
+          for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+          idx = end;
+      }
+      ```
+
+      OK so after the break for gap:
+      - `end` is the index of the chunk that caused the gap
+      - `got` is whatever was accumulated before the gap
+      - `ok = 0`
+      - We free chunks[idx..end-1]
+      - `idx = end`
+
+      But `end` doesn't include the chunk that caused the gap! That chunk at `end` has the wrong offset. It's freed in the next iteration's `for (int k = idx; k < end; k++)` where `idx = end` (the gap chunk) and `end` is advanced by the inner while loop's condition check.
+
+      Wait, let me trace more carefully. After the break:
+      - end was incremented to the gap chunk position (due to `end++` in the while body, but we broke before that... no, we broke before the `got += ...; end++` line)
+      - Actually, `end` is NOT incremented for the gap chunk. The while condition evaluated to true (because the filename matches), we entered the body, the `if` condition was met, we `break` without incrementing `end`.
+      - So `end` points to the gap chunk.
+      - `for (int k = idx; k < end; k++)` frees from idx to end-1
+      - `idx = end` — now idx points to the gap chunk
+
+      Next iteration:
+      - `fn = chunks[idx].filename` — same filename
+      - `total = chunks[idx].total_len`
+      - `end = idx`
+      - Inner while: `end < n && !strcmp(chunks[end].filename, fn)` — checks chunks[end] which is the gap chunk
+      - If the offset doesn't match `got` (which starts at 0 again), it prints the error again
+      - This repeats... but eventually it should exhaust all chunks since idx advances by at least 1 each outer iteration.
+
+      Wait, does idx advance? Let me trace:
+      - idx=0, gap at end=1 (chunks[1] has wrong offset)
+      - Free chunks[0]
+      - idx = 1
+      - Next iteration: fn = chunks[1].filename, end = 1
+      - Inner while: chunks[1] filename matches, body: offset check
+        - If offset != 0, print error, ok=0, break
+      - end is still 1
+      - Free chunks[1] (freeing only from idx=1 to end-1=0, so nothing freed!)
+      - idx = 1
+
+      INFINITE LOOP! Because `end = idx = 1`, and `for (int k = idx; k < end; k++)` iterates over an empty range (k from 1 to 0), so nothing is freed. And `idx = end = 1`, same value.
+
+      The bug is that when a gap is detected, `end` points to the gap chunk but isn't advanced past it. The cleanup loop `for (int k = idx; k < end; k++)` then frees nothing (empty range), and `idx = end` stays the same. Next iteration processes the same gap chunk again.
+
+      The fix: when a gap is detected, we should increment `end` past the gap chunk so that at least it advances.
+
+      ```c
+      if (chunks[end].chunk_offset != got) {
+          printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+          ok=0; end++; break;
+      }
+      ```
+
+      Or more simply, after the break, we should do:
+      ```c
+      if (!ok) { end++; } 
+      ```
+
+      Or just change the advance logic. Let me fix this by always advancing `end` past the problem chunk.
+
+      Actually, the simpler fix is: when the gap is detected, we should increment `end` to skip the offending chunk AND all remaining chunks for the same filename, then free them. Or just increment `end` once.
+
+      Let me look at the code again. The simplest fix:
+
+      ```c
+      if (chunks[end].chunk_offset != got) {
+          printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+          end++; ok=0; break;
+      }
+      ```
+
+      This advances end past the gap chunk, so the cleanup loop will free it and idx will advance.
+
+      But actually, a better fix: when there's a gap, skip ALL remaining chunks for this filename (they're all invalid since they depend on correct offsets). But that would require a separate while loop.
+
+      For now, let me just fix the infinite loop by incrementing `end` on gap.
+    thinking_duration: 24.984s
+    thinking_duration_ms: 24984
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 536
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          536:                 if (n_stego == 0) { fprintf(stderr,"No PNG files in '%s'\n",argv[ai]); free(stego_files); return 1; }
+          537:                 qsort(stego_files, n_stego, sizeof(char*), name_cmp);
+          538:                 free_stego = 1;
+          539:             }
+          540:         }
+          541:         if (!free_stego) { stego_files = argv + ai; n_stego = argc - ai; }
+          542: 
+          543:         struct Chunk *chunks = NULL; int n = 0;
+          544:         for (int i = 0; i < n_stego; i++) {
+          545:             const char *path = stego_files[i];
+          546:             int w,h,ch; unsigned char *img = stbi_load(path,&w,&h,&ch,3);
+          547:             if (!img) { fprintf(stderr,"Cannot load %s\n",path); goto cln; }
+          548:             char *fn; size_t fnl,dl; uint32_t tot,off;
+          549:             unsigned char *d = extract_data(img,w,h,3,&fn,&fnl,&tot,&off,&dl);
+          550:             stbi_image_free(img);
+          551:             if (!d) { fprintf(stderr,"Failed to extract data from %s\n",path); goto cln; }
+          552:             printf("Extracted %zu bytes from %s (file=%s, offset=%u, total=%u)\n",dl,path,fn,off,tot);
+          553:             chunks=realloc(chunks,(n+1)*sizeof(struct Chunk));
+          554:             chunks[n].filename=fn; chunks[n].total_len=tot; chunks[n].chunk_offset=off;
+          555:             chunks[n].data=d; chunks[n].data_len=dl; n++;
+
+          (Showing lines 536-555 of 610. Use offset=556 to continue.)
+          </content>
+    time: 7/28/2026, 8:23:56.634 AM GMT+5:30
+    response: Pre-existing bug in the extract loop — when a chunk offset gap is detected, `end` isn't advanced past the offending chunk, causing `idx = end` to stay frozen, repeating the same error forever.
+    duration: 29.615s
+    duration_ms: 29615
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me find the gap-check code.
+    thinking_duration: 264ms
+    thinking_duration_ms: 264
+    tool_calls:
+      - tool: read
+        args:
+          offset: 556
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 40
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          556:         }
+          557:         qsort(chunks,n,sizeof(struct Chunk),chunk_cmp);
+          558:         mkdir(out_dir,0755);
+          559:         int use_dir = (user_dir || !prefix);
+          560:         int idx = 0;
+          561:         while (idx < n) {
+          562:             const char *fn = chunks[idx].filename;
+          563:             uint32_t total = chunks[idx].total_len;
+          564:             int end = idx; uint32_t got = 0; int ok = 1;
+          565:             while (end < n && !strcmp(chunks[end].filename,fn)) {
+          566:                 if (chunks[end].chunk_offset != got) {
+          567:                     printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+          568:                     ok=0; break;
+          569:                 }
+          570:                 got += chunks[end].data_len; end++;
+          571:             }
+          572:             if (ok && got < total) { printf("ERROR: %s — incomplete: got %u of %u bytes\n",fn,got,total); ok=0; }
+          573:             if (ok) {
+          574:                 char out[1024];
+          575:                 if (use_dir) {
+          576:                     snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+          577:                 } else {
+          578:                     snprintf(out,sizeof(out),"%s%s",prefix,fn);
+          579:                 }
+          580:                 if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); }
+          581:                 else {
+          582:                     printf("Reconstructing '%s' (%u bytes)\n",fn,total);
+          583:                     FILE *f = fopen(out,"wb");
+          584:                     if (!f) { perror(out); }
+          585:                     else {
+          586:                         for (int k = idx; k < end; k++) fwrite(chunks[k].data,1,chunks[k].data_len,f);
+          587:                         fclose(f);
+          588:                         SHA256_CTX sh; sha256_init(&sh);
+          589:                         for (int k = idx; k < end; k++) sha256_update(&sh,chunks[k].data,chunks[k].data_len);
+          590:                         uint8_t h[32]; sha256_final(&sh,h);
+          591:                         printf("  SHA-256: "); for(int k=0;k<32;k++) printf("%02x",h[k]); printf("\n");
+          592:                     }
+          593:                 }
+          594:             }
+          595:             for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+
+          (Showing lines 556-595 of 610. Use offset=596 to continue.)
+          </content>
+    time: 7/28/2026, 8:24:27.141 AM GMT+5:30
+    duration: 3.474s
+    duration_ms: 3474
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      I see the bug clearly now:
+
+      ```c
+      while (end < n && !strcmp(chunks[end].filename,fn)) {
+          if (chunks[end].chunk_offset != got) {
+              printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+              ok=0; break;
+          }
+          got += chunks[end].data_len; end++;
+      }
+      ...
+      for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+      idx = end;
+      ```
+
+      When a gap is detected, `end` is NOT incremented. So `end` points to the gap chunk. Then:
+      - `for (int k = idx; k < end; k++)` — this iterates from idx to end-1, which is `end` is the gap chunk index, so it frees up to end-1. Since idx could be less than end (we entered the while body at least once), it frees some chunks but NOT the gap chunk.
+      - `idx = end` — idx is set to the gap chunk index.
+
+      Next iteration: starts again at the gap chunk. Same gap detected. Same error. Infinite loop.
+
+      The fix: when a gap is detected, advance `end++` to skip the offending chunk:
+
+      ```c
+      if (chunks[end].chunk_offset != got) {
+          printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+          ok=0; end++; break;
+      }
+      ```
+
+      This way, the gap chunk is included in the `[idx, end)` range to be freed, and idx advances past it.
+    thinking_duration: 2.913s
+    thinking_duration_ms: 2913
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                            if (chunks[end].chunk_offset != got) {
+                                printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+                                ok=0; break;
+                            }
+          newString: |2-
+                            if (chunks[end].chunk_offset != got) {
+                                printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+                                ok=0; end++; break;
+                            }
+        result: Edit applied successfully.
+    time: 7/28/2026, 8:24:31.159 AM GMT+5:30
+    duration: 15.006s
+    duration_ms: 15006
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now let me also check the "incomplete" path — same issue could happen there if the while loop finishes but got < total. In that case, `end` is already past all the chunks for that filename (the while condition failed because the filename changed or `end >= n`), so it's fine. The `ok=0` path after the while loop doesn't need a fix because `end` is already correctly positioned.
+
+      Now let me compile and run a clean test. The previous test run created a bunch of corrupted stego images because carriers were reused. Let me clean everything and do a fresh test.
+    thinking_duration: 1.579s
+    thinking_duration_ms: 1579
+    tool_calls:
+      - tool: bash
+        args:
+          command: gcc-16 -O2 -lm -o diststego main.c 2>&1
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: (no output)
+    time: 7/28/2026, 8:24:46.989 AM GMT+5:30
+    duration: 10.039s
+    duration_ms: 10039
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good, clean compile. Now let me run a clean test. I should remove all the old stego images and test files first.
+    thinking_duration: 541ms
+    thinking_duration_ms: 541
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            rm -rf stego_output extracted carriers payloads
+            echo "=== embed ==="
+            echo "y" | ./diststego embed file1.txt cover1.png cover2.png 2>&1
+            echo ""
+            echo "=== extract folder ==="
+            echo "y" | ./diststego extract stego_output 2>&1
+            diff file1.txt extracted/file1.txt && echo "embed MATCH"
+            echo ""
+            echo "=== fill ==="
+            rm -rf stego_output extracted
+            mkdir -p carriers && cp cover3.png cover4.png cover5.png carriers/
+            echo "y" | ./diststego fill file2.txt carriers 2>&1
+            echo ""
+            echo "=== extract from files ==="
+            echo "y" | ./diststego extract stego_output/*.png 2>&1
+            diff file2.txt extracted/file2.txt && echo "fill MATCH"
+            echo ""
+            echo "=== embdir ==="
+            rm -rf stego_output extracted
+            mkdir -p payloads && cp file1.txt file3.txt payloads/
+            echo "y" | ./diststego embdir payloads carriers 2>&1
+            echo ""
+            echo "=== extract from folder ==="
+            rm -rf extracted
+            echo "y" | ./diststego extract stego_output 2>&1
+            diff file1.txt extracted/file1.txt && echo "file1 MATCH"
+            diff file3.txt extracted/file3.txt && echo "file3 MATCH"
+            echo "ALL OK"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === embed ===
+          Original payload SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Embedded 17 bytes into cover1.png (capacity 45000 bytes)
+          Embedded 17 bytes into cover2.png (capacity 45000 bytes)
+          Embedding complete.
+            stego_output/cover1.png (8224 bytes)
+            stego_output/cover2.png (8773 bytes)
+
+          === extract folder ===
+          Extracted 17 bytes from stego_output/cover1.png (file=file1.txt, offset=0, total=34)
+          Extracted 17 bytes from stego_output/cover2.png (file=file1.txt, offset=17, total=34)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          embed MATCH
+
+          === fill ===
+          Original payload SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          Embedded 73 bytes into carriers/cover3.png (capacity 45000 bytes)
+          Embedding complete.
+            stego_output/cover3.png (9025 bytes)
+
+          === extract from files ===
+          Extracted 73 bytes from stego_output/cover3.png (file=file2.txt, offset=0, total=73)
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          fill MATCH
+
+          === embdir ===
+          File 'payloads/file1.txt' SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95 (34 bytes)
+            file1.txt +34 (carriers/cover3.png)
+          File 'payloads/file3.txt' SHA-256: 02e4372ae1419a12880f684a4a7316d9fffa2bb326f3311ff0e2a96bda2a4507 (154 bytes)
+            file3.txt +154 (carriers/cover4.png)
+          Embedding complete.
+            stego_output/cover3.png (9024 bytes)
+            stego_output/cover4.png (8712 bytes)
+
+          === extract from folder ===
+          Extracted 34 bytes from stego_output/cover3.png (file=file1.txt, offset=0, total=34)
+          Extracted 154 bytes from stego_output/cover4.png (file=file3.txt, offset=0, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file3.txt' (154 bytes)
+            SHA-256: 02e4372ae1419a12880f684a4a7316d9fffa2bb326f3311ff0e2a96bda2a4507
+          file1 MATCH
+          file3 MATCH
+          ALL OK
+    time: 7/28/2026, 8:24:57.554 AM GMT+5:30
+    duration: 7.274s
+    duration_ms: 7274
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: All tests pass. Now clean up everything (binary + test artifacts).
+    thinking_duration: 565ms
+    thinking_duration_ms: 565
+    tool_calls:
+      - tool: bash
+        args:
+          command: trash diststego stego_output extracted carriers payloads
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: (no output)
+    time: 7/28/2026, 8:25:05.246 AM GMT+5:30
+    duration: 6.905s
+    duration_ms: 6905
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: ls -la
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          total 888
+          drwxr-xr-x@ 15 dk  staff     480 Jul 28 08:25 .
+          drwxr-xr-x@ 80 dk  staff    2560 Jul 28 00:23 ..
+          drwxr-xr-x@  4 dk  staff     128 Jul 28 06:44 .vscode
+          -rw-r--r--@  1 dk  staff    4618 Jul 28 06:55 cover1.png
+          -rw-r--r--@  1 dk  staff    5020 Jul 28 06:55 cover2.png
+          -rw-r--r--@  1 dk  staff    5174 Jul 28 06:55 cover3.png
+          -rw-r--r--@  1 dk  staff    4768 Jul 28 07:25 cover4.png
+          -rw-r--r--@  1 dk  staff    4985 Jul 28 07:25 cover5.png
+          -rw-r--r--@  1 dk  staff    5102 Jul 28 07:25 cover6.png
+          -rw-r--r--@  1 dk  staff      34 Jul 28 07:25 file1.txt
+          -rw-r--r--@  1 dk  staff      73 Jul 28 07:25 file2.txt
+          -rw-r--r--@  1 dk  staff     154 Jul 28 07:25 file3.txt
+          -rw-r--r--@  1 dk  staff   31319 Jul 28 08:24 main.c
+          -rw-r--r--@  1 dk  staff  283010 Jul 27 23:49 stb_image.h
+          -rw-r--r--@  1 dk  staff   71221 Jul 27 23:49 stb_image_write.h
+    time: 7/28/2026, 8:25:12.664 AM GMT+5:30
+    duration: 3.399s
+    duration_ms: 3399
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/28/2026, 8:25:16.315 AM GMT+5:30
+    response: Clean. Only sources, covers, test payloads, and `.vscode/` left. All three commands tested end-to-end, the infinite-loop bug fixed (`end++` on gap detection).
+    duration: 5.438s
+    duration_ms: 5438
+

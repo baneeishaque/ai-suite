@@ -1,0 +1,146 @@
+---
+user:
+  text: extract to another folder, otherwise overwrite
+  time: 7/28/2026, 7:08:24.615 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is concerned about the extracted file overwriting the original `secret.txt`. They want to either extract to another folder or have the output go somewhere safe so it doesn't overwrite the original.
+
+      Let me think about this. The current behavior would extract `secret.txt` in the current directory, which would overwrite the original `secret.txt` that was embedded. That's bad.
+
+      Options:
+      1. Extract to a subdirectory like `extracted/`
+      2. Prefix the output filename, e.g. `recovered_` + original filename
+      3. Ask for a directory as an argument
+
+      I think the cleanest approach is to extract into an `extracted/` subdirectory. Let me just prefix it with something or extract to a subfolder.
+
+      Actually, the simplest fix: just prefix the output filename with `recovered_` so it becomes `recovered_secret.txt`. That avoids overwriting while still being clear about what it is.
+
+      Or even simpler: create an `extracted/` directory and put the file there as `extracted/secret.txt`.
+
+      Let me go with creating an `extracted/` directory and putting the recovered file there. This is cleaner than prefixing.
+
+      Actually wait, I need to think about this. Let me just modify the code to write to `extracted/<original_filename>`.
+    thinking_duration: 3.279s
+    thinking_duration_ms: 3279
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+                    // Write reconstructed payload
+                    printf("Reconstructing as '%s'\n", out_path);
+                    FILE *out = fopen(out_path, "wb");
+                    if (!out) { perror(out_path); free(out_path); return 1; }
+                    fwrite(full_data, 1, total_len, out);
+                    fclose(out);
+          newString: |2-
+                    if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+                    // Write reconstructed payload into extracted/
+                    mkdir("extracted", 0755);
+                    char out_path_full[1024];
+                    snprintf(out_path_full, sizeof(out_path_full), "extracted/%s", out_path);
+                    printf("Reconstructing as '%s'\n", out_path_full);
+                    FILE *out = fopen(out_path_full, "wb");
+                    if (!out) { perror(out_path_full); free(out_path); return 1; }
+                    fwrite(full_data, 1, total_len, out);
+                    fclose(out);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:08:24.725 AM GMT+5:30
+    response: Good point. I'll write the recovered file into an `extracted/` subdirectory to avoid overwriting the original.
+    duration: 13.087s
+    duration_ms: 13087
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Need to add `#include <sys/stat.h>` for `mkdir`. Let me check what headers are already included.
+    thinking_duration: 577ms
+    thinking_duration_ms: 577
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: '#include <math.h>'
+          newString: |-
+            #include <math.h>
+            #include <sys/stat.h>
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:08:37.926 AM GMT+5:30
+    duration: 5.489s
+    duration_ms: 5489
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Compile OK ===
+    time: 7/28/2026, 7:08:43.523 AM GMT+5:30
+    duration: 10.303s
+    duration_ms: 10303
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: rm -rf extracted stego_*.png && ./diststego embed secret.txt cover1.png cover2.png cover3.png && echo "---" && ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png && echo "---" && diff secret.txt extracted/secret.txt && echo "IDENTICAL"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+          ---
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+          Reconstructing as 'extracted/secret.txt'
+          Reconstructed payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Verification: SHA-256 must match original printed during embed.
+          ---
+          IDENTICAL
+    time: 7/28/2026, 7:08:53.947 AM GMT+5:30
+    duration: 19.626s
+    duration_ms: 19626
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The full round-trip works. Now the extract command:
+      1. Reads the original filename from the first stego image
+      2. Creates an `extracted/` directory
+      3. Writes the recovered file as `extracted/secret.txt` (doesn't overwrite the original)
+
+      Let me also show the final usage.
+    thinking_duration: 823ms
+    thinking_duration_ms: 823
+    time: 7/28/2026, 7:09:13.701 AM GMT+5:30
+    response: |-
+      Full round-trip verified. Recovered file goes into `extracted/` so the original is never overwritten:
+
+      ```
+      ./diststego embed secret.txt cover1.png cover2.png cover3.png
+      ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png
+      # → extracted/secret.txt (recovered automatically with original name)
+      ```
+    duration: 4.063s
+    duration_ms: 4063
+

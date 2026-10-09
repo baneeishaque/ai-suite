@@ -1,0 +1,1813 @@
+---
+user:
+  text: |
+    Embed:
+    - -p <prefix>: output named <prefix><original_name> in cwd - only overwrite after explicit user confirm
+    - No -p, -o: output goes to stego_output/ directory, named <cover> (no prefix) - overwrite after user confirm
+    - -o <dir>: override the output directory - overwrite only after user confirm
+    - -p & -o: prefixed file on dir - overwrite only after user confirm
+
+    Extract:
+    - -p <prefix>: output named <prefix><original_name> in cwd - overwrite only after user confirm
+    - -o <dir>: output directory (default extracted/) - overwrite only after user confirm
+    - If both: prefixed files in custom dir - overwrite only after user confirm
+    - If neither: files in extracted/ with original names - overwrite only after user confirm
+  time: 7/28/2026, 7:41:25.826 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me break down the full requirements:
+
+      **Embed behavior:**
+      1. `-p <prefix>` only: outputs `<prefix><cover>` in cwd, **prompt before overwrite**
+      2. No flags (default): outputs go to `stego_output/<cover>`, **prompt before overwrite**
+      3. `-o <dir>` only: outputs to `<dir>/<cover>`, **prompt before overwrite**
+      4. `-p <prefix> -o <dir>`: outputs to `<dir>/<prefix><cover>`, **prompt before overwrite**
+
+      **Extract behavior:**
+      1. `-p <prefix>` only: outputs `<prefix><original_name>` in cwd, **prompt before overwrite**
+      2. No flags (default): outputs to `extracted/<original_name>`, **prompt before overwrite**
+      3. `-o <dir>` only: outputs to `<dir>/<original_name>`, **prompt before overwrite**
+      4. `-p <prefix> -o <dir>`: outputs to `<dir>/<prefix><original_name>`, **prompt before overwrite**
+
+      **Overwrite confirm**: before writing each output file, check if it exists. If yes, ask user for confirmation before overwriting.
+
+      I need to implement:
+      1. A simple overwrite confirmation function
+      2. Update embed output path construction with dir + prefix logic
+      3. Update extract output path construction with dir + prefix logic
+      4. All the arg parsing
+
+      Let me plan the implementation.
+
+      For the overwrite confirm, I'll write a helper function. Since this is C, I'll use `fgets` from stdin. But actually in an interactive CLI, `fgets` might be tricky. Let me use `printf` + `fgets`.
+
+      Actually, for a tool like this, a simple approach: check if file exists with `access()`, if so print a warning and ask user. If user says no, skip that file.
+
+      Wait, the user said "overwrite after user confirm" - so the flow is:
+      1. Check if output file already exists
+      2. If yes, ask user: "File X exists. Overwrite? [y/N]"
+      3. If user says y, overwrite. Otherwise skip.
+
+      Let me write a `confirm_overwrite` function.
+
+      Let me write this all out now. I'll make the edits step by step.
+
+      First, let me add the confirm_overwrite function and update the embed section.
+    thinking_duration: 4.504s
+    thinking_duration_ms: 4504
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          1: /*
+          2:  * diststego.c – Split a file, hide chunks in cover images, extract and verify.
+          3:  * Compile: gcc -O2 diststego.c -lm -o diststego
+          4:  * Usage:
+          5:  *   Embed: ./diststego embed secret.bin cover1.png cover2.png cover3.png
+          6:  *          (outputs stego_cover1.png, stego_cover2.png, ...)
+          7:  *   Extract & verify: ./diststego extract stego_cover1.png stego_cover2.png ...
+          8:  *                     (reconstructs with original filename and prints verification)
+          9:  */
+          10: 
+          11: #define STB_IMAGE_IMPLEMENTATION
+          12: #define STB_IMAGE_WRITE_IMPLEMENTATION
+          13: #include "stb_image.h"
+          14: #include "stb_image_write.h"
+          15: 
+          16: #include <stdio.h>
+          17: #include <stdlib.h>
+          18: #include <string.h>
+          19: #include <stdint.h>
+          20: #include <math.h>
+          21: #include <sys/stat.h>
+          22: 
+          23: // ---- SHA-256 (public domain, RFC 6234 based) ----
+          24: typedef struct {
+          25:     uint32_t state[8];
+          26:     uint64_t count;
+          27:     uint8_t  buffer[64];
+          28: } SHA256_CTX;
+          29: 
+          30: #define ROTR(x,n) (((x) >> (n)) | ((x) << (32-(n))))
+          31: #define S0(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+          32: #define S1(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
+          33: #define s0(x) (ROTR(x, 7) ^ ROTR(x,18) ^ ((x) >> 3))
+          34: #define s1(x) (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
+          35: 
+          36: static const uint32_t K[64] = {
+          37:     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,
+          38:     0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+          39:     0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,
+          40:     0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+          41:     0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,
+          42:     0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+          43:     0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,
+          44:     0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+          45:     0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,
+          46:     0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+          47:     0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,
+          48:     0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+          49:     0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,
+          50:     0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+          51:     0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,
+          52:     0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+          53: };
+          54: 
+          55: static void sha256_transform(SHA256_CTX *ctx, const uint8_t data[]) {
+          56:     uint32_t a,b,c,d,e,f,g,h,i,j,t1,t2,m[64];
+          57:     for (i=0,j=0; i<16; ++i, j+=4)
+          58:         m[i] = (data[j]<<24) | (data[j+1]<<16) | (data[j+2]<<8) | (data[j+3]);
+          59:     for ( ; i<64; ++i)
+          60:         m[i] = s1(m[i-2]) + m[i-7] + s0(m[i-15]) + m[i-16];
+          61:     a = ctx->state[0]; b = ctx->state[1]; c = ctx->state[2]; d = ctx->state[3];
+          62:     e = ctx->state[4]; f = ctx->state[5]; g = ctx->state[6]; h = ctx->state[7];
+          63:     for (i=0; i<64; ++i) {
+          64:         t1 = h + S1(e) + ((e & f) ^ (~e & g)) + K[i] + m[i];
+          65:         t2 = S0(a) + ((a & b) ^ (a & c) ^ (b & c));
+          66:         h = g; g = f; f = e; e = d + t1;
+          67:         d = c; c = b; b = a; a = t1 + t2;
+          68:     }
+          69:     ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
+          70:     ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
+          71: }
+          72: 
+          73: void sha256_init(SHA256_CTX *ctx) {
+          74:     ctx->count = 0;
+          75:     ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
+          76:     ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
+          77:     ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
+          78:     ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+          79: }
+          80: 
+          81: void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
+          82:     size_t i = ctx->count % 64;
+          83:     ctx->count += len;
+          84:     while (len--) {
+          85:         ctx->buffer[i++] = *data++;
+          86:         if (i == 64) { sha256_transform(ctx, ctx->buffer); i = 0; }
+          87:     }
+          88: }
+          89: 
+          90: void sha256_final(SHA256_CTX *ctx, uint8_t digest[32]) {
+          91:     size_t i = ctx->count % 64;
+          92:     ctx->buffer[i++] = 0x80;
+          93:     if (i > 56) { while (i < 64) ctx->buffer[i++] = 0; sha256_transform(ctx, ctx->buffer); i = 0; }
+          94:     while (i < 56) ctx->buffer[i++] = 0;
+          95:     uint64_t bits = ctx->count * 8;
+          96:     ctx->buffer[56] = bits>>56; ctx->buffer[57] = bits>>48;
+          97:     ctx->buffer[58] = bits>>40; ctx->buffer[59] = bits>>32;
+          98:     ctx->buffer[60] = bits>>24; ctx->buffer[61] = bits>>16;
+          99:     ctx->buffer[62] = bits>>8;  ctx->buffer[63] = bits;
+          100:     sha256_transform(ctx, ctx->buffer);
+          101:     for (i=0; i<4; ++i) {
+          102:         digest[i]    = ctx->state[0] >> (24-8*i);
+          103:         digest[i+4]  = ctx->state[1] >> (24-8*i);
+          104:         digest[i+8]  = ctx->state[2] >> (24-8*i);
+          105:         digest[i+12] = ctx->state[3] >> (24-8*i);
+          106:         digest[i+16] = ctx->state[4] >> (24-8*i);
+          107:         digest[i+20] = ctx->state[5] >> (24-8*i);
+          108:         digest[i+24] = ctx->state[6] >> (24-8*i);
+          109:         digest[i+28] = ctx->state[7] >> (24-8*i);
+          110:     }
+          111: }
+          112: // ---- end SHA-256 ----
+          113: 
+          114: // Write bits: helper used by embed_data
+          115: static void write_bits(unsigned char *buf, size_t *bit_idx,
+          116:                        const unsigned char *bytes, size_t n) {
+          117:     for (size_t i = 0; i < n; i++) {
+          118:         for (int b = 0; b < 8; b++) {
+          119:             size_t pos = (*bit_idx)++;
+          120:             int bit = (bytes[i] >> b) & 1;
+          121:             if (bit) buf[pos] |= 1; else buf[pos] &= ~1;
+          122:         }
+          123:     }
+          124: }
+          125: 
+          126: // Read bits: helper used by extract_data
+          127: static void read_bits(const unsigned char *buf, size_t *bit_idx,
+          128:                       unsigned char *bytes, size_t n) {
+          129:     for (size_t i = 0; i < n; i++) {
+          130:         bytes[i] = 0;
+          131:         for (int b = 0; b < 8; b++) {
+          132:             size_t pos = (*bit_idx)++;
+          133:             int bit = buf[pos] & 1;
+          134:             bytes[i] |= (bit << b);
+          135:         }
+          136:     }
+          137: }
+          138: 
+          139: static void put_u32le(unsigned char dst[4], uint32_t v) {
+          140:     dst[0] = v & 0xFF; dst[1] = (v >> 8) & 0xFF;
+          141:     dst[2] = (v >> 16) & 0xFF; dst[3] = (v >> 24) & 0xFF;
+          142: }
+          143: 
+          144: static uint32_t get_u32le(const unsigned char src[4]) {
+          145:     return src[0] | ((uint32_t)src[1] << 8) | ((uint32_t)src[2] << 16) | ((uint32_t)src[3] << 24);
+          146: }
+          147: 
+          148: struct Chunk {
+          149:     char *filename;
+          150:     uint32_t total_len;
+          151:     uint32_t chunk_offset;
+          152:     unsigned char *data;
+          153:     size_t data_len;
+          154: };
+          155: 
+          156: static int chunk_cmp(const void *a, const void *b) {
+          157:     const struct Chunk *ca = a, *cb = b;
+          158:     int c = strcmp(ca->filename, cb->filename);
+          159:     if (c) return c;
+          160:     if (ca->chunk_offset < cb->chunk_offset) return -1;
+          161:     if (ca->chunk_offset > cb->chunk_offset) return 1;
+          162:     return 0;
+          163: }
+          164: 
+          165: // Embed a data buffer into image pixel LSBs.
+          166: // Format: fn_len(4) + filename + total_len(4) + chunk_offset(4) + data_len(4) + data
+          167: unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+          168:                           const char *filename, size_t filename_len,
+          169:                           uint32_t total_len, uint32_t chunk_offset,
+          170:                           const unsigned char *data, size_t data_len,
+          171:                           size_t *out_capacity) {
+          172:     size_t total_pixels = w * h;
+          173:     size_t total_bits = total_pixels * ch * 8;
+          174:     size_t bits_needed = (4 + filename_len + 4 + 4 + 4 + data_len) * 8;
+          175: 
+          176:     if (bits_needed > total_bits) {
+          177:         fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+          178:         return NULL;
+          179:     }
+          180:     *out_capacity = total_bits / 8;
+          181: 
+          182:     unsigned char *stego = malloc(w * h * ch);
+          183:     memcpy(stego, img, w * h * ch);
+          184: 
+          185:     size_t bit_idx = 0;
+          186:     unsigned char buf[4];
+          187: 
+          188:     put_u32le(buf, (uint32_t)filename_len);
+          189:     write_bits(stego, &bit_idx, buf, 4);
+          190:     write_bits(stego, &bit_idx, (const unsigned char*)filename, filename_len);
+          191:     put_u32le(buf, total_len);
+          192:     write_bits(stego, &bit_idx, buf, 4);
+          193:     put_u32le(buf, chunk_offset);
+          194:     write_bits(stego, &bit_idx, buf, 4);
+          195:     put_u32le(buf, (uint32_t)data_len);
+          196:     write_bits(stego, &bit_idx, buf, 4);
+          197:     write_bits(stego, &bit_idx, data, data_len);
+          198: 
+          199:     return stego;
+          200: }
+          201: 
+          202: // Extract data from a stego image.
+          203: // Format: fn_len(4) + filename + total_len(4) + chunk_offset(4) + data_len(4) + data
+          204: // Returns the raw data, sets *out_filename / *out_filename_len / *out_total_len /
+          205: // *out_chunk_offset / *out_data_len.
+          206: unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+          207:                             char **out_filename, size_t *out_filename_len,
+          208:                             uint32_t *out_total_len, uint32_t *out_chunk_offset,
+          209:                             size_t *out_data_len) {
+          210:     size_t max_bits = (size_t)w * h * ch;
+          211:     size_t bit_idx = 0;
+          212: 
+          213:     unsigned char buf[4];
+          214:     read_bits(img, &bit_idx, buf, 4);
+          215:     if (bit_idx / 8 > max_bits) goto fail;
+          216:     uint32_t fn_len = get_u32le(buf);
+          217:     if (fn_len > 1024) goto fail;
+          218: 
+          219:     char *filename = malloc(fn_len + 1);
+          220:     read_bits(img, &bit_idx, (unsigned char*)filename, fn_len);
+          221:     if (bit_idx / 8 > max_bits) { free(filename); goto fail; }
+          222:     filename[fn_len] = '\0';
+          223:     *out_filename = filename;
+          224:     *out_filename_len = fn_len;
+          225: 
+          226:     read_bits(img, &bit_idx, buf, 4);
+          227:     if (bit_idx / 8 > max_bits) goto fail_fn;
+          228:     *out_total_len = get_u32le(buf);
+          229: 
+          230:     read_bits(img, &bit_idx, buf, 4);
+          231:     if (bit_idx / 8 > max_bits) goto fail_fn;
+          232:     *out_chunk_offset = get_u32le(buf);
+          233: 
+          234:     read_bits(img, &bit_idx, buf, 4);
+          235:     if (bit_idx / 8 > max_bits) goto fail_fn;
+          236:     uint32_t data_len = get_u32le(buf);
+          237:     if (data_len > (size_t)w * h * ch) goto fail_fn;
+          238: 
+          239:     unsigned char *data = malloc(data_len);
+          240:     read_bits(img, &bit_idx, data, data_len);
+          241:     if (bit_idx / 8 > max_bits) { free(data); goto fail_fn; }
+          242:     *out_data_len = data_len;
+          243:     return data;
+          244: 
+          245: fail_fn:
+          246:     free(*out_filename);
+          247:     *out_filename = NULL;
+          248: fail:
+          249:     *out_filename = NULL;
+          250:     *out_filename_len = 0;
+          251:     *out_total_len = 0;
+          252:     *out_chunk_offset = 0;
+          253:     *out_data_len = 0;
+          254:     return NULL;
+          255: }
+          256: 
+          257: int main(int argc, char **argv) {
+          258:     if (argc < 3) {
+          259:         fprintf(stderr, "Usage:\n");
+          260:         fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+          261:         fprintf(stderr, "          (writes stego_<cover> for each)\n");
+          262:         fprintf(stderr, "  Extract: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]);
+          263:         fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+          264:         return 1;
+          265:     }
+          266: 
+          267:     if (!strcmp(argv[1], "embed")) {
+          268:         if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+          269:         const char *payload_file = argv[2];
+          270:         // Read entire payload
+          271:         FILE *f = fopen(payload_file, "rb");
+          272:         if (!f) { perror(payload_file); return 1; }
+          273:         fseek(f, 0, SEEK_END);
+          274:         long fsize = ftell(f);
+          275:         fseek(f, 0, SEEK_SET);
+          276:         unsigned char *payload = malloc(fsize);
+          277:         fread(payload, 1, fsize, f);
+          278:         fclose(f);
+          279: 
+          280:         // Compute SHA-256 of payload for later verification
+          281:         SHA256_CTX sha;
+          282:         sha256_init(&sha);
+          283:         sha256_update(&sha, payload, fsize);
+          284:         uint8_t orig_hash[32];
+          285:         sha256_final(&sha, orig_hash);
+          286:         printf("Original payload SHA-256: ");
+          287:         for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+          288:         printf("\n");
+          289: 
+          290:         // Extract basename from payload path
+          291:         const char *payload_basename = strrchr(payload_file, '/');
+          292:         payload_basename = payload_basename ? payload_basename + 1 : payload_file;
+          293:         size_t name_len = strlen(payload_basename);
+          294: 
+          295:         int num_covers = argc - 3;
+          296:         // Split payload into equal chunks, last chunk may be smaller
+          297:         size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+          298:         size_t offset = 0;
+          299: 
+          300:         for (int i = 0; i < num_covers; i++) {
+          301:             const char *cover_path = argv[3+i];
+          302:             int w, h, ch;
+          303:             unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+          304:             if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+          305:             // Force RGB (ch=3) to keep things consistent; stb will convert if needed
+          306:             if (ch != 3) {
+          307:                 unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          308:                 stbi_image_free(cover);
+          309:                 cover = rgb;
+          310:                 ch = 3;
+          311:             }
+          312: 
+          313:             size_t remaining = fsize - offset;
+          314:             size_t this_chunk = chunk_size;
+          315:             if (this_chunk > remaining) this_chunk = remaining;
+          316:             if (this_chunk == 0) {
+          317:                 printf("No data left for %s, skipping\n", cover_path);
+          318:                 stbi_image_free(cover);
+          319:                 continue;
+          320:             }
+          321: 
+          322:             size_t capacity;
+          323:             unsigned char *stego = embed_data(cover, w, h, ch,
+          324:                                               payload_basename, name_len,
+          325:                                               (uint32_t)fsize, (uint32_t)offset,
+          326:                                               payload + offset, this_chunk,
+          327:                                               &capacity);
+          328:             if (!stego) {
+          329:                 fprintf(stderr, "Embedding failed for %s (need %zu bytes)\n", cover_path, this_chunk);
+          330:                 stbi_image_free(cover);
+          331:                 return 1;
+          332:             }
+          333:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+          334:                    this_chunk, cover_path, capacity);
+          335: 
+          336:             // Write stego image as PNG (lossless)
+          337:             char out_name[1024];
+          338:             snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+          339:             if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          340:                 fprintf(stderr, "Failed to write %s\n", out_name);
+          341:                 return 1;
+          342:             }
+          343:             printf(" -> saved %s\n", out_name);
+          344:             free(stego);
+          345:             stbi_image_free(cover);
+          346:             offset += this_chunk;
+          347:         }
+          348:         printf("Embedding complete.\n");
+          349: 
+          350:     } else if (!strcmp(argv[1], "extract")) {
+          351:         int stego_start = 2;
+          352:         const char *out_dir = "extracted";
+          353:         if (argc > 3 && !strcmp(argv[2], "-o")) {
+          354:             out_dir = argv[3];
+          355:             stego_start = 4;
+          356:         }
+          357:         if (argc <= stego_start) { fprintf(stderr, "Usage: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          358: 
+          359:         struct Chunk *chunks = NULL;
+          360:         int num_chunks = 0;
+          361: 
+          362:         for (int i = stego_start; i < argc; i++) {
+          363:             int w, h, ch;
+          364:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          365:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); goto cleanup; }
+          366: 
+          367:             char *fn; size_t fn_len; uint32_t total_len, chunk_offset; size_t data_len;
+          368:             unsigned char *data = extract_data(img, w, h, 3, &fn, &fn_len, &total_len, &chunk_offset, &data_len);
+          369:             stbi_image_free(img);
+          370:             if (!data) {
+          371:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          372:                 goto cleanup;
+          373:             }
+          374:             printf("Extracted %zu bytes from %s (file=%s, offset=%u, total=%u)\n",
+          375:                    data_len, argv[i], fn, chunk_offset, total_len);
+          376: 
+          377:             chunks = realloc(chunks, (num_chunks + 1) * sizeof(struct Chunk));
+          378:             chunks[num_chunks].filename = fn;
+          379:             chunks[num_chunks].total_len = total_len;
+          380:             chunks[num_chunks].chunk_offset = chunk_offset;
+          381:             chunks[num_chunks].data = data;
+          382:             chunks[num_chunks].data_len = data_len;
+          383:             num_chunks++;
+          384:         }
+          385: 
+          386:         qsort(chunks, num_chunks, sizeof(struct Chunk), chunk_cmp);
+          387: 
+          388:         mkdir(out_dir, 0755);
+          389:         int idx = 0;
+          390:         while (idx < num_chunks) {
+          391:             const char *fn = chunks[idx].filename;
+          392:             uint32_t total_len = chunks[idx].total_len;
+          393:             int end = idx;
+          394:             uint32_t got = 0;
+          395:             int ok = 1;
+          396:             while (end < num_chunks && !strcmp(chunks[end].filename, fn)) {
+          397:                 if (chunks[end].chunk_offset != got) {
+          398:                     printf("ERROR: %s — gap at offset %u (expected %u, got %u)\n",
+          399:                            fn, chunks[end].chunk_offset, got, chunks[end].chunk_offset);
+          400:                     ok = 0;
+          401:                     break;
+          402:                 }
+          403:                 got += chunks[end].data_len;
+          404:                 end++;
+          405:             }
+          406:             if (ok && got < total_len) {
+          407:                 printf("ERROR: %s — incomplete: got %u of %u bytes\n", fn, got, total_len);
+          408:                 ok = 0;
+          409:             }
+          410:             if (ok) {
+          411:                 char out_path[1024];
+          412:                 snprintf(out_path, sizeof(out_path), "%s/%s", out_dir, fn);
+          413:                 printf("Reconstructing '%s' (%u bytes)\n", fn, total_len);
+          414:                 FILE *out = fopen(out_path, "wb");
+          415:                 if (!out) { perror(out_path); }
+          416:                 else {
+          417:                     for (int k = idx; k < end; k++)
+          418:                         fwrite(chunks[k].data, 1, chunks[k].data_len, out);
+          419:                     fclose(out);
+          420:                     SHA256_CTX sha;
+          421:                     sha256_init(&sha);
+          422:                     for (int k = idx; k < end; k++)
+          423:                         sha256_update(&sha, chunks[k].data, chunks[k].data_len);
+          424:                     uint8_t hash[32];
+          425:                     sha256_final(&sha, hash);
+          426:                     printf("  SHA-256: ");
+          427:                     for (int k = 0; k < 32; k++) printf("%02x", hash[k]);
+          428:                     printf("\n");
+          429:                 }
+          430:             }
+          431:             for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+          432:             idx = end;
+          433:         }
+          434:         free(chunks);
+          435:         if (num_chunks == 0) { fprintf(stderr, "No data extracted\n"); return 1; }
+          436:         return 0;
+          437: 
+          438: cleanup:
+          439:         for (int i = 0; i < num_chunks; i++) { free(chunks[i].filename); free(chunks[i].data); }
+          440:         free(chunks);
+          441:         return 1;
+          442:     } else {
+          443:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          444:         return 1;
+          445:     }
+          446:     return 0;
+          447: }
+
+          (End of file - total 447 lines)
+          </content>
+    time: 7/28/2026, 7:41:26.086 AM GMT+5:30
+    response: Understood — comprehensive overwrite confirmation for all cases. Let me implement this properly.
+    duration: 8.761s
+    duration_ms: 8761
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      OK, this is a large change. Let me use a bash heredoc to write the entire file since this is a substantial rewrite. I'll write the whole new file content.
+
+      Let me plan all the changes:
+
+      1. Add `#include <unistd.h>` for `access()`
+      2. Add `confirm_overwrite()` helper function
+      3. Rewrite embed section with -p, -o args and overwrite confirm
+      4. Rewrite extract section with -p, -o args and overwrite confirm
+
+      For the overwrite confirm, I'll write `confirm_overwrite(const char *path)` that:
+      - Checks if file exists with `access(path, F_OK)`
+      - If not, returns 1 (proceed)
+      - If yes, prints "File '%s' exists. Overwrite? [y/N] ", reads a line, returns 1 if 'y'/'Y', else 0
+
+      Let me write the whole file. This is a big write so I'll use the heredoc approach as per the AGENTS.md instructions.
+    thinking_duration: 2.100s
+    thinking_duration_ms: 2100
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            cat > main.c << 'MAINEOF'
+            #define STB_IMAGE_IMPLEMENTATION
+            #define STB_IMAGE_WRITE_IMPLEMENTATION
+            #include "stb_image.h"
+            #include "stb_image_write.h"
+
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <string.h>
+            #include <stdint.h>
+            #include <math.h>
+            #include <sys/stat.h>
+            #include <unistd.h>
+
+            static int confirm_overwrite(const char *path) {
+                if (access(path, F_OK) == -1) return 1;
+                fprintf(stderr, "File '%s' exists. Overwrite? [y/N] ", path);
+                char buf[16];
+                if (!fgets(buf, sizeof(buf), stdin)) return 0;
+                return buf[0] == 'y' || buf[0] == 'Y';
+            }
+
+            typedef struct { uint32_t state[8]; uint64_t count; uint8_t buffer[64]; } SHA256_CTX;
+
+            #define ROTR(x,n) (((x) >> (n)) | ((x) << (32-(n))))
+            #define S0(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+            #define S1(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
+            #define s0(x) (ROTR(x, 7) ^ ROTR(x,18) ^ ((x) >> 3))
+            #define s1(x) (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
+
+            static const uint32_t K[64] = {
+                0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+                0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+                0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+                0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+                0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+                0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+                0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+                0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+            };
+
+            static void sha256_transform(SHA256_CTX *ctx, const uint8_t data[]) {
+                uint32_t a,b,c,d,e,f,g,h,i,j,t1,t2,m[64];
+                for (i=0,j=0; i<16; ++i, j+=4) m[i] = (data[j]<<24)|(data[j+1]<<16)|(data[j+2]<<8)|data[j+3];
+                for (; i<64; ++i) m[i] = s1(m[i-2])+m[i-7]+s0(m[i-15])+m[i-16];
+                a=ctx->state[0]; b=ctx->state[1]; c=ctx->state[2]; d=ctx->state[3];
+                e=ctx->state[4]; f=ctx->state[5]; g=ctx->state[6]; h=ctx->state[7];
+                for (i=0; i<64; ++i) {
+                    t1=h+S1(e)+((e&f)^(~e&g))+K[i]+m[i]; t2=S0(a)+((a&b)^(a&c)^(b&c));
+                    h=g; g=f; f=e; e=d+t1; d=c; c=b; b=a; a=t1+t2;
+                }
+                ctx->state[0]+=a; ctx->state[1]+=b; ctx->state[2]+=c; ctx->state[3]+=d;
+                ctx->state[4]+=e; ctx->state[5]+=f; ctx->state[6]+=g; ctx->state[7]+=h;
+            }
+
+            static void sha256_init(SHA256_CTX *ctx) {
+                ctx->count=0; ctx->state[0]=0x6a09e667; ctx->state[1]=0xbb67ae85;
+                ctx->state[2]=0x3c6ef372; ctx->state[3]=0xa54ff53a;
+                ctx->state[4]=0x510e527f; ctx->state[5]=0x9b05688c;
+                ctx->state[6]=0x1f83d9ab; ctx->state[7]=0x5be0cd19;
+            }
+
+            static void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
+                size_t i = ctx->count % 64; ctx->count += len;
+                while (len--) { ctx->buffer[i++] = *data++; if (i==64) { sha256_transform(ctx, ctx->buffer); i=0; } }
+            }
+
+            static void sha256_final(SHA256_CTX *ctx, uint8_t digest[32]) {
+                size_t i = ctx->count % 64; ctx->buffer[i++] = 0x80;
+                if (i>56) { while (i<64) ctx->buffer[i++]=0; sha256_transform(ctx,ctx->buffer); i=0; }
+                while (i<56) ctx->buffer[i++]=0;
+                uint64_t bits = ctx->count*8;
+                ctx->buffer[56]=bits>>56; ctx->buffer[57]=bits>>48; ctx->buffer[58]=bits>>40; ctx->buffer[59]=bits>>32;
+                ctx->buffer[60]=bits>>24; ctx->buffer[61]=bits>>16; ctx->buffer[62]=bits>>8;  ctx->buffer[63]=bits;
+                sha256_transform(ctx, ctx->buffer);
+                for (i=0; i<4; ++i) { digest[i]=ctx->state[0]>>(24-8*i); digest[i+4]=ctx->state[1]>>(24-8*i);
+                    digest[i+8]=ctx->state[2]>>(24-8*i); digest[i+12]=ctx->state[3]>>(24-8*i);
+                    digest[i+16]=ctx->state[4]>>(24-8*i); digest[i+20]=ctx->state[5]>>(24-8*i);
+                    digest[i+24]=ctx->state[6]>>(24-8*i); digest[i+28]=ctx->state[7]>>(24-8*i); }
+            }
+
+            static void write_bits(unsigned char *buf, size_t *bit_idx, const unsigned char *bytes, size_t n) {
+                for (size_t i = 0; i < n; i++)
+                    for (int b = 0; b < 8; b++) {
+                        size_t pos = (*bit_idx)++;
+                        if ((bytes[i] >> b) & 1) buf[pos] |= 1; else buf[pos] &= ~1;
+                    }
+            }
+
+            static void read_bits(const unsigned char *buf, size_t *bit_idx, unsigned char *bytes, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    bytes[i] = 0;
+                    for (int b = 0; b < 8; b++) { size_t pos = (*bit_idx)++; bytes[i] |= ((buf[pos] & 1) << b); }
+                }
+            }
+
+            static void put_u32le(unsigned char dst[4], uint32_t v) {
+                dst[0]=v&0xFF; dst[1]=(v>>8)&0xFF; dst[2]=(v>>16)&0xFF; dst[3]=(v>>24)&0xFF;
+            }
+
+            static uint32_t get_u32le(const unsigned char src[4]) {
+                return src[0]|((uint32_t)src[1]<<8)|((uint32_t)src[2]<<16)|((uint32_t)src[3]<<24);
+            }
+
+            struct Chunk { char *filename; uint32_t total_len, chunk_offset; unsigned char *data; size_t data_len; };
+
+            static int chunk_cmp(const void *a, const void *b) {
+                const struct Chunk *ca=a,*cb=b; int c=strcmp(ca->filename,cb->filename);
+                return c?c:(ca->chunk_offset<cb->chunk_offset?-1:(ca->chunk_offset>cb->chunk_offset?1:0));
+            }
+
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const char *filename, size_t filename_len,
+                                      uint32_t total_len, uint32_t chunk_offset,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total = w * h, total_bits = total * ch * 8;
+                size_t needed = (4 + filename_len + 4 + 4 + 4 + data_len) * 8;
+                if (needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+                size_t bi = 0; unsigned char b[4];
+                put_u32le(b, (uint32_t)filename_len); write_bits(stego, &bi, b, 4);
+                write_bits(stego, &bi, (const unsigned char*)filename, filename_len);
+                put_u32le(b, total_len); write_bits(stego, &bi, b, 4);
+                put_u32le(b, chunk_offset); write_bits(stego, &bi, b, 4);
+                put_u32le(b, (uint32_t)data_len); write_bits(stego, &bi, b, 4);
+                write_bits(stego, &bi, data, data_len);
+                return stego;
+            }
+
+            unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                        char **out_fn, size_t *out_fn_len,
+                                        uint32_t *out_total, uint32_t *out_off,
+                                        size_t *out_dlen) {
+                size_t mb = (size_t)w * h * ch, bi = 0; unsigned char b[4];
+                read_bits(img, &bi, b, 4); if (bi/8>mb) goto fail;
+                uint32_t fnl = get_u32le(b); if (fnl>1024) goto fail;
+                char *fn = malloc(fnl+1); read_bits(img,&bi,(unsigned char*)fn,fnl);
+                if (bi/8>mb) { free(fn); goto fail; }
+                fn[fnl]='\0'; *out_fn=fn; *out_fn_len=fnl;
+                read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+                *out_total=get_u32le(b);
+                read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+                *out_off=get_u32le(b);
+                read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+                uint32_t dl=get_u32le(b); if (dl>(size_t)w*h*ch) goto fail_fn;
+                unsigned char *d=malloc(dl); read_bits(img,&bi,d,dl);
+                if (bi/8>mb) { free(d); goto fail_fn; }
+                *out_dlen=dl; return d;
+            fail_fn: free(*out_fn); *out_fn=NULL;
+            fail: *out_fn=NULL; *out_fn_len=0; *out_total=0; *out_off=0; *out_dlen=0; return NULL;
+            }
+
+            int main(int argc, char **argv) {
+                if (argc < 3) {
+                    fprintf(stderr, "Usage:\n");
+                    fprintf(stderr, "  Embed:  %s embed [-p <prefix>] [-o <dir>] <payload> <cover1> [cover2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (default: 'stego_output/' dir, no prefix; -p <prefix> for naming)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (default: 'extracted/' dir; -p <prefix> for naming)\n");
+                    return 1;
+                }
+
+                if (!strcmp(argv[1], "embed")) {
+                    const char *prefix = NULL, *out_dir = "stego_output";
+                    int ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+                    if (argc < ai+2) { fprintf(stderr,"Need payload and at least one cover image\n"); return 1; }
+
+                    const char *pf = argv[ai]; FILE *f = fopen(pf,"rb");
+                    if (!f) { perror(pf); return 1; }
+                    fseek(f,0,SEEK_END); long fsize=ftell(f); fseek(f,0,SEEK_SET);
+                    unsigned char *payload=malloc(fsize); fread(payload,1,fsize,f); fclose(f);
+
+                    SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+                    uint8_t oh[32]; sha256_final(&sh,oh);
+                    printf("Original payload SHA-256: "); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf("\n");
+
+                    const char *bn = strrchr(pf,'/'); bn=bn?bn+1:pf; size_t nl=strlen(bn);
+                    int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+                    int use_dir = !prefix; // no prefix => output to directory
+
+                    for (int i = 0; i < nc; i++) {
+                        const char *cp = argv[ai+1+i];
+                        int w,h,ch; unsigned char *cv = stbi_load(cp,&w,&h,&ch,0);
+                        if (!cv) { fprintf(stderr,"Cannot load %s\n",cp); return 1; }
+                        if (ch!=3) { unsigned char *rgb=stbi_load(cp,&w,&h,&ch,3); stbi_image_free(cv); cv=rgb; ch=3; }
+                        size_t rem=fsize-off, tc=cs; if (tc>rem) tc=rem;
+                        if (tc==0) { printf("No data left for %s, skipping\n",cp); stbi_image_free(cv); continue; }
+                        size_t cap; unsigned char *stego = embed_data(cv,w,h,ch,bn,nl,(uint32_t)fsize,(uint32_t)off,payload+off,tc,&cap);
+                        if (!stego) { fprintf(stderr,"Embedding failed for %s\n",cp); stbi_image_free(cv); return 1; }
+                        printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",tc,cp,cap);
+
+                        // Build output path: dir/prefix<cover> or just <prefix><cover>
+                        char out[1024];
+                        const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+                        if (use_dir) {
+                            mkdir(out_dir,0755);
+                            snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",cover_bn);
+                        } else {
+                            snprintf(out,sizeof(out),"%s%s",prefix,cover_bn);
+                        }
+                        if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); free(stego); stbi_image_free(cv); off+=tc; continue; }
+                        if (!stbi_write_png(out,w,h,ch,stego,w*ch)) { fprintf(stderr,"Failed to write %s\n",out); return 1; }
+                        printf(" -> saved %s\n",out);
+                        free(stego); stbi_image_free(cv); off+=tc;
+                    }
+                    printf("Embedding complete.\n");
+
+                } else if (!strcmp(argv[1], "extract")) {
+                    const char *prefix = NULL, *out_dir = "extracted";
+                    int ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+                    if (argc <= ai) { fprintf(stderr,"Usage: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n",argv[0]); return 1; }
+
+                    struct Chunk *chunks = NULL; int n = 0;
+                    for (int i = ai; i < argc; i++) {
+                        int w,h,ch; unsigned char *img = stbi_load(argv[i],&w,&h,&ch,3);
+                        if (!img) { fprintf(stderr,"Cannot load %s\n",argv[i]); goto cln; }
+                        char *fn; size_t fnl,dl; uint32_t tot,off;
+                        unsigned char *d = extract_data(img,w,h,3,&fn,&fnl,&tot,&off,&dl);
+                        stbi_image_free(img);
+                        if (!d) { fprintf(stderr,"Failed to extract data from %s\n",argv[i]); goto cln; }
+                        printf("Extracted %zu bytes from %s (file=%s, offset=%u, total=%u)\n",dl,argv[i],fn,off,tot);
+                        chunks=realloc(chunks,(n+1)*sizeof(struct Chunk));
+                        chunks[n].filename=fn; chunks[n].total_len=tot; chunks[n].chunk_offset=off;
+                        chunks[n].data=d; chunks[n].data_len=dl; n++;
+                    }
+                    qsort(chunks,n,sizeof(struct Chunk),chunk_cmp);
+                    mkdir(out_dir,0755);
+                    int use_dir = 1; // extract always uses dir (default extracted/)
+                    int idx = 0;
+                    while (idx < n) {
+                        const char *fn = chunks[idx].filename;
+                        uint32_t total = chunks[idx].total_len;
+                        int end = idx; uint32_t got = 0; int ok = 1;
+                        while (end < n && !strcmp(chunks[end].filename,fn)) {
+                            if (chunks[end].chunk_offset != got) {
+                                printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+                                ok=0; break;
+                            }
+                            got += chunks[end].data_len; end++;
+                        }
+                        if (ok && got < total) { printf("ERROR: %s — incomplete: got %u of %u bytes\n",fn,got,total); ok=0; }
+                        if (ok) {
+                            char out[1024];
+                            snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+                            if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); }
+                            else {
+                                printf("Reconstructing '%s' (%u bytes)\n",fn,total);
+                                FILE *f = fopen(out,"wb");
+                                if (!f) { perror(out); }
+                                else {
+                                    for (int k = idx; k < end; k++) fwrite(chunks[k].data,1,chunks[k].data_len,f);
+                                    fclose(f);
+                                    SHA256_CTX sh; sha256_init(&sh);
+                                    for (int k = idx; k < end; k++) sha256_update(&sh,chunks[k].data,chunks[k].data_len);
+                                    uint8_t h[32]; sha256_final(&sh,h);
+                                    printf("  SHA-256: "); for(int k=0;k<32;k++) printf("%02x",h[k]); printf("\n");
+                                }
+                            }
+                        }
+                        for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+                        idx = end;
+                    }
+                    free(chunks);
+                    if (n==0) { fprintf(stderr,"No data extracted\n"); return 1; }
+                    return 0;
+                cln:
+                    for (int i = 0; i < n; i++) { free(chunks[i].filename); free(chunks[i].data); }
+                    free(chunks); return 1;
+                } else {
+                    fprintf(stderr,"Unknown command '%s', use 'embed' or 'extract'\n",argv[1]);
+                    return 1;
+                }
+                return 0;
+            }
+            MAINEOF
+            echo "=== Written ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Written ===
+    time: 7/28/2026, 7:41:35.046 AM GMT+5:30
+    response: This is a substantial rewrite. I'll write the full modified file.
+    duration: 40.132s
+    duration_ms: 40132
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good. Now let me compile and test.
+    thinking_duration: 181ms
+    thinking_duration_ms: 181
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Compile OK ===
+    time: 7/28/2026, 7:42:15.341 AM GMT+5:30
+    duration: 9.465s
+    duration_ms: 9465
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Good, it compiles. Now let me test the various scenarios.
+
+      1. Embed with no flags (should go to stego_output/)
+      2. Embed with -p prefix (should write prefixed files in cwd)
+      3. Embed with -o dir (should go to custom dir)
+      4. Embed with -p and -o
+
+      5. Extract with no flags (should go to extracted/)
+      6. Extract with -p prefix (prefixed in extracted/)
+      7. Extract with -o dir
+      8. Extract with -p and -o
+
+      Let me test the default embed case first.
+    thinking_duration: 1.333s
+    thinking_duration_ms: 1333
+    tool_calls:
+      - tool: bash
+        args:
+          command: rm -rf stego_output stego_img*.png && echo "y" | ./diststego embed secret.txt cover1.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_output/cover1.png
+          Embedding complete.
+    time: 7/28/2026, 7:42:24.965 AM GMT+5:30
+    duration: 129.605s
+    duration_ms: 129605
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Default embed case works:
+      - No prefix → goes to `stego_output/` directory
+      - File named `cover1.png` (no prefix)
+
+      Now let me test embed with -p, embed with -o, and embed with both.
+    thinking_duration: 616ms
+    thinking_duration_ms: 616
+    tool_calls:
+      - tool: bash
+        args:
+          command: rm -rf stego_output custom_embed && echo "=== With -p prefix ===" && echo "y" | ./diststego embed -p myprefix_ secret.txt cover2.png && ls myprefix_cover2.png && echo "=== With -o dir ===" && echo "y" | ./diststego embed -o custom_embed secret.txt cover3.png && ls custom_embed/cover3.png && echo "=== With -p and -o ===" && echo "y" | ./diststego embed -p pref_ -o custom_embed secret.txt cover4.png && ls custom_embed/pref_cover4.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === With -p prefix ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover2.png (capacity 360000 bytes)
+           -> saved myprefix_cover2.png
+          Embedding complete.
+          myprefix_cover2.png
+          === With -o dir ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover3.png (capacity 360000 bytes)
+           -> saved custom_embed/cover3.png
+          Embedding complete.
+          custom_embed/cover3.png
+          === With -p and -o ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover4.png (capacity 360000 bytes)
+           -> saved pref_cover4.png
+          Embedding complete.
+          ls: custom_embed/pref_cover4.png: No such file or directory
+    time: 7/28/2026, 7:44:34.806 AM GMT+5:30
+    duration: 54.758s
+    duration_ms: 54758
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The `-p` and `-o` together case seems wrong. With `-p pref_` and `-o custom_embed`, it should output `custom_embed/pref_cover4.png`. But the output shows `saved pref_cover4.png` (in cwd, not in custom_embed directory).
+
+      The issue is in my logic. Let me check:
+
+      ```c
+      int use_dir = !prefix; // no prefix => output to directory
+      ```
+
+      With prefix="pref_" and out_dir="custom_embed", `use_dir = !prefix` = 0 (false), so it uses the else branch:
+      ```c
+      } else {
+          snprintf(out,sizeof(out),"%s%s",prefix,cover_bn);
+      }
+      ```
+
+      The issue is `use_dir = !prefix` is wrong. When `-o` is provided, we should always use the directory. The `use_dir` logic should be:
+      - If `-o` is given → always use dir
+      - If `-p` is given but no `-o` → put in cwd with prefix
+      - If neither → use default dir (stego_output/)
+
+      Let me fix the logic:
+
+      ```c
+      int use_dir = 1; // always use dir for output
+      const char *out_dir = "stego_output";
+      ```
+
+      Wait, but the user said:
+      - "-p <prefix>: output named <prefix><original_name> in cwd"
+      - "-o <dir>: override the output directory"
+      - "-p & -o: prefixed file on dir"
+
+      So:
+      - Only `-p`, no `-o`: cwd, prefix
+      - Only `-o`, no `-p`: dir, no prefix
+      - Both `-p` and `-o`: dir, prefix
+      - Neither: stego_output/, no prefix
+
+      So `use_dir` should be true unless `-p` is given WITHOUT `-o`. Let me track this.
+
+      Actually, the simplest fix: if `out_dir` is not "stego_output" (user specified -o) or if there's no prefix, use dir. Only use cwd when prefix is specified without -o.
+
+      Let me simplify: track whether `-o` was explicitly given by the user.
+
+      Actually, let me just fix the logic to use a flag:
+    thinking_duration: 4.604s
+    thinking_duration_ms: 4604
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    const char *bn = strrchr(pf,'/'); bn=bn?bn+1:pf; size_t nl=strlen(bn);
+                    int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+                    int out_in_dir = (out_dir != NULL); // -o was given, or default
+
+                    for (int i = 0; i < nc; i++) {
+          oldString: |2-
+                    const char *bn = strrchr(pf,'/'); bn=bn?bn+1:pf; size_t nl=strlen(bn);
+                    int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+                    int use_dir = !prefix; // no prefix => output to directory
+
+                    for (int i = 0; i < nc; i++) {
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:45:29.787 AM GMT+5:30
+    response: The `-p & -o` combined case is wrong — it should output to the dir. Let me fix the use_dir logic.
+    duration: 17.012s
+    duration_ms: 17012
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Wait, `out_dir` is always set (default "stego_output"). I need to detect whether `-o` was explicitly given vs the default. Let me use a different approach: use a flag `user_set_outdir` or just check if `-o` was found during arg parsing.
+
+      Actually, the simplest fix: I'll track whether user explicitly passed `-o` with a flag.
+
+      Let me re-read my embed arg parsing:
+
+      ```c
+      const char *prefix = NULL, *out_dir = "stego_output";
+      int ai = 2;
+      while (ai < argc && argv[ai][0] == '-') {
+          if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+          else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+          else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+      }
+      ```
+
+      I need to know if `-o` was used. Let me add a flag:
+    thinking_duration: 2.079s
+    thinking_duration_ms: 2079
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                if (!strcmp(argv[1], "embed")) {
+                    const char *prefix = NULL, *out_dir = "stego_output";
+                    int user_dir = 0, ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; user_dir=1; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+          oldString: |2-
+                if (!strcmp(argv[1], "embed")) {
+                    const char *prefix = NULL, *out_dir = "stego_output";
+                    int ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:45:47.006 AM GMT+5:30
+    duration: 8.480s
+    duration_ms: 8480
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to fix the logic for where to place the output:
+
+      - `-p` only: cwd, with prefix
+      - `-o` only: dir, no prefix
+      - `-p` and `-o`: dir, with prefix
+      - Neither: default dir (stego_output/), no prefix
+
+      So use_dir = (user_dir || !prefix). If user gave -o, always use dir. If user gave -p only, use cwd. If neither, use dir.
+
+      Wait: `user_dir || !prefix`:
+      - `-p` only: user_dir=0, prefix!=NULL → 0 || 0 → 0 → cwd ✓
+      - `-o` only: user_dir=1 → always dir ✓
+      - `-p` & `-o`: user_dir=1 → always dir ✓
+      - Neither: user_dir=0, prefix=NULL → 0 || 1 → 1 → dir ✓
+
+      That works!
+    thinking_duration: 1.942s
+    thinking_duration_ms: 1942
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+                    int use_dir = (user_dir || !prefix);
+
+                    for (int i = 0; i < nc; i++) {
+          oldString: |2-
+                    int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+                    int out_in_dir = (out_dir != NULL);
+
+                    for (int i = 0; i < nc; i++) {
+        result: Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+    time: 7/28/2026, 7:45:55.700 AM GMT+5:30
+    duration: 5.909s
+    duration_ms: 5909
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me re-read the file to see exactly what the text looks like right now around that area.
+    thinking_duration: 473ms
+    thinking_duration_ms: 473
+    tool_calls:
+      - tool: read
+        args:
+          offset: 185
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          185:         printf("Original payload SHA-256: "); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf("\n");
+          186: 
+          187:         const char *bn = strrchr(pf,'/'); bn=bn?bn+1:pf; size_t nl=strlen(bn);
+          188:         int nc = argc-ai-1; size_t cs = (fsize+nc-1)/nc, off = 0;
+          189:         int out_in_dir = (out_dir != NULL); // -o was given, or default
+          190: 
+          191:         for (int i = 0; i < nc; i++) {
+          192:             const char *cp = argv[ai+1+i];
+          193:             int w,h,ch; unsigned char *cv = stbi_load(cp,&w,&h,&ch,0);
+          194:             if (!cv) { fprintf(stderr,"Cannot load %s\n",cp); return 1; }
+          195:             if (ch!=3) { unsigned char *rgb=stbi_load(cp,&w,&h,&ch,3); stbi_image_free(cv); cv=rgb; ch=3; }
+          196:             size_t rem=fsize-off, tc=cs; if (tc>rem) tc=rem;
+          197:             if (tc==0) { printf("No data left for %s, skipping\n",cp); stbi_image_free(cv); continue; }
+          198:             size_t cap; unsigned char *stego = embed_data(cv,w,h,ch,bn,nl,(uint32_t)fsize,(uint32_t)off,payload+off,tc,&cap);
+          199:             if (!stego) { fprintf(stderr,"Embedding failed for %s\n",cp); stbi_image_free(cv); return 1; }
+          200:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",tc,cp,cap);
+          201: 
+          202:             // Build output path: dir/prefix<cover> or just <prefix><cover>
+          203:             char out[1024];
+          204:             const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+
+          (Showing lines 185-204 of 289. Use offset=205 to continue.)
+          </content>
+    time: 7/28/2026, 7:46:01.742 AM GMT+5:30
+    duration: 3.871s
+    duration_ms: 3871
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: I see - my earlier edit changed `int out_in_dir` but the rest of the code uses `use_dir`. Let me fix the variable name.
+    thinking_duration: 563ms
+    thinking_duration_ms: 563
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: int out_in_dir = (out_dir != NULL); // -o was given, or default
+          newString: int use_dir = (user_dir || !prefix);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:46:05.762 AM GMT+5:30
+    duration: 6.250s
+    duration_ms: 6250
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now I need to check the output path building section to make sure it's correct. Let me see lines 202-215.
+    thinking_duration: 559ms
+    thinking_duration_ms: 559
+    tool_calls:
+      - tool: read
+        args:
+          offset: 200
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          200:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",tc,cp,cap);
+          201: 
+          202:             // Build output path: dir/prefix<cover> or just <prefix><cover>
+          203:             char out[1024];
+          204:             const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+          205:             if (use_dir) {
+          206:                 mkdir(out_dir,0755);
+          207:                 snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",cover_bn);
+          208:             } else {
+          209:                 snprintf(out,sizeof(out),"%s%s",prefix,cover_bn);
+          210:             }
+          211:             if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); free(stego); stbi_image_free(cv); off+=tc; continue; }
+          212:             if (!stbi_write_png(out,w,h,ch,stego,w*ch)) { fprintf(stderr,"Failed to write %s\n",out); return 1; }
+          213:             printf(" -> saved %s\n",out);
+          214:             free(stego); stbi_image_free(cv); off+=tc;
+          215:         }
+          216:         printf("Embedding complete.\n");
+          217: 
+          218:     } else if (!strcmp(argv[1], "extract")) {
+          219:         const char *prefix = NULL, *out_dir = "extracted";
+
+          (Showing lines 200-219 of 289. Use offset=220 to continue.)
+          </content>
+    time: 7/28/2026, 7:46:12.162 AM GMT+5:30
+    duration: 4.117s
+    duration_ms: 4117
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good, the logic looks correct now. Let me compile and test again.
+    thinking_duration: 476ms
+    thinking_duration_ms: 476
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Compile OK ===
+    time: 7/28/2026, 7:46:16.463 AM GMT+5:30
+    duration: 12.983s
+    duration_ms: 12983
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: rm -rf stego_output custom_embed stego_img*.png extracted myprefix_*.png && echo "=== Embed no flags ===" && echo "y" | ./diststego embed secret.txt cover1.png && ls stego_output/ && echo "=== Embed -p only ===" && echo "y" | ./diststego embed -p my_ secret.txt cover2.png && ls my_cover2.png && echo "=== Embed -o only ===" && echo "y" | ./diststego embed -o custom_embed secret.txt cover3.png && ls custom_embed/ && echo "=== Embed -p and -o ===" && echo "y" | ./diststego embed -p pref_ -o custom_embed secret.txt cover4.png && ls custom_embed/pref_cover4.png && echo "=== All embed tests passed ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          zsh:1: no matches found: stego_img*.png
+    time: 7/28/2026, 7:46:29.592 AM GMT+5:30
+    duration: 9.380s
+    duration_ms: 9380
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Zsh glob issue again. Let me use `rm -f` pattern differently.
+    thinking_duration: 402ms
+    thinking_duration_ms: 402
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            rm -rf stego_output custom_embed extracted
+            rm -f stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png myprefix_cover2.png my_cover2.png pref_cover4.png
+            echo "=== Embed no flags ===" && echo "y" | ./diststego embed secret.txt cover1.png && ls stego_output/cover1.png && echo "=== Embed -p only ===" && echo "y" | ./diststego embed -p my_ secret.txt cover2.png && ls my_cover2.png && echo "=== Embed -o only ===" && echo "y" | ./diststego embed -o custom_embed secret.txt cover3.png && ls custom_embed/cover3.png && echo "=== Embed -p and -o ===" && echo "y" | ./diststego embed -p pref_ -o custom_embed secret.txt cover4.png && ls custom_embed/pref_cover4.png && echo "=== ALL EMBED OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Embed no flags ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_output/cover1.png
+          Embedding complete.
+          stego_output/cover1.png
+          === Embed -p only ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover2.png (capacity 360000 bytes)
+           -> saved my_cover2.png
+          Embedding complete.
+          my_cover2.png
+          === Embed -o only ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover3.png (capacity 360000 bytes)
+           -> saved custom_embed/cover3.png
+          Embedding complete.
+          custom_embed/cover3.png
+          === Embed -p and -o ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 320 bytes into cover4.png (capacity 360000 bytes)
+           -> saved custom_embed/pref_cover4.png
+          Embedding complete.
+          custom_embed/pref_cover4.png
+          === ALL EMBED OK ===
+    time: 7/28/2026, 7:46:39.115 AM GMT+5:30
+    duration: 7.299s
+    duration_ms: 7299
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      All 4 embed cases work:
+
+      | Flags | Output |
+      |---|---|
+      | (none) | `stego_output/cover1.png` |
+      | `-p my_` | `my_cover2.png` (cwd) |
+      | `-o custom_embed` | `custom_embed/cover3.png` |
+      | `-p pref_ -o custom_embed` | `custom_embed/pref_cover4.png` |
+
+      Now let me test the multi-file extract scenario to make sure everything still works.
+    thinking_duration: 896ms
+    thinking_duration_ms: 896
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            rm -f stego_img*.png && rm -rf extracted custom_out && rm -f my_cover2.png custom_embed/pref_cover4.png custom_embed/cover3.png
+            echo "y" | ./diststego embed file1.txt cover1.png && mv stego_output/cover1.png stego_img1.png
+            echo "y" | ./diststego embed file2.txt cover2.png cover3.png && mv stego_output/cover2.png stego_img2.png && mv stego_output/cover3.png stego_img3.png
+            echo "y" | ./diststego embed file3.txt cover4.png cover5.png cover6.png && mv stego_output/cover4.png stego_img4.png && mv stego_output/cover5.png stego_img5.png && rm -f stego_output/cover6.png
+            echo "=== Extract no flags ===" && echo "y" | ./diststego extract stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls extracted/ && echo "=== Extract -p ===" && echo "y" | ./diststego extract -p recovered_ stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls recovered_file1.txt recovered_file2.txt && echo "=== Extract -o ===" && echo "y" | ./diststego extract -o custom_out stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls custom_out/ && echo "=== Extract -p and -o ===" && echo "y" | ./diststego extract -p r_ -o custom_out stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls custom_out/r_file1.txt custom_out/r_file2.txt && echo "=== ALL EXTRACT OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          zsh:1: no matches found: stego_img*.png
+          File 'stego_output/cover1.png' exists. Overwrite? [y/N] Original payload SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Embedded 34 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_output/cover1.png
+          Embedding complete.
+          Original payload SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          Embedded 37 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_output/cover2.png
+          Embedded 36 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_output/cover3.png
+          Embedding complete.
+          Original payload SHA-256: 02e4372ae1419a12880f684a4a7316d9fffa2bb326f3311ff0e2a96bda2a4507
+          Embedded 52 bytes into cover4.png (capacity 360000 bytes)
+           -> saved stego_output/cover4.png
+          Embedded 52 bytes into cover5.png (capacity 360000 bytes)
+           -> saved stego_output/cover5.png
+          Embedded 50 bytes into cover6.png (capacity 360000 bytes)
+           -> saved stego_output/cover6.png
+          Embedding complete.
+          === Extract no flags ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          file1.txt
+          file2.txt
+          === Extract -p ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          ls: recovered_file1.txt: No such file or directory
+          ls: recovered_file2.txt: No such file or directory
+    time: 7/28/2026, 7:46:46.607 AM GMT+5:30
+    response: Now let me test extract with all the flags.
+    duration: 8.389s
+    duration_ms: 8389
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The extract cases are failing:
+      1. **no flags**: files are in `extracted/` but the `ls extracted/` shows them ✓
+      2. **-p**: should produce `recovered_file1.txt` and `recovered_file2.txt` in cwd... but they're in `extracted/recovered_file1.txt`
+
+      Wait, looking at the extract code, the extract always uses the output dir. Let me check the extract logic:
+
+      ```c
+      const char *prefix = NULL, *out_dir = "extracted";
+      int ai = 2;
+      while (ai < argc && argv[ai][0] == '-') {
+          if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+          else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+          ...
+      }
+      ```
+
+      And then:
+      ```c
+      snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+      ```
+
+      So with `-p recovered_`, the output would be `extracted/recovered_file1.txt`. But the user wants `-p` to mean "in cwd". 
+
+      But wait, re-reading the user's requirements:
+
+      "Extract:
+      - -p <prefix>: output named <prefix><original_name> in cwd
+      - -o <dir>: output directory (default extracted/)
+      - If both: prefixed files in custom dir
+      - If neither: files in extracted/ with original names"
+
+      So:
+      - `-p` only: cwd with prefix
+      - `-o` only: dir with no prefix
+      - Both: dir with prefix
+      - Neither: extracted/ with no prefix
+
+      This is the same pattern as embed. I need to apply the same `use_dir` logic to extract.
+
+      Let me update the extract section to have the same `use_dir` logic.
+    thinking_duration: 3.161s
+    thinking_duration_ms: 3161
+    tool_calls:
+      - tool: read
+        args:
+          offset: 218
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 15
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          218:     } else if (!strcmp(argv[1], "extract")) {
+          219:         const char *prefix = NULL, *out_dir = "extracted";
+          220:         int ai = 2;
+          221:         while (ai < argc && argv[ai][0] == '-') {
+          222:             if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+          223:             else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+          224:             else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+          225:         }
+          226:         if (argc <= ai) { fprintf(stderr,"Usage: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n",argv[0]); return 1; }
+          227: 
+          228:         struct Chunk *chunks = NULL; int n = 0;
+          229:         for (int i = ai; i < argc; i++) {
+          230:             int w,h,ch; unsigned char *img = stbi_load(argv[i],&w,&h,&ch,3);
+          231:             if (!img) { fprintf(stderr,"Cannot load %s\n",argv[i]); goto cln; }
+          232:             char *fn; size_t fnl,dl; uint32_t tot,off;
+
+          (Showing lines 218-232 of 289. Use offset=233 to continue.)
+          </content>
+    time: 7/28/2026, 7:46:55.180 AM GMT+5:30
+    response: The extract logic needs the same `use_dir` pattern as embed (when `-p` only, output to cwd). Let me fix.
+    duration: 6.995s
+    duration_ms: 6995
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: I need to add a `user_dir` flag for extract too, and then use `use_dir` logic for building the output path.
+    thinking_duration: 542ms
+    thinking_duration_ms: 542
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                } else if (!strcmp(argv[1], "extract")) {
+                    const char *prefix = NULL, *out_dir = "extracted";
+                    int user_dir = 0, ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; user_dir=1; ai+=2; }
+                        else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+          oldString: |2-
+                } else if (!strcmp(argv[1], "extract")) {
+                    const char *prefix = NULL, *out_dir = "extracted";
+                    int ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:47:02.323 AM GMT+5:30
+    duration: 6.830s
+    duration_ms: 6830
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now I need to update the output path building in the extract section to use `use_dir` logic. Let me find it.
+    thinking_duration: 639ms
+    thinking_duration_ms: 639
+    tool_calls:
+      - tool: read
+        args:
+          offset: 245
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 25
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          245:         while (idx < n) {
+          246:             const char *fn = chunks[idx].filename;
+          247:             uint32_t total = chunks[idx].total_len;
+          248:             int end = idx; uint32_t got = 0; int ok = 1;
+          249:             while (end < n && !strcmp(chunks[end].filename,fn)) {
+          250:                 if (chunks[end].chunk_offset != got) {
+          251:                     printf("ERROR: %s — gap at offset %u (expected %u)\n",fn,chunks[end].chunk_offset,got);
+          252:                     ok=0; break;
+          253:                 }
+          254:                 got += chunks[end].data_len; end++;
+          255:             }
+          256:             if (ok && got < total) { printf("ERROR: %s — incomplete: got %u of %u bytes\n",fn,got,total); ok=0; }
+          257:             if (ok) {
+          258:                 char out[1024];
+          259:                 snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+          260:                 if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); }
+          261:                 else {
+          262:                     printf("Reconstructing '%s' (%u bytes)\n",fn,total);
+          263:                     FILE *f = fopen(out,"wb");
+          264:                     if (!f) { perror(out); }
+          265:                     else {
+          266:                         for (int k = idx; k < end; k++) fwrite(chunks[k].data,1,chunks[k].data_len,f);
+          267:                         fclose(f);
+          268:                         SHA256_CTX sh; sha256_init(&sh);
+          269:                         for (int k = idx; k < end; k++) sha256_update(&sh,chunks[k].data,chunks[k].data_len);
+
+          (Showing lines 245-269 of 289. Use offset=270 to continue.)
+          </content>
+    time: 7/28/2026, 7:47:09.315 AM GMT+5:30
+    duration: 4.016s
+    duration_ms: 4016
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      I see the issue: the output path is always `dir/prefix+fn`. I need to use the same `use_dir` logic:
+      - `-p` only: cwd with prefix (use_dir=0)
+      - `-o` only: dir without prefix (use_dir=1)
+      - Both: dir with prefix (use_dir=1)
+      - Neither: extracted/ without prefix (use_dir=1)
+
+      Let me update line 259 to use `use_dir`.
+    thinking_duration: 1.037s
+    thinking_duration_ms: 1037
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    mkdir(out_dir,0755);
+                    int use_dir = (user_dir || !prefix);
+                    int idx = 0;
+          oldString: |2-
+                    mkdir(out_dir,0755);
+                    int idx = 0;
+        result: Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
+    time: 7/28/2026, 7:47:13.465 AM GMT+5:30
+    duration: 4.678s
+    duration_ms: 4678
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: It seems the file doesn't have those exact whitespace. Let me read the exact content around mkdir.
+    thinking_duration: 607ms
+    thinking_duration_ms: 607
+    tool_calls:
+      - tool: grep
+        args:
+          pattern: mkdir.*out_dir
+          path: /Users/dk/lab-data/distributed-steganography-c
+          include: main.c
+        result: |
+          Found 2 matches
+          /Users/dk/lab-data/distributed-steganography-c/main.c:
+            Line 206:                 mkdir(out_dir,0755);
+
+            Line 242:         mkdir(out_dir,0755);
+    time: 7/28/2026, 7:47:18.315 AM GMT+5:30
+    duration: 4.452s
+    duration_ms: 4452
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: read
+        args:
+          offset: 241
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 5
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          241:         qsort(chunks,n,sizeof(struct Chunk),chunk_cmp);
+          242:         mkdir(out_dir,0755);
+          243:         int use_dir = 1; // extract always uses dir (default extracted/)
+          244:         int idx = 0;
+          245:         while (idx < n) {
+
+          (Showing lines 241-245 of 289. Use offset=246 to continue.)
+          </content>
+    time: 7/28/2026, 7:47:22.902 AM GMT+5:30
+    duration: 3.459s
+    duration_ms: 3459
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: I see — the line already has `int use_dir = 1;` from the heredoc. I need to change it to use the user_dir flag.
+    thinking_duration: 646ms
+    thinking_duration_ms: 646
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    qsort(chunks,n,sizeof(struct Chunk),chunk_cmp);
+                    mkdir(out_dir,0755);
+                    int use_dir = (user_dir || !prefix);
+                    int idx = 0;
+          oldString: |2-
+                    qsort(chunks,n,sizeof(struct Chunk),chunk_cmp);
+                    mkdir(out_dir,0755);
+                    int use_dir = 1; // extract always uses dir (default extracted/)
+                    int idx = 0;
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:47:26.513 AM GMT+5:30
+    duration: 6.113s
+    duration_ms: 6113
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update the output path building to use `use_dir` similar to embed.
+    thinking_duration: 468ms
+    thinking_duration_ms: 468
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                        if (ok) {
+                            char out[1024];
+                            if (use_dir) {
+                                snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+                            } else {
+                                snprintf(out,sizeof(out),"%s%s",prefix,fn);
+                            }
+          oldString: |2-
+                        if (ok) {
+                            char out[1024];
+                            snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",fn);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:47:32.771 AM GMT+5:30
+    duration: 6.334s
+    duration_ms: 6334
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now compile and test again.
+    thinking_duration: 261ms
+    thinking_duration_ms: 261
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Compile OK ===
+    time: 7/28/2026, 7:47:39.264 AM GMT+5:30
+    duration: 10.282s
+    duration_ms: 10282
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            rm -rf stego_output extracted custom_out
+            rm -f stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png recovered_*.txt r_*.txt my_*.png pref_*.png
+            echo "y" | ./diststego embed file1.txt cover1.png && mv stego_output/cover1.png stego_img1.png
+            echo "y" | ./diststego embed file2.txt cover2.png cover3.png && mv stego_output/cover2.png stego_img2.png && mv stego_output/cover3.png stego_img3.png
+            echo "y" | ./diststego embed file3.txt cover4.png cover5.png cover6.png && mv stego_output/cover4.png stego_img4.png && mv stego_output/cover5.png stego_img5.png
+            echo "=== Extract no flags ===" && echo "y" | ./diststego extract stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls extracted/ && diff file1.txt extracted/file1.txt && diff file2.txt extracted/file2.txt
+            echo "=== Extract -p only ===" && echo "y" | ./diststego extract -p recovered_ stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls recovered_file1.txt recovered_file2.txt && diff file1.txt recovered_file1.txt && diff file2.txt recovered_file2.txt
+            echo "=== Extract -o only ===" && echo "y" | ./diststego extract -o custom_out stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls custom_out/ && diff file1.txt custom_out/file1.txt && diff file2.txt custom_out/file2.txt
+            echo "=== Extract -p and -o ===" && echo "y" | ./diststego extract -p r_ -o custom_out stego_img1.png stego_img2.png stego_img3.png stego_img4.png stego_img5.png && ls custom_out/r_file1.txt custom_out/r_file2.txt && diff file1.txt custom_out/r_file1.txt && diff file2.txt custom_out/r_file2.txt
+            echo "=== ALL OK ==="
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          zsh:2: no matches found: recovered_*.txt
+          Original payload SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Embedded 34 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_output/cover1.png
+          Embedding complete.
+          Original payload SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          Embedded 37 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_output/cover2.png
+          Embedded 36 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_output/cover3.png
+          Embedding complete.
+          Original payload SHA-256: 02e4372ae1419a12880f684a4a7316d9fffa2bb326f3311ff0e2a96bda2a4507
+          Embedded 52 bytes into cover4.png (capacity 360000 bytes)
+           -> saved stego_output/cover4.png
+          Embedded 52 bytes into cover5.png (capacity 360000 bytes)
+           -> saved stego_output/cover5.png
+          Embedded 50 bytes into cover6.png (capacity 360000 bytes)
+           -> saved stego_output/cover6.png
+          Embedding complete.
+          === Extract no flags ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          file1.txt
+          file2.txt
+          === Extract -p only ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          recovered_file1.txt
+          recovered_file2.txt
+          === Extract -o only ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          file1.txt
+          file2.txt
+          === Extract -p and -o ===
+          Extracted 34 bytes from stego_img1.png (file=file1.txt, offset=0, total=34)
+          Extracted 37 bytes from stego_img2.png (file=file2.txt, offset=0, total=73)
+          Extracted 36 bytes from stego_img3.png (file=file2.txt, offset=37, total=73)
+          Extracted 52 bytes from stego_img4.png (file=file3.txt, offset=0, total=154)
+          Extracted 52 bytes from stego_img5.png (file=file3.txt, offset=52, total=154)
+          Reconstructing 'file1.txt' (34 bytes)
+            SHA-256: fd9667de9c089d3d8b9a82f8296a6b9b766f67be6308b515d1a9997dfedb6f95
+          Reconstructing 'file2.txt' (73 bytes)
+            SHA-256: da95528e3e0c34d75fb70fc15b8e6f886b2d74612a1e1f31daae82c7eb69e4fd
+          ERROR: file3.txt — incomplete: got 104 of 154 bytes
+          custom_out/r_file1.txt
+          custom_out/r_file2.txt
+          === ALL OK ===
+    time: 7/28/2026, 7:47:49.695 AM GMT+5:30
+    duration: 10.079s
+    duration_ms: 10079
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      All 4 extract cases work correctly:
+
+      | Flags | Output | Verified |
+      |---|---|---|
+      | (none) | `extracted/file1.txt`, `extracted/file2.txt` | ✓ |
+      | `-p recovered_` | `recovered_file1.txt`, `recovered_file2.txt` (cwd) | ✓ |
+      | `-o custom_out` | `custom_out/file1.txt`, `custom_out/file2.txt` | ✓ |
+      | `-p r_ -o custom_out` | `custom_out/r_file1.txt`, `custom_out/r_file2.txt` | ✓ |
+
+      And the incomplete file3.txt error correctly shows. Everything works!
+
+      Let me provide a summary to the user.
+    thinking_duration: 1.074s
+    thinking_duration_ms: 1074
+    time: 7/28/2026, 7:47:59.940 AM GMT+5:30
+    response: |-
+      All cases working. Here's the full usage summary:
+
+      **Embed:**
+      ```
+      # default: stego_output/<cover>
+      ./diststego embed file.txt cover1.png cover2.png
+
+      # -p prefix in cwd
+      ./diststego embed -p my_ file.txt cover1.png       → my_cover1.png
+
+      # -o custom dir
+      ./diststego embed -o out file.txt cover1.png       → out/cover1.png
+
+      # both
+      ./diststego embed -p my_ -o out file.txt cover1.png → out/my_cover1.png
+      ```
+
+      **Extract:**
+      ```
+      # default: extracted/<original_name>
+      ./diststego extract stego1.png stego2.png           → extracted/file.txt
+
+      # -p prefix in cwd
+      ./diststego extract -p rec_ stego1.png              → rec_file.txt
+
+      # -o custom dir
+      ./diststego extract -o out stego1.png               → out/file.txt
+
+      # both
+      ./diststego extract -p rec_ -o out stego1.png       → out/rec_file.txt
+      ```
+
+      **Overwrite protection:** every output file prompts `Overwrite? [y/N]` before clobbering. Incomplete files (missing chunks) print an `ERROR:` message and are skipped.
+    duration: 5.754s
+    duration_ms: 5754
+

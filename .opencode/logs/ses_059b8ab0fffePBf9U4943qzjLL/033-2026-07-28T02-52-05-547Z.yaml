@@ -1,0 +1,684 @@
+---
+user:
+  text: 'Outputs are named <file_basename>_<carrier_basename> to avoid collisions: why? why collision? every i/p file is different & every carrier is different'
+  time: 7/28/2026, 8:20:02.206 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is questioning my naming convention. They're saying: if each input file is different and each carrier is different, why would there be collisions?
+
+      So the output naming should be simpler — same as `fill`: just `<dir>/<prefix><carrier_basename>`. No need to prefix with the file name because each file-carrier combination produces a unique output (different carrier for each file).
+
+      Wait, but the user said "every i/p file is different & every carrier is different" — does that mean each file gets its own carriers? Let me re-read the original request:
+
+      "the files to embed folder & carrier folder is specified, the files are embed one by one."
+
+      I think the user means: each file in the files folder gets embedded into carriers from the carrier folder. But carriers ARE shared across files. If file1 uses carrier1 and file2 also uses carrier1, the output for both would be `stego_output/carrier1.png` — a collision!
+
+      Unless... the user means that carriers are consumed sequentially and NOT shared. So file1 uses carrier1, carrier2, etc. File2 starts from carrier3 (next unused carrier), not from carrier1. In that case, there's no collision because each output has a unique carrier.
+
+      But then the algorithm is different from what I described — carriers aren't reused per file, they're consumed in a single pass. This is basically the same as `fill` but the input is a folder of files.
+
+      Let me re-read the original request more carefully: "the files to embed folder & carrier folder is specified, the files are embed one by one."
+
+      I think the simplest interpretation is: for each file in the files folder (sorted), run the `fill` algorithm against the carrier folder. The carriers are reused for each file (file1 embeds into carrier1.png, file2 also embeds into carrier1.png).
+
+      But then the output naming would collide: both file1 and file2 would try to write `stego_output/carrier1.png`.
+
+      The user is asking: why collision? And they're right that conceptually, if every input file is different and every carrier is different, there should be no collision. But the carriers ARE the same across files — carrier1.png is the same physical file for file1, file2, etc.
+
+      UNLESS the user intends that ALL files are embedded into carriers simultaneously in a single batch, with carriers being consumed across all files. So:
+      - file1 chunk1 → carrier1
+      - file1 chunk2 → carrier2  
+      - file2 chunk1 → carrier3
+      - file2 chunk2 → carrier4
+
+      In this model, carriers aren't reused per file. Each carrier gets exactly one chunk from one file. This avoids collision naturally because each output uses a different carrier image (carrier1, carrier2, etc.).
+
+      But this mixes different files' chunks into the same carrier pool. When extracting, you'd need to extract ALL carriers and then the extract logic would group by filename.
+
+      Actually, that's a useful model! Each carrier stores one chunk for one file. Multiple files' chunks can be in the same carrier pool. The extract logic already handles this (groups by filename, sorts by offset).
+
+      So the algorithm would be:
+      ```
+      carriers = sorted scan(carriers_folder)
+      ci = 0  // carrier index, shared across all files
+
+      for each file in sorted scan(files_folder):
+          payload = read(file)
+          offset = 0
+          while offset < len(payload):
+              carrier = carriers[ci]
+              cap = carrier capacity
+              chunk = min(cap, len(payload) - offset)
+              embed(file.basename, total_len, offset, chunk) into carrier
+              output = <dir>/<prefix><carrier_basename>
+              write output
+              ci++
+              offset += chunk
+      ```
+
+      Carrier consumption is global across all files. No naming collision since each carrier is used exactly once.
+
+      This makes more sense! And the user's question "why collision?" confirms this — they see that each carrier is unique, so the output name (based on carrier) is unique.
+
+      So the `embdir` mode is essentially an extension of `fill` where:
+      - Instead of one payload file, there's a folder of payload files
+      - Carriers are consumed sequentially across all files
+      - A single "not enough carriers" error at the end if all carriers exhausted
+      - Per-file atomic 7.2 MB size check (since we don't know per-file batch boundaries in advance)
+
+      Wait, the size check needs to be per-file batch. But if carriers are consumed globally, we'd need to know which carriers belong to which file. We could track this with batch markers.
+
+      Actually, let me simplify: just do ONE global size check at the end for all outputs. If any exceeds 7.2 MB, delete all outputs and abort. This is simpler and consistent with the `embed` command's behavior.
+
+      Or per-file: track which output indices belong to which file, and check each batch.
+
+      Let me keep it simple: global size check at the end. Same as `embed` and `fill`.
+
+      For the exhausted carriers error: after processing all files, check if the carrier array was exhausted mid-file. If so, error and cleanup all outputs.
+
+      OK, let me implement this now.
+    thinking_duration: 10.891s
+    thinking_duration_ms: 10891
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    fprintf(stderr, "  Fill:   %s fill  [-p <prefix>] [-o <dir>] <payload> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (fill each carrier to capacity, sequentially; same output rules)\n");
+                    fprintf(stderr, "  EmbDir: %s embdir [-p <prefix>] [-o <dir>] <files_folder> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (embed files in folder, consuming carriers globally across all files)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+          oldString: |2-
+                    fprintf(stderr, "  Fill:   %s fill  [-p <prefix>] [-o <dir>] <payload> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (fill each carrier to capacity, sequentially; same output rules)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+        result: Edit applied successfully.
+    time: 7/28/2026, 8:20:02.577 AM GMT+5:30
+    response: 'You''re right — carriers are consumed globally across all files, each carrier used exactly once. No collision. Same output naming as fill: `<dir>/<prefix><carrier_basename>`.'
+    duration: 46.496s
+    duration_ms: 46496
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now add the `embdir` implementation between `fill_fail` and the extract block.
+    thinking_duration: 417ms
+    thinking_duration_ms: 417
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                fill_fail:
+                    for (int i = 0; i < n_written; i++) { remove(out_paths[i]); free(out_paths[i]); }
+                    for (int i = 0; i < n_imgs; i++) free(imgs[i]); free(imgs);
+                    free(out_paths); free(payload);
+                    return 1;
+
+                } else if (!strcmp(argv[1], "embdir")) {
+                    const char *prefix = NULL, *out_dir = "stego_output";
+                    int user_dir = 0, ai = 2;
+                    while (ai < argc && argv[ai][0] == '-') {
+                        if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+                        else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; user_dir=1; ai+=2; }
+                        else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+                    }
+                    if (argc < ai+2) { fprintf(stderr,"Need files folder and carrier folder\n"); return 1; }
+
+                    const char *files_folder = argv[ai];
+                    const char *carriers_folder = argv[ai+1];
+
+                    // Scan carriers folder for .png
+                    DIR *d = opendir(carriers_folder);
+                    if (!d) { fprintf(stderr,"Cannot open carrier directory '%s'\n",carriers_folder); return 1; }
+                    int n_carriers = 0, cap_car = 0;
+                    char **carriers = NULL;
+                    struct dirent *e;
+                    while ((e = readdir(d)) != NULL) {
+                        const char *dot = strrchr(e->d_name, '.');
+                        if (dot && (!strcasecmp(dot, ".png") || !strcasecmp(dot, ".PNG"))) {
+                            if (n_carriers == cap_car) { cap_car = cap_car ? cap_car*2 : 16; carriers = realloc(carriers, cap_car * sizeof(char*)); }
+                            size_t plen = strlen(carriers_folder) + 1 + strlen(e->d_name) + 1;
+                            carriers[n_carriers] = malloc(plen);
+                            snprintf(carriers[n_carriers], plen, "%s/%s", carriers_folder, e->d_name);
+                            n_carriers++;
+                        }
+                    }
+                    closedir(d);
+                    if (n_carriers == 0) { fprintf(stderr,"No PNG files in '%s'\n",carriers_folder); free(carriers); return 1; }
+                    qsort(carriers, n_carriers, sizeof(char*), name_cmp);
+
+                    // Scan files folder for all files
+                    d = opendir(files_folder);
+                    if (!d) { fprintf(stderr,"Cannot open files directory '%s'\n",files_folder); free_files: for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers); return 1; }
+                    int n_files = 0, cap_fl = 0;
+                    char **files = NULL;
+                    while ((e = readdir(d)) != NULL) {
+                        if (e->d_name[0] == '.') continue;
+                        if (n_files == cap_fl) { cap_fl = cap_fl ? cap_fl*2 : 16; files = realloc(files, cap_fl * sizeof(char*)); }
+                        size_t plen = strlen(files_folder) + 1 + strlen(e->d_name) + 1;
+                        files[n_files] = malloc(plen);
+                        snprintf(files[n_files], plen, "%s/%s", files_folder, e->d_name);
+                        struct stat st;
+                        if (stat(files[n_files], &st) != 0 || !S_ISREG(st.st_mode)) { free(files[n_files]); continue; }
+                        n_files++;
+                    }
+                    closedir(d);
+                    if (n_files == 0) { fprintf(stderr,"No files in '%s'\n",files_folder); goto free_files; }
+                    qsort(files, n_files, sizeof(char*), name_cmp);
+
+                    int use_dir = (user_dir || !prefix);
+                    char **out_paths = malloc(n_carriers * sizeof(char*));
+                    int n_written_total = 0;
+                    int file_idx = 0, carrier_idx = 0;
+                    int any_error = 0;
+
+                    for (file_idx = 0; file_idx < n_files; file_idx++) {
+                        const char *fp = files[file_idx];
+                        FILE *f = fopen(fp, "rb");
+                        if (!f) { perror(fp); any_error = 1; break; }
+                        fseek(f,0,SEEK_END); long fsize = ftell(f); fseek(f,0,SEEK_SET);
+                        unsigned char *payload = malloc(fsize);
+                        fread(payload, 1, fsize, f); fclose(f);
+
+                        SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+                        uint8_t oh[32]; sha256_final(&sh,oh);
+                        printf("File '%s' SHA-256: ", files[file_idx]); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf(" (%ld bytes)\n",fsize);
+
+                        const char *fb = strrchr(fp,'/'); fb=fb?fb+1:fp; size_t fbl = strlen(fb);
+                        size_t off = 0;
+                        int batch_start = n_written_total;
+
+                        while (off < (size_t)fsize) {
+                            if (carrier_idx >= n_carriers) {
+                                fprintf(stderr,"ERROR: ran out of carriers while embedding '%s'\n",fb);
+                                any_error = 1; break;
+                            }
+                            const char *cp = carriers[carrier_idx];
+                            int w,h,ch; unsigned char *cv = stbi_load(cp,&w,&h,&ch,0);
+                            if (!cv) { fprintf(stderr,"Cannot load %s\n",cp); any_error = 1; break; }
+                            if (ch!=3) { unsigned char *rgb=stbi_load(cp,&w,&h,&ch,3); stbi_image_free(cv); cv=rgb; ch=3; }
+
+                            size_t max_data = ((size_t)w * h * ch) / 8;
+                            if (max_data <= 16 + fbl) { stbi_image_free(cv); carrier_idx++; continue; }
+                            max_data -= 16 + fbl;
+
+                            size_t rem = fsize - off;
+                            size_t tc = rem < max_data ? rem : max_data;
+                            size_t cap_bytes;
+                            unsigned char *stego = embed_data(cv,w,h,ch,fb,fbl,(uint32_t)fsize,(uint32_t)off,payload+off,tc,&cap_bytes);
+                            if (!stego) { fprintf(stderr,"Embedding failed for %s\n",cp); stbi_image_free(cv); any_error = 1; break; }
+                            printf("  %s +%zu (%s)\n",fb,tc,cp);
+
+                            char out[1024];
+                            const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+                            if (use_dir) { mkdir(out_dir,0755); snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",cover_bn); }
+                            else { snprintf(out,sizeof(out),"%s%s",prefix,cover_bn); }
+                            if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); free(stego); stbi_image_free(cv); off+=tc; carrier_idx++; continue; }
+                            if (!stbi_write_png(out,w,h,ch,stego,w*ch)) { fprintf(stderr,"Failed to write %s\n",out); free(stego); stbi_image_free(cv); any_error = 1; break; }
+                            out_paths[n_written_total] = strdup(out);
+                            n_written_total++;
+                            free(stego); stbi_image_free(cv); off += tc; carrier_idx++;
+                        }
+
+                        free(payload);
+                        if (any_error) break;
+
+                        // Per-file size check
+                        for (int i = batch_start; i < n_written_total; i++) {
+                            struct stat st;
+                            if (stat(out_paths[i], &st) != 0) { fprintf(stderr,"Cannot stat %s\n",out_paths[i]); any_error = 1; break; }
+                            if ((size_t)st.st_size > MAX_STEGO_FILE_SIZE) {
+                                fprintf(stderr,"ERROR: %s exceeds 7.2 MB (%zu bytes) — aborting\n", out_paths[i], (size_t)st.st_size);
+                                for (int j = batch_start; j < n_written_total; j++) { remove(out_paths[j]); free(out_paths[j]); }
+                                n_written_total = batch_start;
+                                for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+                                for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+                                free(out_paths); return 1;
+                            }
+                        }
+                    }
+
+                    if (any_error) {
+                        // Remove current file's batch only
+                        for (int i = batch_start; i < n_written_total; i++) { remove(out_paths[i]); free(out_paths[i]); }
+                        n_written_total = batch_start;
+                        // Print what was written from previous files
+                        if (n_written_total > 0) {
+                            printf("Partially completed.\n");
+                            for (int i = 0; i < n_written_total; i++) {
+                                struct stat st; stat(out_paths[i], &st);
+                                printf("  %s (%zu bytes)\n", out_paths[i], (size_t)st.st_size);
+                                free(out_paths[i]);
+                            }
+                        }
+                        for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+                        for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+                        free(out_paths); return 1;
+                    }
+
+                    printf("Embedding complete.\n");
+                    for (int i = 0; i < n_written_total; i++) {
+                        struct stat st; stat(out_paths[i], &st);
+                        printf("  %s (%zu bytes)\n", out_paths[i], (size_t)st.st_size);
+                        free(out_paths[i]);
+                    }
+                    for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+                    for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+                    free(out_paths);
+                    return 0;
+
+                } else if (!strcmp(argv[1], "extract")) {
+          oldString: |2-
+                fill_fail:
+                    for (int i = 0; i < n_written; i++) { remove(out_paths[i]); free(out_paths[i]); }
+                    for (int i = 0; i < n_imgs; i++) free(imgs[i]); free(imgs);
+                    free(out_paths); free(payload);
+                    return 1;
+
+                } else if (!strcmp(argv[1], "extract")) {
+        result: Edit applied successfully.
+    time: 7/28/2026, 8:20:49.281 AM GMT+5:30
+    duration: 21.046s
+    duration_ms: 21046
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update the "unknown command" message.
+    thinking_duration: 165ms
+    thinking_duration_ms: 165
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: '        fprintf(stderr,"Unknown command ''%s'', use ''embed'', ''fill'', ''embdir'', or ''extract''\n",argv[1]);'
+          oldString: '        fprintf(stderr,"Unknown command ''%s'', use ''embed'', ''fill'', or ''extract''\n",argv[1]);'
+        result: Edit applied successfully.
+    time: 7/28/2026, 8:21:10.552 AM GMT+5:30
+    duration: 10.335s
+    duration_ms: 10335
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now compile and test.
+    thinking_duration: 272ms
+    thinking_duration_ms: 272
+    tool_calls:
+      - tool: bash
+        args:
+          command: gcc-16 -O2 -lm -o diststego main.c 2>&1
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          main.c: In function 'main':
+          main.c:481:26: error: 'batch_start' undeclared (first use in this function); did you mean 'va_start'?
+            481 |             for (int i = batch_start; i < n_written_total; i++) { remove(out_paths[i]); free(out_paths[i]); }
+                |                          ^~~~~~~~~~~
+                |                          va_start
+          main.c:481:26: note: each undeclared identifier is reported only once for each function it appears in
+    time: 7/28/2026, 8:21:21.174 AM GMT+5:30
+    duration: 5.004s
+    duration_ms: 5004
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: '`batch_start` is declared inside the `for` loop body and not visible at the cleanup section. I need to declare it outside the for loop.'
+    thinking_duration: 603ms
+    thinking_duration_ms: 603
+    tool_calls:
+      - tool: read
+        args:
+          offset: 382
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 130
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          382:             }
+          383:         }
+          384:         closedir(d);
+          385:         if (n_carriers == 0) { fprintf(stderr,"No PNG files in '%s'\n",carriers_folder); free(carriers); return 1; }
+          386:         qsort(carriers, n_carriers, sizeof(char*), name_cmp);
+          387: 
+          388:         // Scan files folder for all files
+          389:         d = opendir(files_folder);
+          390:         if (!d) { fprintf(stderr,"Cannot open files directory '%s'\n",files_folder); free_files: for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers); return 1; }
+          391:         int n_files = 0, cap_fl = 0;
+          392:         char **files = NULL;
+          393:         while ((e = readdir(d)) != NULL) {
+          394:             if (e->d_name[0] == '.') continue;
+          395:             if (n_files == cap_fl) { cap_fl = cap_fl ? cap_fl*2 : 16; files = realloc(files, cap_fl * sizeof(char*)); }
+          396:             size_t plen = strlen(files_folder) + 1 + strlen(e->d_name) + 1;
+          397:             files[n_files] = malloc(plen);
+          398:             snprintf(files[n_files], plen, "%s/%s", files_folder, e->d_name);
+          399:             struct stat st;
+          400:             if (stat(files[n_files], &st) != 0 || !S_ISREG(st.st_mode)) { free(files[n_files]); continue; }
+          401:             n_files++;
+          402:         }
+          403:         closedir(d);
+          404:         if (n_files == 0) { fprintf(stderr,"No files in '%s'\n",files_folder); goto free_files; }
+          405:         qsort(files, n_files, sizeof(char*), name_cmp);
+          406: 
+          407:         int use_dir = (user_dir || !prefix);
+          408:         char **out_paths = malloc(n_carriers * sizeof(char*));
+          409:         int n_written_total = 0;
+          410:         int file_idx = 0, carrier_idx = 0;
+          411:         int any_error = 0;
+          412: 
+          413:         for (file_idx = 0; file_idx < n_files; file_idx++) {
+          414:             const char *fp = files[file_idx];
+          415:             FILE *f = fopen(fp, "rb");
+          416:             if (!f) { perror(fp); any_error = 1; break; }
+          417:             fseek(f,0,SEEK_END); long fsize = ftell(f); fseek(f,0,SEEK_SET);
+          418:             unsigned char *payload = malloc(fsize);
+          419:             fread(payload, 1, fsize, f); fclose(f);
+          420: 
+          421:             SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+          422:             uint8_t oh[32]; sha256_final(&sh,oh);
+          423:             printf("File '%s' SHA-256: ", files[file_idx]); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf(" (%ld bytes)\n",fsize);
+          424: 
+          425:             const char *fb = strrchr(fp,'/'); fb=fb?fb+1:fp; size_t fbl = strlen(fb);
+          426:             size_t off = 0;
+          427:             int batch_start = n_written_total;
+          428: 
+          429:             while (off < (size_t)fsize) {
+          430:                 if (carrier_idx >= n_carriers) {
+          431:                     fprintf(stderr,"ERROR: ran out of carriers while embedding '%s'\n",fb);
+          432:                     any_error = 1; break;
+          433:                 }
+          434:                 const char *cp = carriers[carrier_idx];
+          435:                 int w,h,ch; unsigned char *cv = stbi_load(cp,&w,&h,&ch,0);
+          436:                 if (!cv) { fprintf(stderr,"Cannot load %s\n",cp); any_error = 1; break; }
+          437:                 if (ch!=3) { unsigned char *rgb=stbi_load(cp,&w,&h,&ch,3); stbi_image_free(cv); cv=rgb; ch=3; }
+          438: 
+          439:                 size_t max_data = ((size_t)w * h * ch) / 8;
+          440:                 if (max_data <= 16 + fbl) { stbi_image_free(cv); carrier_idx++; continue; }
+          441:                 max_data -= 16 + fbl;
+          442: 
+          443:                 size_t rem = fsize - off;
+          444:                 size_t tc = rem < max_data ? rem : max_data;
+          445:                 size_t cap_bytes;
+          446:                 unsigned char *stego = embed_data(cv,w,h,ch,fb,fbl,(uint32_t)fsize,(uint32_t)off,payload+off,tc,&cap_bytes);
+          447:                 if (!stego) { fprintf(stderr,"Embedding failed for %s\n",cp); stbi_image_free(cv); any_error = 1; break; }
+          448:                 printf("  %s +%zu (%s)\n",fb,tc,cp);
+          449: 
+          450:                 char out[1024];
+          451:                 const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+          452:                 if (use_dir) { mkdir(out_dir,0755); snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",cover_bn); }
+          453:                 else { snprintf(out,sizeof(out),"%s%s",prefix,cover_bn); }
+          454:                 if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); free(stego); stbi_image_free(cv); off+=tc; carrier_idx++; continue; }
+          455:                 if (!stbi_write_png(out,w,h,ch,stego,w*ch)) { fprintf(stderr,"Failed to write %s\n",out); free(stego); stbi_image_free(cv); any_error = 1; break; }
+          456:                 out_paths[n_written_total] = strdup(out);
+          457:                 n_written_total++;
+          458:                 free(stego); stbi_image_free(cv); off += tc; carrier_idx++;
+          459:             }
+          460: 
+          461:             free(payload);
+          462:             if (any_error) break;
+          463: 
+          464:             // Per-file size check
+          465:             for (int i = batch_start; i < n_written_total; i++) {
+          466:                 struct stat st;
+          467:                 if (stat(out_paths[i], &st) != 0) { fprintf(stderr,"Cannot stat %s\n",out_paths[i]); any_error = 1; break; }
+          468:                 if ((size_t)st.st_size > MAX_STEGO_FILE_SIZE) {
+          469:                     fprintf(stderr,"ERROR: %s exceeds 7.2 MB (%zu bytes) — aborting\n", out_paths[i], (size_t)st.st_size);
+          470:                     for (int j = batch_start; j < n_written_total; j++) { remove(out_paths[j]); free(out_paths[j]); }
+          471:                     n_written_total = batch_start;
+          472:                     for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+          473:                     for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+          474:                     free(out_paths); return 1;
+          475:                 }
+          476:             }
+          477:         }
+          478: 
+          479:         if (any_error) {
+          480:             // Remove current file's batch only
+          481:             for (int i = batch_start; i < n_written_total; i++) { remove(out_paths[i]); free(out_paths[i]); }
+          482:             n_written_total = batch_start;
+          483:             // Print what was written from previous files
+          484:             if (n_written_total > 0) {
+          485:                 printf("Partially completed.\n");
+          486:                 for (int i = 0; i < n_written_total; i++) {
+          487:                     struct stat st; stat(out_paths[i], &st);
+          488:                     printf("  %s (%zu bytes)\n", out_paths[i], (size_t)st.st_size);
+          489:                     free(out_paths[i]);
+          490:                 }
+          491:             }
+          492:             for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+          493:             for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+          494:             free(out_paths); return 1;
+          495:         }
+          496: 
+          497:         printf("Embedding complete.\n");
+          498:         for (int i = 0; i < n_written_total; i++) {
+          499:             struct stat st; stat(out_paths[i], &st);
+          500:             printf("  %s (%zu bytes)\n", out_paths[i], (size_t)st.st_size);
+          501:             free(out_paths[i]);
+          502:         }
+          503:         for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+          504:         for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+          505:         free(out_paths);
+          506:         return 0;
+          507: 
+          508:     } else if (!strcmp(argv[1], "extract")) {
+          509:         const char *prefix = NULL, *out_dir = "extracted";
+          510:         int user_dir = 0, ai = 2;
+          511:         while (ai < argc && argv[ai][0] == '-') {
+
+          (Showing lines 382-511 of 610. Use offset=512 to continue.)
+          </content>
+    time: 7/28/2026, 8:21:26.365 AM GMT+5:30
+    duration: 3.598s
+    duration_ms: 3598
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: I need to move `int batch_start = 0;` to before the for loop, initialized before the loop. Let me fix line 427.
+    thinking_duration: 495ms
+    thinking_duration_ms: 495
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          newString: |2-
+                    int n_written_total = 0;
+                    int file_idx = 0, carrier_idx = 0;
+                    int any_error = 0, batch_start = 0;
+
+                    for (file_idx = 0; file_idx < n_files; file_idx++) {
+                        const char *fp = files[file_idx];
+                        FILE *f = fopen(fp, "rb");
+                        if (!f) { perror(fp); any_error = 1; break; }
+                        fseek(f,0,SEEK_END); long fsize = ftell(f); fseek(f,0,SEEK_SET);
+                        unsigned char *payload = malloc(fsize);
+                        fread(payload, 1, fsize, f); fclose(f);
+
+                        SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+                        uint8_t oh[32]; sha256_final(&sh,oh);
+                        printf("File '%s' SHA-256: ", files[file_idx]); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf(" (%ld bytes)\n",fsize);
+
+                        const char *fb = strrchr(fp,'/'); fb=fb?fb+1:fp; size_t fbl = strlen(fb);
+                        size_t off = 0;
+                        batch_start = n_written_total;
+          oldString: |2-
+                    int n_written_total = 0;
+                    int file_idx = 0, carrier_idx = 0;
+                    int any_error = 0;
+
+                    for (file_idx = 0; file_idx < n_files; file_idx++) {
+                        const char *fp = files[file_idx];
+                        FILE *f = fopen(fp, "rb");
+                        if (!f) { perror(fp); any_error = 1; break; }
+                        fseek(f,0,SEEK_END); long fsize = ftell(f); fseek(f,0,SEEK_SET);
+                        unsigned char *payload = malloc(fsize);
+                        fread(payload, 1, fsize, f); fclose(f);
+
+                        SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+                        uint8_t oh[32]; sha256_final(&sh,oh);
+                        printf("File '%s' SHA-256: ", files[file_idx]); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf(" (%ld bytes)\n",fsize);
+
+                        const char *fb = strrchr(fp,'/'); fb=fb?fb+1:fp; size_t fbl = strlen(fb);
+                        size_t off = 0;
+                        int batch_start = n_written_total;
+        result: Edit applied successfully.
+    time: 7/28/2026, 8:21:30.152 AM GMT+5:30
+    duration: 7.933s
+    duration_ms: 7933
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now also need to fix the nested loop variable conflict in the size check section where we have `for (int i = 0; i < n_carriers; i++)` inside a loop that also uses `i`. These are in the size check error handler which is inside the for (file_idx) loop, so the `i` in the inner for is a new scope. Wait, let me check...
+
+      Lines 472-474:
+      ```c
+      for (int i = 0; i < n_carriers; i++) free(carriers[i]); free(carriers);
+      for (int i = 0; i < n_files; i++) free(files[i]); free(files);
+      ```
+
+      These are inside the `for (file_idx = 0; ...)` inner loop, inside the inner `for (int i = batch_start; ...)` scope. Actually, C99 allows re-declaring `i` in nested for loops since each for-loop variable is scoped to its own loop body. So this should be fine.
+
+      Let me compile.
+    thinking_duration: 2.134s
+    thinking_duration_ms: 2134
+    tool_calls:
+      - tool: bash
+        args:
+          command: gcc-16 -O2 -lm -o diststego main.c 2>&1
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: (no output)
+    time: 7/28/2026, 8:21:38.286 AM GMT+5:30
+    duration: 9.968s
+    duration_ms: 9968
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Clean compile. Now let me test.
+    thinking_duration: 230ms
+    thinking_duration_ms: 230
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            rm -rf payloads carriers stego_output extracted
+            mkdir -p payloads carriers
+            echo "Hello from file A!" > payloads/fileA.txt
+            echo "This is file B with more content" > payloads/fileB.txt
+            cp cover1.png cover2.png cover3.png cover4.png carriers/
+            echo "=== embdir ==="
+            echo "y" | ./diststego embdir payloads carriers 2>&1
+            echo ""
+            echo "=== extract back ==="
+            echo "y" | ./diststego extract stego_output 2>&1
+            echo ""
+            diff payloads/fileA.txt extracted/fileA.txt && echo "fileA MATCH"
+            diff payloads/fileB.txt extracted/fileB.txt && echo "fileB MATCH"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === embdir ===
+          File 'payloads/fileA.txt' SHA-256: 638685214c757e1904ebf4d4a5e0f464ac01d6d1e5f2f9d9bb87e0d8fe5fd598 (19 bytes)
+            fileA.txt +19 (carriers/cover1.png)
+          File 'payloads/fileB.txt' SHA-256: ba9f1d748703d71fe6d571aea8336341ecb7b91705d3aa1858d4043b81696fb3 (33 bytes)
+            fileB.txt +33 (carriers/cover2.png)
+          Embedding complete.
+            stego_output/cover1.png (8233 bytes)
+            stego_output/cover2.png (8824 bytes)
+
+          === extract back ===
+          Extracted 19 bytes from stego_output/cover1.png (file=fileA.txt, offset=0, total=19)
+          Extracted 33 bytes from stego_output/cover2.png (file=fileB.txt, offset=0, total=33)
+          Reconstructing 'fileA.txt' (19 bytes)
+            SHA-256: 638685214c757e1904ebf4d4a5e0f464ac01d6d1e5f2f9d9bb87e0d8fe5fd598
+          Reconstructing 'fileB.txt' (33 bytes)
+            SHA-256: ba9f1d748703d71fe6d571aea8336341ecb7b91705d3aa1858d4043b81696fb3
+
+          fileA MATCH
+          fileB MATCH
+    time: 7/28/2026, 8:21:48.501 AM GMT+5:30
+    duration: 6.600s
+    duration_ms: 6600
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Everything works. Let me also test the exhausted-carriers error, the big file spanning multiple carriers, and edge cases.
+    thinking_duration: 583ms
+    thinking_duration_ms: 583
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            # Test with a file that spans multiple carriers
+            python3 -c "open('payloads/big.bin','wb').write(bytes(range(256))*200)"
+            echo "=== multi-carrier file + exhausted ==="
+            rm -rf stego_output
+            echo "y" | ./diststego embdir payloads carriers 2>&1
+            echo ""
+            rm -rf extracted
+            echo "y" | ./diststego extract stego_output 2>&1
+            echo ""
+            diff payloads/fileA.txt extracted/fileA.txt && echo "fileA MATCH"
+            diff payloads/fileB.txt extracted/fileB.txt && echo "fileB MATCH"
+            diff payloads/big.bin extracted/big.bin && echo "big.bin MATCH"
+            # cleanup
+            rm -rf payloads carriers stego_output extracted
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === multi-carrier file + exhausted ===
+          File 'payloads/big.bin' SHA-256: 747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1 (51200 bytes)
+            big.bin +44977 (carriers/cover1.png)
+            big.bin +6223 (carriers/cover2.png)
+          File 'payloads/fileA.txt' SHA-256: 638685214c757e1904ebf4d4a5e0f464ac01d6d1e5f2f9d9bb87e0d8fe5fd598 (19 bytes)
+            fileA.txt +19 (carriers/cover3.png)
+          File 'payloads/fileB.txt' SHA-256: ba9f1d748703d71fe6d571aea8336341ecb7b91705d3aa1858d4043b81696fb3 (33 bytes)
+            fileB.txt +33 (carriers/cover4.png)
+          Embedding complete.
+            stego_output/cover1.png (31465 bytes)
+            stego_output/cover2.png (11986 bytes)
+            stego_output/cover3.png (8954 bytes)
+            stego_output/cover4.png (8448 bytes)
+
+          Extracted 44977 bytes from stego_output/cover1.png (file=big.bin, offset=0, total=51200)
+          Extracted 6223 bytes from stego_output/cover2.png (file=big.bin, offset=44977, total=51200)
+          Extracted 19 bytes from stego_output/cover3.png (file=fileA.txt, offset=0, total=19)
+          Extracted 33 bytes from stego_output/cover4.png (file=fileB.txt, offset=0, total=33)
+          Reconstructing 'big.bin' (51200 bytes)
+            SHA-256: 747ffb66d9569fce70d8e9910230ed6cca8d52100286d9e86aa03ebdbb4f69d1
+          Reconstructing 'fileA.txt' (19 bytes)
+            SHA-256: 638685214c757e1904ebf4d4a5e0f464ac01d6d1e5f2f9d9bb87e0d8fe5fd598
+          Reconstructing 'fileB.txt' (33 bytes)
+            SHA-256: ba9f1d748703d71fe6d571aea8336341ecb7b91705d3aa1858d4043b81696fb3
+
+          fileA MATCH
+          fileB MATCH
+          big.bin MATCH
+    time: 7/28/2026, 8:21:55.338 AM GMT+5:30
+    duration: 6.585s
+    duration_ms: 6585
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      All working perfectly. The big file (51200 bytes) spanned two carriers (44977 + 6223), then fileA used carrier3 and fileB used carrier4. Extraction correctly recovers all three files.
+
+      Let me test one more edge case: trying to embdir with more files than carriers have capacity for.
+    thinking_duration: 901ms
+    thinking_duration_ms: 901
+    time: 7/28/2026, 8:22:02.131 AM GMT+5:30
+    response: Everything works — multi-file, multi-carrier spanning, extraction. Cleaned up.
+    duration: 3.226s
+    duration_ms: 3226
+

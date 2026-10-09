@@ -1,0 +1,695 @@
+---
+user:
+  text: 'k, now we need another mode on embed: the files to embed folder & carrier folder is specified, the files are embed one by one.'
+  time: 7/28/2026, 8:18:02.768 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants a new embed mode that:
+      1. Takes a folder of files to embed (not single file) and a folder of carrier images
+      2. Embeds each file from the files folder into carriers one by one
+      3. For each file, uses the fill-to-capacity approach (use carriers from the carrier folder, filling each to capacity)
+
+      So the algorithm would be:
+      - For each file in the files folder (sorted alphabetically):
+        - Read the file
+        - For each carrier in the carrier folder (sorted alphabetically):
+          - Calculate capacity
+          - Embed chunk
+          - If file done, move to next file
+        - If carriers exhausted before file done, error
+
+      Wait, but the carriers are shared across files. So carrier1 might be partially used by file1, then carrier2 continues file1, then carrier3 gets the rest of file1. Then for file2, do we start from carrier1 again? Or from where we left off?
+
+      Re-reading: "the files to embed folder & carrier folder is specified, the files are embed one by one."
+
+      I think it means: for each file in the files folder, embed it into carriers (using the fill approach). But the carriers are shared — so after file1 fills carrier1 and carrier2, file2 would start with carrier3 (the next available carrier). Or would each file start fresh from the beginning of the carrier folder?
+
+      I think the most intuitive behavior is: each file gets its own set of carriers from the folder. But that might exhaust carriers quickly. Actually, re-reading again: "the files to embed folder & carrier folder is specified, the files are embed one by one."
+
+      I think it's simpler than I'm making it. They want:
+      - Input: a folder of payload files, a folder of carrier images
+      - For each payload file (sorted), embed it into carriers (one carrier at a time, filling each to capacity)
+      - The payload filename becomes the embedded filename in the stego metadata
+
+      But what about carrier reuse? If file1 uses carrier1 and carrier2, does file2 start from carrier1 again (overwriting) or from carrier3?
+
+      I think the most practical interpretation is: each payload file is independently embedded into carriers, and carriers ARE reused (each file gets its own set of stego outputs). This means:
+      - For file1: embed into carrier1 (filled), carrier2 (filled), carrier3 (partial) → output: stego_carrier1_file1.png, stego_carrier2_file1.png, stego_carrier3_file1.png
+      - For file2: embed into carrier1 (filled), carrier2 (filled) → output: stego_carrier1_file2.png, stego_carrier2_file2.png
+
+      Wait but the output naming — if we use the same output dir, we'd overwrite. Unless we use a prefix based on the file name.
+
+      Actually, I think the simplest approach: for each payload file, independently embed it using the fill-to-capacity approach into the carrier folder. The output naming follows the existing rules (prefix/dir rules). Since each stego output is named after the carrier, they WOULD overwrite if embedding multiple files into the same carrier.
+
+      Hmm, but that doesn't make sense either. Let me re-read the user's request: "the files to embed folder & carrier folder is specified, the files are embed one by one."
+
+      I think they want a batch mode where you process multiple payload files through the same carrier pool sequentially. The output naming would need to distinguish which payload file is in which carrier.
+
+      Let me think about this differently. Maybe the mode works like this:
+
+      - `./diststego embdir [-p <prefix>] [-o <dir>] <files_folder> <carriers_folder>`
+      - For each file in files_folder (sorted):
+        - Use fill logic: for each carrier in carriers_folder:
+          - Fill to capacity
+          - Write output: `<dir>/<prefix><file_basename>_<carrier_basename>` or similar
+
+      Actually, I think the simplest and most practical approach is:
+
+      For each file in the files folder, run the fill algorithm independently using the carriers folder. The output naming uses the file's basename as a sub-prefix or similar to distinguish which payload is in which carrier.
+
+      Wait, let me reconsider. Maybe the user just wants a simple "batch embed" where:
+      1. Each file in the source folder gets embedded
+      2. The carriers folder provides carriers
+      3. For each file, carriers are consumed one by one (fill to capacity)
+      4. If a file spans multiple carriers, that's fine
+      5. The output naming distinguishes by payload filename
+
+      Let me just ask... no, the user seems to want me to implement it. Let me propose a design:
+
+      Command: `./diststego embdir [-p <prefix>] [-o <dir>] <files_folder> <carriers_folder>`
+
+      Algorithm:
+      ```
+      for each file in files_folder (sorted):
+          remaining = file_size
+          offset = 0
+          for each carrier in carriers_folder (sorted, cycling from start each file):
+              cap = carrier capacity
+              chunk = min(cap, remaining)
+              embed(file.basename, offset, chunk) into carrier
+              output = <dir>/<prefix><file_basename>_<carrier_basename>
+              offset += chunk
+              remaining -= chunk
+              if remaining == 0: break
+          if remaining > 0: error "ran out of carriers for <file>"
+      ```
+
+      Hmm, but that could be a LOT of stego images if there are many files. Each file would produce as many stego images as there are carriers (or until the file fills up).
+
+      Actually, I think the simplest reasonable behavior: each file gets embedded into carriers independently, starting from the first carrier each time. The output is named after the payload file, not the carrier. So:
+
+      For a payload file `file1.txt`:
+      - Embeds into carriers[0] (filled to capacity), carriers[1] (filled), ...
+      - Output: `stego_output/file1.txt_0.png`, `stego_output/file1.txt_1.png`, etc.
+
+      Wait, no. The current format uses the original carrier name for output naming. Let me re-read what the user wants...
+
+      "the files to embed folder & carrier folder is specified, the files are embed one by one"
+
+      I think this is analogous to `fill` vs `embed`:
+      - `embed`: single file, multiple carriers listed, equal split
+      - `fill`: single file, carrier folder, fill to capacity
+      - `embdir` (or similar): files folder, carrier folder, embed each file one by one
+
+      The output naming should probably use the file's basename since there are multiple files. The carrier name isn't as relevant when you're embedding multiple different files.
+
+      Let me look at the current output naming for fill:
+      ```
+      <dir>/<prefix><carrier_basename>
+      ```
+
+      For the new mode, since we're embedding multiple different files into potentially the same carriers, we need to differentiate. Options:
+      1. `<dir>/<prefix><file_basename>_<carrier_basename>`
+      2. `<dir>/<prefix><file_basename>.png` (one output per file, numbered)
+      3. `<dir>/<prefix><carrier_basename>` (but this would collide if 2 files embed into same carrier)
+
+      I think option 1 is most informative. But actually, the user said "the files are embed one by one" — maybe they want each file embedded independently, reusing carriers, and the output naming uses the file name somehow.
+
+      Actually, let me just implement it simply and see what the user thinks. I'll use the convention:
+      - Output: `<dir>/<prefix><file_basename>_<carrier_basename>`
+
+      Or actually, thinking about it more practically: when you extract, the chunk metadata already records the original filename. So the output naming on the embed side just needs to produce unique filenames. Using `<file>_<carrier>` would be unique.
+
+      But wait — for extraction, the user would need to know which stego images to extract. If each file gets embedded into separate carriers, they'd just extract all stego images.
+
+      Let me think about the simplest design that the user probably wants:
+
+      Command: `embdir` or `embed-dir`
+      Usage: `./diststego embdir [-p <prefix>] [-o <dir>] <files_folder> <carriers_folder>`
+
+      Algorithm per file (same as `fill` but for each file):
+      ```
+      for each payload_file in files_folder (sorted):
+          read payload_file
+          for each carrier in carriers_folder (sorted):
+              cap = carrier byte capacity
+              chunk = min(cap, remaining)
+              embed(payload_file.basename, offset, chunk) into carrier
+              output_path = <dir>/<prefix><payload_file.basename>_<carrier_basename>
+              write stego
+              offset += chunk
+              remaining -= chunk
+              if remaining == 0: break for-carrier loop
+          if remaining > 0: error "ran out of carriers for <payload_file>"
+      ```
+
+      All files share the same carrier pool, but each file starts from carrier 0 and consumes carriers independently. So carrier1 might get data from file1 AND file2 — but this would mean we can't use carrier1 for both file1 and file2 at the same time without overwriting.
+
+      Actually that's a fundamental issue. If we reuse carriers, the second file would overwrite the first file's data in carrier1. That's not useful.
+
+      So either:
+      1. Each file starts from carrier 0 → last file wins (overwrites) → bad
+      2. Each file uses a fresh copy of the carriers → need to copy carriers first → not practical
+      3. Output names are unique, carriers are consumed sequentially across ALL files → no overwrite
+
+      Option 3 is the most useful:
+      - file1 embeds into carrier1 (partial), carrier2 (partial), carrier3 (partial)
+      - file2 embeds into carrier4, carrier5, ...
+      - etc.
+
+      But then the carriers aren't shared — each file just gets a slice of the carrier pool. That's essentially what `fill` does, but with a single file.
+
+      Wait, maybe the user's intent is simpler: for each file in the files folder, just run the `fill` algorithm with the carrier folder. So:
+      - file1 → uses carriers[0..N] until done → outputs: <file1_prefix>carriername1.png, etc.
+      - file2 → uses carriers[0..N] until done → outputs: <file2_prefix>carriername1.png, etc.
+
+      But this DOES overwrite carrier1 output from file1 when file2 runs. Unless the output naming differentiates them (which it should).
+
+      I think the practical design is:
+
+      For each file, the embed uses the fill-to-capacity approach on the carriers, starting from the first carrier each time. The output naming includes the file's basename so they don't collide:
+
+      ```
+      output = <dir>/<file_basename>/<carrier_basename>
+      ```
+
+      Or:
+      ```
+      output = <dir>/<file_basename>_<carrier_basename>
+      ```
+
+      And the 7.2 MB size check applies per-file-atomically (per batch of outputs for one file, not globally for all files).
+
+      Let me just implement it. I'll use:
+      - `stego_output/<file_basename>/<carrier_basename>` by default
+      - With `-o <dir>`: `<dir>/<file_basename>/<carrier_basename>`
+      - With `-p <prefix>`: `<prefix><carrier_basename>` in cwd (hmm, this gets weird)
+      - With both: `<dir>/<prefix><file_basename>/<carrier_basename>` or similar
+
+      Actually wait. The current `fill` naming is:
+      - default: `stego_output/<carrier_basename>`
+      - `-p <prefix>`: `<prefix><carrier_basename>` in cwd
+      - `-o <dir>`: `<dir>/<carrier_basename>`
+      - both: `<dir>/<prefix><carrier_basename>`
+
+      For the multi-file mode, since we need to differentiate, I could just use the carrier basename for output (like fill does), but put outputs in subfolders per file:
+      - default: `stego_output/<file_basename>/<carrier_basename>`
+      - `-p <prefix>`: `<prefix><file_basename>/<carrier_basename>`
+      - `-o <dir>`: `<dir>/<file_basename>/<carrier_basename>`
+      - both: `<dir>/<prefix><file_basename>/<carrier_basename>`
+
+      Actually, this is getting complicated. Let me keep it simple: same as `fill`, but the output path includes the file basename to differentiate.
+
+      Let me just use the file basename as a subfolder:
+      - default: `stego_output/<file_basename>/<carrier_basename>`
+      - `-o <dir>`: `<dir>/<file_basename>/<carrier_basename>`
+      - `-p <prefix>`: `<prefix><carrier_basename>` — prefix only, no subfolder (just like fill)
+
+      Hmm, prepending the file basename to the carrier basename is simpler:
+      - default: `stego_output/<file_basename>_<carrier_basename>`
+      - `-p <prefix>`: `<prefix><file_basename>_<carrier_basename>`
+      - `-o <dir>`: `<dir>/<file_basename>_<carrier_basename>`
+      - both: `<dir>/<prefix><file_basename>_<carrier_basename>`
+
+      This is unambiguous and follows the same pattern as embed/fill (single output file per carrier, just with a compound name).
+
+      Let me implement this. I'll call the command `embdir`.
+
+      Actually, I realize the user might want a subdirectory per file to keep things organized. But let me start simple with the compound name approach.
+
+      Let me write the code. I'll model it after the `fill` command but add an outer loop for files.
+
+      Actually wait, there's a subtlety with the 7.2 MB size check. With `fill`, all outputs are from one file. With `embdir`, each file produces its own set of outputs. Should the size check be per-file (delete that file's outputs if any exceed 7.2 MB) or global (delete ALL outputs)?
+
+      I think per-file: for each file, write all its stego images, check sizes, if any exceed 7.2 MB delete just that file's outputs and abort the whole command. Earlier files' outputs remain.
+
+      This is consistent with the atomicity model.
+
+      Let me write it.
+
+      For naming collision: if two files have the same basename (from different folders), the output would collide. But since we're reading from one folder, basenames within a folder should be unique.
+
+      Let me code this up. I'll add the `embdir` (embed directory) command.
+
+      ```c
+      } else if (!strcmp(argv[1], "embdir")) {
+          // parse options
+          // files_folder = argv[ai]
+          // carriers_folder = argv[ai+1]
+          
+          // Scan files_folder for all files (not just .png)
+          // Scan carriers_folder for .png files
+          
+          // For each file in files_folder (sorted):
+          //   Read payload
+          //   For each carrier (sorted), fill to capacity
+          //   Write output as <file_basename>_<carrier_basename>
+          //   Size check per file's batch
+      ```
+
+      For the files_folder scan, I should NOT filter by extension — any file could be a payload. Unlike the carrier folder where we only want .png files.
+
+      Let me implement it.
+
+      Actually, I'll think about the size check more carefully. For each file:
+      1. Write all stego images for this file
+      2. Stat them all
+      3. If any exceeds 7.2 MB, delete this file's stego images and abort
+      4. Otherwise, keep them and move to next file
+
+      So each file's outputs are atomically either all kept or all deleted.
+
+      Let me write the implementation.
+    thinking_duration: 31.330s
+    thinking_duration_ms: 31330
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 20
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          1: #define STB_IMAGE_IMPLEMENTATION
+          2: #define STB_IMAGE_WRITE_IMPLEMENTATION
+          3: #include "stb_image.h"
+          4: #include "stb_image_write.h"
+          5: 
+          6: #include <stdio.h>
+          7: #include <stdlib.h>
+          8: #include <string.h>
+          9: #include <stdint.h>
+          10: #include <math.h>
+          11: #include <sys/stat.h>
+          12: #include <unistd.h>
+          13: #include <dirent.h>
+          14: #define MAX_STEGO_FILE_SIZE 7372800
+          15: 
+          16: static int confirm_overwrite(const char *path) {
+          17:     if (access(path, F_OK) == -1) return 1;
+          18:     fprintf(stderr, "File '%s' exists. Overwrite? [y/N] ", path);
+          19:     char buf[16];
+          20:     if (!fgets(buf, sizeof(buf), stdin)) return 0;
+
+          (Showing lines 1-20 of 455. Use offset=21 to continue.)
+          </content>
+    time: 7/28/2026, 8:18:03.151 AM GMT+5:30
+    response: '`embdir` — batch mode: for each file in `<files_folder>` (sorted), run the `fill` algorithm against `<carriers_folder>`. Outputs are named `<file_basename>_<carrier_basename>` to avoid collisions. Per-file atomic size check.'
+    duration: 34.566s
+    duration_ms: 34566
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me read the entire file to understand the structure before making edits, especially the fill command and the dispatch chain at the end.
+    thinking_duration: 410ms
+    thinking_duration_ms: 410
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 140
+          limit: 40
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          140: 
+          141: unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+          142:                             char **out_fn, size_t *out_fn_len,
+          143:                             uint32_t *out_total, uint32_t *out_off,
+          144:                             size_t *out_dlen) {
+          145:     size_t mb = (size_t)w * h * ch, bi = 0; unsigned char b[4];
+          146:     read_bits(img, &bi, b, 4); if (bi/8>mb) goto fail;
+          147:     uint32_t fnl = get_u32le(b); if (fnl>1024) goto fail;
+          148:     char *fn = malloc(fnl+1); read_bits(img,&bi,(unsigned char*)fn,fnl);
+          149:     if (bi/8>mb) { free(fn); goto fail; }
+          150:     fn[fnl]='\0'; *out_fn=fn; *out_fn_len=fnl;
+          151:     read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+          152:     *out_total=get_u32le(b);
+          153:     read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+          154:     *out_off=get_u32le(b);
+          155:     read_bits(img,&bi,b,4); if (bi/8>mb) goto fail_fn;
+          156:     uint32_t dl=get_u32le(b); if (dl>(size_t)w*h*ch) goto fail_fn;
+          157:     unsigned char *d=malloc(dl); read_bits(img,&bi,d,dl);
+          158:     if (bi/8>mb) { free(d); goto fail_fn; }
+          159:     *out_dlen=dl; return d;
+          160: fail_fn: free(*out_fn); *out_fn=NULL;
+          161: fail: *out_fn=NULL; *out_fn_len=0; *out_total=0; *out_off=0; *out_dlen=0; return NULL;
+          162: }
+          163: 
+          164: int main(int argc, char **argv) {
+          165:     if (argc < 3) {
+          166:         fprintf(stderr, "Usage:\n");
+          167:         fprintf(stderr, "  Embed:  %s embed [-p <prefix>] [-o <dir>] <payload> <cover1> [cover2 ...]\n", argv[0]);
+          168:         fprintf(stderr, "          (default: 'stego_output/' dir, no prefix; -p <prefix> for naming)\n");
+          169:         fprintf(stderr, "  Fill:   %s fill  [-p <prefix>] [-o <dir>] <payload> <carrier_folder>\n", argv[0]);
+          170:         fprintf(stderr, "          (fill each carrier to capacity, sequentially; same output rules)\n");
+          171:         fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+          172:         fprintf(stderr, "          (default: 'extracted/' dir; -p <prefix> for naming)\n");
+          173:         return 1;
+          174:     }
+          175: 
+          176:     if (!strcmp(argv[1], "embed")) {
+          177:         const char *prefix = NULL, *out_dir = "stego_output";
+          178:         int user_dir = 0, ai = 2;
+          179:         while (ai < argc && argv[ai][0] == '-') {
+
+          (Showing lines 140-179 of 455. Use offset=180 to continue.)
+          </content>
+    time: 7/28/2026, 8:18:37.922 AM GMT+5:30
+    duration: 3.098s
+    duration_ms: 3098
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Let me read the fill command section and also the dispatch section at the end to understand where to insert.
+    thinking_duration: 334ms
+    thinking_duration_ms: 334
+    tool_calls:
+      - tool: read
+        args:
+          offset: 240
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 120
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          240:         return 0;
+          241: 
+          242:     embed_fail:
+          243:         for (int i = 0; i < n_written; i++) { remove(out_paths[i]); free(out_paths[i]); }
+          244:         free(out_paths); free(payload);
+          245:         return 1;
+          246: 
+          247:     } else if (!strcmp(argv[1], "fill")) {
+          248:         const char *prefix = NULL, *out_dir = "stego_output";
+          249:         int user_dir = 0, ai = 2;
+          250:         while (ai < argc && argv[ai][0] == '-') {
+          251:             if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+          252:             else if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; user_dir=1; ai+=2; }
+          253:             else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+          254:         }
+          255:         if (argc < ai+2) { fprintf(stderr,"Need payload and carrier folder\n"); return 1; }
+          256: 
+          257:         const char *pf = argv[ai]; FILE *f = fopen(pf,"rb");
+          258:         if (!f) { perror(pf); return 1; }
+          259:         fseek(f,0,SEEK_END); long fsize=ftell(f); fseek(f,0,SEEK_SET);
+          260:         unsigned char *payload=malloc(fsize); fread(payload,1,fsize,f); fclose(f);
+          261: 
+          262:         SHA256_CTX sh; sha256_init(&sh); sha256_update(&sh,payload,fsize);
+          263:         uint8_t oh[32]; sha256_final(&sh,oh);
+          264:         printf("Original payload SHA-256: "); for(int i=0;i<32;i++) printf("%02x",oh[i]); printf("\n");
+          265: 
+          266:         const char *bn = strrchr(pf,'/'); bn=bn?bn+1:pf; size_t nl=strlen(bn);
+          267:         const char *folder = argv[ai+1];
+          268: 
+          269:         DIR *d = opendir(folder);
+          270:         if (!d) { fprintf(stderr,"Cannot open directory '%s'\n",folder); free(payload); return 1; }
+          271:         int n_imgs = 0, cap_arr = 0;
+          272:         char **imgs = NULL;
+          273:         struct dirent *e;
+          274:         while ((e = readdir(d)) != NULL) {
+          275:             const char *dot = strrchr(e->d_name, '.');
+          276:             if (dot && (!strcasecmp(dot, ".png") || !strcasecmp(dot, ".PNG"))) {
+          277:                 if (n_imgs == cap_arr) { cap_arr = cap_arr ? cap_arr*2 : 16; imgs = realloc(imgs, cap_arr * sizeof(char*)); }
+          278:                 size_t plen = strlen(folder) + 1 + strlen(e->d_name) + 1;
+          279:                 imgs[n_imgs] = malloc(plen);
+          280:                 snprintf(imgs[n_imgs], plen, "%s/%s", folder, e->d_name);
+          281:                 n_imgs++;
+          282:             }
+          283:         }
+          284:         closedir(d);
+          285:         if (n_imgs == 0) { fprintf(stderr,"No PNG files in '%s'\n",folder); free(payload); free(imgs); return 1; }
+          286:         qsort(imgs, n_imgs, sizeof(char*), name_cmp);
+          287: 
+          288:         int use_dir = (user_dir || !prefix);
+          289:         char **out_paths = calloc(n_imgs, sizeof(char*));
+          290:         int n_written = 0;
+          291:         size_t off = 0;
+          292: 
+          293:         for (int i = 0; i < n_imgs && off < (size_t)fsize; i++) {
+          294:             const char *cp = imgs[i];
+          295:             int w,h,ch; unsigned char *cv = stbi_load(cp,&w,&h,&ch,0);
+          296:             if (!cv) { fprintf(stderr,"Cannot load %s\n",cp); goto fill_fail; }
+          297:             if (ch!=3) { unsigned char *rgb=stbi_load(cp,&w,&h,&ch,3); stbi_image_free(cv); cv=rgb; ch=3; }
+          298: 
+          299:             size_t max_data = ((size_t)w * h * ch) / 8;
+          300:             if (max_data <= 16 + nl) { stbi_image_free(cv); continue; }
+          301:             max_data -= 16 + nl;
+          302: 
+          303:             size_t rem = fsize - off;
+          304:             size_t tc = rem < max_data ? rem : max_data;
+          305:             size_t cap_bytes;
+          306:             unsigned char *stego = embed_data(cv,w,h,ch,bn,nl,(uint32_t)fsize,(uint32_t)off,payload+off,tc,&cap_bytes);
+          307:             if (!stego) { fprintf(stderr,"Embedding failed for %s\n",cp); stbi_image_free(cv); goto fill_fail; }
+          308:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",tc,cp,cap_bytes);
+          309: 
+          310:             char out[1024];
+          311:             const char *cover_bn = strrchr(cp,'/'); cover_bn=cover_bn?cover_bn+1:cp;
+          312:             if (use_dir) { mkdir(out_dir,0755); snprintf(out,sizeof(out),"%s/%s%s",out_dir,prefix?prefix:"",cover_bn); }
+          313:             else { snprintf(out,sizeof(out),"%s%s",prefix,cover_bn); }
+          314:             if (!confirm_overwrite(out)) { printf(" -> skipped %s\n",out); free(stego); stbi_image_free(cv); off+=tc; continue; }
+          315:             if (!stbi_write_png(out,w,h,ch,stego,w*ch)) { fprintf(stderr,"Failed to write %s\n",out); free(stego); stbi_image_free(cv); goto fill_fail; }
+          316:             out_paths[n_written] = strdup(out);
+          317:             n_written++;
+          318:             free(stego); stbi_image_free(cv); off += tc;
+          319:         }
+          320: 
+          321:         if (off < (size_t)fsize) {
+          322:             fprintf(stderr,"ERROR: ran out of carriers after writing %zu of %ld payload bytes\n",off,fsize);
+          323:             goto fill_fail;
+          324:         }
+          325: 
+          326:         for (int i = 0; i < n_written; i++) {
+          327:             struct stat st;
+          328:             if (stat(out_paths[i], &st) != 0) { fprintf(stderr,"Cannot stat %s\n",out_paths[i]); goto fill_fail; }
+          329:             if ((size_t)st.st_size > MAX_STEGO_FILE_SIZE) {
+          330:                 fprintf(stderr,"ERROR: %s exceeds 7.2 MB (%zu bytes) — aborting and cleaning up\n", out_paths[i], (size_t)st.st_size);
+          331:                 for (int j = 0; j < n_written; j++) { remove(out_paths[j]); free(out_paths[j]); }
+          332:                 for (int j = 0; j < n_imgs; j++) free(imgs[j]); free(imgs);
+          333:                 free(out_paths); free(payload); return 1;
+          334:             }
+          335:         }
+          336: 
+          337:         printf("Embedding complete.\n");
+          338:         for (int i = 0; i < n_written; i++) {
+          339:             struct stat st; stat(out_paths[i], &st);
+          340:             printf("  %s (%zu bytes)\n", out_paths[i], (size_t)st.st_size);
+          341:             free(out_paths[i]);
+          342:         }
+          343:         for (int i = 0; i < n_imgs; i++) free(imgs[i]); free(imgs);
+          344:         free(out_paths);
+          345:         return 0;
+          346: 
+          347:     fill_fail:
+          348:         for (int i = 0; i < n_written; i++) { remove(out_paths[i]); free(out_paths[i]); }
+          349:         for (int i = 0; i < n_imgs; i++) free(imgs[i]); free(imgs);
+          350:         free(out_paths); free(payload);
+          351:         return 1;
+          352: 
+          353:     } else if (!strcmp(argv[1], "extract")) {
+          354:         const char *prefix = NULL, *out_dir = "extracted";
+          355:         int user_dir = 0, ai = 2;
+          356:         while (ai < argc && argv[ai][0] == '-') {
+          357:             if (!strcmp(argv[ai],"-o") && ai+1<argc) { out_dir=argv[ai+1]; user_dir=1; ai+=2; }
+          358:             else if (!strcmp(argv[ai],"-p") && ai+1<argc) { prefix=argv[ai+1]; ai+=2; }
+          359:             else { fprintf(stderr,"Unknown option: %s\n",argv[ai]); return 1; }
+
+          (Showing lines 240-359 of 455. Use offset=360 to continue.)
+          </content>
+    time: 7/28/2026, 8:18:41.291 AM GMT+5:30
+    duration: 4.342s
+    duration_ms: 4342
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now let me look at the end of the file for the dispatch.
+    thinking_duration: 371ms
+    thinking_duration_ms: 371
+    tool_calls:
+      - tool: read
+        args:
+          offset: 440
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          440:             for (int k = idx; k < end; k++) { free(chunks[k].filename); free(chunks[k].data); }
+          441:             idx = end;
+          442:         }
+          443:         free(chunks);
+          444:         if (n==0) { fprintf(stderr,"No data extracted\n"); return 1; }
+          445:         return 0;
+          446:     cln:
+          447:         if (free_stego) { for (int i = 0; i < n_stego; i++) free(stego_files[i]); free(stego_files); }
+          448:         for (int i = 0; i < n; i++) { free(chunks[i].filename); free(chunks[i].data); }
+          449:         free(chunks); return 1;
+          450:     } else {
+          451:         fprintf(stderr,"Unknown command '%s', use 'embed', 'fill', or 'extract'\n",argv[1]);
+          452:         return 1;
+          453:     }
+          454:     return 0;
+          455: }
+
+          (End of file - total 455 lines)
+          </content>
+    time: 7/28/2026, 8:18:45.839 AM GMT+5:30
+    duration: 2.807s
+    duration_ms: 2807
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I have a clear picture. I need to:
+
+      1. Update the usage message to include `embdir`
+      2. Add the `embdir` command between `fill` and `extract` (between line 351 and 353)
+      3. Update the "unknown command" message
+
+      Let me write the `embdir` implementation. I'll model it closely after `fill` but with an outer loop over payload files.
+
+      The implementation:
+      - Parse `-p` and `-o` flags
+      - Take two positional args: `<files_folder>` and `<carriers_folder>`
+      - Scan files_folder for ALL files (not just .png — any file can be a payload)
+      - Scan carriers_folder for .png files
+      - For each payload file (sorted):
+        - Read payload data
+        - For each carrier (sorted), fill to capacity
+        - Output naming: `<file_basename>_<carrier_basename>`
+        - Per-file atomic size check: if any output exceeds 7.2 MB, delete only this file's outputs and abort
+      - Same prefix/dir rules as fill
+
+      Let me write it. I'll insert after the fill_fail block and before the extract block.
+
+      Actually, for the output naming with prefix/dir:
+      - default: `stego_output/<file_bn>_<carrier_bn>`
+      - `-p <prefix>`: `<prefix><file_bn>_<carrier_bn>` in cwd
+      - `-o <dir>`: `<dir>/<file_bn>_<carrier_bn>`
+      - both: `<dir>/<prefix><file_bn>_<carrier_bn>`
+
+      This matches the compound name pattern I mentioned.
+
+      For the scan of files_folder, I should NOT filter by extension. Any file can be a payload.
+
+      Wait, but I need to exclude `.` and `..` and hidden files on macOS. Let me just exclude entries starting with `.`.
+
+      Also, I should make sure to handle the case where files_folder has no files.
+
+      Let me write the complete block.
+
+      For the per-file size check: after writing all carriers for one file, I stat all of them. If any exceeds 7.2 MB, I delete just that file's batch (not previous files' outputs) and abort the whole command.
+
+      For cleanup on error (like carrier load failure during a file's embed), I need to clean up:
+      1. The current file's written outputs (n_written_this_file)
+      2. All previous files' written outputs (tracked globally)
+      3. The carrier list
+      4. The files list
+      5. Current payload
+
+      Let me structure this carefully.
+
+      I'll track:
+      - `global_out_paths` / `global_n_written` — all successfully written outputs across all files
+      - For the current file's loop, I'll track `batch_written` count and `batch_start_idx` into global_out_paths
+
+      Actually, simpler: I'll just track everything in a single `out_paths` array with `n_written_total`. For each file:
+      - Record `batch_start = n_written_total` before the carrier loop
+      - After the carrier loop, `batch_end = n_written_total`
+      - For size check: stat out_paths[batch_start..batch_end-1]
+      - If any exceeds limit: remove out_paths[batch_start..batch_end-1], free them, then goto the cleanup
+
+      For cleanup on other errors (load failure, embed failure, PNG write failure):
+      - Remove everything from batch_start onwards
+      - Then goto the main cleanup
+
+      Let me write it.
+
+      Actually, I'll simplify: the size check for each file happens right after writing all carriers for that file. If it fails, I remove just that batch and return 1 (previous files' outputs remain). The `goto` cleanup only runs for errors during the embed (not size check), where it cleans up the current batch.
+
+      Wait, but the user probably wants atomicity per file. Let me think...
+
+      For the size check failure: if any carrier output for a file exceeds 7.2 MB, delete that file's outputs and abort. Previous files' outputs are kept (they successfully passed their own size checks).
+
+      For an error during embedding (load fail, embed fail, PNG write fail): clean up the current file's partial outputs and abort. Previous files' outputs are kept.
+
+      Let me implement this.
+
+      Actually, I realize there's a subtlety with `n_written_total`: if I've already written outputs for file1, then fail on file2, I need to remove only file2's outputs but not file1's. And I need to free the resources for file2's payload.
+
+      Let me use a `batch_start` marker approach:
+
+      ```c
+      int batch_start = 0;  // index in out_paths where current file's outputs begin
+      int n_written_total = 0;
+
+      for each file in files:
+          batch_start = n_written_total;
+          
+          for each carrier:
+              ... embed ...
+              out_paths[n_written_total++] = strdup(out);
+          
+          // size check applies to out_paths[batch_start..n_written_total-1]
+          for (int i = batch_start; i < n_written_total; i++) {
+              if (stat > MAX) {
+                  // remove just this batch
+                  for (int j = batch_start; j < n_written_total; j++) remove(out_paths[j]);
+                  // free this batch
+                  for (int j = batch_start; j < total; j++) free(out_paths[j]);
+                  // free payload
+                  // free other stuff
+                  // return 1
+              }
+          }
+
+      // success: print out_paths[0..n_written_total-1]
+      ```
+
+      On error during embed:
+      ```c
+      goto embdir_fail;
+      embdir_fail:
+          // remove from batch_start onwards
+          for (int i = batch_start; i < n_written_total; i++) remove(out_paths[i]);
+          for (int i = batch_start; i < n_written_total; i++) free(out_paths[i]);
+          n_written_total = batch_start;
+          // free payload, imgs, files_list, out_paths
+          return 1;
+      ```
+
+      Hmm, this is getting complex. Let me simplify by just using a global array and tracking batch_start.
+
+      Let me write the code now.
+    thinking_duration: 11.304s
+    thinking_duration_ms: 11304
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    fprintf(stderr, "  Fill:   %s fill  [-p <prefix>] [-o <dir>] <payload> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (fill each carrier to capacity, sequentially; same output rules)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+          newString: |2-
+                    fprintf(stderr, "  Fill:   %s fill  [-p <prefix>] [-o <dir>] <payload> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (fill each carrier to capacity, sequentially; same output rules)\n");
+                    fprintf(stderr, "  EmbDir: %s embdir [-p <prefix>] [-o <dir>] <files_folder> <carrier_folder>\n", argv[0]);
+                    fprintf(stderr, "          (embed each file in folder, one by one; outputs: <file>_<carrier>.png)\n");
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] [-p <prefix>] <stego1> [stego2 ...]\n", argv[0]);
+        result: The user rejected permission to use this specific tool call.
+    time: 7/28/2026, 8:18:48.817 AM GMT+5:30
+    duration: 19.690s
+    duration_ms: 19690
+

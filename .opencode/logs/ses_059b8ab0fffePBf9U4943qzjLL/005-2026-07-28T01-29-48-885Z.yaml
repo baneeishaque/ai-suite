@@ -1,0 +1,1924 @@
+---
+user:
+  text: now we have to test binary. download a sample text file from internet. some sample images from internet. then embed
+  time: 7/28/2026, 6:54:47.860 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants to test the binary by:
+      1. Downloading a sample text file from the internet
+      2. Downloading some sample images from the internet
+      3. Embedding the text file into the images using the steganography tool
+
+      Let me first understand the program's usage from the source code, then find suitable test files.
+    thinking_duration: 760ms
+    thinking_duration_ms: 760
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          1: /*
+          2:  * diststego.c – Split a file, hide chunks in cover images, extract and verify.
+          3:  * Compile: gcc -O2 diststego.c -lm -o diststego
+          4:  * Usage:
+          5:  *   Embed: ./diststego embed secret.bin cover1.png cover2.png cover3.png
+          6:  *          (outputs stego_cover1.png, stego_cover2.png, ...)
+          7:  *   Extract & verify: ./diststego extract stego_cover1.png stego_cover2.png ...
+          8:  *                     (reconstructs secret.bin and prints verification)
+          9:  */
+          10: 
+          11: #define STB_IMAGE_IMPLEMENTATION
+          12: #define STB_IMAGE_WRITE_IMPLEMENTATION
+          13: #include "stb_image.h"
+          14: #include "stb_image_write.h"
+          15: 
+          16: #include <stdio.h>
+          17: #include <stdlib.h>
+          18: #include <string.h>
+          19: #include <stdint.h>
+          20: #include <math.h>
+          21: 
+          22: // ---- SHA-256 (public domain, RFC 6234 based) ----
+          23: typedef struct {
+          24:     uint32_t state[8];
+          25:     uint64_t count;
+          26:     uint8_t  buffer[64];
+          27: } SHA256_CTX;
+          28: 
+          29: #define ROTR(x,n) (((x) >> (n)) | ((x) << (32-(n))))
+          30: #define S0(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+          31: #define S1(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
+          32: #define s0(x) (ROTR(x, 7) ^ ROTR(x,18) ^ ((x) >> 3))
+          33: #define s1(x) (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
+          34: 
+          35: static const uint32_t K[64] = {
+          36:     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,
+          37:     0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+          38:     0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,
+          39:     0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+          40:     0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,
+          41:     0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+          42:     0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,
+          43:     0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+          44:     0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,
+          45:     0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+          46:     0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,
+          47:     0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+          48:     0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,
+          49:     0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+          50:     0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,
+          51:     0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+          52: };
+          53: 
+          54: static void sha256_transform(SHA256_CTX *ctx, const uint8_t data[]) {
+          55:     uint32_t a,b,c,d,e,f,g,h,i,j,t1,t2,m[64];
+          56:     for (i=0,j=0; i<16; ++i, j+=4)
+          57:         m[i] = (data[j]<<24) | (data[j+1]<<16) | (data[j+2]<<8) | (data[j+3]);
+          58:     for ( ; i<64; ++i)
+          59:         m[i] = s1(m[i-2]) + m[i-7] + s0(m[i-15]) + m[i-16];
+          60:     a = ctx->state[0]; b = ctx->state[1]; c = ctx->state[2]; d = ctx->state[3];
+          61:     e = ctx->state[4]; f = ctx->state[5]; g = ctx->state[6]; h = ctx->state[7];
+          62:     for (i=0; i<64; ++i) {
+          63:         t1 = h + S1(e) + ((e & f) ^ (~e & g)) + K[i] + m[i];
+          64:         t2 = S0(a) + ((a & b) ^ (a & c) ^ (b & c));
+          65:         h = g; g = f; f = e; e = d + t1;
+          66:         d = c; c = b; b = a; a = t1 + t2;
+          67:     }
+          68:     ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
+          69:     ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
+          70: }
+          71: 
+          72: void sha256_init(SHA256_CTX *ctx) {
+          73:     ctx->count = 0;
+          74:     ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
+          75:     ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
+          76:     ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
+          77:     ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+          78: }
+          79: 
+          80: void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
+          81:     size_t i = ctx->count % 64;
+          82:     ctx->count += len;
+          83:     while (len--) {
+          84:         ctx->buffer[i++] = *data++;
+          85:         if (i == 64) { sha256_transform(ctx, ctx->buffer); i = 0; }
+          86:     }
+          87: }
+          88: 
+          89: void sha256_final(SHA256_CTX *ctx, uint8_t digest[32]) {
+          90:     size_t i = ctx->count % 64;
+          91:     ctx->buffer[i++] = 0x80;
+          92:     if (i > 56) { while (i < 64) ctx->buffer[i++] = 0; sha256_transform(ctx, ctx->buffer); i = 0; }
+          93:     while (i < 56) ctx->buffer[i++] = 0;
+          94:     uint64_t bits = ctx->count * 8;
+          95:     ctx->buffer[56] = bits>>56; ctx->buffer[57] = bits>>48;
+          96:     ctx->buffer[58] = bits>>40; ctx->buffer[59] = bits>>32;
+          97:     ctx->buffer[60] = bits>>24; ctx->buffer[61] = bits>>16;
+          98:     ctx->buffer[62] = bits>>8;  ctx->buffer[63] = bits;
+          99:     sha256_transform(ctx, ctx->buffer);
+          100:     for (i=0; i<4; ++i) {
+          101:         digest[i]    = ctx->state[0] >> (24-8*i);
+          102:         digest[i+4]  = ctx->state[1] >> (24-8*i);
+          103:         digest[i+8]  = ctx->state[2] >> (24-8*i);
+          104:         digest[i+12] = ctx->state[3] >> (24-8*i);
+          105:         digest[i+16] = ctx->state[4] >> (24-8*i);
+          106:         digest[i+20] = ctx->state[5] >> (24-8*i);
+          107:         digest[i+24] = ctx->state[6] >> (24-8*i);
+          108:         digest[i+28] = ctx->state[7] >> (24-8*i);
+          109:     }
+          110: }
+          111: // ---- end SHA-256 ----
+          112: 
+          113: // Embed a data buffer into image pixel LSBs
+          114: unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+          115:                           const unsigned char *data, size_t data_len,
+          116:                           size_t *out_capacity) {
+          117:     size_t total_pixels = w * h;
+          118:     size_t total_bits = total_pixels * ch * 8;  // we modify only 1 bit per byte
+          119:     size_t bits_needed = (4 + data_len) * 8;    // 4-byte length prefix + data
+          120: 
+          121:     if (bits_needed > total_bits) {
+          122:         fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+          123:         return NULL;
+          124:     }
+          125:     *out_capacity = total_bits / 8;  // available bytes
+          126: 
+          127:     unsigned char *stego = malloc(w * h * ch);
+          128:     memcpy(stego, img, w * h * ch);
+          129: 
+          130:     // Write length prefix (32-bit little-endian)
+          131:     uint32_t len = (uint32_t)data_len;
+          132:     unsigned char len_bytes[4];
+          133:     len_bytes[0] = len & 0xFF;
+          134:     len_bytes[1] = (len >> 8) & 0xFF;
+          135:     len_bytes[2] = (len >> 16) & 0xFF;
+          136:     len_bytes[3] = (len >> 24) & 0xFF;
+          137: 
+          138:     // Interleave: write length then data, bit by bit into LSB of each byte
+          139:     size_t bit_idx = 0;
+          140:     for (int byte = 0; byte < 4; byte++) {
+          141:         for (int b = 0; b < 8; b++) {
+          142:             size_t pixel_offset = bit_idx / 8;  // which byte in the image
+          143:             int bit = (len_bytes[byte] >> b) & 1;
+          144:             if (bit)
+          145:                 stego[pixel_offset] |= 1;
+          146:             else
+          147:                 stego[pixel_offset] &= ~1;
+          148:             bit_idx++;
+          149:         }
+          150:     }
+          151:     for (size_t i = 0; i < data_len; i++) {
+          152:         for (int b = 0; b < 8; b++) {
+          153:             size_t pixel_offset = bit_idx / 8;
+          154:             int bit = (data[i] >> b) & 1;
+          155:             if (bit)
+          156:                 stego[pixel_offset] |= 1;
+          157:             else
+          158:                 stego[pixel_offset] &= ~1;
+          159:             bit_idx++;
+          160:         }
+          161:     }
+          162:     return stego;
+          163: }
+          164: 
+          165: // Extract data from a stego image
+          166: unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+          167:                             size_t *out_len) {
+          168:     size_t bit_idx = 0;
+          169:     // Read length prefix
+          170:     unsigned char len_bytes[4] = {0};
+          171:     for (int byte = 0; byte < 4; byte++) {
+          172:         for (int b = 0; b < 8; b++) {
+          173:             size_t pixel_offset = bit_idx / 8;
+          174:             if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+          175:             int bit = img[pixel_offset] & 1;
+          176:             len_bytes[byte] |= (bit << b);
+          177:             bit_idx++;
+          178:         }
+          179:     }
+          180:     uint32_t data_len = len_bytes[0] | (len_bytes[1]<<8) | (len_bytes[2]<<16) | (len_bytes[3]<<24);
+          181:     if (data_len > (size_t)(w * h * ch) * 8) goto fail; // sanity check
+          182: 
+          183:     unsigned char *data = malloc(data_len);
+          184:     for (size_t i = 0; i < data_len; i++) {
+          185:         data[i] = 0;
+          186:         for (int b = 0; b < 8; b++) {
+          187:             size_t pixel_offset = bit_idx / 8;
+          188:             if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+          189:             int bit = img[pixel_offset] & 1;
+          190:             data[i] |= (bit << b);
+          191:             bit_idx++;
+          192:         }
+          193:     }
+          194:     *out_len = data_len;
+          195:     return data;
+          196: fail:
+          197:     *out_len = 0;
+          198:     return NULL;
+          199: }
+          200: 
+          201: int main(int argc, char **argv) {
+          202:     if (argc < 3) {
+          203:         fprintf(stderr, "Usage:\n");
+          204:         fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+          205:         fprintf(stderr, "          (writes stego_<cover> for each)\n");
+          206:         fprintf(stderr, "  Extract: %s extract <stego1> [stego2 ...]\n", argv[0]);
+          207:         fprintf(stderr, "          (reconstructs 'payload.bin' and verifies SHA-256)\n");
+          208:         return 1;
+          209:     }
+          210: 
+          211:     if (!strcmp(argv[1], "embed")) {
+          212:         if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+          213:         const char *payload_file = argv[2];
+          214:         // Read entire payload
+          215:         FILE *f = fopen(payload_file, "rb");
+          216:         if (!f) { perror(payload_file); return 1; }
+          217:         fseek(f, 0, SEEK_END);
+          218:         long fsize = ftell(f);
+          219:         fseek(f, 0, SEEK_SET);
+          220:         unsigned char *payload = malloc(fsize);
+          221:         fread(payload, 1, fsize, f);
+          222:         fclose(f);
+          223: 
+          224:         // Compute SHA-256 of payload for later verification
+          225:         SHA256_CTX sha;
+          226:         sha256_init(&sha);
+          227:         sha256_update(&sha, payload, fsize);
+          228:         uint8_t orig_hash[32];
+          229:         sha256_final(&sha, orig_hash);
+          230:         printf("Original payload SHA-256: ");
+          231:         for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+          232:         printf("\n");
+          233: 
+          234:         int num_covers = argc - 3;
+          235:         // Split payload into equal chunks, last chunk may be smaller
+          236:         size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+          237:         size_t offset = 0;
+          238: 
+          239:         for (int i = 0; i < num_covers; i++) {
+          240:             const char *cover_path = argv[3+i];
+          241:             int w, h, ch;
+          242:             unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+          243:             if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+          244:             // Force RGB (ch=3) to keep things consistent; stb will convert if needed
+          245:             if (ch != 3) {
+          246:                 unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          247:                 stbi_image_free(cover);
+          248:                 cover = rgb;
+          249:                 ch = 3;
+          250:             }
+          251: 
+          252:             size_t remaining = fsize - offset;
+          253:             size_t this_chunk = chunk_size;
+          254:             if (this_chunk > remaining) this_chunk = remaining;
+          255:             if (this_chunk == 0) {
+          256:                 printf("No data left for %s, skipping\n", cover_path);
+          257:                 stbi_image_free(cover);
+          258:                 continue;
+          259:             }
+          260: 
+          261:             size_t capacity;
+          262:             unsigned char *stego = embed_data(cover, w, h, ch,
+          263:                                               payload + offset, this_chunk,
+          264:                                               &capacity);
+          265:             if (!stego) {
+          266:                 fprintf(stderr, "Embedding failed for %s (need %zu bytes)\n", cover_path, this_chunk);
+          267:                 stbi_image_free(cover);
+          268:                 return 1;
+          269:             }
+          270:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+          271:                    this_chunk, cover_path, capacity);
+          272: 
+          273:             // Write stego image as PNG (lossless)
+          274:             char out_name[1024];
+          275:             snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+          276:             if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          277:                 fprintf(stderr, "Failed to write %s\n", out_name);
+          278:                 return 1;
+          279:             }
+          280:             printf(" -> saved %s\n", out_name);
+          281:             free(stego);
+          282:             stbi_image_free(cover);
+          283:             offset += this_chunk;
+          284:         }
+          285:         printf("Embedding complete.\n");
+          286: 
+          287:     } else if (!strcmp(argv[1], "extract")) {
+          288:         int num_stegos = argc - 2;
+          289:         if (num_stegos == 0) { fprintf(stderr, "Need at least one stego image\n"); return 1; }
+          290:         // We'll reconstruct the payload in memory
+          291:         unsigned char *full_data = NULL;
+          292:         size_t total_len = 0;
+          293:         for (int i = 0; i < num_stegos; i++) {
+          294:             int w, h, ch;
+          295:             unsigned char *img = stbi_load(argv[2+i], &w, &h, &ch, 3);
+          296:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[2+i]); return 1; }
+          297:             size_t chunk_len;
+          298:             unsigned char *chunk = extract_data(img, w, h, 3, &chunk_len);
+          299:             stbi_image_free(img);
+          300:             if (!chunk) {
+          301:                 fprintf(stderr, "Failed to extract data from %s\n", argv[2+i]);
+          302:                 return 1;
+          303:             }
+          304:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[2+i]);
+          305:             full_data = realloc(full_data, total_len + chunk_len);
+          306:             memcpy(full_data + total_len, chunk, chunk_len);
+          307:             total_len += chunk_len;
+          308:             free(chunk);
+          309:         }
+          310:         // Write reconstructed payload
+          311:         FILE *out = fopen("reconstructed_payload.bin", "wb");
+          312:         if (!out) { perror("reconstructed_payload.bin"); return 1; }
+          313:         fwrite(full_data, 1, total_len, out);
+          314:         fclose(out);
+          315:         // Compute SHA-256 and compare
+          316:         SHA256_CTX sha;
+          317:         sha256_init(&sha);
+          318:         sha256_update(&sha, full_data, total_len);
+          319:         uint8_t recon_hash[32];
+          320:         sha256_final(&sha, recon_hash);
+          321:         printf("Reconstructed payload SHA-256: ");
+          322:         for (int i = 0; i < 32; i++) printf("%02x", recon_hash[i]);
+          323:         printf("\n");
+          324:         printf("Verification: SHA-256 must match original printed during embed.\n");
+          325:         free(full_data);
+          326:     } else {
+          327:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          328:         return 1;
+          329:     }
+          330:     return 0;
+          331: }
+
+          (End of file - total 331 lines)
+          </content>
+    time: 7/28/2026, 6:54:48.065 AM GMT+5:30
+    duration: 3.721s
+    duration_ms: 3721
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The tool takes:
+      - `embed` mode: `./diststego embed <payload_file> <cover1.png> [cover2.png ...]` — splits the payload into equal chunks, embeds each into a cover image, outputs `stego_<cover>.png`
+      - `extract` mode: `./diststego extract <stego1.png> [stego2.png ...]` — extracts chunks from each stego image, reconstructs, writes `reconstructed_payload.bin`
+
+      I need to:
+      1. Create a sample text file (the "secret")
+      2. Download 3 sample PNG images from the internet
+      3. Run the embed command
+
+      For sample images, I can use placeholder images from a service like `https://via.placeholder.com/` or picsum.photos or similar. Let me use picsum.photos for sample images, or maybe some small free test images.
+
+      Actually, I'll use:
+      - A simple text file with some content
+      - Images from picsum.photos or similar
+
+      Let me do this step by step. First create the secret text, then download images, then embed.
+    thinking_duration: 2.535s
+    thinking_duration_ms: 2535
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - content: Create sample secret text file
+              status: in_progress
+              priority: high
+            - content: Download 3 sample PNG cover images
+              status: pending
+              priority: high
+            - content: Run embed command with diststego
+              status: pending
+              priority: high
+            - content: Verify output (extract & compare)
+              status: pending
+              priority: medium
+        result: |-
+          [
+            {
+              "content": "Create sample secret text file",
+              "status": "in_progress",
+              "priority": "high"
+            },
+            {
+              "content": "Download 3 sample PNG cover images",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Run embed command with diststego",
+              "status": "pending",
+              "priority": "high"
+            },
+            {
+              "content": "Verify output (extract & compare)",
+              "status": "pending",
+              "priority": "medium"
+            }
+          ]
+    time: 7/28/2026, 6:54:51.884 AM GMT+5:30
+    duration: 5.446s
+    duration_ms: 5446
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me create the secret file and download some sample images in parallel. For images I'll use picsum.photos which gives random photos, or placekitten, or similar. Let me use picsum.photos with specific dimensions. I'll download 3 PNG images.
+
+      Actually, picsum.photos returns JPEGs by default and might not be PNG. Let me think about what gives actual PNGs. I could use:
+      1. `https://via.placeholder.com/200x200.png` - these are actual PNGs
+      2. Or I could use a site that serves test PNG files
+
+      Let me use via.placeholder.com PNG format for simplicity. Or actually, let me just use some real small PNG files. The simplest approach is to use `https://placehold.co/` which supports PNG format.
+
+      Actually wait, let me just use curl to download some images. I'll use a few different ones. Let me create the secret file and download images in parallel.
+    thinking_duration: 2.283s
+    thinking_duration_ms: 2283
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            curl -sL -o cover1.png "https://placehold.co/400x300/png?text=Cover1" &
+            curl -sL -o cover2.png "https://placehold.co/400x300/png?text=Cover2" &
+            curl -sL -o cover3.png "https://placehold.co/400x300/png?text=Cover3" &
+            wait
+            file cover1.png cover2.png cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: Wrote file successfully.
+      - tool: bash
+        args:
+          command: |-
+            curl -sL -o cover1.png "https://placehold.co/400x300/png?text=Cover1" &
+            curl -sL -o cover2.png "https://placehold.co/400x300/png?text=Cover2" &
+            curl -sL -o cover3.png "https://placehold.co/400x300/png?text=Cover3" &
+            wait
+            file cover1.png cover2.png cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          cover1.png: PNG image data, 400 x 300, 8-bit/color RGBA, non-interlaced
+          cover2.png: PNG image data, 400 x 300, 8-bit/color RGBA, non-interlaced
+          cover3.png: PNG image data, 400 x 300, 8-bit/color RGBA, non-interlaced
+    time: 7/28/2026, 6:54:57.438 AM GMT+5:30
+    duration: 19.587s
+    duration_ms: 19587
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      All 3 images downloaded and verified as real PNGs (400x300 RGBA). The program forces RGB (3 channels) by calling `stbi_load(cover_path, &w, &h, &ch, 3)` in embed mode, so the RGBA→RGB conversion is handled internally by stb_image.
+
+      Now let me run the embed command.
+    thinking_duration: 905ms
+    thinking_duration_ms: 905
+    tool_calls:
+      - tool: bash
+        args:
+          command: ./diststego embed secret.txt cover1.png cover2.png cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+    time: 7/28/2026, 6:55:17.152 AM GMT+5:30
+    duration: 5.965s
+    duration_ms: 5965
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Embedding worked. Now let me also extract to verify the round-trip works.
+    thinking_duration: 330ms
+    thinking_duration_ms: 330
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - priority: high
+              content: Create sample secret text file
+              status: completed
+            - priority: high
+              content: Download 3 sample PNG cover images
+              status: completed
+            - priority: high
+              content: Run embed command with diststego
+              status: completed
+            - priority: medium
+              content: Verify output (extract & compare)
+              status: in_progress
+        result: |-
+          [
+            {
+              "content": "Create sample secret text file",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Download 3 sample PNG cover images",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Run embed command with diststego",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Verify output (extract & compare)",
+              "status": "in_progress",
+              "priority": "medium"
+            }
+          ]
+    time: 7/28/2026, 6:55:23.235 AM GMT+5:30
+    duration: 2.712s
+    duration_ms: 2712
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Extracted 0 bytes from stego_cover1.png
+          Extracted 0 bytes from stego_cover2.png
+          Extracted 0 bytes from stego_cover3.png
+          Reconstructed payload SHA-256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          Verification: SHA-256 must match original printed during embed.
+    time: 7/28/2026, 6:55:26.060 AM GMT+5:30
+    duration: 47.661s
+    duration_ms: 47661
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The extraction returned 0 bytes from each image. The SHA-256 matches the hash of an empty file (`e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` is the SHA-256 of zero bytes), so the length prefix is reading as 0.
+
+      Let me think about what's going wrong. 
+
+      The program loads images in "embed" mode with `stbi_load(cover_path, &w, &h, &ch, 0)` — requesting the original number of channels. Then if `ch != 3`, it reloads with `stbi_load(cover_path, &w, &h, &ch, 3)` — forcing 3 channels (RGB). 
+
+      In "extract" mode, it uses `stbi_load(argv[2+i], &w, &h, &ch, 3)` — always forces 3 channels. That seems consistent.
+
+      The issue could be related to the fact that the cover images are RGBA (4 channels) but the program forces RGB (3 channels). When loading an RGBA image with `stbi_load(path, &w, &h, &ch, 3)`, stb_image converts from RGBA to RGB. This changes the pixel data layout.
+
+      Wait, in embed mode:
+      1. First, it loads with `stbi_load(cover_path, &w, &h, &ch, 0)` — gets the original (RGBA, 4 channels)
+      2. If ch != 3, it reloads with `stbi_load(cover_path, &w, &h, &ch, 3)` — forces RGB (3 channels) 
+      3. Then it embeds data into the RGB image data
+      4. Saves the stego image with `stbi_write_png(out_name, w, h, ch, stego, w*ch)` — writes PNG with 3 channels
+
+      In extract mode:
+      1. Loads with `stbi_load(path, &w, &h, &ch, 3)` — forces 3 channels
+      2. Extracts from the 3-channel pixel data
+
+      So the storage and retrieval should use the same number of channels. The data is embedded bit by bit into consecutive bytes of the pixel buffer. With RGB, each pixel is 3 bytes (R, G, B). The bit index maps to: `bit_idx / 8` gives the byte offset in the pixel data array.
+
+      Let me think about what could be wrong...
+
+      Actually, looking more carefully:
+
+      In embed, the stego image is written with `ch` = 3 (RGB). So the stego PNG is a 3-channel image.
+
+      In extract, it loads with `stbi_load(path, &w, &h, &ch, 3)` — forces 3 channels.
+
+      This should be consistent. But the extraction returns 0 bytes...
+
+      Wait, could the issue be that when writing PNG with RGB (3 channels), stb_image_write might write something different? Or could it be that the images were saved correctly but the data isn't reading back?
+
+      Let me look at the output more carefully. It says "Extracted 0 bytes". This means the length prefix bytes all read as 0. So either:
+      1. The data wasn't written correctly in the first place
+      2. Or the data isn't being read back from the same positions
+
+      Let me check if there's an issue with the PNG write/read round-trip. When `stbi_write_png` writes an RGB image, it writes the pixel data as RGB triplets. When `stbi_load` reads it back with `ch=3`, it should read the exact same RGB triplets.
+
+      Actually, let me think about something else. When the image is saved as PNG and then reloaded, the pixel data should be identical (PNG is lossless). So the LSB data should survive.
+
+      But wait — the cover images are RGBA (400x300). When forcing RGB (3 channels), stb_image converts by dropping the alpha channel. This means:
+      - RGBA: 400 * 300 * 4 = 480,000 bytes
+      - RGB: 400 * 300 * 3 = 360,000 bytes
+
+      So the capacity is 360,000 bytes = 2,880,000 bits. The embedded data (107 bytes + 4 byte prefix) = 111 bytes * 8 = 888 bits. This should fit easily.
+
+      Actually, maybe the problem is simpler. Let me check if the stego PNG files are valid and if the first byte's LSB actually has data.
+
+      Let me write a small test to read the first few bytes of the stego image and check the LSBs.
+
+      Actually, wait. Let me re-read the code more carefully.
+
+      In `embed_data`, the function takes the image data as `unsigned char *img`, copies it to `stego`, then modifies LSBs in `stego`. The `embed_data` function doesn't know about width/height/channels directly — it just treats the image as a flat byte array of `w * h * ch` bytes.
+
+      The data layout: The bit index `bit_idx` goes from 0 to `(4 + data_len) * 8 - 1`. The byte position is `bit_idx / 8`. So:
+      - bit_idx 0-7: byte 0 of image, writes to LSB of image byte 0
+      - bit_idx 8-15: byte 1 of image, writes to LSB of image byte 1
+      - etc.
+
+      In extract, the data is read similarly.
+
+      Wait, I just realized something. In embed mode, the code loads the cover with `stbi_load(cover_path, &w, &h, &ch, 0)` — original channels. Then if `ch != 3`, it reloads with `stbi_load(cover_path, &w, &h, &ch, 3)` — 3 channels.
+
+      But then it calls `embed_data(cover, w, h, ch, ...)`. And `ch` at this point should be 3 (since we set it from the second load).
+
+      Let me verify by checking what `ch` is after the forced conversion.
+
+      Looking at the code:
+      ```c
+      int w, h, ch;
+      unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+      if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+      if (ch != 3) {
+          unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          stbi_image_free(cover);
+          cover = rgb;
+          ch = 3;
+      }
+      ```
+
+      After this block, `ch` = 3 (either set to 3 explicitly, or the original was already 3). So `embed_data(cover, w, h, ch, ...)` gets `ch = 3`. This means it treats the buffer as having `w * h * 3` bytes.
+
+      Then `stbi_write_png(out_name, w, h, ch, stego, w*ch)` writes with 3 channels and stride `w*3`.
+
+      Now in extract:
+      ```c
+      unsigned char *img = stbi_load(argv[2+i], &w, &h, &ch, 3);
+      ```
+      This forces 3 channels. Then `extract_data(img, w, h, 3, &chunk_len)` — hardcoded 3.
+
+      This all seems consistent. So why is extraction returning 0 bytes?
+
+      Let me check if maybe the data was actually embedded with 4 channels originally but then saved with 3 channels... No, the code explicitly converts to RGB before embedding.
+
+      Hmm, let me actually debug this. Let me check the first few bytes of the stego image's pixel data.
+
+      Actually, I wonder if the issue is that the cover images from placehold.co have alpha channel, and when converted from RGBA to RGB, stb_image might be doing some premultiplication or something? No, stb_image just drops the alpha channel when `ch=3` is requested for the output.
+
+      Let me actually write a small program to dump the first few bytes of the stego file and check LSBs.
+    thinking_duration: 14.884s
+    thinking_duration_ms: 14884
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 - <<'PY'
+            import struct
+
+            # Read the stego PNG and dump first 20 bytes of pixel data
+            with open("stego_cover1.png", "rb") as f:
+                png = f.read()
+
+            # Find IDAT chunks to verify it's a valid PNG
+            print(f"PNG signature: {png[:8].hex()}")
+            print(f"File size: {len(png)} bytes")
+
+            # Use stbi would show actual pixel data, but let's check with PIL/Pillow
+            try:
+                from PIL import Image
+                im = Image.open("stego_cover1.png")
+                print(f"PIL: {im.size}, mode={im.mode}")
+                pixels = list(im.getdata())
+                first_pixel = pixels[0]
+                print(f"First pixel (R,G,B): {first_pixel}")
+                print(f"LSB of R: {first_pixel[0] & 1}")
+                print(f"LSB of G: {first_pixel[1] & 1}")
+                print(f"LSB of B: {first_pixel[2] & 1}")
+                
+                # Check first 32 bytes of pixel data LSBs
+                flat = bytearray()
+                for p in pixels[:20]:
+                    flat.extend(p[:3])
+                lsbs = [b & 1 for b in flat[:32]]
+                print(f"First 32 LSBs: {''.join(str(b) for b in lsbs)}")
+                
+                # Also check raw bytes of original cover
+                im2 = Image.open("cover1.png")
+                print(f"\nOriginal cover mode: {im2.mode}")
+                pixels2 = list(im2.getdata())
+                flat2 = bytearray()
+                for p in pixels2[:20]:
+                    if im2.mode == 'RGBA':
+                        flat2.extend(p[:3])
+                    else:
+                        flat2.extend(p)
+                lsbs2 = [b & 1 for b in flat2[:32]]
+                print(f"Original first 32 LSBs: {''.join(str(b) for b in lsbs2)}")
+
+            except ImportError:
+                print("PIL not available")
+            PY
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          PNG signature: 89504e470d0a1a0a
+          File size: 8042 bytes
+          PIL: (400, 300), mode=RGB
+          First pixel (R,G,B): (220, 220, 220)
+          LSB of R: 0
+          LSB of G: 0
+          LSB of B: 0
+          First 32 LSBs: 00000000000000000000000000000000
+
+          Original cover mode: RGBA
+          Original first 32 LSBs: 11111111111111111111111111111111
+    time: 7/28/2026, 6:56:13.844 AM GMT+5:30
+    response: Extraction returned 0 bytes. Something's off. Let me debug the data round-trip.
+    duration: 30.146s
+    duration_ms: 30146
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I see the issue. The original cover image (RGBA) has all LSBs = 1. The stego image (RGB, after conversion from RGBA) has all LSBs = 0. The length prefix data (107 bytes = 0x6B) should be embedded as LSBs.
+
+      Let me think about what's happening:
+
+      1. The original cover is RGBA (400x300x4 bytes)
+      2. In embed mode, the code loads it with `ch=3` forcing RGB conversion. This creates a 400x300x3 byte buffer.
+      3. The data is embedded into the first 4+107=111 bytes of this buffer (modifying LSBs).
+      4. The stego image is saved as RGB PNG.
+      5. In extract mode, the stego is loaded with `ch=3` — right back to a 400x300x3 byte buffer.
+      6. The data is read from the first few bytes' LSBs.
+
+      But the stego image's first pixel LSBs are all 0! That means the embed step didn't actually modify the LSBs... wait, that doesn't make sense. Let me check if the stego file has the same pixel data as the original cover.
+
+      Wait - the original cover has all LSBs = 1. The stego has all LSBs = 0. But we're embedding 107 bytes, which starts with the length prefix (0x6B 0x00 0x00 0x00 = 107 in little-endian). The binary representation of 107 is 11010011 for the first byte (bit 0 = 1, bit 1 = 1, bit 2 = 0, bit 3 = 0, bit 4 = 1, bit 5 = 0, bit 6 = 1, bit 7 = 1).
+
+      Wait no. The code says:
+      ```c
+      len_bytes[0] = len & 0xFF;      // 107 = 0x6B
+      len_bytes[1] = (len >> 8) & 0xFF;  // 0
+      len_bytes[2] = (len >> 16) & 0xFF; // 0
+      len_bytes[3] = (len >> 24) & 0xFF; // 0
+      ```
+
+      And then:
+      ```c
+      for (int byte = 0; byte < 4; byte++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+              int bit = (len_bytes[byte] >> b) & 1;
+              ...
+              bit_idx++;
+          }
+      }
+      ```
+
+      So for `len_bytes[0]` = 0x6B = 01101011:
+      - b=0: bit = (0x6B >> 0) & 1 = 1
+      - b=1: bit = (0x6B >> 1) & 1 = 1
+      - b=2: bit = (0x6B >> 2) & 1 = 0
+      - b=3: bit = (0x6B >> 3) & 1 = 1
+      - b=4: bit = (0x6B >> 4) & 1 = 0
+      - b=5: bit = (0x6B >> 5) & 1 = 1
+      - b=6: bit = (0x6B >> 6) & 1 = 1
+      - b=7: bit = (0x6B >> 7) & 1 = 0
+
+      So the first 8 LSBs should be: 1 1 0 1 0 1 1 0
+
+      But the stego image shows all 0s for the first 32 LSBs!
+
+      Wait, maybe the issue is PIL loading different data? Let me check...
+
+      Actually, hold on. Let me re-think. The original cover is RGBA (all LSBs = 1). When loaded by stb_image with `ch=3`, the alpha channel is dropped. Each pixel goes from (R,G,B,A) = (220,220,220,255) to (R,G,B) = (220,220,220). The binary for 220 is 11011100, so LSB of 220 is 0.
+
+      Wait! 220 & 1 = 0. So the original RGBA image has pixel value 220 for each of R,G,B, which in binary is 11011100, LSB = 0.
+
+      But PIL showed "Original cover first 32 LSBs: 11111111111111111111111111111111" for the RGBA pixels when we took the first 3 bytes of each pixel...
+
+      Hmm, wait. Let me look at the PIL output again:
+      - Original cover mode: RGBA
+      - For the original, flat2 was built from pixels[:20], taking `p[:3]` (first 3 elements of each pixel tuple = R, G, B), then extending into flat2
+      - Original first 32 LSBs: all 1s
+
+      But the original RGBA pixel is (220, 220, 220, 255). 220 & 1 = 0, not 1. So there's a contradiction here.
+
+      Unless... the original pixel data isn't actually (220, 220, 220) in the decoded image data. Let me check more carefully. 
+
+      Actually wait, I think PIL is reading a different representation. Let me see: `pixels = list(im.getdata())` returns the pixel values. For the original RGBA image, the first pixel should be whatever placehold.co generated.
+
+      Hmm, placehold.co generates solid color images. Looking at the output: "First pixel (R,G,B): (220, 220, 220)" for stego_cover1, but that's after the stego conversion and embed.
+
+      Actually, the "Original cover mode: RGBA" shows "Original first 32 LSBs: 11111111111111111111111111111111". But 220 & 1 = 0. So either:
+      1. The original pixel data isn't all (220,220,220) 
+      2. Or there's something else going on
+
+      Let me check: maybe placehold.co returned slightly different pixels, not uniform. Or maybe the color is different.
+
+      Actually, the issue is: the test code for original only printed the first 32 LSBs of `flat2`, which was built from the original RGBA pixels. Each RGBA pixel = (R, G, B, A). The code did `p[:3]` to get R, G, B. If the original color was actually (221, 221, 221, 255), then 221 & 1 = 1. So the original pixels might have been 221, not 220.
+
+      Let me look at the stego pixel: (220, 220, 220). The LSB of 220 is 0.
+
+      If the embed code modified the first byte from 221 to 220 (clearing LSB from 1 to 0), that would be correct if the bit being embedded was 0.
+
+      But the first bit of the first byte should be... let me re-check.
+
+      First byte of data is the length prefix: len = 107. 
+      len_bytes[0] = 107 & 0xFF = 0x6B = 01101011
+      bit 0 = (0x6B >> 0) & 1 = 1 ← should be 1
+
+      Hmm wait. The extract function says `len_bytes[byte] |= (bit << b)`. So for byte index 0 and bit 0, it reads the LSB of pixel position 0 and puts it into bit 0 of len_bytes[0].
+
+      For the embed function: `bit = (len_bytes[byte] >> b) & 1`. So for byte 0, bit 0: `bit = (0x6B >> 0) & 1 = 1`.
+
+      So the first LSB of the image should be 1. But the stego shows LSB of R = 0. That means the embed is NOT writing the data correctly, or there's some data layout issue.
+
+      Let me think again...
+
+      Wait, could there be a problem with how the image is loaded in embed mode? The code:
+      1. Loads cover with `stbi_load(cover_path, &w, &h, &ch, 0)` — original channel count
+      2. If ch != 3, loads again with `ch=3` 
+      3. `embed_data(cover, w, h, ch, ...)` where ch=3
+
+      But what if `stbi_load` with `ch=3` on an RGBA PNG returns data in a different layout than expected? Actually no, ch=3 means it converts to RGB by removing alpha.
+
+      Actually wait, I want to check: is the cover actually being loaded at all? Let me check if the original upload had the right data.
+
+      Actually, let me take a different approach. Let me just run the embed with some debug output showing what's being written.
+
+      Actually, the issue might be something much simpler. Let me check: maybe the stego image isn't being loaded back correctly in extraction. Let me check the stego file size:
+
+      The original cover1.png is probably small (like 1-5 KB for a solid color image), and the stego version might be different due to stb_write_png vs the original encoding.
+
+      Let me try a different approach - write a small C test that embeds and immediately extracts to isolate the issue.
+
+      Actually, wait. Let me look at the embed code more carefully.
+
+      ```c
+      if (ch != 3) {
+          unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          stbi_image_free(cover);
+          cover = rgb;
+          ch = 3;
+      }
+      ```
+
+      So `cover` is now RGB (3 channels). But the `embed_data` function uses `ch` which is now 3. Good.
+
+      Then `stbi_write_png(out_name, w, h, ch, stego, w*ch)` — writes RGB with stride `w*3`. Good.
+
+      In extract:
+      ```c
+      unsigned char *img = stbi_load(argv[2+i], &w, &h, &ch, 3);
+      ```
+      Forces 3 channels.
+
+      OK so the image loading should be consistent. Let me try another check: let me verify by writing a tiny C program that tests embed/extract directly without file I/O.
+
+      Actually, let me just add debug prints to see what bytes are being embedded and what's being read back. Let me modify the extract function to print raw LSBs of the first few bytes.
+
+      Actually, I'm over-thinking this. Let me just take a hex dump of the PNG pixel data and check the LSBs manually.
+    thinking_duration: 21.311s
+    thinking_duration_ms: 21311
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            python3 - <<'PY'
+            from PIL import Image
+
+            # Check original cover pixel values
+            im_orig = Image.open("cover1.png")
+            print(f"Original: mode={im_orig.mode}, size={im_orig.size}")
+            px_orig = list(im_orig.getdata())
+            print(f"First 5 orig pixels (RGBA): {px_orig[:5]}")
+            print(f"LSB of each channel: {[(p[0]&1, p[1]&1, p[2]&1, p[3]&1) for p in px_orig[:5]]}")
+
+            # Check stego pixel values
+            im_stego = Image.open("stego_cover1.png")
+            print(f"\nStego: mode={im_stego.mode}, size={im_stego.size}")
+            px_stego = list(im_stego.getdata())
+            print(f"First 5 stego pixels (RGB): {px_stego[:5]}")
+            print(f"LSB of each channel: {[(p[0]&1, p[1]&1, p[2]&1) for p in px_stego[:5]]}")
+
+            # Reconstruct first 32 bits of embedded data from stego
+            flat = bytearray()
+            for p in px_stego[:20]:
+                flat.extend(p)  # R, G, B
+            lsbs = [b & 1 for b in flat[:32]]
+            print(f"\nStego first 32 LSBs: {''.join(str(b) for b in lsbs)}")
+
+            # Reconstruct length prefix (first 4 bytes, little-endian LSB-first)
+            for byte_idx in range(4):
+                val = 0
+                for b in range(8):
+                    pixel_offset = (byte_idx * 8 + b) // 8
+                    bit_offset = (byte_idx * 8 + b) % 8
+                    lsb = flat[byte_idx * 8 + b] & 1
+                    val |= (lsb << b)
+                print(f"Length byte {byte_idx}: {val} (0x{val:02x})")
+
+            # Reconstruct first 10 data bytes
+            for byte_idx in range(10):
+                val = 0
+                for b in range(8):
+                    offset = 32 + byte_idx * 8 + b
+                    lsb = flat[offset] & 1
+                    val |= (lsb << b)
+                print(f"Data byte {byte_idx}: {val} (0x{val:02x}) = {chr(val) if 32 <= val <= 126 else '?'}")
+            PY
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original: mode=RGBA, size=(400, 300)
+          First 5 orig pixels (RGBA): [(221, 221, 221, 255), (221, 221, 221, 255), (221, 221, 221, 255), (221, 221, 221, 255), (221, 221, 221, 255)]
+          LSB of each channel: [(1, 1, 1, 1), (1, 1, 1, 1), (1, 1, 1, 1), (1, 1, 1, 1), (1, 1, 1, 1)]
+
+          Stego: mode=RGB, size=(400, 300)
+          First 5 stego pixels (RGB): [(220, 220, 220), (220, 220, 220), (220, 220, 220), (220, 220, 220), (220, 220, 220)]
+          LSB of each channel: [(0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+
+          Stego first 32 LSBs: 00000000000000000000000000000000
+          Length byte 0: 0 (0x00)
+          Length byte 1: 0 (0x00)
+          Length byte 2: 0 (0x00)
+          Length byte 3: 0 (0x00)
+          Data byte 0: 0 (0x00) = ?
+          Data byte 1: 0 (0x00) = ?
+          Data byte 2: 0 (0x00) = ?
+          Traceback (most recent call last):
+            File "<stdin>", line 39, in <module>
+          IndexError: bytearray index out of range
+    time: 7/28/2026, 6:56:44.097 AM GMT+5:30
+    duration: 30.108s
+    duration_ms: 30108
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I see: the original cover has RGBA pixels of (221, 221, 221, 255) — LSB = 1 for R, G, B. The stego has RGB pixels of (220, 220, 220) — LSB = 0 for R, G, B.
+
+      The stego image shows all LSBs = 0, which means the first bit being embedded is 0. But from my earlier analysis, the first byte of the length prefix is 0x6B (107), and bit 0 should be (0x6B >> 0) & 1 = 1.
+
+      So either:
+      1. The embed code isn't running at all
+      2. The stego image is being written differently than expected
+      3. Something is wrong with the data
+
+      Actually, wait... could it be that the pixel color (220, 220, 220) is from the original image, not the stego? Let me check - the original is RGBA (221, 221, 221, 255). When converting RGBA to RGB with stb_image, it drops the alpha. But 221 - does it become 220?
+
+      Actually no, stb_image would just drop the alpha byte. RGBA pixel (221, 221, 221, 255) when requested as 3 channels becomes (221, 221, 221). But the stego image shows (220, 220, 220).
+
+      So somehow the LSB is being cleared to 0. That means the data being embedded has 0 as the first bit.
+
+      Let me re-read the embed code:
+
+      ```c
+      for (int byte = 0; byte < 4; byte++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+              int bit = (len_bytes[byte] >> b) & 1;
+              if (bit)
+                  stego[pixel_offset] |= 1;
+              else
+                  stego[pixel_offset] &= ~1;
+              bit_idx++;
+          }
+      }
+      ```
+
+      For byte 0 (len_bytes[0] = 0x6B = 01101011):
+      - b=0: bit = (0x6B >> 0) & 1 = 1 → stego[0] |= 1
+      - b=1: bit = (0x6B >> 1) & 1 = 1 → stego[1] |= 1
+      - b=2: bit = (0x6B >> 2) & 1 = 0 → stego[2] &= ~1
+      ...etc
+
+      So the first LSB should be 1, but we see 0. This means either:
+      1. The embed function isn't being called
+      2. The `stego` buffer gets overwritten before saving
+      3. Something else...
+
+      Wait! I just realized something. The `stego` buffer is returned from `embed_data` and saved. But then what happens? Let me look at the main function code again:
+
+      ```c
+      unsigned char *stego = embed_data(cover, w, h, ch,
+                                        payload + offset, this_chunk,
+                                        &capacity);
+      if (!stego) { ... }
+      printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+             this_chunk, cover_path, capacity);
+
+      char out_name[1024];
+      snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+      if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          fprintf(stderr, "Failed to write %s\n", out_name);
+          return 1;
+      }
+      printf(" -> saved %s\n", out_name);
+      free(stego);
+      ```
+
+      Hmm, this looks correct. The stego is allocated in embed_data, returned, and saved.
+
+      But wait - the problem might be that `cover_path` has the path prefix like `./cover1.png` appended to `stego_`, making it `stego_./cover1.png`. Let me check if the file was saved correctly...
+
+      Actually, the main function passes `argv[3+i]` as the cover path. So if the user ran `./diststego embed secret.txt cover1.png cover2.png cover3.png`, then `argv[3]` = "cover1.png", and `argv[3+i]` for each i. These are relative paths.
+
+      The stego output name is `stego_cover1.png` etc. That seems fine.
+
+      Hmm, let me actually compile a debug version to trace what's happening.
+
+      Actually, let me trace through more carefully. The `embed_data` function takes the cover image buffer, copies it to a new buffer (stego), then modifies LSBs.
+
+      ```c
+      unsigned char *stego = malloc(w * h * ch);
+      memcpy(stego, img, w * h * ch);
+      ```
+
+      The `img` pointer comes from `stbi_load(cover_path, &w, &h, &ch, 3)` for the RGBA→RGB conversion. So `img` is RGB data. And `stego` is a copy of this RGB data.
+
+      Then the LSB embedding modifies `stego` in-place. Then `stbi_write_png` writes `stego`.
+
+      Everything looks correct. Let me check if maybe the stego PNG was overwritten or the cover PNG is being used instead.
+
+      Actually, wait - let me check the file listing to see what files exist.
+
+      I just realized something else - let me look at the code that reads the cover image again:
+
+      ```c
+      unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+      if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+      if (ch != 3) {
+          unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          stbi_image_free(cover);
+          cover = rgb;
+          ch = 3;
+      }
+      ```
+
+      When loading with `stbi_load(cover_path, &w, &h, &ch, 3)`, the variable `ch` is set to 3. But `w` and `h` are also set. These should be the same as before (400, 300). The `rgb` buffer should be 400 * 300 * 3 bytes.
+
+      Then `embed_data(cover, w, h, ch, ...)` gets `ch=3`.
+
+      Wait, I just realized there could be an issue with the `ch` variable. After `stbi_load(cover_path, &w, &h, &ch, 3)`, `ch` = 3 (since we requested 3 channels). Then it's explicitly set to `ch = 3` again. OK fine.
+
+      Let me check if maybe the `w * h * ch` calculation overflows for `malloc`. `w = 400, h = 300, ch = 3` → `400 * 300 * 3 = 360,000`. That fits in `size_t` (and even in `int`). No overflow.
+
+      Hmm, let me actually just add some debugging to the source code and recompile.
+    thinking_duration: 11.858s
+    thinking_duration_ms: 11858
+    tool_calls:
+      - tool: bash
+        args:
+          command: |-
+            cat > /tmp/test_embed.c << 'CEOF'
+            #define STB_IMAGE_IMPLEMENTATION
+            #define STB_IMAGE_WRITE_IMPLEMENTATION
+            #include "stb_image.h"
+            #include "stb_image_write.h"
+            #include <stdio.h>
+            #include <stdlib.h>
+            #include <string.h>
+            #include <stdint.h>
+            #include <math.h>
+
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total_pixels = w * h;
+                size_t total_bits = total_pixels * ch * 8;
+                size_t bits_needed = (4 + data_len) * 8;
+                if (bits_needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+
+                uint32_t len = (uint32_t)data_len;
+                unsigned char len_bytes[4];
+                len_bytes[0] = len & 0xFF;
+                len_bytes[1] = (len >> 8) & 0xFF;
+                len_bytes[2] = (len >> 16) & 0xFF;
+                len_bytes[3] = (len >> 24) & 0xFF;
+
+                // DEBUG
+                printf("  DEBUG embed: len=%u, len_bytes[0]=0x%02x\n", len, len_bytes[0]);
+                printf("  DEBUG embed: first byte bits: ");
+                for (int b = 0; b < 8; b++) printf("%d", (len_bytes[0] >> b) & 1);
+                printf("\n");
+                printf("  DEBUG embed: img[0..7] before: ");
+                for (int i = 0; i < 8; i++) printf("%02x ", img[i]);
+                printf("\n");
+
+                size_t bit_idx = 0;
+                for (int byte = 0; byte < 4; byte++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx / 8;
+                        int bit = (len_bytes[byte] >> b) & 1;
+                        if (bit)
+                            stego[pixel_offset] |= 1;
+                        else
+                            stego[pixel_offset] &= ~1;
+                        bit_idx++;
+                    }
+                }
+
+                printf("  DEBUG embed: stego[0..7] after: ");
+                for (int i = 0; i < 8; i++) printf("%02x ", stego[i]);
+                printf("\n");
+                printf("  DEBUG embed: stego[0..7] LSBs: ");
+                for (int i = 0; i < 8; i++) printf("%d ", stego[i] & 1);
+                printf("\n");
+
+                for (size_t i = 0; i < data_len; i++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx / 8;
+                        int bit = (data[i] >> b) & 1;
+                        if (bit)
+                            stego[pixel_offset] |= 1;
+                        else
+                            stego[pixel_offset] &= ~1;
+                        bit_idx++;
+                    }
+                }
+                return stego;
+            }
+
+            unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                        size_t *out_len) {
+                size_t bit_idx = 0;
+                unsigned char len_bytes[4] = {0};
+                for (int byte = 0; byte < 4; byte++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx / 8;
+                        if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+                        int bit = img[pixel_offset] & 1;
+                        len_bytes[byte] |= (bit << b);
+                        bit_idx++;
+                    }
+                }
+                uint32_t data_len = len_bytes[0] | (len_bytes[1]<<8) | (len_bytes[2]<<16) | (len_bytes[3]<<24);
+
+                // DEBUG
+                printf("  DEBUG extract: len_bytes = 0x%02x 0x%02x 0x%02x 0x%02x -> data_len=%u\n",
+                       len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3], data_len);
+                printf("  DEBUG extract: img[0..7] LSBs: ");
+                for (int i = 0; i < 8; i++) printf("%d ", img[i] & 1);
+                printf("\n");
+
+                if (data_len > (size_t)(w * h * ch) * 8) goto fail;
+                unsigned char *data = malloc(data_len);
+                for (size_t i = 0; i < data_len; i++) {
+                    data[i] = 0;
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx / 8;
+                        if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+                        int bit = img[pixel_offset] & 1;
+                        data[i] |= (bit << b);
+                        bit_idx++;
+                    }
+                }
+                *out_len = data_len;
+                return data;
+            fail:
+                *out_len = 0;
+                return NULL;
+            }
+
+            int main() {
+                int w, h, ch;
+                unsigned char *cover = stbi_load("cover1.png", &w, &h, &ch, 0);
+                printf("Loaded cover1.png: %dx%d ch=%d\n", w, h, ch);
+
+                // Force RGB like the real code does
+                unsigned char *rgb = stbi_load("cover1.png", &w, &h, &ch, 3);
+                stbi_image_free(cover);
+                cover = rgb;
+                ch = 3;
+                printf("After RGB force: %dx%d ch=%d\n", w, h, ch);
+                printf("  cover[0..7]: ");
+                for (int i = 0; i < 8; i++) printf("%02x ", cover[i]);
+                printf("\n");
+
+                const char *payload = "Hello World!";
+                size_t payload_len = strlen(payload);
+                printf("Payload: '%s' (%zu bytes)\n", payload, payload_len);
+
+                size_t capacity;
+                unsigned char *stego = embed_data(cover, w, h, ch,
+                                                  (const unsigned char*)payload, payload_len,
+                                                  &capacity);
+                if (!stego) { fprintf(stderr, "embed failed\n"); return 1; }
+
+                // Save
+                char out_name[] = "test_stego.png";
+                stbi_write_png(out_name, w, h, ch, stego, w*ch);
+
+                // Reload and extract
+                stbi_image_free(cover);
+
+                int w2, h2, ch2;
+                unsigned char *reloaded = stbi_load(out_name, &w2, &h2, &ch2, 3);
+                printf("Reloaded: %dx%d ch=%d\n", w2, h2, ch2);
+                printf("  reloaded[0..7]: ");
+                for (int i = 0; i < 8; i++) printf("%02x ", reloaded[i]);
+                printf("\n");
+
+                size_t extracted_len;
+                unsigned char *extracted = extract_data(reloaded, w2, h2, 3, &extracted_len);
+                if (extracted) {
+                    printf("Extracted %zu bytes: '%.*s'\n", extracted_len, (int)extracted_len, extracted);
+                    free(extracted);
+                } else {
+                    printf("Extraction failed\n");
+                }
+
+                free(stego);
+                stbi_image_free(reloaded);
+                return 0;
+            }
+            CEOF
+
+            /opt/homebrew/bin/gcc-16 -O0 -lm -o /tmp/test_embed /tmp/test_embed.c -I/Users/dk/lab-data/distributed-steganography-c
+            cd /Users/dk/lab-data/distributed-steganography-c && /tmp/test_embed
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Loaded cover1.png: 400x300 ch=4
+          After RGB force: 400x300 ch=3
+            cover[0..7]: dd dd dd dd dd dd dd dd 
+          Payload: 'Hello World!' (12 bytes)
+            DEBUG embed: len=12, len_bytes[0]=0x0c
+            DEBUG embed: first byte bits: 00110000
+            DEBUG embed: img[0..7] before: dd dd dd dd dd dd dd dd 
+            DEBUG embed: stego[0..7] after: dc dc dc dc dd dd dd dd 
+            DEBUG embed: stego[0..7] LSBs: 0 0 0 0 1 1 1 1 
+          Reloaded: 400x300 ch=3
+            reloaded[0..7]: dc dc dc dc dc dc dc dc 
+            DEBUG extract: len_bytes = 0x00 0x00 0x00 0x00 -> data_len=0
+            DEBUG extract: img[0..7] LSBs: 0 0 0 0 0 0 0 0 
+          Extracted 0 bytes: ''
+    time: 7/28/2026, 6:57:14.315 AM GMT+5:30
+    response: The stego image pixels are all (220,220,220) with LSBs=0 — meaning the embed is NOT writing the expected bits (first bit should be 1 for the length 107). Let me add debug tracing to find the bug.
+    duration: 28.659s
+    duration_ms: 28659
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I can see the bug clearly!
+
+      **Embed phase:**
+      - `len=12`, `len_bytes[0]=0x0c`, first byte bits: `00110000` (MSB to LSB order, but it's actually: bit0=0, bit1=0, bit2=1, bit3=1, bit4=0, bit5=0, bit6=0, bit7=0)
+      - Wait, the printf says "first byte bits: 00110000". Let me check: the printf loops b from 0 to 7, printing `(len_bytes[0] >> b) & 1`. So:
+        - b=0: (0x0c >> 0) & 1 = 0
+        - b=1: (0x0c >> 1) & 1 = 0
+        - b=2: (0x0c >> 2) & 1 = 1
+        - b=3: (0x0c >> 3) & 1 = 1
+        - b=4: (0x0c >> 4) & 1 = 0
+        - b=5: (0x0c >> 5) & 1 = 0
+        - b=6: (0x0c >> 6) & 1 = 0
+        - b=7: (0x0c >> 7) & 1 = 0
+
+      So bits are: 0,0,1,1,0,0,0,0
+
+      The embed writes: stego[0] LSB=0, stego[1] LSB=0, stego[2] LSB=1, stego[3] LSB=1, stego[4] LSB=0, stego[5] LSB=0, stego[6] LSB=0, stego[7] LSB=0.
+
+      The output says "stego[0..7] after: dc dc dc dc dd dd dd dd". Let me check:
+      - stego[0] = 0xdc: originally 0xdd, LSB cleared (was 1, now 0) ✓
+      - stego[1] = 0xdc: originally 0xdd, LSB cleared ✓
+      - stego[2] = 0xdc: originally 0xdd, LSB set to... wait, 0xdd & ~1 = 0xdc, so the LSB was supposed to be set to 1, but it's showing 0xdc (LSB=0)!
+
+      Wait, the debug says bit 2 should be 1. The original was 0xdd (11011101). `stego[2] |= 1` should give 0xdd (since LSB is already 1). But the output shows 0xdc.
+
+      Hmm wait, let me re-read. The print says "stego[0..7] after: dc dc dc dc dd dd dd dd".
+
+      stego[0] = 0xdc — LSB=0, matches bit0=0 ✓
+      stego[1] = 0xdc — LSB=0, matches bit1=0 ✓
+      stego[2] = 0xdc — LSB=0, but should be 1 (bit2=1)! ✗
+      stego[3] = 0xdc — LSB=0, but should be 1 (bit3=1)! ✗
+      stego[4] = 0xdd — LSB=1, matches bit4=0... NO, bit4=0, should be 0! ✗
+      stego[5] = 0xdd — LSB=1, should be 0 ✗
+      stego[6] = 0xdd — LSB=1, should be 0 ✗
+      stego[7] = 0xdd — LSB=1, should be 0 ✗
+
+      Wait, that's completely wrong! The expected bits are: 0,0,1,1,0,0,0,0 but the actual LSBs are: 0,0,0,0,1,1,1,1.
+
+      So it seems like the bits are being written in REVERSE order within each 4-bit (or 8-bit) group!
+
+      Let me look more carefully. Expected: 0,0,1,1,0,0,0,0. Actual after: 0,0,0,0,1,1,1,1.
+
+      That looks like the 8-bit group is split into two 4-bit nibbles and reversed!
+
+      Expected: [0,0,1,1,0,0,0,0]
+      Actual: [0,0,0,0,1,1,1,1]
+
+      Hmm, that doesn't match a simple reverse either. Let me think again.
+
+      Oh wait! The original image byte values are 0xdd (221) for every byte. 0xdd = 11011101 in binary. The original LSB of 0xdd is 1.
+
+      When the embed writes:
+      - bit 0 = 0 → stego[0] = 0xdd & ~1 = 0xdc ✓
+      - bit 1 = 0 → stego[1] = 0xdd & ~1 = 0xdc ✓
+      - bit 2 = 1 → stego[2] = 0xdd | 1 = 0xdd (should be 0xdd, but shows 0xdc!!)
+      - bit 3 = 1 → stego[3] = 0xdd | 1 = 0xdd (should be 0xdd, but shows 0xdc!!)
+
+      WAIT. stego[2] = 0xdd | 1 = 0xdd. But the output shows 0xdc. How is this possible?
+
+      Unless... the embed code is running differently than I'm reading it. Let me look at the embed code one more time:
+
+      ```c
+      size_t pixel_offset = bit_idx / 8;
+      int bit = (len_bytes[byte] >> b) & 1;
+      if (bit)
+          stego[pixel_offset] |= 1;
+      else
+          stego[pixel_offset] &= ~1;
+      bit_idx++;
+      ```
+
+      For byte 0 of len_bytes, b=0:
+      - pixel_offset = 0/8 = 0
+      - bit = (0x0c >> 0) & 1 = 0
+      - else branch: stego[0] &= ~1
+
+      For byte 0, b=1:
+      - pixel_offset = 1/8 = 0
+      - bit = (0x0c >> 1) & 1 = 0
+      - else branch: stego[0] &= ~1
+
+      Wait, pixel_offset = 1/8 = 0! So multiple bits are being written to the SAME byte!
+
+      OH! PIXEL_OFFSET IS WRONG! `bit_idx / 8` means multiple bits map to the same byte. `pixel_offset` should be the byte offset in the image, which is `bit_idx / 8`. But the unit here is BITS not PIXELS!
+
+      For the first 8 bits (bit_idx 0-7), pixel_offset is:
+      - bit_idx=0: pixel_offset=0/8=0
+      - bit_idx=1: pixel_offset=1/8=0
+      - ...
+      - bit_idx=7: pixel_offset=7/8=0
+
+      So ALL 8 bits of the first byte get written to byte 0 of the image! Each subsequent write OVERWRITES the previous one! Only the last bit sticks!
+
+      So the embed data only writes ONE BIT per IMAGE BYTE. But the code intends to write one bit per bit index, and uses `bit_idx / 8` to find which byte to modify. That IS correct — one bit per byte of the image.
+
+      For bit_idx=0, pixel_offset=0 → modifies byte 0
+      For bit_idx=1, pixel_offset=0 → modifies byte 0 again!
+
+      Wait, that's the same byte! That's wrong. Let me think...
+
+      Oh! I see. The intention is to write BIT 0 into IMAGE BYTE 0, BIT 1 into IMAGE BYTE 1, etc. But the code writes bit_idx 0-7 all to pixel_offset 0/8=0, then bit_idx 8-15 to pixel_offset 8/8=1, etc.
+
+      No wait. `bit_idx / 8`:
+      - bit_idx 0 → 0/8 = 0
+      - bit_idx 1 → 1/8 = 0
+      - ...
+      - bit_idx 7 → 7/8 = 0
+      - bit_idx 8 → 8/8 = 1
+      - bit_idx 9 → 9/8 = 1
+      - ...
+
+      So bit_idx 0-7 all go to byte 0, and bit_idx 8-15 go to byte 1, etc. That's correct — each IMAGE BYTE stores 1 DATA BIT. The first 8 data bits (one data byte) go into image bytes 0-7.
+
+      But 0/8 = 0, 1/8 = 0... integer division! All of bit_idx 0-7 produce pixel_offset=0.
+
+      Wait, in C, integer division: 0/8 = 0, 1/8 = 0, ..., 7/8 = 0. So yes, bit_idx 0 through 7 all give pixel_offset=0.
+
+      That means bits 0-7 of the data all get written to the SAME pixel byte! After all 8 iterations, the last bit (bit 7) survives.
+
+      AH HA! There's the bug! The formula should be:
+
+      ```c
+      size_t pixel_offset = bit_idx / 8;  // WRONG
+      ```
+
+      No wait, let me think about this differently. The INTENT is: each BYTE of the image stores 1 BIT of data. So 8 image bytes store 1 data byte. So:
+
+      Data bit 0 → image byte 0, LSB
+      Data bit 1 → image byte 1, LSB
+      ...
+      Data bit 7 → image byte 7, LSB
+      Data bit 8 → image byte 8, LSB
+      ...
+
+      So for data bit at `bit_idx`, the image byte should be `bit_idx`, not `bit_idx / 8`.
+
+      Wait, that's `pixel_offset = bit_idx` (not `bit_idx / 8`). Since we're writing 1 bit per image byte, the first data bit goes to byte 0, the second to byte 1, etc.
+
+      But `pixel_offset = bit_idx / 8` means:
+      - Data bits 0-7 all go to image byte 0
+      - Data bits 8-15 all go to image byte 1
+
+      Which is only 1 bit stored per image byte, but all 8 bits of the same data byte overwrite each other.
+
+      The correct formula should be `pixel_offset = bit_idx` (NOT divided by 8). Then:
+      - Data bit 0 → image byte 0
+      - Data bit 1 → image byte 1
+      - ...
+      - Each image byte stores exactly 1 data bit.
+
+      Wait, but that's the same thing. `bit_idx` counts the number of data bits written. `bit_idx / 8` should give the byte index in the image buffer. But since we're writing 1 bit per byte, bit_idx=0 goes to byte 0, bit_idx=1 goes to byte 1, etc.
+
+      So YES, `pixel_offset = bit_idx` (not `bit_idx / 8`).
+
+      The bug is: `pixel_offset = bit_idx / 8` should be `pixel_offset = bit_idx`.
+
+      Let me verify by checking the actual behavior:
+      - bit_idx 0-7: all write to byte 0
+      - But the debug output shows stego[0]=0xdc (bit 0's write survives last, which is bit 0 = 0)
+      - stego[1] through stego[3] also show 0xdc...
+
+      Hmm wait, but the debug shows all of stego[0..3] = 0xdc. If the bug is overwriting to the same byte, then only stego[0] should be affected. Let me re-check.
+
+      For the first data byte (len_bytes[0] = 0x0c), the bits are: 0,0,1,1,0,0,0,0. The loop does 8 iterations, each writing to pixel_offset=0 (bit_idx=0..7 → pixel_offset=0). The final value is whatever the last iteration sets, which is bit 7 = 0 → LSB=0. So stego[0] = 0xdc. That matches.
+
+      But stego[1], stego[2], and stego[3] also show 0xdc. These bytes should be the ORIGINAL value 0xdd since they're never written. Or are they?
+
+      Oh wait! let me re-check. The second data byte starts at bit_idx=8. pixel_offset=8/8=1. So len_bytes[1] (which is 0x00) is written to stego[1]. Bits 0-7 of 0x00 are all 0, so stego[1] gets LSB cleared: 0xdd → 0xdc. That matches!
+
+      Then: len_bytes[2] = 0x00 → stego[2] = 0xdc. And len_bytes[3] = 0x00 → stego[3] = 0xdc.
+
+      Then the payload starts at bit_idx=32. pixel_offset=32/8=4. stego[4] gets the first bit of 'H' (0x48). 'H' in binary = 01001000. bit 0 = 0, so stego[4] stays at 0xdd. But wait, the debug shows stego[4] = 0xdd and the LSBs are "1 1 1 1". So stego[4..7] = 0xdd (unchanged from original).
+
+      Hmm but 'H' first bit (bit0=0) would leave stego[4] unchanged at 0xdd, then bit1=0 for stego[5] unchanged at 0xdd, bit2=0 for stego[6] unchanged, bit3=1 for stego[7] = 0xdd | 1 = 0xdd (already 1).
+
+      Wait, that's wrong. The payload starts at bit_idx=32. 32/8=4. So the first payload byte is written to stego[4] (pixel_offset=4), with each bit still overwriting the same byte. So for 'H' = 0x48:
+      - b=0: bit=0 → stego[4] → LSB=0
+      - b=1: bit=0 → stego[4] → LSB=0 (redundant)
+      - b=2: bit=0 → stego[4] → LSB=0
+      - b=3: bit=1 → stego[4] → LSB=1
+      - b=4: bit=0 → stego[4] → LSB=0 (overwrites!)
+      - b=5: bit=0 → stego[4] → LSB=0
+      - b=6: bit=1 → stego[4] → LSB=1
+      - b=7: bit=0 → stego[4] → LSB=0 (overwrites!)
+
+      Final: stego[4] LSB=0 → 0xdc. But the debug shows 0xdd! 
+
+      Hmm wait, that doesn't match. Let me look at the debug again:
+
+      ```
+      stego[0..7] after: dc dc dc dc dd dd dd dd
+      stego[0..7] LSBs: 0 0 0 0 1 1 1 1
+      ```
+
+      So stego[4..7] = 0xdd (LSB=1). But according to my analysis, 'H' bits written to stego[4] should end with LSB=0 (since bit7 of 'H' is 0).
+
+      OH WAIT. I got confused. Let me re-check.
+
+      For the data portion (after the 4-byte header), the payload 'Hello World!' starts at bit_idx=32. 
+
+      bit_idx=32 → pixel_offset=32/8=4. This is where the first payload byte goes.
+
+      For payload[0] = 'H' = 0x48 = 01001000:
+      Loop b=0..7:
+      - b=0: bit=(0x48>>0)&1=0 → stego[4] LSB=0
+      - b=1: bit=(0x48>>1)&1=0 → stego[4] LSB=0
+      - b=2: bit=(0x48>>2)&1=0 → stego[4] LSB=0
+      - b=3: bit=(0x48>>3)&1=1 → stego[4] LSB=1
+      - b=4: bit=(0x48>>4)&1=0 → stego[4] LSB=0
+      - b=5: bit=(0x48>>5)&1=0 → stego[4] LSB=0
+      - b=6: bit=(0x48>>6)&1=1 → stego[4] LSB=1
+      - b=7: bit=(0x48>>7)&1=0 → stego[4] LSB=0 ← final state
+
+      Final: stego[4] LSB=0. But the debug says stego[4] = 0xdd (LSB=1)!
+
+      This means the bug is NOT just the overwrite issue. The data after the length prefix isn't being written at all!
+
+      Hmm... wait. No, I think the overwrite IS the core issue for the header, and for the payload it would also be affected. But let me check why stego[4] shows 0xdd.
+
+      Actually, I think I need to re-read the code more carefully. Oh wait, I see it now:
+
+      ```c
+      for (size_t i = 0; i < data_len; i++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+      ```
+
+      After the header loop, `bit_idx` = 32. But `i` counts from 0. The inner loop uses `bit_idx`, not `i`.
+
+      bit_idx starts at 32. For i=0, b=0: bit_idx=32. pixel_offset = 32/8 = 4. bit_idx becomes 33.
+      For i=0, b=1: bit_idx=33. pixel_offset = 33/8 = 4. bit_idx becomes 34.
+      ...
+      All 8 bits of i=0 are written to pixel_offset=4.
+
+      Then for i=1: bit_idx goes from 40 to 47. pixel_offset goes from 40/8=5 to 47/8=5. All written to pixel_offset=5.
+
+      So pixel_offset advances by 1 for each DATA BYTE (not each bit), which means only the LAST BIT of each data byte survives.
+
+      BUT the issue I noticed earlier — stego[4] should show 0xdc (LSB=0) not 0xdd (LSB=1) — implies something else is going wrong too.
+
+      Wait, let me reconsider. The header writes to stego[0..3]. After the header, bit_idx=32.
+
+      For i=0 ('H'), b=0: bit_idx=32. pixel_offset=32/8=4. bit = ('H'>>0)&1 = 0. stego[4] &= ~1 → 0xdd & ~1 = 0xdc.
+
+      Hmm, but the debug shows stego[4] = 0xdd. That means stego[4] is NOT being modified.
+
+      WAIT. Let me look at the loop bounds:
+
+      ```c
+      for (size_t i = 0; i < data_len; i++) {
+      ```
+
+      But wait, the embed function signature says `size_t data_len`. In the test, `payload_len = strlen("Hello World!") = 12`. So i goes from 0 to 11.
+
+      So for i=0 ('H'), b=0..7, all bits write to pixel_offset=4. The final state of stego[4] is determined by the last bit (b=7) of 'H', which is 0. So stego[4] should be 0xdc.
+
+      But the debug output shows stego[4] = 0xdd. This contradicts!
+
+      Unless... the data loop isn't executing at all? Or maybe there's some other issue.
+
+      Actually, wait. Let me look at the test code's embed function signature:
+
+      ```c
+      unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                const unsigned char *data, size_t data_len,
+                                size_t *out_capacity) {
+      ```
+
+      And the call:
+      ```c
+      unsigned char *stego = embed_data(cover, w, h, ch,
+                                        (const unsigned char*)payload, payload_len,
+                                        &capacity);
+      ```
+
+      Where `payload` is `const char *` and `payload_len` is from `strlen(payload)`. This looks correct.
+
+      Let me check if maybe the cover image pointer is causing issues. The cover was loaded with `stbi_load(cover1.png, &w, &h, &ch, 3)` and the connection to channels...
+
+      Actually, I wonder if there's a subtle memory issue. Let me re-check the test output more carefully.
+
+      The test output matches my analysis:
+      - Header writes to stego[0..3] and ends up with pixel_offset = 0,1,2,3
+      - For header byte 0 (0x0c = 00001100 in LSB→MSB = 0011_0000):
+        - All bits write to pixel_offset=0, last bit (bit7=0) survives → LSB=0 → 0xdc
+      - For header bytes 1-3 (all 0x00):
+        - All bits write to pixel_offset=1,2,3, last bit surviving → LSB=0 → 0xdc
+
+      Wait, but the embed function writes len_bytes[0], len_bytes[1], len_bytes[2], len_bytes[3]. Each has 8 bits, all mapping to the same pixel_offset.
+
+      len_bytes[0]=0x0c → pixel_offset=0 (bit_idx=0..7 → 0/8 to 7/8=0)
+      len_bytes[1]=0x00 → pixel_offset=1 (bit_idx=8..15 → 8/8 to 15/8=1) Wait, 8/8=1, 15/8=1. Yes.
+      len_bytes[2]=0x00 → pixel_offset=2 (bit_idx=16..23 → 2)
+      len_bytes[3]=0x00 → pixel_offset=3 (bit_idx=24..31 → 3)
+
+      Then data starts at bit_idx=32 → pixel_offset=4.
+
+      OK but the debug says stego[4] = 0xdd, which is unchanged from the original. If the data loop ran correctly, stego[4] would be modified.
+
+      OHHH! Wait!! I think I see another issue. Let me re-examine the data loop:
+
+      ```c
+      for (size_t i = 0; i < data_len; i++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+              ...
+              bit_idx++;
+          }
+      }
+      ```
+
+      For i=0, b=0: bit_idx is whatever it was before. Initially at the end of the header loop, bit_idx = 32. So pixel_offset = 32/8 = 4. bit_idx becomes 33.
+      For i=0, b=1: pixel_offset = 33/8 = 4. bit_idx becomes 34.
+      ...
+      For i=0, b=7: pixel_offset = 39/8 = 4. bit_idx becomes 40.
+
+      So pixel_offset=4 for all 8 bits of the first data byte. Final state: determined by bit7 of 'H', which is 0. stego[4] becomes 0xdc. But the output shows 0xdd!
+
+      Wait. Let me triple-check by thinking about 'H' = 0x48 = 0100 1000:
+      - bit 0 (LSB): 0
+      - bit 1: 0
+      - bit 2: 0
+      - bit 3: 1
+      - bit 4: 0
+      - bit 5: 0
+      - bit 6: 1
+      - bit 7 (MSB): 0
+
+      Bit 7 = 0. So stego[4] LSB = 0. But debug says stego[4] = 0xdd (LSB=1). 
+
+      The only way this makes sense is if the data loop doesn't run at all. But `data_len = 12`. So the loop should run.
+
+      Unless... there's a compiler optimization that's causing issues? But we compiled with `-O0`.
+
+      Or maybe I'm looking at the wrong stego variable. Let me check the test program again:
+
+      ```c
+      size_t capacity;
+      unsigned char *stego = embed_data(cover, w, h, ch,
+                                        (const unsigned char*)payload, payload_len,
+                                        &capacity);
+      ```
+
+      `payload` is `"Hello World!"`. `payload_len = 12`. This should work.
+
+      Wait, actually... now I need to re-examine the original code more carefully. I wrote the test from scratch, and the behavior is reproduced. Let me actually re-run with even more debugging.
+
+      Actually, you know what, I already proved the issue exists: the embed overwrites the same pixel byte for all 8 bits of each data byte because `pixel_offset = bit_idx / 8` stays the same for all 8 bits of each BYTE of data. Due to the outer loop being over bytes (0..3 for header, 0..data_len for payload) and inner loop being over bits (0..7), and pixel_offset = bit_idx / 8, each byte's 8 bit iterations all hit the same pixel_offset.
+
+      The correct formula should be `pixel_offset = bit_idx` — each data bit goes to one image byte.
+
+      Actually wait, `bit_idx` starts at 0, and pixel_offset = bit_idx / 8:
+      - bit_idx 0 → pixel_offset 0
+      - bit_idx 1 → pixel_offset 0
+      - ...
+      - bit_idx 7 → pixel_offset 0
+
+      Then 8-15 → pixel_offset 1, etc. So ALL 8 bits of one BYTE are crammed into ONE image byte, each OVERWRITING the previous. This means only the LAST bit (bit 7) survives in each image byte.
+
+      The fix is: pixel_offset = bit_idx (remove the division by 8).
+
+      No wait, bit_idx / 8 maps each bit index to a byte in the image. bit_idx 0-7 map to byte 0, bit_idx 8-15 map to byte 1, etc. The INTENTION is that each BYTE in the image stores 1 BIT from the secret data. So 8 bits of secret data should occupy 8 bytes in the image.
+
+      But the pixel_offset / 8 calculation doesn't distinguish bits within a byte — they all map to the same pixel_offset. The correct approach should be pixel_offset = bit_idx, so that:
+      - Secret bit 0 → image byte 0
+      - Secret bit 1 → image byte 1
+      - ...
+      - Secret bit 7 → image byte 7
+      - Secret bit 8 → image byte 8
+      - ...
+
+      This way, each secret BYTE (8 bits) occupies 8 image bytes.
+
+      So the fix is: change `pixel_offset = bit_idx / 8` to `pixel_offset = bit_idx` in both embed_data and extract_data.
+
+      Actually wait, hmm. Let me reconsider. Am I sure that `pixel_offset / 8` is wrong?
+
+      Let me re-read the embed function:
+
+      ```c
+      size_t bit_idx = 0;
+      for (int byte = 0; byte < 4; byte++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+              int bit = (len_bytes[byte] >> b) & 1;
+              if (bit)
+                  stego[pixel_offset] |= 1;
+              else
+                  stego[pixel_offset] &= ~1;
+              bit_idx++;
+          }
+      }
+      ```
+
+      bit_idx goes 0, 1, 2, ..., 31
+      pixel_offset = bit_idx / 8 = 0, 0, 0, ..., 3
+
+      So the 8 bits of len_bytes[0] all go to pixel_offset 0, the 8 bits of len_bytes[1] all go to pixel_offset 1, etc. And only the last bit (b=7) survives for each pixel_offset.
+
+      The correct behavior would be to spread each bit to a different pixel byte:
+      pixel_offset should be: 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, ...
+      Which is simply `pixel_offset = bit_idx`.
+
+      So yes, the bug is `pixel_offset = bit_idx / 8` should be `pixel_offset = bit_idx`.
+
+      Let me also check the extract function to confirm:
+
+      ```c
+      size_t bit_idx = 0;
+      for (int byte = 0; byte < 4; byte++) {
+          for (int b = 0; b < 8; b++) {
+              size_t pixel_offset = bit_idx / 8;
+              if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+              int bit = img[pixel_offset] & 1;
+              len_bytes[byte] |= (bit << b);
+              bit_idx++;
+          }
+      }
+      ```
+
+      Same issue. All 8 bits of each byte map to the same pixel_offset.
+
+      And the data loop in both embed and extract has the same issue.
+
+      So the fix is clear: change `pixel_offset = bit_idx / 8` to `pixel_offset = bit_idx` in BOTH functions.
+
+      Wait, but let me also think about what the *intended* algorithm should be. The comment at line 114 says:
+      "Embed a data buffer into image pixel LSBs"
+
+      And line 118: `size_t total_bits = total_pixels * ch * 8;  // we modify only 1 bit per byte`
+
+      So the intent is: 1 data bit per image byte. With 3 channels (RGB), there are 3 bytes per pixel, so 3 bits per pixel. Total image bytes = w * h * 3 = 360,000 bytes. Each byte stores 1 bit, so 360,000 bits = 45,000 bytes of storage.
+
+      With the current bug, each data BYTE only stores 1 BIT in one image byte (instead of 8 bits in 8 image bytes), so the effective capacity is 1/8 of what's intended.
+
+      OK let me fix this.
+    thinking_duration: 54.310s
+    thinking_duration_ms: 54310
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                        size_t pixel_offset = bit_idx / 8;  // which byte in the image
+                        int bit = (len_bytes[byte] >> b) & 1;
+          newString: |2-
+                        size_t pixel_offset = bit_idx;
+                        int bit = (len_bytes[byte] >> b) & 1;
+        result: Edit applied successfully.
+    time: 7/28/2026, 6:57:43.097 AM GMT+5:30
+    response: Now I see the bug. The `pixel_offset` calculation is wrong — `bit_idx / 8` causes all 8 bits of a data byte to write to the same image pixel byte, overwriting each other. Only the last bit survives. The fix is `pixel_offset = bit_idx`.
+    duration: 65.679s
+    duration_ms: 65679
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Wait, there are multiple occurrences of `pixel_offset = bit_idx / 8` that need to be changed. Let me check all occurrences in the file.
+    thinking_duration: 575ms
+    thinking_duration_ms: 575
+    tool_calls:
+      - tool: grep
+        args:
+          pattern: pixel_offset = bit_idx
+          path: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Found 4 matches
+          /Users/dk/lab-data/distributed-steganography-c/main.c:
+            Line 142:             size_t pixel_offset = bit_idx;
+
+            Line 153:             size_t pixel_offset = bit_idx / 8;
+
+            Line 173:             size_t pixel_offset = bit_idx / 8;
+
+            Line 187:             size_t pixel_offset = bit_idx / 8;
+    time: 7/28/2026, 6:58:48.883 AM GMT+5:30
+    duration: 3.434s
+    duration_ms: 3434
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Line 142 was fixed (the first occurrence in the len_bytes loop). Lines 153, 173, and 187 still have the bug. Let me fix them all.
+    thinking_duration: 654ms
+    thinking_duration_ms: 654
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: '            size_t pixel_offset = bit_idx / 8;'
+          newString: '            size_t pixel_offset = bit_idx;'
+          replaceAll: true
+        result: Edit applied successfully.
+    time: 7/28/2026, 6:58:52.480 AM GMT+5:30
+    duration: 9.593s
+    duration_ms: 9593
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now I need to also fix the extract_data function. Let me verify all occurrences are fixed now.
+    thinking_duration: 394ms
+    thinking_duration_ms: 394
+    tool_calls:
+      - tool: grep
+        args:
+          pattern: pixel_offset = bit_idx
+          path: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |
+          Found 4 matches
+          /Users/dk/lab-data/distributed-steganography-c/main.c:
+            Line 142:             size_t pixel_offset = bit_idx;
+
+            Line 153:             size_t pixel_offset = bit_idx;
+
+            Line 173:             size_t pixel_offset = bit_idx;
+
+            Line 187:             size_t pixel_offset = bit_idx;
+    time: 7/28/2026, 6:59:02.186 AM GMT+5:30
+    duration: 2.645s
+    duration_ms: 2645
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good, all 4 occurrences are fixed. Now let me recompile and test.
+    thinking_duration: 481ms
+    thinking_duration_ms: 481
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && rm -f stego_*.png reconstructed_payload.bin && ./diststego embed secret.txt cover1.png cover2.png cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+    time: 7/28/2026, 6:59:04.946 AM GMT+5:30
+    duration: 16.078s
+    duration_ms: 16078
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+          Reconstructed payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Verification: SHA-256 must match original printed during embed.
+    time: 7/28/2026, 6:59:21.142 AM GMT+5:30
+    duration: 17.376s
+    duration_ms: 17376
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The SHA-256 hashes match! The full round-trip works now. Let me verify the reconstructed file content matches.
+    thinking_duration: 374ms
+    thinking_duration_ms: 374
+    tool_calls:
+      - tool: bash
+        args:
+          command: diff secret.txt reconstructed_payload.bin && echo "IDENTICAL" || echo "DIFFERENT"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          IDENTICAL
+    time: 7/28/2026, 6:59:38.640 AM GMT+5:30
+    duration: 3.161s
+    duration_ms: 3161
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Full round-trip verified: embed → extract → reconstructed file is byte-identical to the original. Let me also clean up the test file and update the todo list.'
+    thinking_duration: 491ms
+    thinking_duration_ms: 491
+    tool_calls:
+      - tool: todowrite
+        args:
+          todos:
+            - priority: high
+              content: Create sample secret text file
+              status: completed
+            - priority: high
+              content: Download 3 sample PNG cover images
+              status: completed
+            - priority: high
+              content: Run embed command with diststego
+              status: completed
+            - priority: medium
+              content: Verify output (extract & compare)
+              status: completed
+        result: |-
+          [
+            {
+              "content": "Create sample secret text file",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Download 3 sample PNG cover images",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Run embed command with diststego",
+              "status": "completed",
+              "priority": "high"
+            },
+            {
+              "content": "Verify output (extract & compare)",
+              "status": "completed",
+              "priority": "medium"
+            }
+          ]
+    time: 7/28/2026, 6:59:41.909 AM GMT+5:30
+    duration: 2.849s
+    duration_ms: 2849
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/28/2026, 6:59:44.862 AM GMT+5:30
+    response: |-
+      Fixed a LSB addressing bug and verified the full round-trip.
+
+      **Bug:** In both `embed_data()` and `extract_data()`, `pixel_offset = bit_idx / 8` caused all 8 bits of each data byte to map to the **same** image byte, overwriting the previous bit. Only the last bit of each byte survived — all length-prefix bytes and payload bytes read back as 0 or garbage.
+
+      **Fix:** Changed to `pixel_offset = bit_idx` in 4 places (lines 142, 153, 173, 187 in `main.c`), so each data bit gets its own image byte.
+
+      **Result:**
+      ```
+      Embed:   107 + 107 + 106 bytes → 3 cover images
+      Extract: 107 + 107 + 106 bytes → reconstructed_payload.bin
+      diff:    IDENTICAL (SHA-256 verified)
+      ```
+    duration: 3.906s
+    duration_ms: 3906
+

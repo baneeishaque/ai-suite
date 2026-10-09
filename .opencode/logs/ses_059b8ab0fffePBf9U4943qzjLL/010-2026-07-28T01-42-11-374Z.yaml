@@ -1,0 +1,611 @@
+---
+user:
+  text: user can pass the extraction folder path
+  time: 7/28/2026, 7:09:40.722 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants the extraction folder to be configurable via command-line argument, rather than hardcoded as `extracted/`.
+
+      Let me update the extract command to accept an optional output directory argument.
+
+      Usage: `./diststego extract [-o <dir>] <stego1> [stego2 ...]`
+
+      Or simpler: `./diststego extract <stego1> [stego2 ...]` writes to `extracted/` by default, and allow `./diststego extract -o mydir stego1.png stego2.png` to override.
+
+      Actually, the simplest interface would be:
+      - `./diststego extract stego1.png ...` → writes to `extracted/<original_name>`
+      - `./diststego extract -o <dir> stego1.png ...` → writes to `<dir>/<original_name>`
+
+      Let me implement this.
+    thinking_duration: 1.647s
+    thinking_duration_ms: 1647
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 320
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          320:         if (argc < 3) { fprintf(stderr, "Usage: %s extract <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          321:         char *out_path = NULL;
+          322:         unsigned char *full_data = NULL;
+          323:         size_t total_len = 0;
+          324:         for (int i = 2; i < argc; i++) {
+          325:             int w, h, ch;
+          326:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          327:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+          328: 
+          329:             // First image carries the original filename; subsequent ones reuse it
+          330:             char *fn;
+          331:             size_t fn_len, chunk_len;
+          332:             unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+          333:             stbi_image_free(img);
+          334:             if (!chunk) {
+          335:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          336:                 free(out_path);
+          337:                 return 1;
+          338:             }
+          339:             if (i == 2) out_path = fn; else free(fn);
+          340:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          341:             full_data = realloc(full_data, total_len + chunk_len);
+          342:             memcpy(full_data + total_len, chunk, chunk_len);
+          343:             total_len += chunk_len;
+          344:             free(chunk);
+          345:         }
+          346:         if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+          347:         // Write reconstructed payload into extracted/
+          348:         mkdir("extracted", 0755);
+          349:         char out_path_full[1024];
+          350:         snprintf(out_path_full, sizeof(out_path_full), "extracted/%s", out_path);
+          351:         printf("Reconstructing as '%s'\n", out_path_full);
+          352:         FILE *out = fopen(out_path_full, "wb");
+          353:         if (!out) { perror(out_path_full); free(out_path); return 1; }
+          354:         fwrite(full_data, 1, total_len, out);
+          355:         fclose(out);
+          356:         // Compute SHA-256 and compare
+          357:         SHA256_CTX sha;
+          358:         sha256_init(&sha);
+          359:         sha256_update(&sha, full_data, total_len);
+          360:         uint8_t recon_hash[32];
+          361:         sha256_final(&sha, recon_hash);
+          362:         printf("Reconstructed payload SHA-256: ");
+          363:         for (int i = 0; i < 32; i++) printf("%02x", recon_hash[i]);
+          364:         printf("\n");
+          365:         printf("Verification: SHA-256 must match original printed during embed.\n");
+          366:         free(out_path);
+          367:         free(full_data);
+          368:     } else {
+          369:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          370:         return 1;
+          371:     }
+          372:     return 0;
+          373: }
+
+          (End of file - total 373 lines)
+          </content>
+    time: 7/28/2026, 7:09:40.930 AM GMT+5:30
+    duration: 4.612s
+    duration_ms: 4612
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Let me also update the usage line and the help text. I'll add `-o <dir>` as an optional arg before the stego images.
+
+      The logic:
+      - Check if argv[2] is `-o`, then argv[3] is the dir, stego images start at argv[4]
+      - Otherwise, dir defaults to `extracted`
+
+      Let me also update the usage line and help text.
+    thinking_duration: 1.026s
+    thinking_duration_ms: 1026
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    if (argc < 3) { fprintf(stderr, "Usage: %s extract <stego1> [stego2 ...]\n", argv[0]); return 1; }
+                    char *out_path = NULL;
+                    unsigned char *full_data = NULL;
+                    size_t total_len = 0;
+                    for (int i = 2; i < argc; i++) {
+          newString: |2-
+                    int stego_start = 2;
+                    const char *out_dir = "extracted";
+                    if (argc > 3 && !strcmp(argv[2], "-o")) {
+                        out_dir = argv[3];
+                        stego_start = 4;
+                    }
+                    if (argc <= stego_start) { fprintf(stderr, "Usage: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]); return 1; }
+                    char *out_path = NULL;
+                    unsigned char *full_data = NULL;
+                    size_t total_len = 0;
+                    for (int i = stego_start; i < argc; i++) {
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:09:45.662 AM GMT+5:30
+    duration: 18.461s
+    duration_ms: 18461
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update the hardcoded `mkdir("extracted", ...)` and the snprintf to use `out_dir`.
+    thinking_duration: 499ms
+    thinking_duration_ms: 499
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+                    // Write reconstructed payload into extracted/
+                    mkdir("extracted", 0755);
+                    char out_path_full[1024];
+                    snprintf(out_path_full, sizeof(out_path_full), "extracted/%s", out_path);
+          newString: |2-
+                    if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+                    // Write reconstructed payload into output directory
+                    mkdir(out_dir, 0755);
+                    char out_path_full[1024];
+                    snprintf(out_path_full, sizeof(out_path_full), "%s/%s", out_dir, out_path);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:10:04.235 AM GMT+5:30
+    duration: 5.436s
+    duration_ms: 5436
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Also update the usage comment at the top and the help text for consistency.
+    thinking_duration: 294ms
+    thinking_duration_ms: 294
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    fprintf(stderr, "  Extract: %s extract <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs with original filename and verifies SHA-256)\n");
+          newString: |2-
+                    fprintf(stderr, "  Extract: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:10:09.782 AM GMT+5:30
+    duration: 8.652s
+    duration_ms: 8652
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ===" && rm -rf extracted custom_out stego_*.png && ./diststego embed secret.txt cover1.png cover2.png cover3.png && echo "--- default ---" && ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt extracted/secret.txt && echo "IDENTICAL" && echo "--- custom -o ---" && ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt custom_out/secret.txt && echo "IDENTICAL"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          === Compile OK ===
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+          --- default ---
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+          Reconstructing as 'extracted/secret.txt'
+          Reconstructed payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Verification: SHA-256 must match original printed during embed.
+          IDENTICAL
+          --- custom -o ---
+          No data extracted
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+    time: 7/28/2026, 7:10:18.563 AM GMT+5:30
+    duration: 28.680s
+    duration_ms: 28680
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The custom `-o` case failed. The output got interleaved oddly - "No data extracted" appears before "Extracted" lines. Let me think about what's happening.
+
+      Wait, looking at the output more carefully:
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      The "No data extracted" message printed, which means `out_path` is NULL. But data was extracted fine (the `Extracted` lines show). 
+
+      Let me trace through the logic:
+
+      For `./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png`:
+      - `argc` = 6
+      - `stego_start` = 4 (since argv[2] is "-o", argv[3] is "custom_out")
+      - `argc <= stego_start` → 6 <= 4 → false, good
+
+      Loop `for (int i = stego_start; i < argc; i++)` → i = 4, 5
+      - argv[4] = "stego_cover1.png"
+      - argv[5] = "stego_cover2.png"
+      - argv[6]... wait, argc = 6, so argv indices: 0=./diststego, 1=extract, 2=-o, 3=custom_out, 4=stego_cover1.png, 5=stego_cover2.png, 6=stego_cover3.png
+
+      Wait, argc is the count including argv[0]. So argc=7. Let me recount:
+      - argv[0] = "./diststego"
+      - argv[1] = "extract"
+      - argv[2] = "-o"
+      - argv[3] = "custom_out"
+      - argv[4] = "stego_cover1.png"
+      - argv[5] = "stego_cover2.png"
+      - argv[6] = "stego_cover3.png"
+
+      argc = 7.
+
+      `stego_start = 4`
+      `argc <= stego_start` → 7 <= 4 → false. Good.
+
+      Loop: `for (int i = 4; i < 7; i++)` → i = 4, 5, 6
+
+      For i = 4 (first stego image): extracts data, sets `out_path = fn`. Good.
+      For i = 5: `out_path` is already set, and we free `fn`.
+      For i = 6: same.
+
+      After loop: `out_path` should be set.
+
+      Then: `if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }`
+
+      But `out_path` should be set... unless `extract_data` returned NULL.
+
+      Hmm, but the output shows "Extracted" lines too. Wait, those go to stdout, and "No data extracted" goes to stderr. The lines are interleaved because of buffering.
+
+      Actually wait, looking at the output again:
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      If "No data extracted" printed and then `return 1`, how did the "Extracted" lines print? Unless the shell script chained commands with `&&` and the previous `diff` command from the default test created these lines?
+
+      Oh! I see - the issue is with the bash command chaining. Let me re-read:
+
+      ```
+      echo "--- default ---" && ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt extracted/secret.txt && echo "IDENTICAL" && echo "--- custom -o ---" && ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt custom_out/secret.txt && echo "IDENTICAL"
+      ```
+
+      The "default" path ran fine. Then the "custom -o" path ran. Let me look at this more carefully.
+
+      Wait, actually the output interleaving could be confusing me. Let me look at the output for the "custom" section:
+
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      The "--- custom -o ---" came from the `echo`. Then "No data extracted" came from stderr of `./diststego extract -o ...`. Then...
+
+      But wait, if "No data extracted" was printed by `if (!out_path)` then the program would `return 1` at that point. It wouldn't continue to print "Extracted" lines.
+
+      Unless these "Extracted" lines are actually from a previous run (the `default` one) that were buffered and printed later. Or maybe the bash `&&` chaining caused the default `diststego extract` to print the "Extracted" lines but then `diff` failed.
+
+      Actually, let me look at the full output more carefully:
+
+      ```
+      --- default ---
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      Reconstructing as 'extracted/secret.txt'
+      ...
+      IDENTICAL
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      Hmm, those "Extracted" lines under "custom -o" look like they're from the default run. But the default run's output was already shown with "Extracted" lines above. Unless it's a repeat...
+
+      Oh wait, I think the issue is that `stderr` and `stdout` are both going to the terminal. The "No data extracted" is on stderr, while "Extracted" is on stdout. Due to buffering, they might appear interleaved. But more importantly, the "Extracted" lines under "custom -o" are probably from the stdout buffer being flushed later.
+
+      Actually, I think the real issue might be simpler. The problem could be that the output is from the default run and the custom run failed silently because `&&` chain broke. Let me look:
+
+      ```
+      echo "--- default ---" && ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt extracted/secret.txt && echo "IDENTICAL" && echo "--- custom -o ---" && ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt custom_out/secret.txt && echo "IDENTICAL"
+      ```
+
+      If `./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png` fails, then `diff` and `echo IDENTICAL` won't run. The "Extracted" lines after "No data extracted" must be from some other source.
+
+      Actually I think I'm overanalyzing this. The key fact is that the custom `-o` version printed "No data extracted", meaning `out_path` was NULL. Let me trace through more carefully.
+
+      Wait, maybe the issue is that I only have 3 stego images from the embed step, but I'm running two extract commands. Let me check if the stego files still exist after the first extract run.
+
+      Looking at the embed: `rm -rf ... stego_*.png` then embed creates them. Good.
+      Default extract: doesn't delete them. Good.
+      Custom extract: should still find them.
+
+      But wait - I'm looking at the output again and I notice the stderr for "No data extracted" appears BEFORE the stdout "Extracted" lines in the custom section. This is suspicious. Let me look at the actual program flow.
+
+      Actually, I wonder if `mkdir` with `out_dir = "custom_out"` is the issue. `mkdir` returns -1 if the directory already exists... but I used `rm -rf custom_out` at the start.
+
+      Wait, I bet the problem is that the program is stderr-buffered. Let me look more carefully at the output order:
+
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      Actually, could "No data extracted" be leftover stderr from the DEFAULT run? No, the default run printed "Reconstructing as..." not "No data extracted".
+
+      Hmm, actually I just realized something. Let me look at the default run output again:
+
+      ```
+      --- default ---
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      Reconstructing as 'extracted/secret.txt'
+      Reconstructed payload SHA-256: ...
+      Verification: ...
+      IDENTICAL
+      ```
+
+      So the default run works. Then custom:
+
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      The "Extracted" lines under "custom" must be from a DIFFERENT process. But they all come from the same shell command... 
+
+      Actually wait, maybe the issue is that `&&` chaining means the default run's `echo IDENTICAL` printed, then `echo "--- custom -o ---"` printed, then the custom `diststego extract` printed "No data extracted" and exited, but then... where do the "Extracted" lines come from?
+
+      OH WAIT. I think the "Extracted" lines after "No data extracted" might be just lines being printed from the previous command that were buffered. No, that doesn't make sense either.
+
+      Actually let me look at the FULL output more carefully. The custom section output was:
+
+      ```
+      --- custom -o ---
+      No data extracted
+      Extracted 107 bytes from stego_cover1.png
+      Extracted 107 bytes from stego_cover2.png
+      Extracted 106 bytes from stego_cover3.png
+      ```
+
+      Hmm, could "No data extracted" be printed to stderr and the "Extracted" lines from stdout, but the process DID continue? Let me look at the code again:
+
+      ```c
+      if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+      ```
+
+      If out_path is NULL, it prints to stderr and returns 1. The program terminates. No more stdout output.
+
+      But then how do the "Extracted" lines appear? They must be from a DIFFERENT invocation. Could they be from my sequential chain falling through?
+
+      Let me look at what could produce "Extracted" as output. It's only `printf("Extracted %zu bytes from %s\n"...)` in the extract loop. If the custom run returned before the loop, it couldn't have printed these.
+
+      UNLESS... there's a race condition or the output from the default run is being captured and displayed twice?
+
+      Actually, I think this is a red herring. The output buffering in the terminal is confusing. The key issue is that the custom `-o` version printed "No data extracted" and returned 1, showing the `out_path` was NULL on that run.
+
+      But wait, I now need to think about why `out_path` would be NULL. In the loop, for `i = stego_start`, the first image should set `out_path = fn`. Unless `extract_data` returned NULL.
+
+      Actually, I wonder if the problem is with writing the file. The code says `mkdir(out_dir, 0755)`. What if `mkdir` returns -1 because the directory exists? We don't check the return value. But `out_dir` is `custom_out` and we did `rm -rf custom_out` before.
+
+      Actually wait, I just realized from the output that there are only 3 stego images. But the extraction prints 3 lines of output both times. Hmm.
+
+      Let me look at this differently. The program flow should not allow "Extracted" lines after "No data extracted" from a single invocation. So either:
+      1. The output is from two different invocations and the interleaving is confusing
+      2. Or there's a buffering issue
+
+      Let me just run the test separately with each command to confirm.
+
+      Actually, I just realized something. Perhaps the issue is simpler - maybe my bash heredoc has `&&` chaining and the output from successful commands before the failure gets printed. Let me just run a focused test.
+
+      Actually, I think I'll just run it separately and see what happens.
+    thinking_duration: 25.499s
+    thinking_duration_ms: 25499
+    tool_calls:
+      - tool: bash
+        args:
+          command: rm -rf extracted custom_out stego_*.png && ./diststego embed secret.txt cover1.png cover2.png cover3.png && ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt custom_out/secret.txt && echo "IDENTICAL"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+          No data extracted
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+    time: 7/28/2026, 7:10:47.361 AM GMT+5:30
+    duration: 58.604s
+    duration_ms: 58604
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      It still fails. The output clearly shows:
+      1. "No data extracted" (stderr)
+      2. "Extracted 107 bytes..." (stdout) x3
+
+      Wait... but if "No data extracted" prints and the program returns 1, then "Extracted" lines shouldn't print from the same process. Unless these are from the embed step? No, embed doesn't print "Extracted" - it prints "Embedded".
+
+      Hmm, but look: "Extracted 107 bytes from stego_cover1.png" doesn't have the SHA-256 hash lines after it. This is the output of an extract that successfully went through the loop but then failed at the `if (!out_path)` check.
+
+      Wait, I need to re-examine my code. Let me look at the logic again:
+
+      ```c
+      for (int i = stego_start; i < argc; i++) {
+          ...
+          unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+          ...
+          if (i == stego_start) out_path = fn; else free(fn);
+          printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          ...
+      }
+      if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+      ```
+
+      Wait! The variable was renamed from `stego_start` but the condition still checks `i == 2` in my code. Let me check the actual code!
+    thinking_duration: 3.363s
+    thinking_duration_ms: 3363
+    tool_calls:
+      - tool: read
+        args:
+          offset: 320
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          limit: 40
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          320:         int stego_start = 2;
+          321:         const char *out_dir = "extracted";
+          322:         if (argc > 3 && !strcmp(argv[2], "-o")) {
+          323:             out_dir = argv[3];
+          324:             stego_start = 4;
+          325:         }
+          326:         if (argc <= stego_start) { fprintf(stderr, "Usage: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          327:         char *out_path = NULL;
+          328:         unsigned char *full_data = NULL;
+          329:         size_t total_len = 0;
+          330:         for (int i = stego_start; i < argc; i++) {
+          331:             int w, h, ch;
+          332:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          333:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+          334: 
+          335:             // First image carries the original filename; subsequent ones reuse it
+          336:             char *fn;
+          337:             size_t fn_len, chunk_len;
+          338:             unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+          339:             stbi_image_free(img);
+          340:             if (!chunk) {
+          341:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          342:                 free(out_path);
+          343:                 return 1;
+          344:             }
+          345:             if (i == 2) out_path = fn; else free(fn);
+          346:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          347:             full_data = realloc(full_data, total_len + chunk_len);
+          348:             memcpy(full_data + total_len, chunk, chunk_len);
+          349:             total_len += chunk_len;
+          350:             free(chunk);
+          351:         }
+          352:         if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+          353:         // Write reconstructed payload into output directory
+          354:         mkdir(out_dir, 0755);
+          355:         char out_path_full[1024];
+          356:         snprintf(out_path_full, sizeof(out_path_full), "%s/%s", out_dir, out_path);
+          357:         printf("Reconstructing as '%s'\n", out_path_full);
+          358:         FILE *out = fopen(out_path_full, "wb");
+          359:         if (!out) { perror(out_path_full); free(out_path); return 1; }
+
+          (Showing lines 320-359 of 379. Use offset=360 to continue.)
+          </content>
+    time: 7/28/2026, 7:11:46.096 AM GMT+5:30
+    duration: 6.295s
+    duration_ms: 6295
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Found it! Line 345: `if (i == 2) out_path = fn; else free(fn);`
+
+      This still compares against `2` instead of `stego_start`. When `-o` is used, `stego_start = 4`, so the first image is at index 4. The condition `i == 2` is never true, so `fn` is always freed and `out_path` stays NULL.
+
+      I need to change `i == 2` to `i == stego_start`.
+    thinking_duration: 1.106s
+    thinking_duration_ms: 1106
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: '            if (i == 2) out_path = fn; else free(fn);'
+          newString: '            if (i == stego_start) out_path = fn; else free(fn);'
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:11:52.519 AM GMT+5:30
+    response: 'The bug: line 345 still checks `i == 2` instead of `i == stego_start`. When `-o` is used, the first image index is 4, not 2.'
+    duration: 7.426s
+    duration_ms: 7426
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && rm -rf extracted custom_out stego_*.png && ./diststego embed secret.txt cover1.png cover2.png cover3.png && ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png && diff secret.txt custom_out/secret.txt && echo "IDENTICAL"
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: |
+          Original payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Embedded 107 bytes into cover1.png (capacity 360000 bytes)
+           -> saved stego_cover1.png
+          Embedded 107 bytes into cover2.png (capacity 360000 bytes)
+           -> saved stego_cover2.png
+          Embedded 106 bytes into cover3.png (capacity 360000 bytes)
+           -> saved stego_cover3.png
+          Embedding complete.
+          Extracted 107 bytes from stego_cover1.png
+          Extracted 107 bytes from stego_cover2.png
+          Extracted 106 bytes from stego_cover3.png
+          Reconstructing as 'custom_out/secret.txt'
+          Reconstructed payload SHA-256: 59f8fd9fb10227ae03a673c3cc258b7f4a49fdcc8415ed5e43ed7944957112da
+          Verification: SHA-256 must match original printed during embed.
+          IDENTICAL
+    time: 7/28/2026, 7:12:00.073 AM GMT+5:30
+    duration: 7.901s
+    duration_ms: 7901
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    time: 7/28/2026, 7:12:08.107 AM GMT+5:30
+    response: |-
+      Both modes work now:
+
+      ```
+      # default: writes to extracted/<original_name>
+      ./diststego extract stego_cover1.png stego_cover2.png stego_cover3.png
+
+      # custom: writes to custom_out/<original_name>  
+      ./diststego extract -o custom_out stego_cover1.png stego_cover2.png stego_cover3.png
+      ```
+    duration: 3.132s
+    duration_ms: 3132
+

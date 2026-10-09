@@ -1,0 +1,748 @@
+---
+user:
+  text: |-
+    k, another situation.
+
+    we have 5 stegged images. 1 is one file (single split). 2  & 3 is another file  (2 splits. 4 & 5 is another file (but, that is 3 splt - and it's 3rd part is not there).
+
+    when i i/p 5 images with / without o/p folder: i want to produce fiel 1 from image 1, file 2 from 2 & 3, file 3 not produce - but, we will get correct messages.
+  time: 7/28/2026, 7:16:21.923 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user is describing a scenario where:
+      - 5 stego images are provided
+      - Image 1 contains the first file (single chunk)
+      - Images 2 & 3 contain the second file (2 chunks)
+      - Images 4 & 5 contain the third file (3 chunks), but the 3rd chunk is missing
+
+      When the user runs extract with all 5 images, they want:
+      - File 1 reconstructed from image 1
+      - File 2 reconstructed from images 2 & 3
+      - File 3 should NOT be reconstructed (since its 3rd chunk is missing), but they should get a clear error message about it
+
+      This means the current single-output design won't work. The program currently assumes all stego images belong to ONE file, concatenates all chunks, and writes one output. But in this scenario, there are MULTIPLE files embedded across the images.
+
+      So I need to redesign the extract logic to detect file boundaries. Each image carries:
+      - The original filename (metadata)
+      - A chunk of data
+
+      If consecutive images have the same filename, they belong to the same file. When the filename changes, that's a new file. 
+
+      But wait - currently the filename is only stored once per file (well, actually it's stored in each chunk since embed_data stores the filename in each chunk). Let me re-check...
+
+      Looking at my embed_data function:
+      ```c
+      unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                const char *filename, size_t filename_len,
+                                const unsigned char *data, size_t data_len,
+                                size_t *out_capacity) {
+      ```
+
+      And the main function calls it in a loop, passing the same `payload_basename` for every chunk. So yes, every single stego image stores the full filename as metadata.
+
+      So in extract:
+      1. Read image 1: filename = "file1.bin", data = chunk (only chunk)
+      2. Read image 2: filename = "file2.bin", data = first part
+      3. Read image 3: filename = "file2.bin", data = second part
+      4. Read image 4: filename = "file3.bin", data = first part
+      5. Read image 5: filename = "file3.bin", data = second part
+      6. (3rd part of file3 is missing)
+
+      The extract logic needs to:
+      - Group consecutive images by filename
+      - When filename changes, flush the current file (write it out if all chunks present)
+      - Track which files have been fully received
+      - Report errors for files with missing chunks
+
+      But how do I know if a file is "complete"? I don't store the total number of chunks. I could:
+      1. Store a total file size in the header (instead of per-chunk size)
+      2. Or store a chunk index / total chunks
+
+      Actually, looking at the current embed flow:
+      ```c
+      size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+      ```
+
+      And in the loop:
+      ```c
+      size_t remaining = fsize - offset;
+      size_t this_chunk = chunk_size;
+      if (this_chunk > remaining) this_chunk = remaining;
+      ```
+
+      Each chunk's embed stores the chunk's data length in the header. The main loop splits `fsize` bytes across `num_covers` chunks. When extracting, we concatenate all chunks.
+
+      The problem is: how does the extract know how many chunks belong to a file? Currently it doesn't - it assumes all images belong to one file and concatenates everything.
+
+      For the user's scenario, we need to:
+      1. Store the total file size (not per-chunk size) so we know when a file is complete
+      2. Or use a simpler approach: store per-chunk metadata (chunk_index, total_chunks)
+
+      Let me think about the simplest approach. The current format per chunk is:
+      - 4 bytes: filename length
+      - N bytes: filename
+      - 4 bytes: chunk data length
+      - M bytes: chunk data
+
+      I can change it to:
+      - 4 bytes: filename length
+      - N bytes: filename
+      - 4 bytes: total file size (so we know when all chunks are received)
+      - 4 bytes: chunk data length
+      - M bytes: chunk data
+
+      Then during extract:
+      - Group consecutive chunks by filename
+      - Track accumulated bytes per file
+      - When accumulated == total file size, the file is complete → write it
+      - If we reach a new filename or end of input, and accumulated < total, that file is incomplete → report error
+
+      Wait, but the current embed splits equally across all covers, and the last chunk may be smaller. If a chunk is smaller, the extract would know from the per-chunk length. But without a total file size, the extract doesn't know if all chunks are present.
+
+      Let me redesign the header format:
+
+      **New per-chunk format:**
+      - 4 bytes: filename length (fn_len)
+      - fn_len bytes: filename
+      - 4 bytes: total file size (total_len) - same for all chunks of a file
+      - 4 bytes: this chunk's data length (chunk_len)  
+      - chunk_len bytes: chunk data
+
+      In the embed main loop:
+      - Compute total file size before splitting
+      - Store it in each chunk
+
+      In the extract:
+      - Group consecutive images with the same filename
+      - Sum up the per-chunk data lengths as we go
+      - When the sum reaches total_len, write the file
+      - If the filename changes (or end of input) before sum == total_len, report an error for that file
+
+      This approach handles multiple files naturally.
+
+      Let me implement this. Actually, let me re-think the simplest way to do this.
+
+      Actually, an even simpler approach: just store the total file size in the embed data alongside the per-chunk size. The per-chunk size tells us how much data each chunk has. During extract, we accumulate per-chunk sizes until we reach the total file size. If we don't reach it, the file is incomplete.
+
+      Let me modify the format:
+
+      Current: [fn_len(4)][fn][chunk_len(4)][chunk_data]
+      New:     [fn_len(4)][fn][total_len(4)][chunk_len(4)][chunk_data]
+
+      I need to update:
+      1. `embed_data` - accept total_len, write it
+      2. `extract_data` - return total_len too, or I can compute it during extraction
+      3. Main embed - compute total_len beforehand
+      4. Main extract - group by filename, accumulate chunks, write when complete, error when incomplete
+
+      Actually wait - let me think about whether I even need total_len. The extract could just group by filename. When the filename changes or input ends, whatever data was accumulated for that filename is the complete file. But this wouldn't detect missing chunks.
+
+      Hmm, the user wants to detect missing chunks. So I need total length.
+
+      Let me also think about the order of output. The user says they get all 5 images and want:
+      - File 1 from image 1
+      - File 2 from images 2-3
+      - File 3 not produced (error message)
+
+      So the extract should process images in order, group by filename, and produce each file as its filename changes (or at end).
+
+      Let me design this:
+
+      ```c
+      // In main extract:
+      for (int i = stego_start; i < argc; i++) {
+          extract_data(...) // returns fn, chunk
+          if (this is a new filename or first image):
+              flush previous file if complete
+              start new file buffer with this chunk
+          else:
+              append chunk to current file buffer
+      }
+      at end: flush last file
+      ```
+
+      For flushing:
+      - If accumulated bytes == total_len: write file, report success
+      - If accumulated bytes < total_len: report error (incomplete)
+
+      Let me implement this. I need to modify embed_data to accept total_len, and modify the chunks to store it.
+
+      Actually, let me simplify. I'll change the format in embed_data to store total_len. The main embed function computes it once and passes it for each chunk.
+
+      Wait, looking at the main embed function again:
+
+      ```c
+      size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+      size_t offset = 0;
+      for (int i = 0; i < num_covers; i++) {
+          ...
+          size_t remaining = fsize - offset;
+          size_t this_chunk = chunk_size;
+          if (this_chunk > remaining) this_chunk = remaining;
+          ...
+          embed_data(cover, w, h, ch,
+                     payload_basename, name_len,
+                     payload + offset, this_chunk,
+                     &capacity);
+          offset += this_chunk;
+      }
+      ```
+
+      So `fsize` is the total file size. I can pass it to embed_data as `total_len`.
+
+      OK let me implement this step by step.
+
+      1. Update `embed_data` signature and body to include `total_len`
+      2. Update `extract_data` to return `total_len` 
+      3. Update main embed to pass `fsize` as total_len
+      4. Rewrite main extract to group by filename and accumulate
+
+      Actually, for simplicity, let me have `extract_data` return the total_len as another out parameter. Or even simpler, let me just return it.
+
+      ```c
+      unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                  char **out_filename, size_t *out_filename_len,
+                                  size_t *out_total_len,
+                                  size_t *out_chunk_len);
+      ```
+
+      Hmm, that's getting parameter-heavy. Let me use a struct or just pass more params.
+
+      Actually, looking at the current parameters:
+      ```c
+      unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                  char **out_filename, size_t *out_filename_len,
+                                  size_t *out_data_len);
+      ```
+
+      I'll add `size_t *out_total_len`:
+      ```c
+      unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                  char **out_filename, size_t *out_filename_len,
+                                  size_t *out_total_len,
+                                  size_t *out_data_len);
+      ```
+
+      Then in the main extract, use the total_len to detect incomplete files.
+
+      Let me write this all out.
+
+      New header format in embed_data:
+      ```
+      [fn_len(4)][filename][total_len(4)][chunk_len(4)][chunk_data]
+      ```
+
+      Let me implement.
+    thinking_duration: 22.049s
+    thinking_duration_ms: 22049
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          1: /*
+          2:  * diststego.c – Split a file, hide chunks in cover images, extract and verify.
+          3:  * Compile: gcc -O2 diststego.c -lm -o diststego
+          4:  * Usage:
+          5:  *   Embed: ./diststego embed secret.bin cover1.png cover2.png cover3.png
+          6:  *          (outputs stego_cover1.png, stego_cover2.png, ...)
+          7:  *   Extract & verify: ./diststego extract stego_cover1.png stego_cover2.png ...
+          8:  *                     (reconstructs with original filename and prints verification)
+          9:  */
+          10: 
+          11: #define STB_IMAGE_IMPLEMENTATION
+          12: #define STB_IMAGE_WRITE_IMPLEMENTATION
+          13: #include "stb_image.h"
+          14: #include "stb_image_write.h"
+          15: 
+          16: #include <stdio.h>
+          17: #include <stdlib.h>
+          18: #include <string.h>
+          19: #include <stdint.h>
+          20: #include <math.h>
+          21: #include <sys/stat.h>
+          22: 
+          23: // ---- SHA-256 (public domain, RFC 6234 based) ----
+          24: typedef struct {
+          25:     uint32_t state[8];
+          26:     uint64_t count;
+          27:     uint8_t  buffer[64];
+          28: } SHA256_CTX;
+          29: 
+          30: #define ROTR(x,n) (((x) >> (n)) | ((x) << (32-(n))))
+          31: #define S0(x) (ROTR(x, 2) ^ ROTR(x,13) ^ ROTR(x,22))
+          32: #define S1(x) (ROTR(x, 6) ^ ROTR(x,11) ^ ROTR(x,25))
+          33: #define s0(x) (ROTR(x, 7) ^ ROTR(x,18) ^ ((x) >> 3))
+          34: #define s1(x) (ROTR(x,17) ^ ROTR(x,19) ^ ((x) >> 10))
+          35: 
+          36: static const uint32_t K[64] = {
+          37:     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,
+          38:     0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+          39:     0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,
+          40:     0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+          41:     0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,
+          42:     0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+          43:     0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,
+          44:     0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+          45:     0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,
+          46:     0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+          47:     0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,
+          48:     0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+          49:     0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,
+          50:     0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+          51:     0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,
+          52:     0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+          53: };
+          54: 
+          55: static void sha256_transform(SHA256_CTX *ctx, const uint8_t data[]) {
+          56:     uint32_t a,b,c,d,e,f,g,h,i,j,t1,t2,m[64];
+          57:     for (i=0,j=0; i<16; ++i, j+=4)
+          58:         m[i] = (data[j]<<24) | (data[j+1]<<16) | (data[j+2]<<8) | (data[j+3]);
+          59:     for ( ; i<64; ++i)
+          60:         m[i] = s1(m[i-2]) + m[i-7] + s0(m[i-15]) + m[i-16];
+          61:     a = ctx->state[0]; b = ctx->state[1]; c = ctx->state[2]; d = ctx->state[3];
+          62:     e = ctx->state[4]; f = ctx->state[5]; g = ctx->state[6]; h = ctx->state[7];
+          63:     for (i=0; i<64; ++i) {
+          64:         t1 = h + S1(e) + ((e & f) ^ (~e & g)) + K[i] + m[i];
+          65:         t2 = S0(a) + ((a & b) ^ (a & c) ^ (b & c));
+          66:         h = g; g = f; f = e; e = d + t1;
+          67:         d = c; c = b; b = a; a = t1 + t2;
+          68:     }
+          69:     ctx->state[0] += a; ctx->state[1] += b; ctx->state[2] += c; ctx->state[3] += d;
+          70:     ctx->state[4] += e; ctx->state[5] += f; ctx->state[6] += g; ctx->state[7] += h;
+          71: }
+          72: 
+          73: void sha256_init(SHA256_CTX *ctx) {
+          74:     ctx->count = 0;
+          75:     ctx->state[0] = 0x6a09e667; ctx->state[1] = 0xbb67ae85;
+          76:     ctx->state[2] = 0x3c6ef372; ctx->state[3] = 0xa54ff53a;
+          77:     ctx->state[4] = 0x510e527f; ctx->state[5] = 0x9b05688c;
+          78:     ctx->state[6] = 0x1f83d9ab; ctx->state[7] = 0x5be0cd19;
+          79: }
+          80: 
+          81: void sha256_update(SHA256_CTX *ctx, const uint8_t *data, size_t len) {
+          82:     size_t i = ctx->count % 64;
+          83:     ctx->count += len;
+          84:     while (len--) {
+          85:         ctx->buffer[i++] = *data++;
+          86:         if (i == 64) { sha256_transform(ctx, ctx->buffer); i = 0; }
+          87:     }
+          88: }
+          89: 
+          90: void sha256_final(SHA256_CTX *ctx, uint8_t digest[32]) {
+          91:     size_t i = ctx->count % 64;
+          92:     ctx->buffer[i++] = 0x80;
+          93:     if (i > 56) { while (i < 64) ctx->buffer[i++] = 0; sha256_transform(ctx, ctx->buffer); i = 0; }
+          94:     while (i < 56) ctx->buffer[i++] = 0;
+          95:     uint64_t bits = ctx->count * 8;
+          96:     ctx->buffer[56] = bits>>56; ctx->buffer[57] = bits>>48;
+          97:     ctx->buffer[58] = bits>>40; ctx->buffer[59] = bits>>32;
+          98:     ctx->buffer[60] = bits>>24; ctx->buffer[61] = bits>>16;
+          99:     ctx->buffer[62] = bits>>8;  ctx->buffer[63] = bits;
+          100:     sha256_transform(ctx, ctx->buffer);
+          101:     for (i=0; i<4; ++i) {
+          102:         digest[i]    = ctx->state[0] >> (24-8*i);
+          103:         digest[i+4]  = ctx->state[1] >> (24-8*i);
+          104:         digest[i+8]  = ctx->state[2] >> (24-8*i);
+          105:         digest[i+12] = ctx->state[3] >> (24-8*i);
+          106:         digest[i+16] = ctx->state[4] >> (24-8*i);
+          107:         digest[i+20] = ctx->state[5] >> (24-8*i);
+          108:         digest[i+24] = ctx->state[6] >> (24-8*i);
+          109:         digest[i+28] = ctx->state[7] >> (24-8*i);
+          110:     }
+          111: }
+          112: // ---- end SHA-256 ----
+          113: 
+          114: // Write bits: helper used by embed_data
+          115: static void write_bits(unsigned char *buf, size_t *bit_idx,
+          116:                        const unsigned char *bytes, size_t n) {
+          117:     for (size_t i = 0; i < n; i++) {
+          118:         for (int b = 0; b < 8; b++) {
+          119:             size_t pos = (*bit_idx)++;
+          120:             int bit = (bytes[i] >> b) & 1;
+          121:             if (bit) buf[pos] |= 1; else buf[pos] &= ~1;
+          122:         }
+          123:     }
+          124: }
+          125: 
+          126: // Read bits: helper used by extract_data
+          127: static void read_bits(const unsigned char *buf, size_t *bit_idx,
+          128:                       unsigned char *bytes, size_t n) {
+          129:     for (size_t i = 0; i < n; i++) {
+          130:         bytes[i] = 0;
+          131:         for (int b = 0; b < 8; b++) {
+          132:             size_t pos = (*bit_idx)++;
+          133:             int bit = buf[pos] & 1;
+          134:             bytes[i] |= (bit << b);
+          135:         }
+          136:     }
+          137: }
+          138: 
+          139: static void put_u32le(unsigned char dst[4], uint32_t v) {
+          140:     dst[0] = v & 0xFF; dst[1] = (v >> 8) & 0xFF;
+          141:     dst[2] = (v >> 16) & 0xFF; dst[3] = (v >> 24) & 0xFF;
+          142: }
+          143: 
+          144: static uint32_t get_u32le(const unsigned char src[4]) {
+          145:     return src[0] | ((uint32_t)src[1] << 8) | ((uint32_t)src[2] << 16) | ((uint32_t)src[3] << 24);
+          146: }
+          147: 
+          148: // Embed a data buffer into image pixel LSBs.
+          149: // Format: filename_len(4) + filename(fn_len) + data_len(4) + data
+          150: unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+          151:                           const char *filename, size_t filename_len,
+          152:                           const unsigned char *data, size_t data_len,
+          153:                           size_t *out_capacity) {
+          154:     size_t total_pixels = w * h;
+          155:     size_t total_bits = total_pixels * ch * 8;
+          156:     size_t bits_needed = (4 + filename_len + 4 + data_len) * 8;
+          157: 
+          158:     if (bits_needed > total_bits) {
+          159:         fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+          160:         return NULL;
+          161:     }
+          162:     *out_capacity = total_bits / 8;
+          163: 
+          164:     unsigned char *stego = malloc(w * h * ch);
+          165:     memcpy(stego, img, w * h * ch);
+          166: 
+          167:     size_t bit_idx = 0;
+          168:     unsigned char len_buf[4];
+          169: 
+          170:     put_u32le(len_buf, (uint32_t)filename_len);
+          171:     write_bits(stego, &bit_idx, len_buf, 4);
+          172:     write_bits(stego, &bit_idx, (const unsigned char*)filename, filename_len);
+          173:     put_u32le(len_buf, (uint32_t)data_len);
+          174:     write_bits(stego, &bit_idx, len_buf, 4);
+          175:     write_bits(stego, &bit_idx, data, data_len);
+          176: 
+          177:     return stego;
+          178: }
+          179: 
+          180: // Extract data from a stego image.
+          181: // Format: filename_len(4) + filename + data_len(4) + data
+          182: // Returns the raw data, sets *out_filename / *out_filename_len / *out_data_len.
+          183: unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+          184:                             char **out_filename, size_t *out_filename_len,
+          185:                             size_t *out_data_len) {
+          186:     size_t max_bits = (size_t)w * h * ch;
+          187:     size_t bit_idx = 0;
+          188: 
+          189:     // Read filename length
+          190:     unsigned char len_buf[4];
+          191:     read_bits(img, &bit_idx, len_buf, 4);
+          192:     if (bit_idx / 8 > max_bits) goto fail;
+          193:     uint32_t fn_len = get_u32le(len_buf);
+          194:     if (fn_len > 1024) goto fail; // sanity
+          195: 
+          196:     // Read filename
+          197:     char *filename = malloc(fn_len + 1);
+          198:     read_bits(img, &bit_idx, (unsigned char*)filename, fn_len);
+          199:     if (bit_idx / 8 > max_bits) { free(filename); goto fail; }
+          200:     filename[fn_len] = '\0';
+          201:     *out_filename = filename;
+          202:     *out_filename_len = fn_len;
+          203: 
+          204:     // Read data length
+          205:     read_bits(img, &bit_idx, len_buf, 4);
+          206:     if (bit_idx / 8 > max_bits) goto fail_fn;
+          207:     uint32_t data_len = get_u32le(len_buf);
+          208:     if (data_len > (size_t)w * h * ch) goto fail_fn;
+          209: 
+          210:     // Read data
+          211:     unsigned char *data = malloc(data_len);
+          212:     read_bits(img, &bit_idx, data, data_len);
+          213:     if (bit_idx / 8 > max_bits) { free(data); goto fail_fn; }
+          214:     *out_data_len = data_len;
+          215:     return data;
+          216: 
+          217: fail_fn:
+          218:     free(*out_filename);
+          219:     *out_filename = NULL;
+          220: fail:
+          221:     *out_filename = NULL;
+          222:     *out_filename_len = 0;
+          223:     *out_data_len = 0;
+          224:     return NULL;
+          225: }
+          226: 
+          227: int main(int argc, char **argv) {
+          228:     if (argc < 3) {
+          229:         fprintf(stderr, "Usage:\n");
+          230:         fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+          231:         fprintf(stderr, "          (writes stego_<cover> for each)\n");
+          232:         fprintf(stderr, "  Extract: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]);
+          233:         fprintf(stderr, "          (reconstructs with original filename into dir, default 'extracted/')\n");
+          234:         return 1;
+          235:     }
+          236: 
+          237:     if (!strcmp(argv[1], "embed")) {
+          238:         if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+          239:         const char *payload_file = argv[2];
+          240:         // Read entire payload
+          241:         FILE *f = fopen(payload_file, "rb");
+          242:         if (!f) { perror(payload_file); return 1; }
+          243:         fseek(f, 0, SEEK_END);
+          244:         long fsize = ftell(f);
+          245:         fseek(f, 0, SEEK_SET);
+          246:         unsigned char *payload = malloc(fsize);
+          247:         fread(payload, 1, fsize, f);
+          248:         fclose(f);
+          249: 
+          250:         // Compute SHA-256 of payload for later verification
+          251:         SHA256_CTX sha;
+          252:         sha256_init(&sha);
+          253:         sha256_update(&sha, payload, fsize);
+          254:         uint8_t orig_hash[32];
+          255:         sha256_final(&sha, orig_hash);
+          256:         printf("Original payload SHA-256: ");
+          257:         for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+          258:         printf("\n");
+          259: 
+          260:         // Extract basename from payload path
+          261:         const char *payload_basename = strrchr(payload_file, '/');
+          262:         payload_basename = payload_basename ? payload_basename + 1 : payload_file;
+          263:         size_t name_len = strlen(payload_basename);
+          264: 
+          265:         int num_covers = argc - 3;
+          266:         // Split payload into equal chunks, last chunk may be smaller
+          267:         size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+          268:         size_t offset = 0;
+          269: 
+          270:         for (int i = 0; i < num_covers; i++) {
+          271:             const char *cover_path = argv[3+i];
+          272:             int w, h, ch;
+          273:             unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+          274:             if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+          275:             // Force RGB (ch=3) to keep things consistent; stb will convert if needed
+          276:             if (ch != 3) {
+          277:                 unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          278:                 stbi_image_free(cover);
+          279:                 cover = rgb;
+          280:                 ch = 3;
+          281:             }
+          282: 
+          283:             size_t remaining = fsize - offset;
+          284:             size_t this_chunk = chunk_size;
+          285:             if (this_chunk > remaining) this_chunk = remaining;
+          286:             if (this_chunk == 0) {
+          287:                 printf("No data left for %s, skipping\n", cover_path);
+          288:                 stbi_image_free(cover);
+          289:                 continue;
+          290:             }
+          291: 
+          292:             size_t capacity;
+          293:             unsigned char *stego = embed_data(cover, w, h, ch,
+          294:                                               payload_basename, name_len,
+          295:                                               payload + offset, this_chunk,
+          296:                                               &capacity);
+          297:             if (!stego) {
+          298:                 fprintf(stderr, "Embedding failed for %s (need %zu bytes)\n", cover_path, this_chunk);
+          299:                 stbi_image_free(cover);
+          300:                 return 1;
+          301:             }
+          302:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+          303:                    this_chunk, cover_path, capacity);
+          304: 
+          305:             // Write stego image as PNG (lossless)
+          306:             char out_name[1024];
+          307:             snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+          308:             if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          309:                 fprintf(stderr, "Failed to write %s\n", out_name);
+          310:                 return 1;
+          311:             }
+          312:             printf(" -> saved %s\n", out_name);
+          313:             free(stego);
+          314:             stbi_image_free(cover);
+          315:             offset += this_chunk;
+          316:         }
+          317:         printf("Embedding complete.\n");
+          318: 
+          319:     } else if (!strcmp(argv[1], "extract")) {
+          320:         int stego_start = 2;
+          321:         const char *out_dir = "extracted";
+          322:         if (argc > 3 && !strcmp(argv[2], "-o")) {
+          323:             out_dir = argv[3];
+          324:             stego_start = 4;
+          325:         }
+          326:         if (argc <= stego_start) { fprintf(stderr, "Usage: %s extract [-o <dir>] <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          327:         char *out_path = NULL;
+          328:         unsigned char *full_data = NULL;
+          329:         size_t total_len = 0;
+          330:         for (int i = stego_start; i < argc; i++) {
+          331:             int w, h, ch;
+          332:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          333:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+          334: 
+          335:             // First image carries the original filename; subsequent ones reuse it
+          336:             char *fn;
+          337:             size_t fn_len, chunk_len;
+          338:             unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+          339:             stbi_image_free(img);
+          340:             if (!chunk) {
+          341:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          342:                 free(out_path);
+          343:                 return 1;
+          344:             }
+          345:             if (i == stego_start) out_path = fn; else free(fn);
+          346:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          347:             full_data = realloc(full_data, total_len + chunk_len);
+          348:             memcpy(full_data + total_len, chunk, chunk_len);
+          349:             total_len += chunk_len;
+          350:             free(chunk);
+          351:         }
+          352:         if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+          353:         // Write reconstructed payload into output directory
+          354:         mkdir(out_dir, 0755);
+          355:         char out_path_full[1024];
+          356:         snprintf(out_path_full, sizeof(out_path_full), "%s/%s", out_dir, out_path);
+          357:         printf("Reconstructing as '%s'\n", out_path_full);
+          358:         FILE *out = fopen(out_path_full, "wb");
+          359:         if (!out) { perror(out_path_full); free(out_path); return 1; }
+          360:         fwrite(full_data, 1, total_len, out);
+          361:         fclose(out);
+          362:         // Compute SHA-256 and compare
+          363:         SHA256_CTX sha;
+          364:         sha256_init(&sha);
+          365:         sha256_update(&sha, full_data, total_len);
+          366:         uint8_t recon_hash[32];
+          367:         sha256_final(&sha, recon_hash);
+          368:         printf("Reconstructed payload SHA-256: ");
+          369:         for (int i = 0; i < 32; i++) printf("%02x", recon_hash[i]);
+          370:         printf("\n");
+          371:         printf("Verification: SHA-256 must match original printed during embed.\n");
+          372:         free(out_path);
+          373:         free(full_data);
+          374:     } else {
+          375:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          376:         return 1;
+          377:     }
+          378:     return 0;
+          379: }
+
+          (End of file - total 379 lines)
+          </content>
+    time: 7/28/2026, 7:16:22.106 AM GMT+5:30
+    response: Got it. I need to redesign the extract to handle multiple files — group stego images by filename, detect missing chunks, and report errors for incomplete files.
+    duration: 25.352s
+    duration_ms: 25352
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      I need to:
+
+      1. Add `total_len` to the embed format (store it alongside `data_len`) so extract can detect missing chunks
+      2. Update `embed_data` to accept `total_len` and write it in each chunk
+      3. Update `extract_data` to return `total_len`
+      4. Rewrite the extract logic in main to group by filename, track accumulated bytes, write complete files, and report errors for incomplete ones
+
+      Let me do this systematically.
+
+      **Step 1: Update embed_data format and signature**
+
+      New format per chunk:
+      - 4 bytes: filename_len
+      - fn_len bytes: filename  
+      - 4 bytes: total file size (total_len)
+      - 4 bytes: this chunk size (chunk_len)
+      - chunk_len bytes: chunk data
+
+      **Step 2: Update extract_data**
+
+      Return the total_len as an extra out parameter.
+
+      **Step 3: Rewrite main extract**
+
+      Group consecutive chunks by filename. When filename changes or at end:
+      - If accumulated == total_len: write file, print SHA-256
+      - If accumulated < total_len: report error (incomplete file)
+
+      Let me write the full rewrite now.
+    thinking_duration: 2.791s
+    thinking_duration_ms: 2791
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |-
+            // Embed a data buffer into image pixel LSBs.
+            // Format: filename_len(4) + filename(fn_len) + data_len(4) + data
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const char *filename, size_t filename_len,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total_pixels = w * h;
+                size_t total_bits = total_pixels * ch * 8;
+                size_t bits_needed = (4 + filename_len + 4 + data_len) * 8;
+
+                if (bits_needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;
+
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+
+                size_t bit_idx = 0;
+                unsigned char len_buf[4];
+
+                put_u32le(len_buf, (uint32_t)filename_len);
+                write_bits(stego, &bit_idx, len_buf, 4);
+                write_bits(stego, &bit_idx, (const unsigned char*)filename, filename_len);
+                put_u32le(len_buf, (uint32_t)data_len);
+                write_bits(stego, &bit_idx, len_buf, 4);
+                write_bits(stego, &bit_idx, data, data_len);
+
+                return stego;
+            }
+          newString: |-
+            // Embed a data buffer into image pixel LSBs.
+            // Format: fn_len(4) + filename + total_len(4) + chunk_len(4) + chunk_data
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const char *filename, size_t filename_len,
+                                      size_t total_len,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total_pixels = w * h;
+                size_t total_bits = total_pixels * ch * 8;
+                size_t bits_needed = (4 + filename_len + 4 + 4 + data_len) * 8;
+
+                if (bits_needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;
+
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+
+                size_t bit_idx = 0;
+                unsigned char buf[4];
+
+                put_u32le(buf, (uint32_t)filename_len);
+                write_bits(stego, &bit_idx, buf, 4);
+                write_bits(stego, &bit_idx, (const unsigned char*)filename, filename_len);
+                put_u32le(buf, (uint32_t)total_len);
+                write_bits(stego, &bit_idx, buf, 4);
+                put_u32le(buf, (uint32_t)data_len);
+                write_bits(stego, &bit_idx, buf, 4);
+                write_bits(stego, &bit_idx, data, data_len);
+
+                return stego;
+            }
+        result: The user rejected permission to use this specific tool call.
+    time: 7/28/2026, 7:16:47.603 AM GMT+5:30
+    response: I'll rewrite `embed_data`, `extract_data`, and the main extract loop to support multiple files with missing-chunk detection.
+    duration: 15.387s
+    duration_ms: 15387
+

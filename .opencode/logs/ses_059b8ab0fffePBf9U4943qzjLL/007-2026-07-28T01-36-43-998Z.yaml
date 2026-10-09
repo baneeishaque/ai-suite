@@ -1,0 +1,884 @@
+---
+user:
+  text: but, what if i don't know the name of embedded file? i want whatever embedded.
+  time: 7/28/2026, 7:04:07.399 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      The user wants the extract mode to automatically detect the original filename from the embedded data. This means I need to store the original filename in the embed header so the extract can read it back.
+
+      Current embed format:
+      - 4 bytes: length prefix (little-endian uint32)
+      - N bytes: payload data
+
+      I need to change it to:
+      - 4 bytes: filename length (little-endian uint32)
+      - filename bytes
+      - 4 bytes: payload data length (little-endian uint32)
+      - payload data bytes
+
+      Or alternatively, store the original filename after the length prefix. Let me think about what's cleanest.
+
+      Option 1: Store filename in the header
+      - 4 bytes: original filename length
+      - N bytes: original filename
+      - 4 bytes: payload data length
+      - M bytes: payload data
+
+      Then in extract, read the filename first, then the data, and write to that filename.
+
+      This is a breaking change to the format, but since this project is in active development, that's fine.
+
+      Let me implement this.
+    thinking_duration: 2.209s
+    thinking_duration_ms: 2209
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 1
+          limit: 10
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          1: /*
+          2:  * diststego.c – Split a file, hide chunks in cover images, extract and verify.
+          3:  * Compile: gcc -O2 diststego.c -lm -o diststego
+          4:  * Usage:
+          5:  *   Embed: ./diststego embed secret.bin cover1.png cover2.png cover3.png
+          6:  *          (outputs stego_cover1.png, stego_cover2.png, ...)
+          7:  *   Extract & verify: ./diststego extract <output> stego_cover1.png stego_cover2.png ...
+          8:  *                     (reconstructs <output> and prints verification)
+          9:  */
+          10: 
+
+          (Showing lines 1-10 of 331. Use offset=11 to continue.)
+          </content>
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 113
+          limit: 90
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          113: // Embed a data buffer into image pixel LSBs
+          114: unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+          115:                           const unsigned char *data, size_t data_len,
+          116:                           size_t *out_capacity) {
+          117:     size_t total_pixels = w * h;
+          118:     size_t total_bits = total_pixels * ch * 8;  // we modify only 1 bit per byte
+          119:     size_t bits_needed = (4 + data_len) * 8;    // 4-byte length prefix + data
+          120: 
+          121:     if (bits_needed > total_bits) {
+          122:         fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+          123:         return NULL;
+          124:     }
+          125:     *out_capacity = total_bits / 8;  // available bytes
+          126: 
+          127:     unsigned char *stego = malloc(w * h * ch);
+          128:     memcpy(stego, img, w * h * ch);
+          129: 
+          130:     // Write length prefix (32-bit little-endian)
+          131:     uint32_t len = (uint32_t)data_len;
+          132:     unsigned char len_bytes[4];
+          133:     len_bytes[0] = len & 0xFF;
+          134:     len_bytes[1] = (len >> 8) & 0xFF;
+          135:     len_bytes[2] = (len >> 16) & 0xFF;
+          136:     len_bytes[3] = (len >> 24) & 0xFF;
+          137: 
+          138:     // Interleave: write length then data, bit by bit into LSB of each byte
+          139:     size_t bit_idx = 0;
+          140:     for (int byte = 0; byte < 4; byte++) {
+          141:         for (int b = 0; b < 8; b++) {
+          142:             size_t pixel_offset = bit_idx;
+          143:             int bit = (len_bytes[byte] >> b) & 1;
+          144:             if (bit)
+          145:                 stego[pixel_offset] |= 1;
+          146:             else
+          147:                 stego[pixel_offset] &= ~1;
+          148:             bit_idx++;
+          149:         }
+          150:     }
+          151:     for (size_t i = 0; i < data_len; i++) {
+          152:         for (int b = 0; b < 8; b++) {
+          153:             size_t pixel_offset = bit_idx;
+          154:             int bit = (data[i] >> b) & 1;
+          155:             if (bit)
+          156:                 stego[pixel_offset] |= 1;
+          157:             else
+          158:                 stego[pixel_offset] &= ~1;
+          159:             bit_idx++;
+          160:         }
+          161:     }
+          162:     return stego;
+          163: }
+          164: 
+          165: // Extract data from a stego image
+          166: unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+          167:                             size_t *out_len) {
+          168:     size_t bit_idx = 0;
+          169:     // Read length prefix
+          170:     unsigned char len_bytes[4] = {0};
+          171:     for (int byte = 0; byte < 4; byte++) {
+          172:         for (int b = 0; b < 8; b++) {
+          173:             size_t pixel_offset = bit_idx;
+          174:             if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+          175:             int bit = img[pixel_offset] & 1;
+          176:             len_bytes[byte] |= (bit << b);
+          177:             bit_idx++;
+          178:         }
+          179:     }
+          180:     uint32_t data_len = len_bytes[0] | (len_bytes[1]<<8) | (len_bytes[2]<<16) | (len_bytes[3]<<24);
+          181:     if (data_len > (size_t)(w * h * ch) * 8) goto fail; // sanity check
+          182: 
+          183:     unsigned char *data = malloc(data_len);
+          184:     for (size_t i = 0; i < data_len; i++) {
+          185:         data[i] = 0;
+          186:         for (int b = 0; b < 8; b++) {
+          187:             size_t pixel_offset = bit_idx;
+          188:             if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+          189:             int bit = img[pixel_offset] & 1;
+          190:             data[i] |= (bit << b);
+          191:             bit_idx++;
+          192:         }
+          193:     }
+          194:     *out_len = data_len;
+          195:     return data;
+          196: fail:
+          197:     *out_len = 0;
+          198:     return NULL;
+          199: }
+          200: 
+          201: int main(int argc, char **argv) {
+          202:     if (argc < 3) {
+
+          (Showing lines 113-202 of 331. Use offset=203 to continue.)
+          </content>
+    time: 7/28/2026, 7:04:07.579 AM GMT+5:30
+    response: Current format stores no filename metadata. I need to embed the original filename in the header so extract can recover it automatically.
+    duration: 5.408s
+    duration_ms: 5408
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      I need to add a helper function that writes bits (since the pattern is repeated 3 times in embed). Actually, let me just add a write_bits helper. But the simpler approach: 
+
+      1. Change the embed_data to also accept a filename and embed `filename_len + filename + data_len + data`
+      2. Change extract_data to return the filename as well
+      3. Change main to extract both filename and data, then write to the recovered filename
+
+      Let me think about the API:
+
+      For `embed_data`: add `const char *filename` parameter. The format becomes:
+      - 4 bytes: filename length (uint32 LE)
+      - filename bytes (not null-terminated in the embedded data)
+      - 4 bytes: payload data length (uint32 LE)  
+      - payload data bytes
+
+      The `extract_data` function needs to return the filename too. I could:
+      - Add `char **out_filename` and `size_t *out_filename_len` params
+      - Or return a struct
+
+      Let me keep it simple with extra out params.
+
+      ```c
+      unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                const char *filename,
+                                const unsigned char *data, size_t data_len,
+                                size_t *out_capacity) {
+      ```
+
+      And for extract:
+      ```c
+      unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                  char **out_filename, size_t *out_filename_len,
+                                  size_t *out_len) {
+      ```
+
+      Let me implement this.
+    thinking_duration: 3.036s
+    thinking_duration_ms: 3036
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |-
+            // Embed a data buffer into image pixel LSBs
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total_pixels = w * h;
+                size_t total_bits = total_pixels * ch * 8;  // we modify only 1 bit per byte
+                size_t bits_needed = (4 + data_len) * 8;    // 4-byte length prefix + data
+
+                if (bits_needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;  // available bytes
+
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+
+                // Write length prefix (32-bit little-endian)
+                uint32_t len = (uint32_t)data_len;
+                unsigned char len_bytes[4];
+                len_bytes[0] = len & 0xFF;
+                len_bytes[1] = (len >> 8) & 0xFF;
+                len_bytes[2] = (len >> 16) & 0xFF;
+                len_bytes[3] = (len >> 24) & 0xFF;
+
+                // Interleave: write length then data, bit by bit into LSB of each byte
+                size_t bit_idx = 0;
+                for (int byte = 0; byte < 4; byte++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx;
+                        int bit = (len_bytes[byte] >> b) & 1;
+                        if (bit)
+                            stego[pixel_offset] |= 1;
+                        else
+                            stego[pixel_offset] &= ~1;
+                        bit_idx++;
+                    }
+                }
+                for (size_t i = 0; i < data_len; i++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx;
+                        int bit = (data[i] >> b) & 1;
+                        if (bit)
+                            stego[pixel_offset] |= 1;
+                        else
+                            stego[pixel_offset] &= ~1;
+                        bit_idx++;
+                    }
+                }
+                return stego;
+            }
+          newString: |-
+            // Write bits: helper used by embed_data
+            static void write_bits(unsigned char *buf, size_t *bit_idx,
+                                   const unsigned char *bytes, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pos = (*bit_idx)++;
+                        int bit = (bytes[i] >> b) & 1;
+                        if (bit) buf[pos] |= 1; else buf[pos] &= ~1;
+                    }
+                }
+            }
+
+            // Read bits: helper used by extract_data
+            static void read_bits(const unsigned char *buf, size_t *bit_idx,
+                                  unsigned char *bytes, size_t n) {
+                for (size_t i = 0; i < n; i++) {
+                    bytes[i] = 0;
+                    for (int b = 0; b < 8; b++) {
+                        size_t pos = (*bit_idx)++;
+                        int bit = buf[pos] & 1;
+                        bytes[i] |= (bit << b);
+                    }
+                }
+            }
+
+            static void put_u32le(unsigned char dst[4], uint32_t v) {
+                dst[0] = v & 0xFF; dst[1] = (v >> 8) & 0xFF;
+                dst[2] = (v >> 16) & 0xFF; dst[3] = (v >> 24) & 0xFF;
+            }
+
+            static uint32_t get_u32le(const unsigned char src[4]) {
+                return src[0] | ((uint32_t)src[1] << 8) | ((uint32_t)src[2] << 16) | ((uint32_t)src[3] << 24);
+            }
+
+            // Embed a data buffer into image pixel LSBs.
+            // Format: filename_len(4) + filename(fn_len) + data_len(4) + data
+            unsigned char* embed_data(unsigned char *img, int w, int h, int ch,
+                                      const char *filename, size_t filename_len,
+                                      const unsigned char *data, size_t data_len,
+                                      size_t *out_capacity) {
+                size_t total_pixels = w * h;
+                size_t total_bits = total_pixels * ch * 8;
+                size_t bits_needed = (4 + filename_len + 4 + data_len) * 8;
+
+                if (bits_needed > total_bits) {
+                    fprintf(stderr, "Not enough capacity: need %zu bits, have %zu bits\n", bits_needed, total_bits);
+                    return NULL;
+                }
+                *out_capacity = total_bits / 8;
+
+                unsigned char *stego = malloc(w * h * ch);
+                memcpy(stego, img, w * h * ch);
+
+                size_t bit_idx = 0;
+                unsigned char len_buf[4];
+
+                put_u32le(len_buf, (uint32_t)filename_len);
+                write_bits(stego, &bit_idx, len_buf, 4);
+                write_bits(stego, &bit_idx, (const unsigned char*)filename, filename_len);
+                put_u32le(len_buf, (uint32_t)data_len);
+                write_bits(stego, &bit_idx, len_buf, 4);
+                write_bits(stego, &bit_idx, data, data_len);
+
+                return stego;
+            }
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:04:13.088 AM GMT+5:30
+    duration: 14.375s
+    duration_ms: 14375
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update `extract_data` to read the filename.
+    thinking_duration: 331ms
+    thinking_duration_ms: 331
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |-
+            // Extract data from a stego image
+            unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                        size_t *out_len) {
+                size_t bit_idx = 0;
+                // Read length prefix
+                unsigned char len_bytes[4] = {0};
+                for (int byte = 0; byte < 4; byte++) {
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx;
+                        if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+                        int bit = img[pixel_offset] & 1;
+                        len_bytes[byte] |= (bit << b);
+                        bit_idx++;
+                    }
+                }
+                uint32_t data_len = len_bytes[0] | (len_bytes[1]<<8) | (len_bytes[2]<<16) | (len_bytes[3]<<24);
+                if (data_len > (size_t)(w * h * ch) * 8) goto fail; // sanity check
+
+                unsigned char *data = malloc(data_len);
+                for (size_t i = 0; i < data_len; i++) {
+                    data[i] = 0;
+                    for (int b = 0; b < 8; b++) {
+                        size_t pixel_offset = bit_idx;
+                        if (pixel_offset >= (size_t)(w * h * ch)) goto fail;
+                        int bit = img[pixel_offset] & 1;
+                        data[i] |= (bit << b);
+                        bit_idx++;
+                    }
+                }
+                *out_len = data_len;
+                return data;
+            fail:
+                *out_len = 0;
+                return NULL;
+            }
+          newString: |-
+            // Extract data from a stego image.
+            // Format: filename_len(4) + filename + data_len(4) + data
+            // Returns the raw data, sets *out_filename / *out_filename_len / *out_data_len.
+            unsigned char* extract_data(unsigned char *img, int w, int h, int ch,
+                                        char **out_filename, size_t *out_filename_len,
+                                        size_t *out_data_len) {
+                size_t max_bits = (size_t)w * h * ch;
+                size_t bit_idx = 0;
+
+                // Read filename length
+                unsigned char len_buf[4];
+                read_bits(img, &bit_idx, len_buf, 4);
+                if (bit_idx / 8 > max_bits) goto fail;
+                uint32_t fn_len = get_u32le(len_buf);
+                if (fn_len > 1024) goto fail; // sanity
+
+                // Read filename
+                char *filename = malloc(fn_len + 1);
+                read_bits(img, &bit_idx, (unsigned char*)filename, fn_len);
+                if (bit_idx / 8 > max_bits) { free(filename); goto fail; }
+                filename[fn_len] = '\0';
+                *out_filename = filename;
+                *out_filename_len = fn_len;
+
+                // Read data length
+                read_bits(img, &bit_idx, len_buf, 4);
+                if (bit_idx / 8 > max_bits) goto fail_fn;
+                uint32_t data_len = get_u32le(len_buf);
+                if (data_len > (size_t)w * h * ch) goto fail_fn;
+
+                // Read data
+                unsigned char *data = malloc(data_len);
+                read_bits(img, &bit_idx, data, data_len);
+                if (bit_idx / 8 > max_bits) { free(data); goto fail_fn; }
+                *out_data_len = data_len;
+                return data;
+
+            fail_fn:
+                free(*out_filename);
+                *out_filename = NULL;
+            fail:
+                *out_filename = NULL;
+                *out_filename_len = 0;
+                *out_data_len = 0;
+                return NULL;
+            }
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:04:27.576 AM GMT+5:30
+    duration: 18.489s
+    duration_ms: 18489
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update the main function's embed section to pass the filename, and the extract section to use the recovered filename.
+    thinking_duration: 623ms
+    thinking_duration_ms: 623
+    tool_calls:
+      - tool: read
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          offset: 203
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          203:     // Read data length
+          204:     read_bits(img, &bit_idx, len_buf, 4);
+          205:     if (bit_idx / 8 > max_bits) goto fail_fn;
+          206:     uint32_t data_len = get_u32le(len_buf);
+          207:     if (data_len > (size_t)w * h * ch) goto fail_fn;
+          208: 
+          209:     // Read data
+          210:     unsigned char *data = malloc(data_len);
+          211:     read_bits(img, &bit_idx, data, data_len);
+          212:     if (bit_idx / 8 > max_bits) { free(data); goto fail_fn; }
+          213:     *out_data_len = data_len;
+          214:     return data;
+          215: 
+          216: fail_fn:
+          217:     free(*out_filename);
+          218:     *out_filename = NULL;
+          219: fail:
+          220:     *out_filename = NULL;
+          221:     *out_filename_len = 0;
+          222:     *out_data_len = 0;
+          223:     return NULL;
+          224: }
+          225: 
+          226: int main(int argc, char **argv) {
+          227:     if (argc < 3) {
+          228:         fprintf(stderr, "Usage:\n");
+          229:         fprintf(stderr, "  Embed:  %s embed <payload> <cover1> [cover2 ...]\n", argv[0]);
+          230:         fprintf(stderr, "          (writes stego_<cover> for each)\n");
+          231:         fprintf(stderr, "  Extract: %s extract <stego1> [stego2 ...]\n", argv[0]);
+          232:         fprintf(stderr, "          (reconstructs 'payload.bin' and verifies SHA-256)\n");
+          233:         return 1;
+          234:     }
+          235: 
+          236:     if (!strcmp(argv[1], "embed")) {
+          237:         if (argc < 4) { fprintf(stderr, "Need payload and at least one cover image\n"); return 1; }
+          238:         const char *payload_file = argv[2];
+          239:         // Read entire payload
+          240:         FILE *f = fopen(payload_file, "rb");
+          241:         if (!f) { perror(payload_file); return 1; }
+          242:         fseek(f, 0, SEEK_END);
+          243:         long fsize = ftell(f);
+          244:         fseek(f, 0, SEEK_SET);
+          245:         unsigned char *payload = malloc(fsize);
+          246:         fread(payload, 1, fsize, f);
+          247:         fclose(f);
+          248: 
+          249:         // Compute SHA-256 of payload for later verification
+          250:         SHA256_CTX sha;
+          251:         sha256_init(&sha);
+          252:         sha256_update(&sha, payload, fsize);
+          253:         uint8_t orig_hash[32];
+          254:         sha256_final(&sha, orig_hash);
+          255:         printf("Original payload SHA-256: ");
+          256:         for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+          257:         printf("\n");
+          258: 
+          259:         int num_covers = argc - 3;
+          260:         // Split payload into equal chunks, last chunk may be smaller
+          261:         size_t chunk_size = (fsize + num_covers - 1) / num_covers;
+          262:         size_t offset = 0;
+          263: 
+          264:         for (int i = 0; i < num_covers; i++) {
+          265:             const char *cover_path = argv[3+i];
+          266:             int w, h, ch;
+          267:             unsigned char *cover = stbi_load(cover_path, &w, &h, &ch, 0);
+          268:             if (!cover) { fprintf(stderr, "Cannot load %s\n", cover_path); return 1; }
+          269:             // Force RGB (ch=3) to keep things consistent; stb will convert if needed
+          270:             if (ch != 3) {
+          271:                 unsigned char *rgb = stbi_load(cover_path, &w, &h, &ch, 3);
+          272:                 stbi_image_free(cover);
+          273:                 cover = rgb;
+          274:                 ch = 3;
+          275:             }
+          276: 
+          277:             size_t remaining = fsize - offset;
+          278:             size_t this_chunk = chunk_size;
+          279:             if (this_chunk > remaining) this_chunk = remaining;
+          280:             if (this_chunk == 0) {
+          281:                 printf("No data left for %s, skipping\n", cover_path);
+          282:                 stbi_image_free(cover);
+          283:                 continue;
+          284:             }
+          285: 
+          286:             size_t capacity;
+          287:             unsigned char *stego = embed_data(cover, w, h, ch,
+          288:                                               payload + offset, this_chunk,
+          289:                                               &capacity);
+          290:             if (!stego) {
+          291:                 fprintf(stderr, "Embedding failed for %s (need %zu bytes)\n", cover_path, this_chunk);
+          292:                 stbi_image_free(cover);
+          293:                 return 1;
+          294:             }
+          295:             printf("Embedded %zu bytes into %s (capacity %zu bytes)\n",
+          296:                    this_chunk, cover_path, capacity);
+          297: 
+          298:             // Write stego image as PNG (lossless)
+          299:             char out_name[1024];
+          300:             snprintf(out_name, sizeof(out_name), "stego_%s", cover_path);
+          301:             if (!stbi_write_png(out_name, w, h, ch, stego, w*ch)) {
+          302:                 fprintf(stderr, "Failed to write %s\n", out_name);
+          303:                 return 1;
+          304:             }
+          305:             printf(" -> saved %s\n", out_name);
+          306:             free(stego);
+          307:             stbi_image_free(cover);
+          308:             offset += this_chunk;
+          309:         }
+          310:         printf("Embedding complete.\n");
+          311: 
+          312:     } else if (!strcmp(argv[1], "extract")) {
+          313:         if (argc < 4) { fprintf(stderr, "Usage: %s extract <output> <stego1> [stego2 ...]\n", argv[0]); return 1; }
+          314:         const char *out_path = argv[2];
+          315:         // We'll reconstruct the payload in memory
+          316:         unsigned char *full_data = NULL;
+          317:         size_t total_len = 0;
+          318:         for (int i = 3; i < argc; i++) {
+          319:             int w, h, ch;
+          320:             unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+          321:             if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+          322:             size_t chunk_len;
+          323:             unsigned char *chunk = extract_data(img, w, h, 3, &chunk_len);
+          324:             stbi_image_free(img);
+          325:             if (!chunk) {
+          326:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          327:                 return 1;
+          328:             }
+          329:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          330:             full_data = realloc(full_data, total_len + chunk_len);
+          331:             memcpy(full_data + total_len, chunk, chunk_len);
+          332:             total_len += chunk_len;
+          333:             free(chunk);
+          334:         }
+          335:         // Write reconstructed payload
+          336:         FILE *out = fopen(out_path, "wb");
+          337:         if (!out) { perror(out_path); return 1; }
+          338:         fwrite(full_data, 1, total_len, out);
+          339:         fclose(out);
+          340:         // Compute SHA-256 and compare
+          341:         SHA256_CTX sha;
+          342:         sha256_init(&sha);
+          343:         sha256_update(&sha, full_data, total_len);
+          344:         uint8_t recon_hash[32];
+          345:         sha256_final(&sha, recon_hash);
+          346:         printf("Reconstructed payload SHA-256: ");
+          347:         for (int i = 0; i < 32; i++) printf("%02x", recon_hash[i]);
+          348:         printf("\n");
+          349:         printf("Verification: SHA-256 must match original printed during embed.\n");
+          350:         free(full_data);
+          351:     } else {
+          352:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          353:         return 1;
+          354:     }
+          355:     return 0;
+          356: }
+
+          (End of file - total 356 lines)
+          </content>
+    time: 7/28/2026, 7:04:46.189 AM GMT+5:30
+    duration: 3.082s
+    duration_ms: 3082
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: |-
+      Now I need to:
+      1. Update the embed call to pass the basename of the payload file
+      2. Update the extract call to use the recovered filename instead of an argv argument
+      3. Update the usage comments
+
+      Let me also extract the basename (strip directory parts).
+      For embed: pass `payload_file` basename to `embed_data`
+      For extract: the output path comes from the recovered filename, no need for argv[2]
+
+      Let me update the embed section first - extract the basename from the payload path, then pass it to embed_data.
+    thinking_duration: 1.354s
+    thinking_duration_ms: 1354
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    printf("Original payload SHA-256: ");
+                    for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+                    printf("\n");
+
+                    int num_covers = argc - 3;
+          newString: |2-
+                    printf("Original payload SHA-256: ");
+                    for (int i = 0; i < 32; i++) printf("%02x", orig_hash[i]);
+                    printf("\n");
+
+                    // Extract basename from payload path
+                    const char *payload_basename = strrchr(payload_file, '/');
+                    payload_basename = payload_basename ? payload_basename + 1 : payload_file;
+                    size_t name_len = strlen(payload_basename);
+
+                    int num_covers = argc - 3;
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:04:49.391 AM GMT+5:30
+    duration: 8.783s
+    duration_ms: 8783
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Good, now I need to update the embed_data call to pass the basename and name_len.
+    thinking_duration: 342ms
+    thinking_duration_ms: 342
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                        unsigned char *stego = embed_data(cover, w, h, ch,
+                                                          payload + offset, this_chunk,
+                                                          &capacity);
+          newString: |2-
+                        unsigned char *stego = embed_data(cover, w, h, ch,
+                                                          payload_basename, name_len,
+                                                          payload + offset, this_chunk,
+                                                          &capacity);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:04:58.328 AM GMT+5:30
+    duration: 18.380s
+    duration_ms: 18380
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: 'Now update the extract section: remove the output filename arg, read the recovered filename from the first image, and use it as the output path.'
+    thinking_duration: 525ms
+    thinking_duration_ms: 525
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                } else if (!strcmp(argv[1], "extract")) {
+                    if (argc < 4) { fprintf(stderr, "Usage: %s extract <output> <stego1> [stego2 ...]\n", argv[0]); return 1; }
+                    const char *out_path = argv[2];
+                    // We'll reconstruct the payload in memory
+                    unsigned char *full_data = NULL;
+                    size_t total_len = 0;
+                    for (int i = 3; i < argc; i++) {
+                        int w, h, ch;
+                        unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+                        if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+                        size_t chunk_len;
+                        unsigned char *chunk = extract_data(img, w, h, 3, &chunk_len);
+                        stbi_image_free(img);
+                        if (!chunk) {
+                            fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+                            return 1;
+                        }
+                        printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+                        full_data = realloc(full_data, total_len + chunk_len);
+                        memcpy(full_data + total_len, chunk, chunk_len);
+                        total_len += chunk_len;
+                        free(chunk);
+                    }
+                    // Write reconstructed payload
+                    FILE *out = fopen(out_path, "wb");
+                    if (!out) { perror(out_path); return 1; }
+                    fwrite(full_data, 1, total_len, out);
+                    fclose(out);
+          newString: |2-
+                } else if (!strcmp(argv[1], "extract")) {
+                    if (argc < 3) { fprintf(stderr, "Usage: %s extract <stego1> [stego2 ...]\n", argv[0]); return 1; }
+                    char *out_path = NULL;
+                    unsigned char *full_data = NULL;
+                    size_t total_len = 0;
+                    for (int i = 2; i < argc; i++) {
+                        int w, h, ch;
+                        unsigned char *img = stbi_load(argv[i], &w, &h, &ch, 3);
+                        if (!img) { fprintf(stderr, "Cannot load %s\n", argv[i]); return 1; }
+
+                        // First image carries the original filename; subsequent ones reuse it
+                        char *fn;
+                        size_t fn_len, chunk_len;
+                        unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+                        stbi_image_free(img);
+                        if (!chunk) {
+                            fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+                            free(out_path);
+                            return 1;
+                        }
+                        if (i == 2) out_path = fn; else free(fn);
+                        printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+                        full_data = realloc(full_data, total_len + chunk_len);
+                        memcpy(full_data + total_len, chunk, chunk_len);
+                        total_len += chunk_len;
+                        free(chunk);
+                    }
+                    if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+                    // Write reconstructed payload
+                    printf("Reconstructing as '%s'\n", out_path);
+                    FILE *out = fopen(out_path, "wb");
+                    if (!out) { perror(out_path); free(out_path); return 1; }
+                    fwrite(full_data, 1, total_len, out);
+                    fclose(out);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:05:16.828 AM GMT+5:30
+    duration: 12.906s
+    duration_ms: 12906
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now update the usage comment at the top and the help text.
+    thinking_duration: 365ms
+    thinking_duration_ms: 365
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+             *   Extract & verify: ./diststego extract <output> stego_cover1.png stego_cover2.png ...
+             *                     (reconstructs <output> and prints verification)
+          newString: |2-
+             *   Extract & verify: ./diststego extract stego_cover1.png stego_cover2.png ...
+             *                     (reconstructs with original filename and prints verification)
+        result: Edit applied successfully.
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    fprintf(stderr, "  Extract: %s extract <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs 'payload.bin' and verifies SHA-256)\n");
+          newString: |2-
+                    fprintf(stderr, "  Extract: %s extract <stego1> [stego2 ...]\n", argv[0]);
+                    fprintf(stderr, "          (reconstructs with original filename and verifies SHA-256)\n");
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:05:29.847 AM GMT+5:30
+    duration: 24.340s
+    duration_ms: 24340
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now I need to add the `free(out_path)` after writing the file and the SHA-256 section. Let me check the current state of the file at the end of main.
+    thinking_duration: 804ms
+    thinking_duration_ms: 804
+    tool_calls:
+      - tool: read
+        args:
+          offset: 330
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+        result: |-
+          <path>/Users/dk/lab-data/distributed-steganography-c/main.c</path>
+          <type>file</type>
+          <content>
+          330:             size_t fn_len, chunk_len;
+          331:             unsigned char *chunk = extract_data(img, w, h, 3, &fn, &fn_len, &chunk_len);
+          332:             stbi_image_free(img);
+          333:             if (!chunk) {
+          334:                 fprintf(stderr, "Failed to extract data from %s\n", argv[i]);
+          335:                 free(out_path);
+          336:                 return 1;
+          337:             }
+          338:             if (i == 2) out_path = fn; else free(fn);
+          339:             printf("Extracted %zu bytes from %s\n", chunk_len, argv[i]);
+          340:             full_data = realloc(full_data, total_len + chunk_len);
+          341:             memcpy(full_data + total_len, chunk, chunk_len);
+          342:             total_len += chunk_len;
+          343:             free(chunk);
+          344:         }
+          345:         if (!out_path) { fprintf(stderr, "No data extracted\n"); return 1; }
+          346:         // Write reconstructed payload
+          347:         printf("Reconstructing as '%s'\n", out_path);
+          348:         FILE *out = fopen(out_path, "wb");
+          349:         if (!out) { perror(out_path); free(out_path); return 1; }
+          350:         fwrite(full_data, 1, total_len, out);
+          351:         fclose(out);
+          352:         // Compute SHA-256 and compare
+          353:         SHA256_CTX sha;
+          354:         sha256_init(&sha);
+          355:         sha256_update(&sha, full_data, total_len);
+          356:         uint8_t recon_hash[32];
+          357:         sha256_final(&sha, recon_hash);
+          358:         printf("Reconstructed payload SHA-256: ");
+          359:         for (int i = 0; i < 32; i++) printf("%02x", recon_hash[i]);
+          360:         printf("\n");
+          361:         printf("Verification: SHA-256 must match original printed during embed.\n");
+          362:         free(full_data);
+          363:     } else {
+          364:         fprintf(stderr, "Unknown command '%s', use 'embed' or 'extract'\n", argv[1]);
+          365:         return 1;
+          366:     }
+          367:     return 0;
+          368: }
+
+          (End of file - total 368 lines)
+          </content>
+    time: 7/28/2026, 7:05:54.300 AM GMT+5:30
+    duration: 3.568s
+    duration_ms: 3568
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: I need to add `free(out_path)` before `free(full_data)` to avoid leaking the filename.
+    thinking_duration: 254ms
+    thinking_duration_ms: 254
+    tool_calls:
+      - tool: edit
+        args:
+          filePath: /Users/dk/lab-data/distributed-steganography-c/main.c
+          oldString: |2-
+                    printf("Verification: SHA-256 must match original printed during embed.\n");
+                    free(full_data);
+          newString: |2-
+                    printf("Verification: SHA-256 must match original printed during embed.\n");
+                    free(out_path);
+                    free(full_data);
+        result: Edit applied successfully.
+    time: 7/28/2026, 7:05:57.974 AM GMT+5:30
+    duration: 9.474s
+    duration_ms: 9474
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: Now compile and test the full round-trip.
+    thinking_duration: 418ms
+    thinking_duration_ms: 418
+    tool_calls:
+      - tool: bash
+        args:
+          command: /opt/homebrew/bin/gcc-16 -O2 -lm -o diststego main.c && echo "=== Compile OK ===" && rm -f stego_*.png secret_recovered.txt secret_recovered2.txt && ./diststego embed subdir/../secret.txt cover1.png cover2.png cover3.png
+          workdir: /Users/dk/lab-data/distributed-steganography-c
+        result: The user rejected permission to use this specific tool call.
+    time: 7/28/2026, 7:06:07.563 AM GMT+5:30
+    duration: 36.320s
+    duration_ms: 36320
+

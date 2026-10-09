@@ -1,0 +1,24 @@
+---
+user:
+  text: i mean how will going to implement file size implementation - it's algorithm?
+  time: 7/28/2026, 7:51:47.555 AM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: deepseek-v4-flash-free
+      provider: opencode
+    thinking: The user wants to know the algorithm for implementing the file size check, not asking me to do it (since they rejected the edit). Let me explain the approach clearly.
+    thinking_duration: 598ms
+    thinking_duration_ms: 598
+    time: 7/28/2026, 7:51:47.774 AM GMT+5:30
+    response: |-
+      Simple pre-flight: before embedding anything, load every cover once, check two things per cover:
+
+      1. **File size** — `stat()` the cover file. If its on-disk size > 7.2 MB, the stego output (similar size) will exceed the limit → abort.
+
+      2. **Pixel capacity** — `w × h × channels / 8` gives bytes the cover can hold. Multiply by number of covers, compare to payload size + metadata overhead. If insufficient → abort.
+
+      If all covers pass, proceed with embedding. No double-loading needed — just keep the loaded image in memory for the embed loop. That way the pre-flight reuses the same `stbi_load` call.
+    duration: 5.346s
+    duration_ms: 5346
+

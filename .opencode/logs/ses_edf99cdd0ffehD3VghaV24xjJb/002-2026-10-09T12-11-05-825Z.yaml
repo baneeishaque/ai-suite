@@ -1,0 +1,29 @@
+---
+user:
+  text: is -XX:PermSize=256m -XX:MaxPermSize=512m, -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=512m equal?
+  time: 10/9/2026, 5:40:46.680 PM GMT+5:30
+assistant:
+  - agent: build
+    model:
+      id: muse-spark-1.3-contributor-free
+      provider: opencode
+    thinking: Comparing PermGen and Metaspace JVM flags, noting historical change, memory model differences, and JDK 21 incompatibility.
+    thinking_duration: 11.179s
+    thinking_duration_ms: 11179
+    time: 10/9/2026, 5:40:46.900 PM GMT+5:30
+    response: |
+      No.
+
+      * `-XX:PermSize / -XX:MaxPermSize`: Java 7 and older. Permanent Generation, contiguous region **inside Java heap**, fixed at startup. Removed in Java 8. Fatal on JDK 21: `Unrecognized VM option`.
+      * `-XX:MetaspaceSize / -XX:MaxMetaspaceSize`: Java 8+. Replacement area in **native memory** (off-heap), grows dynamically via `mmap`, unloaded on class unloading.
+
+      Differences that break 1:1 equivalence:
+
+      1. Location/accounting: same `256m/512m` does not produce same heap/native pressure.
+      2. Semantics: `MetaspaceSize` is initial high-water mark triggering GC, not pre-allocated size; `MaxMetaspaceSize` defaults to unlimited, while old `MaxPermSize` had a bounded default.
+      3. GC behavior: Metaspace expansion/collection thresholds differ; copying old values over often over-allocates or masks real `MaxMetaspaceSize` OOMs.
+
+      Do not blind-substitute. For your `#65.txt` fix: just delete both `Perm*` flags and keep `-Xms/-Xmx`. Only add `MetaspaceSize/MaxMetaspaceSize` if you have measured Metaspace pressure.
+    duration: 18.919s
+    duration_ms: 18919
+

@@ -11,7 +11,8 @@ Creates, updates, and verifies Jira comments in **inlineCard** format — rich P
 the Jira UI — using API v2 wiki markup `[url|url|smart-link]`. Also provides ADF comment verification via `acli` JSON
 output parsing.
 
-The `acli` CLI produces only plain-text comments. For inlineCard format, this skill uses the Jira REST API v2 directly.
+The `acli` plain-text flags (`--body`, `--body-file`) do not render inlineCards; use this skill's REST API v2 path or
+`acli`'s ADF option (`comment update --body-adf <file>`).
 
 ***
 
@@ -141,8 +142,8 @@ After creating inlineCard comments, verify they rendered correctly by listing co
 python3 scripts/jira-inlinecard.py verify --key <TICKET-ID>
 ```
 
-This calls `acli jira workitem comment list --key <TICKET-ID> --fields "comment" --json` and parses the ADF structure for
-`type: "inlineCard"` nodes, returning their URLs.
+This calls `acli jira workitem view <TICKET-ID> --fields comment --json` and parses the `fields.comment.comments[]`
+ADF bodies for `type: "inlineCard"` nodes (recursively), returning their URLs.
 
 To check for specific PR numbers:
 
@@ -161,7 +162,7 @@ python3 scripts/jira-inlinecard.py verify-batch \
 ### 5.3 Manual Verification
 
 ```bash
-acli jira workitem comment list --key <TICKET-ID> --fields "comment" --json
+acli jira workitem view <TICKET-ID> --fields comment --json
 ```
 
 The ADF output contains inlineCard nodes like:
@@ -206,3 +207,5 @@ produce inlineCard)
 
 - **Session 2026-06-09**: `<TICKET-ID>` inlineCard comment creation and ADF verification. Protocol for converting plain-text
 PR links to smart-link inlineCard format via API v2 wiki markup.
+- **Session 2026-10-09**: verify/verify-batch fixed for acli 1.3.39 — `comment list` has no `--fields` flag; switched to
+`workitem view --fields comment --json` with recursive inlineCard traversal.

@@ -100,41 +100,44 @@ def cmd_update(args):
     print(f"Comment {args.id} on {args.key} updated.")
 
 
-def parse_adf_for_inlinecards(comment_json):
+def collect_inlinecard_urls(node):
     found = []
-    body = comment_json.get("body", {})
-    content = body.get("content", []) if isinstance(body, dict) else []
-    for node in content:
-        if not isinstance(node, dict):
-            continue
-        if node.get("type") == "paragraph":
-            for inline in node.get("content", []):
-                if isinstance(inline, dict) and inline.get("type") == "inlineCard":
-                    url = inline.get("attrs", {}).get("url", "")
-                    found.append(url)
+    if isinstance(node, dict):
+        if node.get("type") == "inlineCard":
+            url = node.get("attrs", {}).get("url", "")
+            if url:
+                found.append(url)
+        for child in node.get("content", []) or []:
+            found.extend(collect_inlinecard_urls(child))
     return found
 
 
-def cmd_verify(args):
+def parse_adf_for_inlinecards(comment_json):
+    body = comment_json.get("body", {})
+    return collect_inlinecard_urls(body) if isinstance(body, dict) else []
+
+
+def list_comments(key):
     result = subprocess.run(
-        ["acli", "jira", "workitem", "comment", "list",
-         "--key", args.key, "--fields", "comment", "--json"],
+        ["acli", "jira", "workitem", "view", key,
+         "--fields", "comment", "--json"],
         capture_output=True, text=True
     )
     if result.returncode != 0:
         die(f"acli error: {result.stderr.strip()}")
     try:
-        comments = json.loads(result.stdout)
+        data = json.loads(result.stdout)
     except json.JSONDecodeError:
-        die(f"Failed to parse acli output for {args.key}")
+        die(f"Failed to parse acli output for {key}")
+    return data.get("fields", {}).get("comment", {}).get("comments", [])
 
+
+def filter_inlinecard_comments(comments, pr_nums):
     filtered = []
     for comment in comments:
         urls = parse_adf_for_inlinecards(comment)
-        if args.pr_nums:
-            match = any(
-                f"/pull/{n}" in url for n in args.pr_nums for url in urls
-            )
+        if pr_nums:
+            match = any(f"/pull/{n}" in url for n in pr_nums for url in urls)
         else:
             match = bool(urls)
         if match:
@@ -143,7 +146,11 @@ def cmd_verify(args):
                 "body": comment.get("body"),
                 "inlinecard_urls": urls
             })
+    return filtered
 
+
+def cmd_verify(args):
+    filtered = filter_inlinecard_comments(list_comments(args.key), args.pr_nums)
     print(json.dumps(filtered, indent=2))
     return filtered
 
@@ -160,16 +167,12 @@ def cmd_verify_batch(args):
 
     results = {}
     for ticket in tickets:
-        pr_nums = None
-        if ticket in pr_map:
-            pr_nums = pr_map[ticket]
-        subprocess.run(
-            ["acli", "jira", "workitem", "comment", "list",
-             "--key", ticket, "--fields", "comment", "--json"],
-            capture_output=True, text=True
+        results[ticket] = filter_inlinecard_comments(
+            list_comments(ticket), pr_map.get(ticket)
         )
 
-    print("Batch verification complete. See individual results above.")
+    print(json.dumps(results, indent=2))
+    return results
 
 
 def main():

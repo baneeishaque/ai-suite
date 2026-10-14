@@ -2,7 +2,21 @@
 
 ## Enrichment
 
-- **Date:** 2026-08-12
+### 2026-10-14
+
+- **Trigger:** a user pinned-marked markdown-preview tab (array index equal to
+  the group's `sticky` value) was reported as unpinned — VS Code showed every
+  tab in the group as pinned.
+- **Key finding:** the group-level `sticky` is the **inclusive index of the last
+  pinned editor**, not a count. Confirmed by reading VS Code Insiders'
+  `workbench.desktop.main.js`: `EditorGroupModel.isSticky(index)` returns
+  `index <= this.sticky`, the field is initialized to `-1`, and `serialize()`
+  emits `sticky: r >= 0 ? r : undefined` (so absent ⇒ no pinned editors). The
+  script's `pinned = index < sticky` was off by one and defaulted absent to `0`.
+  Fixed to `pinned = index <= sticky` with `sticky` defaulting to `-1`.
+
+### 2026-08-12
+
 - **Trigger:** user's on-screen VS Code tab bar contained terminal and webview
   tabs that the v1.0.0 file-only projection did not report — the output never
   matched the visual tab bar.
@@ -36,8 +50,11 @@
    `editorpart.state.serializedGrid`.
 2. Each leaf node's `editors[]` array is in **tab-display order** (pinned block
    first).
-3. `sticky: N` at the group level = number of pinned (sticky) tabs. The pinned
-   flag is **not** serialized per editor — `sticky` count is the only signal.
+3. `sticky: N` at the group level is the **inclusive array index of the LAST
+   pinned (sticky) tab** — pinned iff `index <= N`; absent when nothing is
+   pinned. The pinned flag is **not** serialized per editor — `sticky` is the
+   only signal. (Corrected 2026-10-14 from the original "count" reading; see
+   Enrichment below.)
 4. `mru: [...]` is most-recently-used order (different axis from display order).
 5. `memento/workbench.editors.files.textFileEditor` stores **view-state
    history** (includes closed tabs) — NOT a reliable source for currently-open

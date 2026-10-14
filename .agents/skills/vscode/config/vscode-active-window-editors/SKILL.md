@@ -4,10 +4,10 @@ description: Composer — discover the active VS Code window's state.vscdb on ma
 category: VS Code / IDE Configuration
 ---
 
-# VS Code Active Window Editors (v1.1.0)
+# VS Code Active Window Editors (v1.1.1)
 
 > **Skill ID:** `vscode-active-window-editors`<br>
-> **Version:** 1.1.0<br>
+> **Version:** 1.1.1<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale
@@ -153,7 +153,7 @@ tab — `[<type>] <label>` with `[pinned]` suffix; `# group <id>` markers denote
 split-view groups. In `--mode files`, each line is an absolute file path with
 an optional `[pinned]` suffix. In JSON mode, use the base skill's JSON schema
 (groups, editors, `type`/`label`/`source_path` fields, `pinned` flag, `sticky`
-count).
+last-pinned index).
 
 ### Step 3 — (Optional) Override the database path
 

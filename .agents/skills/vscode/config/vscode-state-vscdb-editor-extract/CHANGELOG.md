@@ -3,6 +3,26 @@
 All notable changes to this skill are documented here. See
 [`SKILL.md`](SKILL.md) for the operational SSOT.
 
+## [1.2.0] — 2026-10-14
+
+### Fixed
+
+- Off-by-one in the pinned derivation. VS Code's group-level `sticky` is the
+  **inclusive array index of the LAST pinned editor**, not a count — verified
+  against `EditorGroupModel.isSticky()` (`index <= this.sticky`, field
+  initialized to `-1`, serialized as `sticky: r >= 0 ? r : undefined`). The
+  script previously used `pinned = index < sticky` and defaulted a missing
+  `sticky` to `0`, which dropped the final pinned tab and wrongly pinned index 0
+  of pinned-free groups. Now `pinned = index <= sticky` with `sticky` defaulting
+  to `-1`.
+- `group_sticky` in JSON output now carries the same last-pinned-index value.
+
+### Changed
+
+- SKILL.md v1.1.0 → v1.2.0 (sticky semantics in Description, JSON example,
+  Protocol, Script Reference, and a new Anti-Patterns row for the count
+  misreading).
+
 ## [1.1.0] — 2026-08-12
 
 ### Added

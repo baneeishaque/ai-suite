@@ -15,9 +15,13 @@ that want just source files.
 
 Key findings:
   - The 'editors[]' array on each leaf node is in display order (pinned first).
-  - 'sticky: N' at the group level = number of pinned (sticky) editors.
-    Editors at index < N are pinned. The per-editor 'pinned' flag is NOT
-    serialized — 'sticky' count is the only signal.
+  - 'sticky: N' at the group level = the INCLUSIVE array index of the LAST
+    pinned (sticky) editor — i.e. editors at index <= N are pinned. It is NOT a
+    count, and it is ABSENT (undefined) when the group has no pinned editors.
+    Verified against VS Code's EditorGroupModel: `isSticky(index)` returns
+    `index <= this.sticky`, the field is initialized to -1, and `serialize()`
+    emits `sticky: r >= 0 ? r : undefined`. The per-editor 'pinned' flag is NOT
+    serialized — 'sticky' is the only signal.
   - 'mru: [...]' is a separate ordering axis (most-recently-used), NOT the
     tab-bar order.
   - 'memento/workbench.editors.files.textFileEditor' (view-state memento) is
@@ -262,7 +266,10 @@ def extract_editors(db_path: str, key: str = DEFAULT_KEY) -> dict:
     total_files = 0
     for grp in leaves:
         group_id = grp.get("id")
-        sticky = grp.get("sticky", 0)
+        # 'sticky' is the INCLUSIVE index of the last pinned editor, or absent
+        # when nothing is pinned. Default -1 (no pinned) so `idx <= sticky` is
+        # always False for a pinned-free group.
+        sticky = grp.get("sticky", -1)
         mru = grp.get("mru", [])
         size = grp.get("size", 0)
         editors_raw = grp.get("editors", [])
@@ -273,7 +280,8 @@ def extract_editors(db_path: str, key: str = DEFAULT_KEY) -> dict:
                 "fs_path": None, "source_path": None, "label": "",
             }
             rec["index"] = idx
-            rec["pinned"] = idx < sticky
+            # Sticky is the last-pinned index (inclusive): pinned iff idx <= sticky.
+            rec["pinned"] = idx <= sticky
             rec["group_id"] = group_id
             rec["group_sticky"] = sticky
             editors_out.append(rec)

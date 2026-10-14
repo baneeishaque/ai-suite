@@ -2,6 +2,12 @@
 
 ## Enrichment
 
+- **Date:** 2026-10-14
+- **Change:** inherited the base extractor's corrected pinned semantics (base
+  v1.2.0) — the group-level `sticky` value is the inclusive last-pinned index,
+  so `pinned = index <= sticky` (absent ⇒ none). No script change in this
+  composer; the `[pinned]` annotation it forwards is now correct.
+
 - **Date:** 2026-08-12
 - **Change:** added `--mode {all,files}` passthrough to the base extractor so
   the composer can request either the complete tab list (all) or the
@@ -41,7 +47,7 @@ workflow into a reusable, macOS-specific skill. The **parsing** half lives in th
 | SQLite query → memento key | base (`vscode-state-vscdb-editor-extract`) |
 | Parse serializedGrid tree | base (`vscode-state-vscdb-editor-extract`) |
 | Extract fileEditorInput path | base (`vscode-state-vscdb-editor-extract`) |
-| Annotate pinned via `sticky: N` | base (`vscode-state-vscdb-editor-extract`) |
+| Annotate pinned via `sticky: N` (last-pinned index) | base (`vscode-state-vscdb-editor-extract`) |
 
 ## Redaction
 

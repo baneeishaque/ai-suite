@@ -1,13 +1,13 @@
 ---
 name: vscode-state-vscdb-editor-extract
-description: Base primitive — parse a VS Code state.vscdb SQLite database's memento/workbench.parts.editor key, walk the serializedGrid tree, and emit open editor tabs (files, webviews/markdown-preview sources, terminals) in display (tab-bar) order with type tags, group markers, and pinned annotation from the group-level 'sticky' count.
+description: Base primitive — parse a VS Code state.vscdb SQLite database's memento/workbench.parts.editor key, walk the serializedGrid tree, and emit open editor tabs (files, webviews/markdown-preview sources, terminals) in display (tab-bar) order with type tags, group markers, and pinned annotation from the group-level 'sticky' last-pinned index.
 category: VS Code / IDE Configuration
 ---
 
-# VS Code state.vscdb Editor Extract (v1.1.0)
+# VS Code state.vscdb Editor Extract (v1.2.0)
 
 > **Skill ID:** `vscode-state-vscdb-editor-extract`<br>
-> **Version:** 1.1.0<br>
+> **Version:** 1.2.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale
@@ -53,10 +53,14 @@ file (markdown preview source, custom-editor resource) from `value['state']`.
 for callers that want just source files.
 
 The **pinned** state is **not** stored per-editor. Instead, each group dict
-carries a `sticky: <N>` integer = the number of pinned (sticky) editors.
-Editors at array index `< N` are pinned. The `mru` field is an alternative
-ordering axis (most-recently-used) and must **not** be confused with display
-order.
+carries a `sticky: <N>` integer = the **inclusive array index of the LAST
+pinned (sticky) editor**. Editors at array index `<= N` are pinned. The field is
+**absent** (undefined) when the group has no pinned editors — never treat a
+missing `sticky` as `0`. This is not a count: verified against VS Code's
+`EditorGroupModel`, `isSticky(index)` returns `index <= this.sticky`, the field
+is initialized to `-1`, and `serialize()` emits `sticky: r >= 0 ? r : undefined`.
+The `mru` field is an alternative ordering axis (most-recently-used) and must
+**not** be confused with display order.
 
 This skill also documents the key negative finding from its source session:
 the `memento/workbench.editors.files.textFileEditor` memento stores
@@ -145,23 +149,23 @@ tabs are omitted; when no file editors exist, non-file tabs are emitted as
   "groups": [
     {
       "group_id": 20,
-      "sticky": 7,
+      "sticky": 0,
       "size": 0,
       "mru": [25, 23, 24, ...],
       "editors": [
         {"index": 0, "editor_id": "workbench.editors.terminal",
          "type": "terminal", "title": "opencode.exe", "fs_path": null,
          "source_path": null, "label": "opencode.exe", "pinned": true,
-         "group_id": 20, "group_sticky": 7},
+         "group_id": 20, "group_sticky": 0},
         {"index": 1, "editor_id": "workbench.editors.webviewEditor",
          "type": "webview", "title": null, "fs_path": null,
          "source_path": "/abs/path/preview-source.md",
          "label": "/abs/path/preview-source.md", "pinned": false,
-         "group_id": 20, "group_sticky": 7},
+         "group_id": 20, "group_sticky": 0},
         {"index": 2, "editor_id": "workbench.editors.files.fileEditorInput",
          "type": "file", "title": null, "fs_path": "/abs/path/file-a.ts",
          "source_path": null, "label": "/abs/path/file-a.ts", "pinned": false,
-         "group_id": 20, "group_sticky": 7}
+         "group_id": 20, "group_sticky": 0}
       ]
     }
   ],
@@ -217,7 +221,8 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
 - **Text mode (`files`)**: each line is an absolute file path. `[pinned]`
   suffix means the tab is pinned (sticky).
 - **JSON mode**: inspect the `groups[].editors[]` array. `pinned` is derived
-  from `index < group_sticky`. `type` classifies the tab; `source_path` holds
+  from `index <= group_sticky` (the last-pinned index; `-1`/absent = none).
+  `type` classifies the tab; `source_path` holds
   the webview's backing file. The `mru` array provides an alternative MRU
   ordering if needed.
 
@@ -242,8 +247,10 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
    - `terminal` (`terminal`) → title only, no path.
    - `other` → editor id / title.
    Every record also carries a display `label`.
-6. Annotates `pinned = index < group['sticky']` (the sticky count is the only
-   pinned signal — VS Code does not serialize a per-editor `pinned` flag).
+6. Annotates `pinned = index <= group['sticky']` (the group-level sticky value
+   is the only pinned signal — VS Code does not serialize a per-editor `pinned`
+   flag; the value is the inclusive last-pinned index, defaulting to `-1` when
+   absent).
 7. Emits text — `--mode all` (every tab with `[type]` tags + `# group`
    markers) or `--mode files` (file-only projection) — or full structured JSON
    with `--json`.
@@ -281,7 +288,8 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
 | Treating the file-only projection (`--mode files`) as "the open tabs" | It omits webview and terminal tabs, so it never matches the visual tab bar when such tabs are present. | Use the default `--mode all`, which lists every tab with `[type]` tags and `# group` markers. |
 | Using `memento/workbench.editors.files.textFileEditor` | Stores view-state *history* for all editors ever opened (including closed tabs), not just currently-open tabs. | Use `memento/workbench.parts.editor` → `serializedGrid` which holds the live editor-group state. |
 | Treating `mru` as tab-bar order | `mru` is most-recently-used order, a different axis from display order. | Use the `editors[]` array order, which mirrors the tab bar left-to-right. |
-| Looking for a per-editor `pinned` flag | VS Code does not serialize `pinned` per editor in `serializedGrid`. | Use the group-level `sticky: N` count — editors at index `< N` are pinned. |
+| Looking for a per-editor `pinned` flag | VS Code does not serialize `pinned` per editor in `serializedGrid`. | Use the group-level `sticky: N` value — the last-pinned index; editors at index `<= N` are pinned (absent = none). |
+| Treating `sticky: N` as a pinned *count* | `sticky` is the inclusive index of the LAST pinned editor, not a count; using it as a count drops the final pinned tab (off-by-one) and treats absent as `0`. | Use `pinned = index <= sticky`, with `sticky` defaulting to `-1` when the key is absent. |
 | Opening the DB read-write | Risks corrupting the running window's state if VS Code is active. | The script opens `file:<path>?mode=ro` (read-only). |
 
 ## Composition by Higher-Level Skills

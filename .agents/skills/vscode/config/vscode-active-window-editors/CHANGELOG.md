@@ -6,6 +6,15 @@ in this file.
 Format: based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] — 2026-10-14
+
+### Changed
+
+- Adopted the base extractor's corrected pinned semantics (v1.2.0): the
+  group-level `sticky` value is the inclusive last-pinned index, so pinned tabs
+  are now annotated correctly (the final pinned tab is no longer dropped).
+- SKILL.md v1.1.0 → v1.1.1 (JSON-mode description clarified).
+
 ## [1.1.0] — 2026-08-12
 
 ### Added

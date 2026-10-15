@@ -1,16 +1,31 @@
----
-name: JSON Deep Sort
-description: Passive context bridge for alphabetical sorting of JSON arrays and recursive key ordering.
-category: Data Processing
----
+# json-deep-sort — Companion Bridge
 
-# JSON Deep Sort (Ref)
+## Purpose
 
-This bridge provides passive context for the `json-deep-sort` skill, which alphabetically sorts primitive JSON
-arrays and recursively applies `sort_keys=True` for unified dictionary ordering — using native Python with no
-third-party dependencies.
+This file is the companion bridge for non-skill-aware agent runtimes. The
+operational SSOT lives in [`SKILL.md`](SKILL.md).
 
-It should be invoked whenever the user asks to sort, normalize, or canonicalize a JSON file's keys or arrays for
-diff stability or readability.
+## When This Skill Applies
 
-- **Primary Entry Point**: [.agents/skills/json-deep-sort/SKILL.md](./SKILL.md)
+- You need to sort a JSON or JSONC file's object keys alphabetically (and
+  primitive arrays) for diff stability or readability.
+- The file may contain comments and trailing commas that must survive the
+  sort.
+- You want a one-command, in-place deep-sort over one or more files.
+
+Do NOT apply when you need a structural comparison of two JSON files — use
+the `json-diff-leaf` primitive instead.
+
+## Operational Procedure
+
+Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the
+CLI contract, sort semantics, and verification steps. Do NOT execute any step
+without first loading `SKILL.md` — this bridge is intentionally non-actionable.
+
+## Cross-References
+
+- [`SKILL.md`](SKILL.md) — SSOT with the complete procedure.
+- [`jsonc-cst-util`](../json/jsonc-cst-util/SKILL.md) — base primitive that
+  performs the CST parse, sort, and merge-friendly serialization.
+- [`json-diff-leaf`](../json-diff-leaf/SKILL.md) — related JSON comparison
+  primitive.

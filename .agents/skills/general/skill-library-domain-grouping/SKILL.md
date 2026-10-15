@@ -56,12 +56,12 @@ consumed by:
 ├── docker/                       (2 items — flat)   <- NEW
 ├── eclipse/                      (4 items — flat)
 ├── email/                        (2 items — flat)   <- NEW
-├── general/                      (12 flat + 7 sub-groups)
+├── general/                      (10 flat + 7 sub-groups)
 ├── git/                          (7 sub-groups)
 ├── github/                       (2 flat + 8 sub-groups)
 ├── java/                         (3 items — flat)
 ├── jira/                         (4 items — flat)
-├── json/                         (3 items — flat)
+├── json/                         (9 items — flat; 8 pending-move)
 ├── markdown/                     (4 items — flat)
 ├── maven/                        (1 item — flat)
 ├── mcp/                          (3 items — flat; 2 pending-move)
@@ -79,7 +79,7 @@ consumed by:
 
 ### 1.2 Sub-Groups
 
-**general/** (7 sub-groups; 12 flat items remain at general/ level):
+**general/** (7 sub-groups; 10 flat items remain at general/ level):
 
 ```text
 general/
@@ -87,8 +87,6 @@ general/
 ├── fnmatch-content-guard-pattern
 ├── harper-linting-suppression
 ├── ide-renderer-freeze-prevention
-├── json-batch-file-move
-├── json-group-stats
 ├── kv-line-parse
 ├── macos-screenshots-folder-split
 ├── onedrive-flat-folder-split-by-size
@@ -142,6 +140,22 @@ general/
     ├── session-audit-batch-orchestrator
     ├── session-file-ops-audit
     └── session-full-change-audit
+```
+
+**json/** (9 items — flat; 8 pending-move):
+
+```text
+json/
+├── jsonc-cst-util                             <- NEW
+│
+├── json-batch-file-move                       [pending-move — physical folder at .agents/skills/json-batch-file-move/]
+├── json-block-indent-override                 [pending-move — physical folder at .agents/skills/json-block-indent-override/]
+├── json-content-compare-ignore-keys           [pending-move — physical folder at .agents/skills/json-content-compare-ignore-keys/]
+├── json-deep-sort                             [pending-move — physical folder at .agents/skills/json-deep-sort/]
+├── json-diff-cli                              [pending-move — physical folder at .agents/skills/json-diff-cli/]
+├── json-diff-leaf                             [pending-move — physical folder at .agents/skills/json-diff-leaf/]
+├── json-group-stats                           [pending-move — physical folder at .agents/skills/json-group-stats/]
+└── jsonl-content-extractor                    [pending-move — physical folder at .agents/skills/jsonl-content-extractor/]
 ```
 
 **git/** (7 sub-groups):
@@ -426,6 +440,32 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-10-03 — json/ group realized (9 items, 8 pending-move): jsonc-cst-util added; general/ flat reconciled 12->10
+
+Added:
+
+* **`jsonc-cst-util`** (new base, `json/`): CST-aware JSONC read / sort / format
+  preserving comments, with merge-friendly trailing commas and `auto`/`jsonc`/`strict`
+  mode resolution; consumed by `json-deep-sort` (sort subcommand) and
+  `opencode-jsonc-util` (read subcommand).
+* **`json-deep-sort`** rewired as a composer over the new base
+  (`scripts/sort-json.py`); **`opencode-jsonc-util`** rewired as a wrapper over the
+  base `read` subcommand with its CLI/API contract preserved for five downstream
+  consumers.
+
+Reconciled the §1.1 `json/` claim (previously "3 items" with no §1.2 listing) against
+the physical layout: `jsonc-cst-util` is physically in `json/`; the eight remaining
+`json*` / `jsonl*` top-level skills (`json-batch-file-move`,
+`json-block-indent-override`, `json-content-compare-ignore-keys`, `json-deep-sort`,
+`json-diff-cli`, `json-diff-leaf`, `json-group-stats`, `jsonl-content-extractor`) are
+marked pending-move. Removed the two mis-listed `json-batch-file-move` /
+`json-group-stats` entries from the `general/` flat listing (they physically live at
+top level), reconciling `general/` flat 12->10.
+
+Updated Section 1.1 tree (`json/` count reconciled to 9 items with 8 pending-move;
+`general/` 12->10 flat) and Section 1.2 listings (`json/` block added; `general/`
+flat listing corrected).
 
 ### 2026-09-30 — email/ domain added (2 items); github/transfer/ + general/polling/ sub-groups added; transfer suite placed
 

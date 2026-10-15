@@ -227,6 +227,11 @@ When the user requests a durable behavior change, record it here or in the relev
   tool) or references to local-only artifacts (gitignored `docs/`, `scratch/`); replace such references
   with self-contained explanations or links to public repository content. Local-only files MAY keep
   session IDs for traceability.
+- JSON/JSONC files: never remove existing trailing commas unless explicitly requested; when the document
+  is JSONC (or `.json` whose consumer supports JSONC — e.g. VS Code / Zed settings), apply merge-friendly
+  trailing commas after every item of every multi-line object/array. Enforced mechanically by the
+  `jsonc-cst-util` base skill (`.agents/skills/json/jsonc-cst-util/SKILL.md`) — use its `sort`/`format`
+  subcommands instead of ad-hoc JSON sorting.
 
 ## Child DOX Index
 

@@ -68,7 +68,7 @@ consumed by:
 ├── media/                        (10 items — flat)
 ├── mise/                         (3 items — flat)
 ├── node/                         (2 items — flat)
-├── opencode/                     (9 items — flat)
+├── opencode/                     (2 flat + 1 sub-group)
 ├── php/                          (1 item — flat)
 ├── project/                      (7 items — flat)
 ├── python/                       (3 items — flat)
@@ -339,20 +339,25 @@ media/
 └── youtube-video-upload
 ```
 
-**opencode/** (10 items — flat):
+**opencode/** (2 flat + 1 sub-group):
 
 ```text
 opencode/
 ├── opencode-current-session-id
 ├── opencode-installed-plugin-lookup
-├── opencode-session-log-cleanup                            <- NEW
-├── opencode-session-path-attribution
-├── opencode-session-problem-solution-workflow-analysis
-├── opencode-session-transcript-to-source-resolve
-├── opencode-session-yaml-conversation-extractor
-├── opencode-session-yaml-tool-call-extractor
-├── opencode-session-yaml-transcript-extractor
-└── opencode-ssot-provider-ext-sync
+├── opencode-ssot-provider-ext-sync
+│
+├── session/                  (1 realized; 8 pending-move)
+│   ├── opencode-session-analysis-bundle        <- NEW
+│   │
+│   ├── opencode-current-session-id             [pending-move — physical folder at .agents/skills/opencode/opencode-current-session-id/]
+│   ├── opencode-session-log-cleanup            [pending-move — physical folder at .agents/skills/opencode/opencode-session-log-cleanup/]
+│   ├── opencode-session-path-attribution       [pending-move — physical folder at .agents/skills/opencode/opencode-session-path-attribution/]
+│   ├── opencode-session-problem-solution-workflow-analysis [pending-move — physical folder at .agents/skills/opencode/opencode-session-problem-solution-workflow-analysis/]
+│   ├── opencode-session-transcript-to-source-resolve [pending-move — physical folder at .agents/skills/opencode/opencode-session-transcript-to-source-resolve/]
+│   ├── opencode-session-yaml-conversation-extractor [pending-move — physical folder at .agents/skills/opencode/opencode-session-yaml-conversation-extractor/]
+│   ├── opencode-session-yaml-tool-call-extractor [pending-move — physical folder at .agents/skills/opencode/opencode-session-yaml-tool-call-extractor/]
+│   └── opencode-session-yaml-transcript-extractor [pending-move — physical folder at .agents/skills/opencode/opencode-session-yaml-transcript-extractor/]
 ```
 
 **markdown/** (4 items — flat):
@@ -440,6 +445,25 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-10-16 — opencode/session/ sub-group added (1 realized, 8 pending-move): session-analysis bundle
+
+Added:
+
+* **`opencode-session-analysis-bundle`** (new composer, `opencode/session/`): end-to-end session analysis
+  bundle — adjacent YAML transcripts, scratch workflow report + full-fidelity JSONL, absolute-path manifest —
+  composing five existing session skills with zero logic duplication (thin Tier-1 driver shells out to their
+  CLIs; turn-exclusion flags generalize struck-turn handling).
+
+`opencode/` was at its 10-item cap, so the session-related members are declared under a new `session/`
+sub-group following the `json/` precedent (1 realized + 8 pending-move, no physical moves in this change):
+`opencode-current-session-id`, `opencode-session-log-cleanup`, `opencode-session-path-attribution`,
+`opencode-session-problem-solution-workflow-analysis`, `opencode-session-transcript-to-source-resolve`,
+`opencode-session-yaml-conversation-extractor`, `opencode-session-yaml-tool-call-extractor`,
+`opencode-session-yaml-transcript-extractor`. `opencode-installed-plugin-lookup` and
+`opencode-ssot-provider-ext-sync` stay flat (non-session).
+
+Updated Section 1.1 tree (`opencode/` 10 flat → 2 flat + 1 sub-group) and Section 1.2 listing.
 
 ### 2026-10-03 — json/ group realized (9 items, 8 pending-move): jsonc-cst-util added; general/ flat reconciled 12->10
 

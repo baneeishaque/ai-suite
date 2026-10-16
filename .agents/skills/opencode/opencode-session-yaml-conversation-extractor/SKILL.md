@@ -186,13 +186,12 @@ python3 scripts/extract-yaml-conversation.py \
 
 ## 5. Composition by Higher-Level Skills
 
-This is a base primitive with no composers yet. Future composers
-(session conversation viewer, session archive, cross-session
-conversation diff) may consume this base.
-
 | Composer | Composition Mechanism |
 | :--- | :--- |
-| _(none yet)_ | — |
+| [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md) | Calls `scripts/extract-yaml-conversation.py --input <ses-dir> --output-dir <ses-dir>/transcripts` at bundle Step 2; consumes the per-turn `*-transcript.yaml` adjacency as the archival transcript set. |
+
+Future composers (session conversation viewer, session archive, cross-session conversation diff) may consume
+this base.
 
 ***
 

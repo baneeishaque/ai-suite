@@ -139,3 +139,5 @@ Pending marker: yes
 
 - [`opencode-installed-plugin-lookup`](../opencode-installed-plugin-lookup/SKILL.md) — consumer of the logger-location
   convention (.opencode/logs/)
+- [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md) - consumer that
+  auto-discovers the session ID via `find-current-session.py --json` at bundle Step 0 (pending-marker verified)

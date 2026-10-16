@@ -167,6 +167,7 @@ python3 scripts/extract-yaml-transcript.py --input <path> \
 | Composer | Composition Mechanism |
 | --- | --- |
 | [`opencode-session-problem-solution-workflow-analysis`](../opencode-session-problem-solution-workflow-analysis/SKILL.md) | Consumes this base FIRST: shells out to `scripts/extract-yaml-transcript.py --input <session> --truncate <N>` via subprocess, parses the stdout JSONL, and formats the per-turn chronology (user text, thinking, tool calls) into its report skeleton at its step 1. |
+| [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md) | Calls `scripts/extract-yaml-transcript.py --input <ses-dir> --output <scratch-stem>.jsonl` at bundle Step 3; persists the full-fidelity JSONL beside the scratch report. |
 
 ***
 

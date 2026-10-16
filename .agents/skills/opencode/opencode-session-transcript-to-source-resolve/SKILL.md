@@ -158,6 +158,7 @@ python3 scripts/resolve-transcript-refs.py \
 | [`opencode-session-yaml-transcript-extractor`](../opencode-session-yaml-transcript-extractor/SKILL.md) | Consumer of the SOURCE logs — the resolution target |
 | [`opencode-session-yaml-tool-call-extractor`](../opencode-session-yaml-tool-call-extractor/SKILL.md) | Consumer of the SOURCE logs — the resolution target |
 | [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md) | Sibling — resolves the ACTIVE session; this composer resolves REFERENCES to any session |
+| [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md) | Bundle-side companion - its adjacent transcripts are the derived artifacts resolved here |
 
 ***
 

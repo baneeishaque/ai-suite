@@ -146,6 +146,7 @@ sections to be filled per §2.1 steps 4–7.
 | [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md) | Sibling — resolves the CURRENT session's ID/title from the same logs |
 | [`session-full-change-audit`](../../session-full-change-audit/SKILL.md) | Sibling composer — all-change audit of a session (write/edit/bash heredoc); complements the workflow reconstruction |
 | [`session-file-ops-audit`](../../session-file-ops-audit/SKILL.md) | Sibling composer — bash file-operation audit; complements the workflow reconstruction |
+| [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md) | Consumer composer - shells out to `scripts/reconstruct-workflow.py --input <ses-dir> --truncate <N> --output <report.md>` at bundle Step 4 and fills its judgement sections |
 
 ***
 

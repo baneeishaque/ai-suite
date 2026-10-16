@@ -88,3 +88,5 @@ usage error (unreadable config, missing opencode-jsonc-util).
   — consumer of the logger layout
 - [`opencode-current-session-id`](../opencode-current-session-id/SKILL.md)
   — sibling for active-session resolution
+- [`opencode-session-analysis-bundle`](../session/opencode-session-analysis-bundle/SKILL.md)
+    - consumer (locates the logger via `--plugin logger` before transcription)

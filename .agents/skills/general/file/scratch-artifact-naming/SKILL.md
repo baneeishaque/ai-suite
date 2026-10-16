@@ -137,6 +137,8 @@ python3 scripts/resolve-scratch-path.py --repo <path> --purpose <slug>
   this script with `--ref-name --ref-sha`.
 - [`repo-scratch-output-capture`](../../../repo-scratch-output-capture/SKILL.md) —
   enriched sibling; delegates its naming to this script.
+- [`opencode-session-analysis-bundle`](../../../opencode/session/opencode-session-analysis-bundle/SKILL.md) -
+  composer; resolves the session scratch stem via this script with `--repo --purpose` at bundle Step 1.
 
 ## Related Skills
 

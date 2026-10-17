@@ -197,12 +197,13 @@ git/
 │                                  parallel-branch-decommission,
 │                                  rebase-standardization
 │
-├── config/                   (6) — clean-filter-renormalize-backfill,
+├── config/                   (7) — clean-filter-renormalize-backfill,
 │                                  jq-pretty-json-filter,
 │                                  post-gitignore-untrack,
 │                                  gitignore-rules,
 │                                  gitignore-whitelist-pattern,
-│                                  gitignored-reference-detection
+│                                  gitignored-reference-detection,
+│                                  git-remote-branch-convention-discovery <- NEW (realized)
 │
 ├── repo/                     (6) — canonical-source-vs-workflow-repo-audit,
 │                                  cross-repo-cherry-pick,

@@ -489,6 +489,31 @@ Whenever a skill-authoring task renames anything that other artifacts may refere
 
 The script auto-discovers repo root, applies safe default scopes (skill `.md`, skill `scripts/`, `ai-agent-rules/`, root `AGENTS.md`, `memories/repo/`), uses LITERAL string replacement only (no regex — per §5.1 a rename is always a literal-form change), and skips `.git/`, `node_modules/`, `__pycache__/`, `.venv/` unconditionally. Custom scope can be passed via repeatable `--scope <GLOB>`. The script is the SSOT for the sweep mechanics — do NOT fall back to bash `grep -r` (violates [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) §3 Pattern 2) or to inline Python re-implementation (violates [`script-over-instruction-decomposition`](../script-over-instruction-decomposition/SKILL.md) Consumer Discipline).
 
+**Creation-triggered inbound sweep.** A NEWLY CREATED skill needs the same treatment a
+rename gets, plus one extra step a rename does not: enumerating the skills whose workflows
+it should be linked FROM. Registering in `AGENTS-legacy.md` is NOT that step — registration
+makes the skill discoverable; it does not connect it to its consumers. A base can therefore
+ship with no consumer pointing at it.
+
+```bash
+# Which existing skills' workflows touch this capability? (list, then decide per row)
+python3 scripts/suggest-inbound-references.py --new-skill <skill-name>
+```
+
+The script derives probe terms from the new skill's description and scores existing skills
+by matching them, reporting evidence line numbers; it also reports **reverse links** —
+skills that already point at the new one. It cannot decide the answer: judgement is
+required. It makes the candidate set mechanical and complete, which a manual scan does not.
+
+Acceptance criteria for a new skill, in addition to §3:
+
+- [ ] Every candidate inbound row was either added or consciously declined with a reason.
+- [ ] A base skill's `## Composition by Higher-Level Skills` table lists each real consumer
+      (§5.2.1), and each composer's `## Composition Rationale` names the base back.
+- [ ] `audit-cross-refs.py` reports zero issues for the new skill — run AFTER creation, not
+      only after edits.
+- [ ] For a layered pair, both skills are registered in the same change (§2.4).
+
 A rename is a refactor; every inbound reference is part of the refactor's scope. Stopping at the renamed file is an incomplete refactor and the user has to catch it.
 
 **Insertion-induced renumbering counts.** "Rename" here includes any change that shifts the section's identifier, even when the heading TEXT is untouched. Specifically:
@@ -667,11 +692,35 @@ Three failure modes have been observed when authors append sections carelessly:
 
 - [ ] The section's topic is explicitly named in the host skill's `## Description` OR `## Composition Rationale`. If not → STOP, find/create the correct owner.
 - [ ] No other skill already owns the topic (verify with the `grep` tool on a 2–3 word topic phrase across `.agents/skills/**/SKILL.md`). If another skill owns it → add there; in the host, leave at most a one-line delegation pointer with relative link to the SSOT.
-- [ ] If genuinely new and no owner exists → invoke the Factory's new-skill flow (`## 1. When to Apply`) rather than parking.
+- [ ] If genuinely new and no owner exists → invoke the Factory's new-skill flow
+      ([§2 Skill Generation Protocol](#2-skill-generation-protocol)) rather than parking.
+
+**Run the gate, do not eyeball it.** The duplicate-owner test is deterministic and MUST be
+scripted per the Tier Decomposition Mandate. Invoke:
+
+```bash
+python3 scripts/detect-duplicate-ssot-owner.py --topic "<2-3 word phrase>"
+```
+
+The script reports, per matching skill, whether the phrase is covered by that skill's
+declared scope — the frontmatter `description`, the Description section, or its
+`## Composition Rationale` — which is a real **OWNER**, or appears only in body prose,
+which is a **MENTION**. Mentions are not ownership.
+
+Exit codes are the decision: `0` no owner exists (create a new skill), `1` an owner was
+found (enrich there instead), `2` usage error. A hand-rolled `grep` loop is NOT an
+acceptable substitute: it treats a prose mention as an owner and parks new sections in
+the wrong skill.
 
 **Thin-pointer template** for the host skill when delegating: a single sentence of the form *"For <topic>, see [<owner-skill>](../<owner-skill>/SKILL.md) — that skill is the SSOT."* A one-line pointer is the maximum permitted footprint of a tangential topic on a host skill.
 
 **Historical example**: an earlier authoring session embedded a multi-paragraph Bash-Authoring Hygiene section into [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md) because the author was using scratch redirection while writing the bash. The correct home was this skill's §4 (which delegates the freeze catalogue to [`ide-renderer-freeze-prevention`](../ide-renderer-freeze-prevention/SKILL.md) as the SSOT). The section was later relocated and only the SSOT pointer remained in scratch.
+
+**Precedence over `rule-to-skill-industrialization`.** Where that skill's duplicate-SSOT
+check overlaps this section, THIS section wins: it governs whole-skill new-vs-enrich
+placement, whereas `rule-to-skill-industrialization` governs rule-vs-skill migration and
+mandates decommissioning the source rule. The two overlap without a stated precedence,
+which leaves an author guessing where to enforce the test.
 
 (Persisted as `permanent_discipline.section-home-discipline`.)
 
@@ -774,6 +823,38 @@ This section bridges the editing disciplines (§5) with the commit
 workflow. Use it when enriching an existing skill (adding content,
 fixing cross-references, updating style) rather than creating a new
 one from scratch.
+
+### 6.0 Scope selection and evidence intake
+
+§6.1–§6.7 below enrich ONE skill at a time. When the gaps come from real evidence of
+undocumented practice — a workflow-analysis report, a walkthrough, a user narrative — route
+the whole pass through
+[`skill-library-gap-closure`](../general/skill-dev/skill-library-gap-closure/SKILL.md),
+which owns evidence intake, the ranked gap register, and the new-vs-enrich routing. Return
+here once the register exists and each row names its target skill.
+
+**Evidence intake, when working from a register:** every gap MUST carry its source
+evidence — the turn ordinal, log path, or quoted instruction that shows the procedure was
+needed. A gap with no evidence is a hunch and belongs in the plan as optional scope, never
+as committed work.
+
+**Scope the pass to the WHOLE evidence set.** Deriving the candidate list from only the
+workflow that prompted the question is the dominant failure mode: the gaps missed are
+invisible because they were never looked for. A closure pass that audited one turn,
+declared the library under-covered, and shipped one composer while leaving every other
+workflow in the same evidence unaudited is the canonical example.
+
+### 6.0.1 Plan-first gate for a multi-skill pass
+
+A single-skill §6 edit proceeds directly to §6.1. A pass touching more than one skill, or
+creating any new skill or script, MUST first produce a versioned plan under `docs/` per
+[`planning-artifact-lifecycle`](../general/planning/planning-artifact-lifecycle/SKILL.md)
+and STOP for explicit approval. The approval gate belongs BEFORE implementation, not at the
+commit stage alone — a plan reviewed only at commit time has already cost the edit.
+
+The plan MUST surface a per-script tier declaration for every proposed script (§2.2.1.1
+item 4) and MUST list every file it will touch, so unrelated working-tree changes from other
+sessions are never swept into the pass.
 
 ### 6.1 Gap Analysis
 

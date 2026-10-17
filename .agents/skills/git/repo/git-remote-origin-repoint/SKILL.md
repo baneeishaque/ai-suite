@@ -43,6 +43,30 @@ Use this skill when local clones must follow a repository to its new owner:
 - After a completed transfer, repoint each local clone's `origin`.
 - Any batch remote-URL migration across a clone root.
 
+### 1.1 Trigger — an OBSERVED redirect notice (no prior knowledge required)
+
+The primary trigger is a **known transfer event**. The secondary trigger is the remote
+itself telling you, mid-operation:
+
+* GitHub serves a 301 when a repository moves owners. `git push`, `git fetch`, and
+  `git ls-remote` then emit a notice on stderr:
+
+  ```text
+  remote: Repository not found.
+  remote: git@github.com:NewOwner/repo.git
+  ```
+
+* A **case-folded rename** (for example `Owner` becoming `owner`) is a distinct variant.
+  The push usually SUCCEEDS through the redirect while the configured URL stays wrong.
+  Silent success is the hazard: the notice is easily lost in scrollback, and the next push
+  may fail once the redirect is retired.
+
+**Mandatory response to a redirect notice:** surface it to the user, then repoint. Never
+discard the notice silently, and never report a redirect-served push as a clean push.
+
+The remote-branch procedures that most often surface such a notice are owned by
+[`git-remote-branch-lifecycle`](../git-remote-branch-lifecycle/SKILL.md) §2 Phase 5.
+
 **Anti-trigger:** Do not use it to rewrite history or to add/remove remotes —
 it only changes the URL of one existing remote per clone.
 

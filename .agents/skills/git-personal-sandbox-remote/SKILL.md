@@ -318,6 +318,24 @@ Naming convention: `personal/<purpose>` (e.g., `personal/build-config`,
 `personal/ide-settings`, `personal/sandbox-experiment`). The `personal/`
 prefix is a visual reminder that the branch must NOT be pushed to `origin`.
 
+#### 3a.1 Discovering a convention instead of assuming it
+
+The lines above state *this repository's* convention. They do not tell you what a
+**different** remote follows. When pushing to a remote whose scheme you have not
+confirmed, learn it from that remote's live heads — a remote is the authority on its
+own naming scheme, not this skill:
+
+```bash
+python3 .agents/skills/git/config/git-remote-branch-convention-discovery/scripts/discover-remote-branch-convention.py \
+    --repo <repo-path> --remote personal
+```
+
+The script reports the grouping prefixes the remote actually follows, their counts, the
+dominant prefix, and the outliers that break it. Name the branch after its CONTENT in the
+`<purpose>` segment; never propagate a worktree-local name (such as `t19`) to the remote.
+Push, rename, and delete sequencing for remote branches is owned by
+[`git-remote-branch-lifecycle`](../git/repo/git-remote-branch-lifecycle/SKILL.md).
+
 #### 3b — Stage and commit
 
 Delegate to [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md)

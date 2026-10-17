@@ -87,6 +87,7 @@ regardless of the binary's default classification:
 | `grep` (downstream) | `\| xargs rm` / `\| xargs sed -i` | Pipeline mutates files containing the pattern. |
 | `sed` | `-i` (or `-i ''` on macOS) | In-place edit. |
 | `git` | `push --force` / `push -f` / `push --force-with-lease` | Rewrites remote history. |
+| `git` | `push <remote> --delete <branch>` | Deletes a remote branch. Irreversible on the remote unless the ref survives in another reflog or a backup. |
 | `git` | `reset --hard` | Destroys uncommitted changes. |
 | `git` | `clean -fd` / `clean -fdx` | Deletes untracked files (and ignored with `-x`). |
 | `git` | `rebase` (any form) | Rewrites local history. |

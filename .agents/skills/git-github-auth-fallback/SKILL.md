@@ -225,6 +225,30 @@ git -C <repo> branch -vv     # Output should show [<remote-name>/<branch>], no h
 git -C <repo> config --get branch.<branch>.remote   # Should print the remote name, not a URL
 ```
 
+#### 3.2.1a A THIRD rationale for omitting `-u` — deferred user decision
+
+The pattern above omits `-u` for a **credential** reason and still ends by setting
+tracking. A distinct, non-credential case exists: a bare first push of a brand-new remote
+branch, where upstream tracking is the **user's decision**, not a mechanical follow-up.
+
+In that case:
+
+* Push plainly (`git push <remote> <branch>`), leaving the branch with no upstream.
+* **Report** the no-upstream state explicitly — it is a legitimate end state, not a defect.
+* **Offer** `git fetch <remote>` and `git branch --set-upstream-to=<remote>/<branch> <branch>`,
+  and let the user choose. Do NOT run it unprompted.
+
+```powershell
+# Acceptable end states after a plain first push:
+#   * t19 0f76991 [origin/t19]        <- tracking set
+#   * t19 0f76991                    <- no upstream; valid, just untracked
+```
+
+This case is owned operationally by
+[`git-remote-branch-lifecycle`](../git/repo/git-remote-branch-lifecycle/SKILL.md) §2;
+this section records only that the rationale is distinct from the PAT-leak carve-out
+above, so a reader does not assume every no-`-u` push is a security incident.
+
 #### 3.2.2 Recovery — cleaning up a leaked PAT in branch tracking config
 
 If the `-u <embedded-PAT-URL>` form was already executed, surface and scrub:

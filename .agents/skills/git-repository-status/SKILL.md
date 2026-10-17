@@ -45,8 +45,32 @@ Identify the relationship between the local branch and its remote counterpart.
    git branch -vv
    ```
    * `-vv`: Shows remote tracking branches and the [ahead/behind] count.
+   * A branch with **no** `[upstream]` bracket tracks nothing. Treat the ABSENCE of that
+     bracket as the verdict, not merely as missing decoration.
 
-3. **Remote Connectivity Check**:
+   Cross-check the same fact with two further signals before reporting a verdict:
+
+   ```powershell
+   git status --short --branch     # header gains "...<remote>/<branch>" only when tracking
+   git config --get-regexp 'branch\.<name>\..*'   # branch.<name>.remote / .merge keys
+   ```
+
+   For the machine-readable verdict of this tri-signal, and for commit reachability, use
+   [`git-remote-ref-reachability-primitives`](../git/basic/audit/git-remote-ref-reachability-primitives/SKILL.md)
+   — it is the SSOT and MUST NOT be re-implemented here.
+
+3. **Cached-Ref Caveat (MANDATORY before any negative reachability claim)**:
+
+   Local remote-tracking refs update only on `fetch`. Therefore:
+
+   * An empty `git branch -r --contains <sha>` means the commit is in **no fetched
+     remote-tracking ref** — it does NOT mean the commit is absent from the remote.
+   * A `--not --remotes` sweep has the same limitation.
+   * Any claim of the form "this commit is not on any remote" MUST be proven live with
+     `git ls-remote --heads <remote>` per configured remote, or be explicitly qualified
+     with "per fetched refs".
+
+4. **Remote Connectivity Check**:
    ```powershell
    git remote -v
    ```

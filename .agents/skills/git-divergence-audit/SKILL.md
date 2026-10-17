@@ -262,3 +262,15 @@ This skill MUST delegate to it rather than re-implementing patch-id / tree-SHA l
 | [`git-absorbed-branch-decommission`](../git-absorbed-branch-decommission/SKILL.md) Phase 1–2 | Supplies the ancestor-check (`rev-list --count`) and patch-id-equivalence (`log --cherry-pick`) primitives used to prove a stale branch's content is already absorbed by a live sibling before deletion. |
 | [`git-dependent-branch-restack-cascade`](../git-dependent-branch-restack-cascade/SKILL.md) Phase 1 | Supplies the per-branch merge-base discovery used to identify which dependents are still rooted on the OLD tip of a moved base branch. |
 | [`git-submodule-misconfiguration-audit-and-revert`](../git-submodule-misconfiguration-audit-and-revert/SKILL.md) Phase 1 | Detects a submodule in detached HEAD that is behind `origin/<default>` (fingerprint of a wrong-fork URL pointer drift). |
+
+## 8. Related Skills
+
+- [`git-remote-ref-reachability-primitives`](../git/basic/audit/git-remote-ref-reachability-primitives/SKILL.md)
+  — sibling read-only base. Every `rev-list` use in this skill is strictly **pairwise
+  two-branch** (`branchA --not branchB`). Where a question is "is this already backed up
+  **anywhere**", use that skill's multi-remote sweep instead: it enumerates local-only
+  commits with `--not --remotes` and resolves the newest remote-resident ancestor. This
+  skill is complemented by it, not replaced by it.
+- [`git-remote-branch-lifecycle`](../git/repo/git-remote-branch-lifecycle/SKILL.md) — the
+  mutating composer that sequences those read-only primitives into first push, refspec
+  rename, and gated remote deletion.

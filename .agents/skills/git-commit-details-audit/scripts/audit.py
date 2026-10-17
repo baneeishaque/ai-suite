@@ -1,3 +1,4 @@
+import argparse
 import subprocess
 import os
 import sys
@@ -122,8 +123,22 @@ def format_commit_details(sha, path, repo_display_name):
 
     return "\n".join(output)
 
-def find_repo_for_sha(sha):
-    """Find the repository (main or submodule) that contains the SHA."""
+def find_repo_for_sha(sha, explicit_repo=None):
+    """Find the repository (main or submodule) that contains the SHA.
+
+    When `explicit_repo` is given it is authoritative: the caller is targeting a
+    specific checkout (notably a linked worktree's git dir, such as
+    .git/modules-worktrees/<name>), which is reachable neither from the process
+    CWD nor by enumerating .gitmodules. Discovery is skipped entirely so a
+    miss reports against that target instead of silently falling back.
+    """
+    if explicit_repo:
+        if not os.path.isdir(explicit_repo):
+            return None, None
+        if run_git(["rev-parse", "--quiet", "--verify", f"{sha}^{{commit}}"], cwd=explicit_repo):
+            return explicit_repo, f"Explicit repo ({explicit_repo})"
+        return None, None
+
     # 1. Check main repository
     if run_git(["rev-parse", "--quiet", "--verify", f"{sha}^{{commit}}"]):
         return ".", "Main Repository (ai-suite)"
@@ -148,15 +163,24 @@ def find_repo_for_sha(sha):
     return None, None
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python3 audit.py <COMMIT_SHA>")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(
+        description="Audit commit metadata, references, changed files, and hunks."
+    )
+    parser.add_argument("sha", help="Full or unique short commit SHA.")
+    parser.add_argument(
+        "--repo",
+        default=None,
+        help="Repository or linked-worktree git dir to audit against. Defaults to "
+             "the current working directory plus .gitmodules submodules.",
+    )
+    args = parser.parse_args()
 
-    sha = sys.argv[1]
-    path, display_name = find_repo_for_sha(sha)
+    sha = args.sha
+    path, display_name = find_repo_for_sha(sha, args.repo)
 
     if not path:
-        print(f"Error: Commit SHA '{sha}' not found in the main repository or any submodules.")
+        target = args.repo if args.repo else "the main repository or any submodules"
+        print(f"Error: Commit SHA '{sha}' not found in {target}.")
         sys.exit(1)
 
     print(format_commit_details(sha, path, display_name))

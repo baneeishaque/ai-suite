@@ -29,12 +29,28 @@ The agent MUST prioritize the use of the Python-backed audit engine to guarantee
 ```bash
 # Execute the audit engine from the skill's scripts directory
 python3 .agents/skills/git-commit-details-audit/scripts/audit.py <COMMIT_SHA>
+
+# Target an explicit repository or linked-worktree git dir
+python3 .agents/skills/git-commit-details-audit/scripts/audit.py <COMMIT_SHA> \
+    --repo <path/to/repo-or-worktree-git-dir>
 ```
 
 #### Detailed Command Explanation:
 - `python3`: Invokes the Python 3 interpreter to run the audit logic.
 - `audit.py`: The specialized engine that iterates through the main repository and all submodules to resolve the SHA.
 - `<COMMIT_SHA>`: The 40-character (full) or unique short SHA of the commit to be audited.
+- `--repo <path>`: **Optional.** Repository or linked-worktree git dir to audit
+  against. Use it whenever the commit lives in a checkout the engine cannot
+  discover from the current directory — notably a linked worktree git dir such
+  as `.git/modules-worktrees/<name>`, which is reachable neither from the
+  process working directory nor by enumerating `.gitmodules`. The engine resolves
+  `<path>` with `git -C`, so your own working directory is irrelevant.
+
+**`--repo` is authoritative, not a hint.** When supplied, discovery is skipped
+entirely: if `<path>` is not a directory, or the SHA is absent from it, the audit
+fails naming that target. It never falls back to the current directory and
+submodules, which previously produced a misleading "not found in the main
+repository" message for a commit that was never going to be there.
 
 #### Output Features:
 - **Metadata**: Author + AuthorDate **and** Committer + CommitDate (separate identities — required for forensic audits where author ≠ committer such as rebases, cherry-picks, or filter-repo runs), plus the full pedagogical Commit Message.

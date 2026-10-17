@@ -107,6 +107,24 @@ One JSONL record per narrative element, chronological order:
 | `text` | str | User message or thinking body |
 | `time` | str | Optional per-message timestamp when present in the YAML |
 
+#### 2.3.1 Ordinal vs index — do not conflate
+
+`turn` and `index` are DIFFERENT numbers and downstream skills must not substitute one for the other:
+
+| Number | Scope | Use it for |
+| --- | --- | --- |
+| `turn` (ordinal) | one conversation turn; `-1` on the header record | per-turn structure: "exclude turn 5", `### Turn 5` headings, per-turn counts |
+| `index` | a global 0-based counter over the whole session | citing one specific message or tool call: `- **[17]** bash` |
+
+Consequences consumers get wrong when they conflate them:
+
+1. Excluding a turn by ordinal leaves every OTHER turn's ordinal unchanged, but voids every global `index`
+   that pointed into the excluded turn.
+2. An `index` is never stable across reruns once new turns are appended; an ordinal is stable only if turn
+   boundaries do not change. Neither is a durable identifier — cite both (`turn 5, index 47`) when precision
+   matters.
+3. A per-turn document (the `*-transcript.yaml` adjacency) is keyed by turn, NOT by index.
+
 ### 2.4 Filter Semantics
 
 - `--kind` filters record kinds; a `session_header` record is emitted

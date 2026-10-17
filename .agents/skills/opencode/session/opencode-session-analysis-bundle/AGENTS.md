@@ -11,8 +11,9 @@ This file is the companion bridge for non-skill-aware agent runtimes. The operat
   either half on its own.
 - You need per-turn YAML transcripts placed next to the source logs (`ses_<id>/transcripts/`) together
   with a scratch analysis report, a full-fidelity JSONL, and an absolute-path manifest.
-- You need turn exclusions recorded deterministically, with struck turns, rationale, and repaired counts
-  in the report while source logs and transcripts stay untouched.
+- You need turn exclusions delegated to the report generator, which emits the in-place stub,
+  the header banner, and counts repaired over included turns, while source logs and transcripts
+  stay complete and untouched.
 - You are building a higher-level workflow that consumes session transcripts plus a workflow reconstruction
   and want the whole bundle produced by a single driver invocation.
 - You need session discovery with pending-marker verification instead of a remembered session ID.

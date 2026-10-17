@@ -43,7 +43,15 @@ def _blockquote(text: str) -> str:
     return "\n".join(f"> {line}" for line in text.splitlines())
 
 
-def build_report(records: list[dict], input_path: str, truncate: int) -> str:
+def build_report(
+    records: list[dict],
+    input_path: str,
+    truncate: int,
+    exclude_turns: tuple = (),
+    exclude_reason: str = "",
+) -> str:
+    excluded = set(exclude_turns or ())
+    reason = exclude_reason or "not recorded"
     session_id = ""
     title = ""
     for rec in records:
@@ -63,6 +71,14 @@ def build_report(records: list[dict], input_path: str, truncate: int) -> str:
     if title:
         lines.append(f"> **Session title:** `{title}`")
     lines.append("")
+
+    if excluded:
+        listed = ", ".join(str(t) for t in sorted(excluded))
+        lines.append(f"> **Excluded from analysis:** Turn(s) {listed}.")
+        lines.append(f"> **Exclusion reason:** {reason}")
+        lines.append("> Source logs and adjacent transcripts remain complete as the")
+        lines.append("> archival record; only this analysis omits the listed turns.")
+        lines.append("")
 
     lines.append("## 1. Problem")
     lines.append("")
@@ -97,6 +113,12 @@ def build_report(records: list[dict], input_path: str, truncate: int) -> str:
         items = turns[turn]
         lines.append(f"### Turn {turn}")
         lines.append("")
+        if turn in excluded:
+            lines.append(f"> **EXCLUDED.** Reason: {reason}")
+            lines.append("> Retained in the source logs and adjacent transcripts")
+            lines.append("> (the archival record); omitted only from this analysis.")
+            lines.append("")
+            continue
         for rec in items:
             kind = rec["kind"]
             if kind == "user_text":
@@ -118,10 +140,12 @@ def build_report(records: list[dict], input_path: str, truncate: int) -> str:
                 lines.append(f"  - result: `{result}`")
         lines.append("")
 
-    total_calls = sum(1 for r in records if r.get("kind") == "tool_call")
+    included = [r for r in records if r.get("turn", -1) not in excluded]
+    total_calls = sum(1 for r in included if r.get("kind") == "tool_call")
     per_turn = {
         t: sum(1 for r in items if r.get("kind") == "tool_call")
         for t, items in turns.items()
+        if t not in excluded
     }
     lines.append("### Summary")
     lines.append("")
@@ -158,6 +182,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--input", required=True, help="Monolithic .yaml file OR per-turn session directory")
     parser.add_argument("--truncate", type=int, default=500, help="Truncate text/args/result to N chars")
     parser.add_argument("--output", help="Write report markdown to file instead of stdout")
+    parser.add_argument(
+        "--exclude-turn",
+        type=int,
+        action="append",
+        default=[],
+        help="Per-turn ORDINAL to exclude from the analysis (repeatable). The turn "
+             "renders as a stub and is dropped from the summary counts. Source logs "
+             "and transcripts are never modified.",
+    )
+    parser.add_argument(
+        "--exclude-reason",
+        default="",
+        help="Rationale recorded for every excluded turn, in the banner and each stub.",
+    )
     args = parser.parse_args(argv)
 
     base = _find_base()
@@ -182,7 +220,13 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     records = [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
-    report = build_report(records, args.input, args.truncate)
+    report = build_report(
+        records,
+        args.input,
+        args.truncate,
+        exclude_turns=tuple(sorted(set(args.exclude_turn))),
+        exclude_reason=args.exclude_reason,
+    )
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as handle:

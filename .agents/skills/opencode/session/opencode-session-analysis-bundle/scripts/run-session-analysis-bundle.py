@@ -114,17 +114,17 @@ def main():
     else:
         jsonl_path = None
 
-    run(["python3", recon, "--input", ses_dir, "--truncate", str(args.truncate),
-         "--output", report_path], 2)
-
-    if args.exclude_turn:
-        with open(report_path, "a", encoding="utf-8") as fh:
-            fh.write("\n## Excluded Turns\n\n")
-            for turn in sorted(args.exclude_turn):
-                reason = args.exclude_reason or "not recorded"
-                fh.write(f"- Turn {turn}: excluded. Reason: {reason}.\n")
-            fh.write("\nCounts in the summary above still include excluded turns; "
-                     "the agent repairs them during judgement synthesis.\n")
+    # Exclusion is delegated to the generator, which owns the stub format and the
+    # summary-count repair. The driver must not re-derive that logic or append a
+    # post-hoc appendix: an appendix cannot repair counts it already printed above
+    # itself.
+    recon_cmd = ["python3", recon, "--input", ses_dir,
+                 "--truncate", str(args.truncate), "--output", report_path]
+    for turn in sorted(set(args.exclude_turn)):
+        recon_cmd += ["--exclude-turn", str(turn)]
+    if args.exclude_reason:
+        recon_cmd += ["--exclude-reason", args.exclude_reason]
+    run(recon_cmd, 2)
 
     manifest = {"session_id": sid, "session_dir": ses_dir,
                 "transcripts": transcripts, "report": report_path,

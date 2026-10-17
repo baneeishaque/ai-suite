@@ -61,8 +61,19 @@ skill lists this bundle back (Composition table or Related Skills).
   (idempotent rewrite; time fields are dropped by the base, so reruns are byte-identical absent new turns).
 - **Step 3 — Full-fidelity JSONL.** Transcript extractor `--output <stem>.jsonl`, untruncated (skip: `--no-jsonl`).
 - **Step 4 — Report skeleton.** `reconstruct-workflow.py --input <ses-dir> --truncate <N> --output <stem>.md`.
-- **Step 5 — Exclusions.** Each `--exclude-turn N` (+ `--exclude-reason`) appends an `## Excluded Turns` appendix
-  entry; the agent strikes those sections and repairs counts during judgement synthesis (Tier C).
+- **Step 5 — Exclusions.** Each `--exclude-turn N` (+ `--exclude-reason`) is passed straight through to the
+  generator, which emits the exclusion stub in place of the turn body, writes the header banner, and recomputes
+  the summary totals over included turns only. The driver performs NO post-hoc appendix and NO count repair of
+  its own — an appendix cannot repair counts it has already printed above itself.
+
+  **Source logs and transcripts stay complete.** They are the archival record and are never trimmed, deleted, or
+  annotated. Exclusion is an ANALYSIS-layer concept: it changes what the report says, not what the evidence
+  contains. This is a hard rule, not a convenience.
+
+  **Regenerate-vs-amend.** If a filled-in report needs a further change, do not re-run the bundle by reflex — that
+  discards the merged judgement sections. Decide with
+  [`deterministic-artifact-in-place-amendment`](../../../general/planning/deterministic-artifact-in-place-amendment/SKILL.md):
+  produce a baseline, compare, and amend in place when the verdict is `FRESH`.
 - **Step 6 — Judgement + manifest.** Fill workflow-analysis judgement sections; driver prints the JSON manifest
   (session dir, transcripts, report, JSONL) to stdout — the absolute-path inventory.
 

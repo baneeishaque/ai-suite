@@ -110,7 +110,8 @@ dependency — see its Environment & Dependencies section.
 
 ```bash
 python3 scripts/reconstruct-workflow.py --input <yaml-file|dir> \
-    [--truncate <N>] [--output <report.md>]
+    [--truncate <N>] [--output <report.md>] \
+    [--exclude-turn <N>]... [--exclude-reason <text>]
 ```
 
 | Flag | Required | Description |
@@ -118,6 +119,11 @@ python3 scripts/reconstruct-workflow.py --input <yaml-file|dir> \
 | `--input` | Yes | Monolithic `.yaml` file OR per-turn session directory |
 | `--truncate` | No | Truncate text/args/result to N chars (default 500) |
 | `--output` | No | Write the report to file instead of stdout |
+| `--exclude-turn <N>` | No | Exclude a per-turn ORDINAL from the analysis (repeatable). Renders as a stub and is dropped from the summary counts. |
+| `--exclude-reason <text>` | No | Rationale recorded for every excluded turn, in the banner and each stub. |
+
+With neither exclusion flag the output is byte-identical to the pre-flag report; the default path is
+regression-gated against a frozen session fixture.
 
 ### Exit Codes
 
@@ -135,6 +141,37 @@ The report is a markdown skeleton: session meta blockquote, `## 1. Problem`,
 chronology + summary table), `## 4. Rejected / Alternative Paths`,
 `## 5. Final State`. The TBD placeholder blocks are the agent-judgement
 sections to be filled per §2.1 steps 4–7.
+
+### Turn exclusion
+
+**Ordinal vs index vs heading — three different numbers.** Never conflate them:
+
+| Concept | Source | Used for |
+| --- | --- | --- |
+| Per-turn **ordinal** | the `turn` field; `-1` on the session header record | `--exclude-turn`, `### Turn N` headings |
+| Global **index** | the `index` field; 0-based across the whole session | `- **[index]**` tool-call citations in prose |
+
+Excluding a turn by ordinal does **not** renumber the remaining `### Turn N` headings, and it **does**
+invalidate every global `index` citation that pointed into the excluded turn. Strike those citations and
+repair the totals the generator does not own.
+
+**Excluded turn rendering.** An excluded turn keeps its `### Turn N` heading position and is replaced in
+place by a stub carrying the reason. A header banner lists every excluded ordinal. The `### Summary` total
+and per-turn table are recomputed over INCLUDED turns only.
+
+**Self-referential exclusion.** A turn that issues the exclusion instruction is excluded by passing its own
+ordinal in the same run. There is no special syntax, and the stub is built from the same single records pass,
+so no recursion is possible.
+
+**Source data is never modified.** Source logs and the adjacent `*-transcript.yaml` files stay complete —
+they are the archival record. Exclusion is an ANALYSIS-layer concept only.
+
+### Regenerate-vs-amend gate
+
+When a report needs a change the generator cannot express, do not blindly re-run it: re-running discards
+merged judgement sections. Decide with
+[`deterministic-artifact-in-place-amendment`](../../general/planning/deterministic-artifact-in-place-amendment/SKILL.md):
+generate a baseline, compare, and amend in place when the verdict is `FRESH`.
 
 ***
 

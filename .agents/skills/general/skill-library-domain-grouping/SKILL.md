@@ -103,12 +103,13 @@ general/
 │   ├── safe-file-cleanup                <- NEW
 │   └── scratch-artifact-naming
 │
-├── planning/                (5)
+├── planning/                (6)
 │   ├── planning-artifact-lifecycle
 │   ├── planning-artifact-naming
 │   ├── planning-superseded-version-retirement  <- NEW
 │   ├── planning-version-coverage-audit         <- NEW
-│   └── versioned-artifact-superset-build       <- NEW
+│   ├── versioned-artifact-superset-build       <- NEW
+│   └── deterministic-artifact-in-place-amendment <- NEW
 │
 ├── polling/                  (1)
 │   └── poll-until
@@ -119,13 +120,15 @@ general/
 │   ├── tool-config-directory-symlink
 │   └── tool-config-schema-probe
 │
-├── skill-dev/                (6)
-│   ├── rule-to-skill-industrialization
-│   ├── script-over-instruction-decomposition
-│   ├── script-language-tier-port
-│   ├── script-template-extraction
-│   ├── skill-cross-reference-audit
-│   └── skill-factory
+├── skill-dev/                (1 realized; 6 pending-move from flat root) —
+│   ├── skill-library-gap-closure              <- NEW
+│   PENDING-MOVE (still flat at skills root):
+│   rule-to-skill-industrialization,
+│   script-over-instruction-decomposition,
+│   script-language-tier-port,
+│   script-template-extraction,
+│   skill-cross-reference-audit,
+│   skill-factory
 │
 └── session-audit/            (12)
     ├── agents-md-recovery-from-session
@@ -175,7 +178,7 @@ git/
 │   │                              commit-message-reword,
 │   │                              commit-metadata-extraction,
 │   │                              commit-identity-rewrite
-│   ├── audit/                (9) — commit-comparison-audit,
+│   ├── audit/                (10) — commit-comparison-audit,
 │   │                              commit-details-audit,
 │   │                              cross-ref-file-parity,
 │   │                              divergence-audit,
@@ -183,7 +186,8 @@ git/
 │   │                              deleted-files-audit,
 │   │                              git-commit-dangling-link-audit,
 │   │                              git-repository-status,
-│   │                              git-worktree-state-fingerprint
+│   │                              git-worktree-state-fingerprint,
+│   │                              git-remote-ref-reachability-primitives <- NEW
 │   └── history/              (2) — history-refinement,
 │                                   untracked-scratch-triage
 │
@@ -200,11 +204,12 @@ git/
 │                                  gitignore-whitelist-pattern,
 │                                  gitignored-reference-detection
 │
-├── repo/                     (5) — canonical-source-vs-workflow-repo-audit,
+├── repo/                     (6) — canonical-source-vs-workflow-repo-audit,
 │                                  cross-repo-cherry-pick,
 │                                  lfs-selective-clone,
 │                                  repo-storage-minimization,
-│                                  git-remote-origin-repoint
+│                                  git-remote-origin-repoint,
+│                                  git-remote-branch-lifecycle  <- NEW
 │
 ├── sandbox/                  (4) — personal-content-extraction,
 │                                  personal-sandbox-remote,
@@ -445,6 +450,29 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-10-17 - remote reachability and convention primitives split; lifecycle + gap closure added
+
+* `git-remote-ref-reachability-primitives` (git/basic/audit/, 9->10, now AT THE CAP) -
+  three read-only primitives: two-tier commit availability, newest remote-resident
+  ancestor, live remote-ref verification. Convention inference was split out rather than
+  merged, because one name cannot describe both a reachability question and a
+  naming-convention question.
+* `git-remote-branch-lifecycle` (git/repo/, 5->6) - mutating composer sequencing the
+  read-only bases into first push, refspec rename, gated remote deletion, and the
+  deferred upstream offer.
+* `deterministic-artifact-in-place-amendment` (general/planning/, 5->6) - the
+  regenerate-vs-amend gate.
+* `skill-library-gap-closure` (general/skill-dev/ realized, 1; six siblings stay flat as
+  pending-move) - evidence-driven gap closure. general/ flat is unchanged at its 10 cap.
+
+Any future addition to `git/basic/audit/` MUST create a sub-group rather than exceed the
+10-item cap.
+
+**Deferred:** `git-remote-branch-convention-discovery` belongs in `git/config/` (3->4),
+but that block is mid-rewrite in the working tree (flat list -> realized/pending-move
+split). A correct realized-list row cannot be written against the flat format still in
+the index. Register it once that rewrite lands.
 
 ### 2026-10-16 — opencode/session/ sub-group added (1 realized, 8 pending-move): session-analysis bundle
 

@@ -209,18 +209,18 @@ ignore the notice — the next push may fail once the redirect is retired.
 
 ## Related Skills
 
-- [`git-remote-ref-reachability-primitives`](../../basic/audit/git-remote-ref-reachability-primitives/SKILL.md)
-  — the read-only base this skill sequences.
+Skills this composer SEQUENCES are listed in `## Composition Rationale`, not here. Per
+§5.2.1 a skill name belongs in exactly one of Composition or Related, never both: the
+entries below are deliberately the LOOSER associations only.
+
 - [`git-personal-sandbox-remote`](../../../git-personal-sandbox-remote/SKILL.md) — owns
   the `personal/` grouping convention and the personal-remote push route.
 - [`git-branch-promotion`](../../../git-branch-promotion/SKILL.md) — the force-push
   promotion route, for when the remote tip must be replaced rather than added.
 - [`git-parallel-branch-decommission`](../../../git-parallel-branch-decommission/SKILL.md) —
   remote deletion after content has been fanned out; this skill owns deletion when it does not.
-- [`git-remote-origin-repoint`](../git-remote-origin-repoint/SKILL.md) — remediation for a
-  redirect notice surfaced by a push in §2 Phase 5.
-- [`is-this-command-safe`](../../../is-this-command-safe/SKILL.md) — destructive-flag
-  classification.
+- [`git-absorbed-branch-decommission`](../../../git-absorbed-branch-decommission/SKILL.md) —
+  the sibling decommission route, for a stale branch whose content is already absorbed.
 
 ## 6. Traceability
 

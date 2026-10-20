@@ -428,7 +428,7 @@ Both verification commands MUST succeed before proceeding to Layer 4.
 When a script needs to invoke a mise-managed tool at runtime, use the
 decision tree below.  Applies to any tool: Python, Node, Ruby, PHP, etc.
 
-```
+```text
 Q: Does `<tool>` on PATH give an acceptable version?
 ├── YES → Use `<tool>` directly (fastest, no cascade risk)
 └── NO  → Q: Is there a mise.toml that pins this tool?
@@ -895,9 +895,9 @@ never auto-pick the first match.
 Present a numbered table of every backend candidate with its full
 GitHub URL and a brief differentiator:
 
-| # | Backend | Repo | Notes |
-|---|---|---|---|
-| 1 | `asdf:` | `asdf-community/asdf-dart` | Mature, large user base |
+| # | Backend | Repo                       | Notes                                    |
+| - | ------- | -------------------------- | ---------------------------------------- |
+| 1 | `asdf:` | `asdf-community/asdf-dart` | Mature, large user base                  |
 | 2 | `vfox:` | `version-fox/vfox-dart`    | Newer, cross-platform Lua plugin runtime |
 
 Ask the user which to install. Do NOT proceed without an explicit
@@ -981,7 +981,7 @@ form before proceeding.
 ### 7.7 Decision Matrix (Quick Reference)
 
 | User says | mise registry returns | Action |
-|---|---|---|
+| --- | --- | --- |
 | `mise install <plugin>` | 1 backend | Install with HTTPS URL (§7.4), then `mise install <plugin>` (§7.5) |
 | `mise install <plugin>` | ≥ 2 backends | Present table (§7.3), get user choice, then §7.4 + §7.5 |
 | `mise install` in project | succeeds | No-op — Layer 7 does not apply |

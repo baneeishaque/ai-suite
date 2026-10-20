@@ -1,8 +1,9 @@
 ---
 name: mise-tool-management
 description: Industrial protocols for mise configuration trust, tool version selection,
-    and Python package setup. Use whenever a mise.toml is untrusted, a required tool
-    is missing, or a Python package needs to be installed into a mise-managed environment.
+    global-scope lifecycle, and Python package setup. Use whenever a mise.toml is
+    untrusted, a required tool is missing, global tools need auditing or decommissioning,
+    or a Python package needs to be installed into a mise-managed environment.
 category: Environment-Management
 ---
 
@@ -19,6 +20,7 @@ Layer 1: Mise Config Trust              (base — everything depends on this)
 ├── Layer 5: Bypass `mise exec` Cascade (alternative path; sibling of Layer 2)
 ├── Layer 6: Deprecation Warning Handling & Backend Migration (cross-cuts 1–5)
 ├── Layer 7: Plugin Installation & Backend Selection (extends Layer 2)
+└── Layer 8: Global Scope Lifecycle     (audit → decommission → bump → verify)
 ```
 
 ***
@@ -387,7 +389,7 @@ Key differences from §2.5 (project path):
   `~/.local/share/mise/installs/github-Wilfred-difftastic/<ver>/` before the
   smoke test.
 - **Scope gate is mandatory**: get user approval before BOTH the global-config
-  edit AND the install — matching §10's prohibition on unprompted global
+  edit AND the install — matching §11's prohibition on unprompted global
   mutation.
 
 ***
@@ -624,7 +626,7 @@ python3 --version
 python3 -m pip install --user pymysql
 ```
 
-**This is NOT the same as invoking from `$PATH`.** The prohibition in §10 against "Invoking
+**This is NOT the same as invoking from `$PATH`.** The prohibition in §11 against "Invoking
 `python` or `pip` from PATH" targets unmanaged system binaries (`/usr/bin/python3` on macOS
 is Apple Xcode 3.9, not your pinned version). The Layer 5 path is an explicit, version-pinned
 mise install — fully consistent with the environment-management mandate.
@@ -744,7 +746,7 @@ When stderr contains a deprecation warning, the agent MUST:
 5. **Ask**: "Migrate `<old>` → `<new>` in `mise.toml`? (yes / no)"
 
 The `mise.toml` MUST NOT be edited without explicit user approval, in keeping
-with the general prohibition in §10.
+with the general prohibition in §11.
 
 ### 6.4 Migration Execution
 
@@ -769,7 +771,7 @@ grep -E "deprecated|will be removed" "$SCRATCH/mise-install-postmigration.err" \
     && echo "STILL DEPRECATED — investigate" \
     || echo "Migration verified clean."
 
-# 4. (Optional) Validate the edited mise.toml per §9.2.
+# 4. (Optional) Validate the edited mise.toml per §10.2.
 taplo check /absolute/path/to/project/mise.toml
 taplo fmt --check /absolute/path/to/project/mise.toml
 ```
@@ -1043,11 +1045,175 @@ the version.
 
 ***
 
-## 8. Full Worked Example — Pylint Setup for `sync-rules.py`
+## 8. Layer 8 — Global Scope Lifecycle Protocol
+
+Layer 8 covers tools that live in the **global** config
+(`~/.config/mise/config.toml`, plus `/etc/mise/config.toml`) rather than a
+project `mise.toml`. It closes the audit → decommission → bump → verify loop.
+
+### 8.1 Global Update Audit
+
+Two commands answer different questions; use both.
+
+| Need | Command | Output |
+| :--- | :--- | :--- |
+| List outdated tools | `mise outdated --global --bump` | tool, installed, requested, latest, bump, source |
+| Machine-readable audit | `mise outdated --global --bump --json` | JSON records |
+| Preview the exact upgrade | `mise upgrade --global --bump --dry-run` | would-prune / would-install / would-bump plan |
+| Script gate | `mise upgrade --global --bump --dry-run-code` | exit 1 when anything is outdated |
+
+- `mise outdated` compares against the configured range; `--bump` compares
+  against the newest release overall and adds the `bump` column.
+- `--local` skips global-only tools; `--inactive` includes installed tools that
+  no config requests; `--no-header` for parsing.
+- `-l` is currently shorthand for `--bump`; it becomes `--local` in mise
+  2027.8.5. Use `-b` / `--bump` in every new recipe.
+- Audit output is not approval. §8.3 runs only after the user confirms scope
+  and exclusions.
+
+### 8.2 Global-Scope Decommission
+
+`mise unuse` edits config; `mise uninstall` removes a binary. They are
+independent operations.
+
+| Intent | Command |
+| :--- | :--- |
+| Remove from global scope only (keep binary) | `mise unuse --global <tool>@<request> --no-prune` |
+| Remove binary only (keep/re-add a request later) | `mise uninstall <tool>@<installed-version>` |
+| Full decommission | `mise unuse --global <tool>@<request>` (prunes if unused) |
+
+Steps:
+
+1. Confirm the request and installed versions:
+   `mise ls --global <tool>` plus the global config file.
+2. Run the replacement preflight when the tool is a runtime (§8.2.1).
+3. Remove the request with `mise unuse --global <tool>@<request>`.
+   The version MUST match the config literally (`node@22`), not the resolved
+   installed version (`node@22.23.3`). Omit the version
+   (`mise unuse --global <tool>`) to remove every request for that tool from
+   the selected file. Add `--no-prune` when the binary must stay installed.
+   Without `--global`, `unuse` edits the first loaded config that declares the
+   tool; always pass `--global` for global scope.
+4. Pruning rule: a version is pruned only when no remaining tracked config or
+   tool stub needs it — a project pin keeps the installation alive.
+5. Binary-only removal: `mise uninstall <tool>@<installed-version>`. There is
+   **no `--global` flag on `uninstall`**; version discovery, not a flag,
+   enforces global targeting.
+6. Non-standard backends: pass the full backend spec
+   (`github:owner/repo@<request>`), never a bare package name.
+7. Verify: `mise ls --global` has no row for the tool, no `mise WARN missing:`
+   line, and no `(missing)` annotation.
+8. Manual config edits are a fallback only when `unuse` cannot express the
+   intent (for example, removing a whole `[tools]` table); validate with §10.2
+   afterward.
+
+**Worked example — full decommission of a global request:**
+
+```bash
+mise unuse --global node@22
+mise ls --global node        # → no row, no (missing)
+```
+
+**Worked example — scope removal that keeps the binary:**
+
+```bash
+mise unuse --global java@17.0.2 --no-prune
+```
+
+#### 8.2.1 Replacement-Runtime Preflight
+
+Before removing a runtime from global scope, prove the replacement exists:
+
+1. Alternative provider installed and functional:
+   `brew list --formula node` AND `command -v node && node --version`.
+2. Alternative version adequate for the projects that need it (compare with
+   `engines` / build requirements).
+3. Project-level requests enumerated with `mise ls <tool>`; removing a global
+   request does not remove project pins.
+4. Preference conflict surfaced: this repository's root `AGENTS.md` prefers
+   mise-managed Node over system / Homebrew Node. A requested switch is an
+   explicit user override; acknowledge it in the completion report instead of
+   applying it silently.
+
+Proceed to uninstall only after all four checks pass.
+
+### 8.3 Selective Bulk Bump
+
+Dry-run first, then apply:
+
+```bash
+mise upgrade --global --bump --dry-run \
+  --exclude java --exclude github:anomalyco/opencode
+mise upgrade --global --bump \
+  --exclude java --exclude github:anomalyco/opencode
+```
+
+- `--global` upgrades requests from global/system config only; it runs as if
+  outside any project, leaving project config, lockfiles, and `[env]`
+  untouched.
+- `--exclude` matches the installed tool spec shown in the first column of
+  `mise ls` / `mise outdated`. A bare `opencode` does NOT match
+  `github:anomalyco/opencode`; standard tools use their bare name (`java`),
+  non-standard backends use the full spec.
+- `--exclude` is repeatable (`-x`); `--interactive` presents a multiselect
+  menu; `--dry-run-code` exits 1 when anything is outdated.
+- Inclusion alternative: `mise upgrade --global --bump <tool>...` upgrades only
+  the named tools.
+- Config precision is preserved: `"20"` → `"26"`, `"20.0.0"` → `"26.x.y"`. With
+  the `pin` setting on, a request resolves to an exact version.
+- Prune semantics: old versions are removed after `upgrade.prune_after`;
+  `--prune` removes immediately; `--no-prune` keeps them;
+  `upgrade.auto_prune = false` changes the default.
+- Manual pin edit + `mise install` is a **fallback only** for intents
+  `mise upgrade` cannot express: removing a request (§8.2) or deliberately
+  freezing a tool outside its range (set an exact pin instead of excluding).
+- Excluded tools: hand the user a standalone pair to run manually:
+
+```bash
+mise outdated --global <installed-tool-spec> --bump
+mise upgrade --global --bump <installed-tool-spec>
+```
+
+- Self-updating tools (coding agents such as opencode): use `--global` and the
+  mise self-updating-tools guidance referenced by `mise upgrade --help`; do not
+  fold them into the bulk run.
+
+### 8.4 Long-Install Resilience
+
+- A timed-out shell call is **UNKNOWN**, not failed. Verify with
+  `mise ls --global` and re-run `mise install`; existing tools are skipped
+  ("N already installed") and missing ones resume.
+- Size the wrapper timeout above the worst observed download window. A run
+  needing 600 s after 120 s and 300 s attempts is normal for large assets.
+- Expected slow-download warning:
+  `mise WARN download from release-assets.githubusercontent.com is very slow …
+  keeps trying until http_download_timeout runs out`. Retry; do not switch
+  installers.
+- Transient npm `ENOTEMPTY` during extraction: retry once. If persistent,
+  `mise uninstall npm:<pkg>@<version>` then reinstall; never delete shared npm
+  roots.
+- `-j/--jobs` controls install concurrency; lower it under repeated throttling.
+- Capture every install with the Layer 6.1 scratch pattern so warnings and
+  exit codes survive the session.
+
+### 8.5 Completion Verification
+
+Gate the task on all five checks:
+
+1. No `mise WARN missing: …` line in the final `mise ls --global` output.
+2. No `(missing)` annotation on any row.
+3. Every tool the audit marked for bump shows the expected version.
+4. Critical runtimes smoke-tested (`node --version`, `python --version`, ...).
+5. The completion report states: tools bumped, tools excluded (with the manual
+   command), tools uninstalled, replacement runtimes verified.
+
+***
+
+## 9. Full Worked Example — Pylint Setup for `sync-rules.py`
 
 This section demonstrates all four layers against the real scenario.
 
-### 8.1 Layer 1: Trust Check
+### 9.1 Layer 1: Trust Check
 
 ```bash
 mise ls 2>&1
@@ -1070,7 +1236,7 @@ mise trust /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/mise.toml
 # → mise trusted /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts
 ```
 
-### 8.2 Layer 2: Python Version Selection
+### 9.2 Layer 2: Python Version Selection
 
 ```bash
 mise ls python --json
@@ -1094,7 +1260,7 @@ Offer to update? Ask user.
 mise use --path /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 ```
 
-### 8.3 Layer 3: Python Verification
+### 9.3 Layer 3: Python Verification
 
 ```bash
 mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9 -- python --version
@@ -1103,7 +1269,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 # → pip 24.x
 ```
 
-### 8.4 Layer 4: Pylint Setup
+### 9.4 Layer 4: Pylint Setup
 
 ```bash
 grep -i "^pylint" /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/requirements.txt
@@ -1130,7 +1296,7 @@ mise exec --cd /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts python@3.11.9
 
 ***
 
-## 9. Post-Edit File Validation Protocol
+## 10. Post-Edit File Validation Protocol
 
 After **any** edit to a project file, the agent MUST validate the file using its
 industrial-standard tool before proceeding. This catches formatting errors (e.g. stray
@@ -1140,7 +1306,7 @@ indentation) introduced by automated edits.
 > using the [System-Wide Tool Management Skill](../system-wide-tool-management/SKILL.md)
 > before running these commands.
 
-### 9.1 Validation Commands by File Type
+### 10.1 Validation Commands by File Type
 
 | File | Tool | Syntax Check | Format Check & Fix |
 | :--- | :--- | :--- | :--- |
@@ -1167,7 +1333,7 @@ indentation) introduced by automated edits.
 > - Because these are Python tools, they MUST follow Layer 4: add them to
 >   `requirements.txt` and run them via `mise exec`.
 
-### 9.2 `mise.toml` Validation & Formatting (`taplo`)
+### 10.2 `mise.toml` Validation & Formatting (`taplo`)
 
 > **Important distinction:**
 >
@@ -1206,7 +1372,7 @@ Common TOML formatting mistakes:
 - Missing blank line separating table sections
 - Inconsistent quote style
 
-### 9.3 `requirements.txt` Validation (`pip`)
+### 10.3 `requirements.txt` Validation (`pip`)
 
 ```bash
 pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
@@ -1217,7 +1383,7 @@ pip install --dry-run -r /absolute/path/to/project/requirements.txt 2>&1 \
 - ❌ Failure: any `ERROR` line — fix the package specifier before proceeding
 - No auto-formatter for `requirements.txt`; fix manually.
 
-### 9.4 Worked Example — Validation After This Session's Edits
+### 10.4 Worked Example — Validation After This Session's Edits
 
 ```bash
 # Step 1 — Syntax check
@@ -1245,7 +1411,7 @@ pip install --dry-run -r /Users/dk/lab-data/ai-agents/ai-agent-rules/scripts/req
 
 ***
 
-## 10. Prohibited Actions
+## 11. Prohibited Actions
 
 The agent is FORBIDDEN from:
 
@@ -1260,14 +1426,14 @@ The agent is FORBIDDEN from:
   project directory, not globally. **Sole exception**: the §2.7 global-scope
   standalone-tool flow, which still requires explicit user approval.
 - **Skipping post-edit file validation** — every edited file MUST be validated with its
-  industrial-standard tool (§9) before proceeding to the next step.
+  industrial-standard tool (§10) before proceeding to the next step.
 - **Adding inline disable comments (e.g. `# pylint: disable=...`)** without asking the
   user first. The agent MUST present the error (e.g., `invalid-name` for a file name)
   and ask the user how they want to resolve it (e.g., rename the file vs disable the check).
 
 ***
 
-## 11. Composition by Higher-Level Skills
+## 12. Composition by Higher-Level Skills
 
 | Composer | Domain | Pipes into this skill via |
 | :--- | :--- | :--- |

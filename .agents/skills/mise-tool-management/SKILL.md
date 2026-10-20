@@ -16,7 +16,7 @@ Layer 1: Mise Config Trust              (base — everything depends on this)
 ├── Layer 2: Mise Tool Selection        (works on top of Layer 1)
 │   └── Layer 3: Mise Python Setup      (a specialisation of Layer 2 for Python)
 │       └── Layer 4: Mise Python Package Setup  (works on top of Layer 3)
-├── Layer 5: Bypass `mise exec` Cascade (alternative consumption path; sibling of Layer 2)
+├── Layer 5: Bypass `mise exec` Cascade (alternative path; sibling of Layer 2)
 └── Layer 6: Deprecation Warning Handling & Backend Migration (cross-cuts Layers 1–5)
 ```
 

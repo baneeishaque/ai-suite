@@ -1442,3 +1442,13 @@ The agent is FORBIDDEN from:
 When `mise which <tool>` fails for a non-default backend install, do NOT
 loop back through Layers 1–7 — delegate directly to the bridge composer
 above; it is the SSOT for that path.
+
+***
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Traceability
+
+See [TRACEABILITY.md](TRACEABILITY.md).

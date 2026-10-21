@@ -97,7 +97,7 @@ is missing (pre-flight). Stdout carries ONLY the JSON manifest; diagnostics go t
 
 | Composer | Composition Mechanism |
 | :--- | :--- |
-| _(none yet)_ | — |
+| [`skill-library-gap-closure`](../../../general/skill-dev/skill-library-gap-closure/SKILL.md) | Evidence acquisition: the gap-closure driver calls `scripts/run-session-analysis-bundle.py --session-id <id> --repo <repo> --purpose skill-library-gap-closure-evidence`; it consumes the JSON manifest to locate the adjacent `*-transcript.yaml` files, full-fidelity JSONL, and report skeleton before gap extraction. |
 
 ## Related Skills
 

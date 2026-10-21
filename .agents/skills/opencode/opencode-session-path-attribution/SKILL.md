@@ -119,6 +119,7 @@ callers must never mistake an uninstalled extractor for "no record".
 | Composer | Composition Mechanism |
 | --- | --- |
 | [`git-commit-dangling-link-audit`](../../git-commit-dangling-link-audit/SKILL.md) | drift gate: for each DANGLES target, runs this script with `--path <target-token>` to produce an evidence card (which session moved it) |
+| [`skill-library-gap-closure`](../../general/skill-dev/skill-library-gap-closure/SKILL.md) | Path evidence: the gap-closure driver runs `scripts/attribute-path-to-session.py --session <id> --path <token> --json --output <evidence-dir>/path-attribution/<slug>.json` for each cited path token; it consumes the JSON records to build the Evidence Verification Index. |
 
 ***
 

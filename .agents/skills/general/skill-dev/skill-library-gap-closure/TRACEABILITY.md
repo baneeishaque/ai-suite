@@ -9,3 +9,7 @@
    decommission semantics are the opposite of additive gap closure.
 - This skill gives the reserved `skill-documentation-plan` artifact type in `planning-artifact-naming` section 2.1
    an owner.
+- 2026-10-20 — Extended with automatic session-evidence acquisition and path attribution
+   so a single gap-closure invocation produces human transcripts, a machine JSONL, a
+   report skeleton, and a verifiable evidence index. No session identifiers are recorded
+   in this committed companion.

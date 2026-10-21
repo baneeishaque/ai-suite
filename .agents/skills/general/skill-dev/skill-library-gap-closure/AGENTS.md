@@ -15,7 +15,7 @@ SSOT lives in [`SKILL.md`](SKILL.md).
   the choice made by rule rather than by preference.
 
 For the narrower rule-file migration path (turn a redundant RULE into a skill), use
-[`rule-to-skill-industrialization`../../../rule-to-skill-industrialization/SKILL.md) — this
+[`rule-to-skill-industrialization`](../../../rule-to-skill-industrialization/SKILL.md) — this
 skill is for session-derived evidence.
 
 ## Operational Procedure
@@ -30,5 +30,5 @@ non-actionable.
 - [`SKILL.md`](SKILL.md) — SSOT with the gap-closure workflow.
 - [`skill-factory`](../../../skill-factory/SKILL.md) — owns the authoring flows this skill
   routes into.
-- [`rule-to-skill-industrialization`../../../rule-to-skill-industrialization/SKILL.md) —
+- [`rule-to-skill-industrialization`](../../../rule-to-skill-industrialization/SKILL.md) —
   sibling protocol for rule-file input.

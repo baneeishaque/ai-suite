@@ -247,6 +247,8 @@ When the user requests a durable behavior change, record it here or in the relev
 - [`scripts/swh/AGENTS.md`](scripts/swh/AGENTS.md) owns the Software Heritage
   crawl-submission automation (Save-code-now JXA, ingest-verify engine,
   content-link minter) for `ai-suite` and its `ai-agent-rules` submodule.
+- [`n8n/AGENTS.md`](n8n/AGENTS.md) owns the version-controlled n8n workflow
+  sources (SDK TypeScript), their deployment metadata, and canvas-sync rules.
 - Root-owned files: `README.md`, `LICENSE`, `banner.jpg`, `video-thumbnail.jpg`, and root-level project documentation.
 
 ## graphify

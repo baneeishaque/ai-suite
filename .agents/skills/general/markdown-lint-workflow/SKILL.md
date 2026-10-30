@@ -199,9 +199,9 @@ correct script ordering and avoids the `--check` per-script overhead.
 
 ## 4. Cross-References
 
-- [`markdown-generation`](../markdown-generation/SKILL.md) — consumes this
+- [`markdown-generation`](../../markdown-generation/SKILL.md) — consumes this
   skill for post-generation linting
-- [`skill-factory`](../skill-factory/SKILL.md) §3 — Post-Drafting Checklist
+- [`skill-factory`](../../skill-factory/SKILL.md) §3 — Post-Drafting Checklist
   references this skill for linting; its Header Blockquote Audit (via
   `scripts/audit-normalize-skill-headers.py`) delegates library-wide header
   normalization here

@@ -8,10 +8,10 @@ description: Closes skill-library documentation gaps discovered from real sessio
 category: Skill-Authoring
 ---
 
-# Skill Library Gap Closure (v1)
+# Skill Library Gap Closure (v1.3)
 
 > **Skill ID:** `skill-library-gap-closure`<br>
-> **Version:** 1.1.0<br>
+> **Version:** 1.3.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Composer (per [skill-factory §2.0 Layering Decision](../../../skill-factory/SKILL.md))
 
@@ -225,6 +225,10 @@ them directly.
 The plan MUST surface a per-script tier declaration for every proposed new script, per
 [`skill-factory`](../../../skill-factory/SKILL.md) §2.2.1.1 item 4.
 
+The plan MUST contain a `## Files to Touch (absolute)` section with one row per file:
+absolute path, owning gap, and the concrete change. A plan whose touch list is empty or
+uses relative paths MUST NOT be presented for approval.
+
 ### 2.8 Routing and closure
 
 For each approved row, route to skill-factory §6 (enrich) or §2 (create). Then:
@@ -260,6 +264,8 @@ diagnostic, never a silent re-implementation.
 ## 4. Guardrails
 
 - No skill folder, script, or registry row is created before explicit plan approval.
+- **Every plan names its files.** A plan MUST carry a `## Files to Touch (absolute)`
+  section; a plan without it is incomplete and MUST NOT reach the approval gate.
 - Every `NOT_DOCUMENTED` verdict MUST cite a zero-hit library-wide search.
 - Every candidate gap from the evidence set MUST appear in the register, including
   `DOCUMENTED` ones.

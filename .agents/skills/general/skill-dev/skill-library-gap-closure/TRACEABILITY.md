@@ -13,3 +13,5 @@
    so a single gap-closure invocation produces human transcripts, a machine JSONL, a
    report skeleton, and a verifiable evidence index. No session identifiers are recorded
    in this committed companion.
+- 2026-10-30 — Plans now require an absolute Files-to-Touch section; a plan without a
+   per-file change list cannot reach the approval gate.

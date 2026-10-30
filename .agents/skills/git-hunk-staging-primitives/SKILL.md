@@ -169,6 +169,30 @@ python3 scripts/stage-specific-hunks.py \
 selects by index, stages filtered patch via `git apply --cached`.
 Working tree untouched.
 
+### 6. Path-Subset Apply/Stage (`git apply --include`)
+
+When a multi-file patch contains hunks for files you do NOT want to
+touch, filter by path instead of editing the patch:
+
+```bash
+# Validate a path subset first
+git apply --check --include='<path>' --include='<path>' <patch>
+
+# Apply the subset to the working tree
+git apply --include='<path>' --include='<path>' <patch>
+
+# Stage the subset only (index updated; working tree untouched)
+git apply --cached --include='<path>' <patch>
+```
+
+`--include` is repeatable and matches the patch's `a/` and `b/` paths.
+Use it to apply or stage one file from a plan patch, or to keep a
+multi-file patch atomic when only some of its files belong to the
+current commit. Pair with `--exclude` when the excluded set is smaller.
+This is a Git built-in, not a shipped script; the script primitives
+above remain the choice when hunk-level (not file-level) selection is
+required.
+
 ---
 
 ## Complementary Primitives Table
@@ -180,6 +204,7 @@ Working tree untouched.
 | `stage-head-synthesize.py` | Stage HEAD with substitutions | HEAD |
 | `stage-hunk-from-diff.py` | Stage ONLY matching hunks | Unstaged or staged diff |
 | `stage-specific-hunks.py` | Stage ONLY specific hunk indices | HEAD diff |
+| `git apply --include` (built-in) | Apply/stage a path subset of a multi-file patch | Patch file |
 
 ---
 

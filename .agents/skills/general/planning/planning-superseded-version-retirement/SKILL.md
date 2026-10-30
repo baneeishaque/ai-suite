@@ -70,8 +70,11 @@ Steps in BOLD are mandatory GATES — a gate that does not pass aborts the whole
    (a) trash `<vN>`, (b) re-base affected rows in `AGENTS-legacy.md` (via the stage helper) if any link targets it,
    (c) rewrite the "v1 is intact/History mandate" claims in the surviving `<vN+1>` doc to "v1 was retired
    (trash) after user-authorized coverage audit", and (d) re-sync the task.md goal link if present.
-4. **Dangling-reference verification** — run the sweep in `--check` mode: ZERO references to the retired filename
-   may remain in the asset root (docs/ + skills). `git status` may show the claimed deletion.
+4. **Dangling-reference verification** — run `retire-superseded-version.py --old <vN> --new <vN+1> --verify`
+   BEFORE the `--confirm DELETE` run; it asserts ZERO remaining references to the retired filename in the asset
+   root (docs/ + skills). After the trash, `--verify` cannot run because `--old` no longer exists
+   (`ERROR: --old not found`); use an `rg` sweep for the old base-name instead. `git status` may show the claimed
+   deletion.
 5. No `git add` / `git commit` / `git push` by this composer (§13 sequential objective). The user triggers those.
 
 ## Script: `scripts/retire-superseded-version.py`
@@ -85,7 +88,7 @@ deletion are prose-gated. See the CLI table:
 | `--new <path>` | yes | Path of the surviving artifact (e.g. `…_plan_v2.md`). |
 | `--dry-run` | yes (for safety) | Compute + print the audit verdict, the stale-reference plan; perform NO writes. |
 | `--json` | no | Machine-readable output. |
-| `--verify` | no | After changes: assert zero remaining references to the old file base-name; exit 0/1. |
+| `--verify` | no | Before deletion: assert zero remaining references to the old file base-name; exit 0/1. Must run while `--old` still exists. |
 | `--confirm DELETE` | no | Authorized deletion marker (matches the user's explicit consent; e.g. `--confirm DELETE`). Without this the script NEVER deletes. |
 | `--asset-root <dir>` | no | Root for the stale sweep (default: `docs/` under the old file's ancestor). |
 
@@ -109,6 +112,7 @@ Guardrails / notes:
 
 - Destructive path gated behind explicit user string token.
 - Read-write boundary is checked with `--dry-run` first.
+- `--verify` requires `--old` to exist; run it before `--confirm DELETE`, and use an `rg` sweep after the trash.
 - macOS-only `trash`; on non-macOS, the composer prints a TO-DO for a recoverable-delete equivalent and aborts.
 
 ## SSOT Compliance

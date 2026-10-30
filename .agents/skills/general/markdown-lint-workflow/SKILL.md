@@ -67,11 +67,40 @@ markdownlint-cli2 <file_path>
 
 Zero errors means the file is lint-compliant.
 
+### Step 3.1: Baseline Attribution (Pre-Existing Findings)
+
+When a file already had lint findings before your edit, "0 issues" is the
+only acceptable end state for **new** findings — but a pre-existing backlog
+must not be mistaken for damage you introduced. Attribute before you fix:
+
+```bash
+python3 .agents/skills/general/markdown-lint-workflow/scripts/attribute-lint-findings.py \
+    --baseline-ref HEAD <file.md> [<file.md> ...]
+```
+
+The script lints the working tree and the same paths at `--baseline-ref`,
+then classifies every finding as `PRE-EXISTING` or `NEW` (and reports
+`RESOLVED` baseline findings). It exits 0 only when there are zero `NEW`
+findings. Use `--line-tolerance N` when the edit shifted line numbers, and
+`--format json` for machine consumption. Custom rules that need a full
+checkout (for example `markdownlint-rule-relative-links`) are excluded by
+default; pass `--keep-custom-rules` only when the baseline files can be
+linted in isolation.
+
+Rules:
+
+- Fix every `NEW` finding before finalizing.
+- Leave `PRE-EXISTING` findings untouched in the same commit unless the
+  user asks for a cleanup; mixing a backlog cleanup into a content commit
+  destroys atomicity.
+- Do NOT claim "0 issues" when the file still reports pre-existing
+  findings — report the attributed split instead.
+
 -
 
 ## 2. Companion Scripts
 
-This skill ships seven helper scripts under
+This skill ships seven fix scripts and one attribution script under
 [`scripts/`](scripts/) for one-shot lint fixes:
 
 - [`fix-table-separators.py`](scripts/fix-table-separators.py) — scans for
@@ -100,6 +129,9 @@ This skill ships seven helper scripts under
   inner ``` fences (markdown-syntax examples). Adds a `text` language tag to
   the opening fence to satisfy MD040 without breaking the inner fences. Use
   `--check` for dry-run.
+- [`attribute-lint-findings.py`](scripts/attribute-lint-findings.py) — compares
+  the working tree against a baseline Git ref and classifies each finding as
+  `PRE-EXISTING` or `NEW` (plus `RESOLVED`). Not a fixer; see Step 3.1.
 
 ### 2.1 Execution Order
 

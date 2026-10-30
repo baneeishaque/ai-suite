@@ -12,6 +12,10 @@ companion scripts individually with `--check` for dry-run.
 - **MD040 Caveat**: Do NOT use `markdownlint-cli2 --fix` for MD040 — use `fix-fenced-code-language.py` which correctly
 handles fence state.
 - **Post-Fix Check**: After running the pipeline, verify continuation-line indent with `list-indent-consistency` skill.
+- **Baseline Attribution**: When a file already carried lint findings before the edit, run
+`scripts/attribute-lint-findings.py --baseline-ref HEAD <files>` and fix every `NEW` finding. Never report "0 issues"
+while pre-existing findings remain — report the attributed split. Do not mix a pre-existing-backlog cleanup into a
+content commit.
 
 ## Cross-References
 

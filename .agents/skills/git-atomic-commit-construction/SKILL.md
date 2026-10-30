@@ -363,9 +363,13 @@ staging, the preview **MUST** include the specific git hunks.
 4. **Preview Artifact** — Write the full preview to
    `scratch/commit-preview.md` (use
    [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
-   to ensure `scratch/` exists and is gitignored). The user can then refer to
-   specific line numbers when giving feedback. Present the summary in the
-   conversation as well.
+   to ensure `scratch/` exists and is gitignored), unless a planning-artifact
+   convention applies: then place it per
+   [`planning-artifact-naming`](../general/planning/planning-artifact-naming/SKILL.md)
+   and the user's artifact-placement preference (e.g. `docs/`), and substitute
+   that path for `scratch/commit-preview.md` in §2d.1/§2d.2. The user can then
+   refer to specific line numbers when giving feedback. Present the summary in
+   the conversation as well.
 
 Template:
 
@@ -411,7 +415,7 @@ point to one of these issues in the preview:
 - Nested fenced code blocks breaking markdown (switch to `~~~diff`/`~~~`)
 - Missing context lines around changes (include the default 3-line context)
 
-Fix, re-write the preview to `scratch/commit-preview.md`, and re-present.
+Fix, re-write the preview to its configured path, and re-present.
 Loop until the user confirms the preview is correct. Do NOT begin execution
 until the user says "start".
 
@@ -1218,6 +1222,17 @@ user authorization, staging). Planning-stage sync is NOT enough. After
 3. Repeat this refresh before EVERY commit in a multi-commit sequence,
    not just the first — each commit gets its own fetch-and-compare.
 
+#### 9a.2 — Commit Timeout Recovery
+
+Post-commit hooks (e.g. code-review-graph, entire, graphify) can exceed the
+tool timeout after the commit already landed. A timeout is NOT a commit
+failure:
+
+1. Verify with `git log -1 --format='%H %s'`, `git show --stat --oneline HEAD`,
+   and `git status --porcelain`.
+2. Retry `git commit` only when HEAD is unchanged and no new commit exists.
+3. Never re-run while a hook may still hold the index lock; wait for it to clear.
+
 #### 9b — Recovery
 
 If a mistake is made during staging:
@@ -1231,6 +1246,12 @@ If a mistake is made during staging:
 
 Always `git pull` (or `git pull --rebase` upon explicit approval) before
 pushing to incorporate latest remote changes.
+
+Before pushing, enumerate every commit the push will publish:
+`git log --oneline @{u}..HEAD` (or `<remote>/<branch>..HEAD`). Classify each as
+this session's or pre-existing. Pushing publishes ALL reachable ancestors, so
+disclose out-of-scope commits and require explicit confirmation — or offer
+cherry-pick/branch surgery as the alternative.
 
 #### 9d — Opaque Content Analysis
 

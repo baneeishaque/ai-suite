@@ -2,6 +2,13 @@
 
 ## Enrichment
 
+- **Date:** 2026-10-30
+- **Change:** documented non-`file` URI schemes surfaced by base extractor
+  v1.3.0. Extension virtual documents (e.g. `gist://<gist-id>/<name>`) reuse
+  the file-editor shape; their `fs_path` is a URI path, so complete-path
+  requests must report the JSON `uri`/`external` field, and `--mode files`
+  marks them `#non-file:`.
+
 - **Date:** 2026-10-14
 - **Change:** inherited the base extractor's corrected pinned semantics (base
   v1.2.0) — the group-level `sticky` value is the inclusive last-pinned index,

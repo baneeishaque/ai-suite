@@ -3,6 +3,23 @@
 All notable changes to this skill are documented here. See
 [`SKILL.md`](SKILL.md) for the operational SSOT.
 
+## [1.3.0] — 2026-10-30
+
+### Added
+
+- File records now expose `scheme`, `external`, `authority`, and `uri`
+  (additive JSON fields). A `fileEditorInput` may be an extension virtual
+  document whose `path` is a URI path (e.g. `gist://<gist-id>/<name>`), not a
+  local absolute path.
+- Text mode (`--mode all`) renders non-`file` schemes via their `external` URI;
+  `--mode files` emits them as `#non-file: <uri>` markers instead of misusing
+  the URI path as an fsPath.
+
+### Changed
+
+- SKILL.md v1.2.0 → v1.3.0 (Description, CLI contract, JSON schema, Protocol,
+  Script Reference, Edge Cases, Anti-Patterns).
+
 ## [1.2.0] — 2026-10-14
 
 ### Fixed

@@ -1,13 +1,13 @@
 ---
 name: vscode-state-vscdb-editor-extract
-description: Base primitive — parse a VS Code state.vscdb SQLite database's memento/workbench.parts.editor key, walk the serializedGrid tree, and emit open editor tabs (files, webviews/markdown-preview sources, terminals) in display (tab-bar) order with type tags, group markers, and pinned annotation from the group-level 'sticky' last-pinned index.
+description: Base primitive — parse a VS Code state.vscdb SQLite database's memento/workbench.parts.editor key, walk the serializedGrid tree, and emit open editor tabs (files, webviews/markdown-preview sources, terminals) in display (tab-bar) order with type tags, group markers, and pinned annotation from the group-level 'sticky' last-pinned index. File records expose their URI scheme and external locator so non-'file' virtual documents (e.g. gist://) are not mistaken for local absolute paths.
 category: VS Code / IDE Configuration
 ---
 
-# VS Code state.vscdb Editor Extract (v1.2.0)
+# VS Code state.vscdb Editor Extract (v1.3.0)
 
 > **Skill ID:** `vscode-state-vscdb-editor-extract`<br>
-> **Version:** 1.2.0<br>
+> **Version:** 1.3.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale
@@ -49,8 +49,16 @@ The default text mode (`--mode all`) emits **every** tab — files, webviews,
 and terminals — with a `[type]` tag, `# group` markers between split-view
 groups, and a `[pinned]` suffix. Webview tabs resolve their backing source
 file (markdown preview source, custom-editor resource) from `value['state']`.
-`--mode files` emits the file-only projection (one absolute fsPath per line)
-for callers that want just source files.
+`--mode files` emits the file-only projection for callers that want just
+source files.
+
+A `fileEditorInput` is **not necessarily a local file**: extension-provided
+virtual documents (e.g. `gist://<gist-id>/<name>` from a Gist extension) use
+the same serialized shape with a non-`file` `scheme`, an `authority`, and an
+`external` URI. Their `path` is a URI path, not an absolute filesystem path.
+File records therefore expose `scheme` / `external` / `authority` / `uri`
+(additive JSON fields); text output renders non-`file` schemes via `external`
+so a namespace path is never presented as a local path.
 
 The **pinned** state is **not** stored per-editor. Instead, each group dict
 carries a `sticky: <N>` integer = the **inclusive array index of the LAST
@@ -119,27 +127,33 @@ and a `[pinned]` suffix on pinned tabs:
 [terminal ] opencode.exe [pinned]
 [webview  ] /abs/path/preview-source.md
 [file     ] /abs/path/file-a.ts
+[file     ] gist://<gist-id>/notes.md
 # group 23
 [file     ] /abs/path/file-b.ts [pinned]
 ```
 
-`type` ∈ `file` | `webview` | `terminal` | `other`. The label is the fsPath
-(file), the resolved source path or title (webview), the title (terminal), or
-the editor id (other).
+`type` ∈ `file` | `webview` | `terminal` | `other`. The label is the fsPath or
+the `external` URI (file; the URI is used when `scheme != file`), the resolved
+source path or title (webview), the title (terminal), or the editor id (other).
 
-**Text output, `--mode files`** — the file-only projection: one absolute
-fsPath per line, in tab-bar order, `[pinned]`-annotated. Webview and terminal
-tabs are omitted; when no file editors exist, non-file tabs are emitted as
-`#non-file:` markers:
+**Text output, `--mode files`** — the file-only projection: local `file`-scheme
+resources as one absolute fsPath per line, in tab-bar order, `[pinned]`-annotated.
+File-editor resources with a non-`file` scheme (e.g. gist virtual documents) are
+emitted as `#non-file: <uri>` markers instead, so their URI path is never
+mistaken for a local absolute path. Webview and terminal tabs are omitted; when
+no file editors exist, non-file tabs are also emitted as `#non-file:` markers:
 
 ```text
 /abs/path/file-a.ts [pinned]
 /abs/path/file-b.ts
+#non-file: gist://<gist-id>/notes.md
 #non-file: opencode.exe
 ```
 
-**JSON output** — structured; every editor record carries `type`, `label`, and
-`source_path` in addition to the original fields:
+**JSON output** — structured; every editor record carries `type`, `label`,
+`source_path`, `scheme`, `external`, `authority`, and `uri` in addition to the
+original fields. The URI fields are populated for file editors and are `null`
+for terminals, webviews, and `other`:
 
 ```json
 {
@@ -164,7 +178,10 @@ tabs are omitted; when no file editors exist, non-file tabs are emitted as
          "group_id": 20, "group_sticky": 0},
         {"index": 2, "editor_id": "workbench.editors.files.fileEditorInput",
          "type": "file", "title": null, "fs_path": "/abs/path/file-a.ts",
-         "source_path": null, "label": "/abs/path/file-a.ts", "pinned": false,
+         "source_path": null, "scheme": "file",
+         "external": "file:///abs/path/file-a.ts", "authority": null,
+         "uri": "file:///abs/path/file-a.ts",
+         "label": "/abs/path/file-a.ts", "pinned": false,
          "group_id": 20, "group_sticky": 0}
       ]
     }
@@ -218,13 +235,15 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
   means the tab is pinned (sticky). `# group <id>` marks the start of each
   split-view group. The order matches the tab bar left-to-right across every
   group.
-- **Text mode (`files`)**: each line is an absolute file path. `[pinned]`
-  suffix means the tab is pinned (sticky).
+- **Text mode (`files`)**: each line is an absolute fsPath for a local
+  `file`-scheme resource, or a `#non-file: <uri>` marker for a virtual document
+  (non-`file` scheme). `[pinned]` suffix means the tab is pinned (sticky).
 - **JSON mode**: inspect the `groups[].editors[]` array. `pinned` is derived
   from `index <= group_sticky` (the last-pinned index; `-1`/absent = none).
-  `type` classifies the tab; `source_path` holds
-  the webview's backing file. The `mru` array provides an alternative MRU
-  ordering if needed.
+  `type` classifies the tab; `source_path` holds the webview's backing file;
+  `scheme` / `external` / `authority` / `uri` hold the file resource's complete
+  locator (`uri` is the one to report to a user). The `mru` array provides an
+  alternative MRU ordering if needed.
 
 ## Script Reference
 
@@ -238,12 +257,14 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
    (editor groups).
 5. For each group, iterates `editors[]` in array order (display order), parses
    each editor's `value` JSON string, and classifies it:
-   - `file` (`fileEditorInput`) → `extract_fs_path` reads
-     `resourceJSON.path` / `resource.path` / top-level `path`.
+   - `file` (`fileEditorInput`) → `extract_resource_info` reads
+   `resourceJSON` / `resource` / top-level `path` and populates `fs_path`
+   plus `scheme`, `external`, `authority`, and `uri`. A non-`file` scheme
+   means the row is a virtual document; its `fs_path` is a URI path.
    - `webview` (`webviewEditor`) → `extract_webview_source_path` reads the
-     `state` field (a JSON-encoded string) and resolves its `resource` key —
-     a URI dict (`fsPath`/`path`) or a `file://` string — plus top-level
-     fallbacks; stored as `source_path`.
+   `state` field (a JSON-encoded string) and resolves its `resource` key —
+   a URI dict (`fsPath`/`path`) or a `file://` string — plus top-level
+   fallbacks; stored as `source_path`.
    - `terminal` (`terminal`) → title only, no path.
    - `other` → editor id / title.
    Every record also carries a display `label`.
@@ -278,6 +299,12 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
 - **`resourceJSON` vs `resource`**: Newer VS Code versions serialize the file
   resource under `resourceJSON`; older versions use `resource`. The script
   checks both.
+- **Non-`file` URI scheme inside `fileEditorInput`**: extension virtual
+  documents (e.g. `gist://<gist-id>/<name>`) serialize as ordinary file editors.
+  `fs_path` holds the URI path while `external`/`uri` hold the complete locator;
+  `scheme` identifies the namespace. Text mode uses the `external` URI, and
+  `--mode files` marks such rows `#non-file:`. Never treat their `fs_path` as a
+  local absolute path.
 - **`mru` ≠ display order**: The `mru` field is a most-recently-used index list,
   a different axis from the tab-bar display order stored in `editors[]`.
 
@@ -290,6 +317,7 @@ python3 .agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/e
 | Treating `mru` as tab-bar order | `mru` is most-recently-used order, a different axis from display order. | Use the `editors[]` array order, which mirrors the tab bar left-to-right. |
 | Looking for a per-editor `pinned` flag | VS Code does not serialize `pinned` per editor in `serializedGrid`. | Use the group-level `sticky: N` value — the last-pinned index; editors at index `<= N` are pinned (absent = none). |
 | Treating `sticky: N` as a pinned *count* | `sticky` is the inclusive index of the LAST pinned editor, not a count; using it as a count drops the final pinned tab (off-by-one) and treats absent as `0`. | Use `pinned = index <= sticky`, with `sticky` defaulting to `-1` when the key is absent. |
+| Treating `resourceJSON.path` as an absolute filesystem path when `scheme != file` | Extension virtual documents (e.g. `gist://`) reuse the file-editor shape; their `path` is a URI path, so presenting it as a local path invents a non-existent file. | Check `scheme` / `external` / `uri` and report the complete URI; `--mode files` marks such rows `#non-file:`. |
 | Opening the DB read-write | Risks corrupting the running window's state if VS Code is active. | The script opens `file:<path>?mode=ro` (read-only). |
 
 ## Composition by Higher-Level Skills

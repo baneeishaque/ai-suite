@@ -4,10 +4,10 @@ description: Composer — discover the active VS Code window's state.vscdb on ma
 category: VS Code / IDE Configuration
 ---
 
-# VS Code Active Window Editors (v1.1.1)
+# VS Code Active Window Editors (v1.2.0)
 
 > **Skill ID:** `vscode-active-window-editors`<br>
-> **Version:** 1.1.1<br>
+> **Version:** 1.2.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)
 
 ## Composition Rationale
@@ -113,8 +113,9 @@ Do NOT apply when:
 **stdout** — the open editor tabs in tab-bar order (or JSON when `--json` is
 passed — the base script's structured output). In `--mode all` (default), each
 line is one tab: `[<type>] <label>` with `# group <id>` split-view markers and
-a `[pinned]` suffix. `--mode files` emits the file-only projection (one
-absolute fsPath per line).
+a `[pinned]` suffix. `--mode files` emits the file-only projection: local
+`file`-scheme resources as absolute fsPaths, and virtual documents (non-`file`
+scheme) as `#non-file: <uri>` markers.
 
 **stderr** — discovery diagnostics (`App:`, `DB:`, `Workspace:` header lines),
 including any warnings about missing apps or stale entries.
@@ -150,10 +151,16 @@ python3 .agents/skills/vscode/config/vscode-active-window-editors/scripts/list-a
 The script prints discovery info to stderr (`App:`, `DB:`, `Workspace:`), then
 the base script's output to stdout. In `--mode all` (default), each line is one
 tab — `[<type>] <label>` with `[pinned]` suffix; `# group <id>` markers denote
-split-view groups. In `--mode files`, each line is an absolute file path with
-an optional `[pinned]` suffix. In JSON mode, use the base skill's JSON schema
-(groups, editors, `type`/`label`/`source_path` fields, `pinned` flag, `sticky`
-last-pinned index).
+split-view groups. In `--mode files`, local file paths are absolute and virtual
+documents appear as `#non-file: <uri>` markers. In JSON mode, use the base
+skill's JSON schema (groups, editors, `type`/`label`/`source_path` fields,
+`pinned` flag, `sticky` last-pinned index).
+
+A `[file]` row is **not necessarily a local file**: extension virtual documents
+(e.g. `gist://<gist-id>/<name>`) reuse the file-editor shape. When the user asks
+for **complete absolute paths**, run with `--json` and report each file record's
+`uri` (falling back to `external`); for `scheme != file`, report that URI —
+never the bare `fs_path`.
 
 ### Step 3 — (Optional) Override the database path
 
@@ -199,6 +206,10 @@ python3 .agents/skills/vscode/config/vscode-active-window-editors/scripts/list-a
 - **Terminal / webview tabs**: these are included in the default `--mode all`
   output (with `[type]` tags); use `--mode files` for a file-only projection
   if terminals/webviews are not wanted.
+- **Virtual documents (gist / remote / untitled)**: a `[file]` row may carry a
+  non-`file` URI scheme. Its `fs_path` is then a URI path, not a local absolute
+  path; report the JSON `uri`/`external` field (e.g. `gist://<gist-id>/<name>`)
+  instead.
 
 ## Composition by Lower-Level Skills
 

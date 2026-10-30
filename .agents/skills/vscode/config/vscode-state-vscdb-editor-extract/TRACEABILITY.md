@@ -2,6 +2,18 @@
 
 ## Enrichment
 
+### 2026-10-30
+
+- **Trigger:** a user asked for "complete absolute paths" after a tab list
+  rendered `gist://` virtual documents as bare `/name` paths that looked like
+  local absolute paths.
+- **Key finding:** extension virtual documents serialize as ordinary
+  `fileEditorInput` entries (`resourceJSON.scheme = "gist"`,
+  `authority = <gist-id>`, `external = gist://<gist-id>/<name>`); their `path`
+  is a URI path, not an absolute filesystem path. File records now expose
+  `scheme` / `external` / `authority` / `uri`; text mode uses the external URI
+  for non-`file` schemes, and `--mode files` marks them `#non-file:`.
+
 ### 2026-10-14
 
 - **Trigger:** a user pinned-marked markdown-preview tab (array index equal to

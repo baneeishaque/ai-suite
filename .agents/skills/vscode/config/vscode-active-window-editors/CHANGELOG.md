@@ -6,6 +6,20 @@ in this file.
 Format: based on [Keep a Changelog](https://keepachangelog.com/), and this
 project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.2.0] — 2026-10-30
+
+### Added
+
+- Documented that a `[file]` row may be an extension virtual document
+  (non-`file` URI scheme, e.g. `gist://<gist-id>/<name>`). Its `fs_path` is a
+  URI path, so "complete absolute paths" requests must use the JSON
+  `uri`/`external` field; `--mode files` now marks such rows `#non-file:`.
+
+### Changed
+
+- SKILL.md v1.1.1 → v1.2.0 (CLI contract stdout, Step 2 interpretation, Edge
+  Cases).
+
 ## [1.1.1] — 2026-10-14
 
 ### Changed

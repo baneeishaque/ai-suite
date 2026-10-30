@@ -10,8 +10,10 @@ annotation derived from the group-level 'sticky' count.
 Default text output ('--mode all') lists EVERY tab — file, webview
 (markdown previews, custom editors) and terminal — in tab-bar order with a
 '[type]' tag, '#' group markers, and a '[pinned]' suffix. '--mode files'
-emits the file-only projection (one absolute fsPath per line) for callers
-that want just source files.
+emits the file-only projection for callers that want just source files:
+local 'file'-scheme resources as absolute fsPaths, and non-file schemes
+(e.g. 'gist://') as '#non-file:' URI markers rather than misrepresenting
+their URI path as a local absolute path.
 
 Key findings:
   - The 'editors[]' array on each leaf node is in display order (pinned first).
@@ -34,6 +36,16 @@ Additional findings (webview/terminal support):
     Top-level 'resourceJSON'/'resource' are absent for webview entries.
   - The file-only projection silently dropped webview + terminal tabs, so it
     never matched the on-screen tab bar; '--mode all' is the faithful view.
+
+Additional findings (non-file URI schemes):
+  - A 'fileEditorInput' resource is not necessarily a local file. Virtual
+    documents opened through extensions carry a non-'file' scheme (e.g.
+    'gist://<gist-id>/<name>' from a Gist extension) in the same
+    'resourceJSON' shape. Their 'path' field is a URI path, NOT an absolute
+    filesystem path, and 'external' carries the complete locator.
+  - File records therefore expose 'scheme'/'external'/'authority'/'uri'
+    (additive fields); text output uses 'external' for non-'file' schemes so
+    a namespace path is never presented as a local absolute path.
 
 Tier 1 (Python 3.12+, stdlib only) per scripting-language-selection-rules §2.1.
 """
@@ -103,11 +115,13 @@ def walk_grid(node: Any, leaves: list[dict]) -> None:
                 walk_grid(val, leaves)
 
 
-def extract_fs_path(value_json: str) -> str | None:
-    """Parse a fileEditorInput 'value' string and return the absolute fsPath.
+def extract_resource_info(value_json: str) -> dict[str, Any] | None:
+    """Parse a fileEditorInput 'value' string and return its resource dict.
 
     The value JSON may use 'resourceJSON' (newer VS Code) or 'resource'
-    (older forms). Both contain a 'path' field.
+    (older forms). Both describe a URI with 'path', an optional 'fsPath',
+    and — for virtual documents — a non-'file' 'scheme' plus 'authority' and
+    a complete 'external' locator.
     """
     try:
         obj = json.loads(value_json)
@@ -115,18 +129,57 @@ def extract_fs_path(value_json: str) -> str | None:
         return None
     if not isinstance(obj, dict):
         return None
-    # Newer Code versions use resourceJSON
-    res = obj.get("resourceJSON")
-    if isinstance(res, dict) and res.get("path"):
-        return res["path"]
-    # Older / alternate forms use 'resource'
-    res = obj.get("resource")
-    if isinstance(res, dict) and res.get("path"):
-        return res["path"]
-    # Some forms store the path directly under 'path'
+    # Newer Code versions use resourceJSON; older forms use 'resource'.
+    for key in ("resourceJSON", "resource"):
+        res = obj.get(key)
+        if isinstance(res, dict) and (res.get("path") or res.get("fsPath")):
+            return res
+    # Some forms store the path directly under 'path'.
     if isinstance(obj.get("path"), str):
-        return obj["path"]
+        return {"path": obj["path"]}
     return None
+
+
+def extract_fs_path(value_json: str) -> str | None:
+    """Parse a fileEditorInput 'value' string and return its path field.
+
+    For a local resource this is the absolute fsPath. For a virtual document
+    (non-'file' scheme) it is the URI path, so callers MUST inspect 'scheme'
+    before treating it as a filesystem location.
+    """
+    res = extract_resource_info(value_json)
+    if res is None:
+        return None
+    path = res.get("path")
+    if isinstance(path, str) and path:
+        return path
+    fs_path = res.get("fsPath")
+    return fs_path if isinstance(fs_path, str) and fs_path else None
+
+
+def _build_uri(info: dict[str, Any]) -> str | None:
+    """Return the complete locator for a resource dict.
+
+    Prefers the serialized 'external' URI (e.g. 'gist://<id>/<name>' or
+    'file:///abs/path'); otherwise reconstructs a non-'file' URI from its
+    scheme/authority/path, or a 'file://' URI from the path for local
+    resources.
+    """
+    external = info.get("external")
+    if isinstance(external, str) and external:
+        return external
+    path = info.get("path")
+    if not isinstance(path, str) or not path:
+        fs_path = info.get("fsPath")
+        path = fs_path if isinstance(fs_path, str) and fs_path else None
+    scheme = info.get("scheme")
+    if not isinstance(scheme, str) or not scheme or scheme == "file":
+        return f"file://{path}" if path else None
+    authority = info.get("authority")
+    authority = authority if isinstance(authority, str) else ""
+    if not path:
+        return None
+    return f"{scheme}://{authority}{path}" if authority else f"{scheme}:{path}"
 
 
 def extract_webview_source_path(value_json: str) -> str | None:
@@ -182,8 +235,9 @@ def parse_editor_entry(editor: dict) -> dict:
     """Flatten a single editor entry into a normalized record.
 
     Every editor is classified by 'type' (file / webview / terminal / other)
-    and given a display 'label'. File editors expose 'fs_path'; webview
-    editors expose 'source_path' (the markdown/custom-editor backing file).
+    and given a display 'label'. File editors expose 'fs_path' plus the URI
+    fields 'scheme' / 'external' / 'authority' / 'uri'; webview editors expose
+    'source_path' (the markdown/custom-editor backing file).
     """
     editor_id = editor.get("id", "")
     raw_value = editor.get("value", "")
@@ -193,6 +247,10 @@ def parse_editor_entry(editor: dict) -> dict:
         "title": None,
         "fs_path": None,
         "source_path": None,
+        "scheme": None,
+        "external": None,
+        "authority": None,
+        "uri": None,
         "label": editor_id,
     }
     if raw_value:
@@ -206,9 +264,27 @@ def parse_editor_entry(editor: dict) -> dict:
                 record["label"] = parsed["title"]
             if editor_id == FILE_EDITOR_INPUT_ID:
                 record["type"] = "file"
+                info = extract_resource_info(raw_value)
                 record["fs_path"] = extract_fs_path(raw_value)
+                if info is not None:
+                    scheme = info.get("scheme")
+                    record["scheme"] = (
+                        scheme if isinstance(scheme, str) and scheme else "file"
+                    )
+                    external = info.get("external")
+                    record["external"] = (
+                        external if isinstance(external, str) and external else None
+                    )
+                    authority = info.get("authority")
+                    record["authority"] = (
+                        authority if isinstance(authority, str) and authority else None
+                    )
+                    record["uri"] = _build_uri(info)
                 if record["fs_path"] is not None:
-                    record["label"] = record["fs_path"]
+                    if record["scheme"] not in (None, "file"):
+                        record["label"] = record["uri"] or record["fs_path"]
+                    else:
+                        record["label"] = record["fs_path"]
             elif editor_id == WEBVIEW_EDITOR_ID:
                 record["type"] = "webview"
                 record["source_path"] = extract_webview_source_path(raw_value)
@@ -277,7 +353,8 @@ def extract_editors(db_path: str, key: str = DEFAULT_KEY) -> dict:
         for idx, ed in enumerate(editors_raw):
             rec = parse_editor_entry(ed) if isinstance(ed, dict) else {
                 "editor_id": "", "type": "other", "title": None,
-                "fs_path": None, "source_path": None, "label": "",
+                "fs_path": None, "source_path": None, "scheme": None,
+                "external": None, "authority": None, "uri": None, "label": "",
             }
             rec["index"] = idx
             # Sticky is the last-pinned index (inclusive): pinned iff idx <= sticky.
@@ -327,18 +404,27 @@ def render_all(result: dict) -> str:
 
 
 def render_files(result: dict) -> str:
-    """Render the file-only projection: one absolute fsPath per line.
+    """Render the file-only projection.
 
-    Preserves the legacy text contract: pinned file editors are annotated
-    with '[pinned]'; when no file editors exist, non-file tabs are emitted as
-    '#non-file:' markers as a fallback.
+    Local 'file'-scheme resources are emitted as one absolute fsPath per line.
+    File-editor resources with a non-'file' scheme (e.g. 'gist://') are emitted
+    as '#non-file:' URI markers so their URI path is never mistaken for a local
+    absolute path. Pinned file rows are annotated with '[pinned]'. When no file
+    editors exist at all, non-file tabs are emitted as '#non-file:' markers as
+    a fallback.
     """
     lines = []
     for grp in result.get("groups", []):
         for ed in grp["editors"]:
-            if ed["fs_path"] is not None:
-                tag = " [pinned]" if ed["pinned"] else ""
+            if ed["fs_path"] is None:
+                continue
+            tag = " [pinned]" if ed["pinned"] else ""
+            scheme = ed.get("scheme") or "file"
+            if scheme == "file":
                 lines.append(f"{ed['fs_path']}{tag}")
+            else:
+                locator = ed.get("uri") or ed["fs_path"]
+                lines.append(f"#non-file: {locator}{tag}")
     if lines:
         return "\n".join(lines)
     # Fallback: include non-file editors with a marker

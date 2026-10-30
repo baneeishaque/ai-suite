@@ -56,6 +56,8 @@ Apply this skill when:
 - A user asks to "commit changes," "arrange commits," or "stage and commit"
 - `git status` shows staged, unstaged, or untracked modifications
 - Multiple unrelated changes exist in the working tree and need separation
+- The target files already carry uncommitted work that is not part of this
+  commit (see §9h.1)
 - A user asks to review what should be committed
 - **After ANY submodule commit is executed, the skill AUTOMATICALLY checks for
   and offers the parent repository submodule SHA update (if applicable) and
@@ -1349,6 +1351,72 @@ agent MUST:
 This prevents accidental inclusion of stale staged content. The `git reset
 HEAD -- .` command only unstages files — it does NOT discard working-tree
 changes.
+
+#### 9h.1 — Pre-Existing Unstaged Work in Target Files
+
+§9h covers content already in the **index**. A separate hazard is
+uncommitted work in the **working tree** of the files this commit will
+touch — typically another contributor's in-flight increment. Staging the
+whole file would capture their work; staging only your hunks requires
+explicit isolation.
+
+**Pre-flight.** Before editing or staging, inspect the target files:
+
+```bash
+git status --porcelain -- <file>...
+git diff -- <file>...
+```
+
+Classify the pre-state:
+
+- **staged vs unstaged** — §9h handles staged content; this section
+  handles unstaged content.
+- **same-region vs disjoint** — if the pre-state hunks overlap the lines
+  you plan to change, hunk-level staging alone is not sufficient.
+- **owned vs foreign** — is the pre-state your own unfinished work, or
+  another contributor's in-flight change?
+
+**Decision gate.** Present the pre-state to the user and choose one:
+
+1. **Commit the pre-state first** (with the owner's consent) so this
+   commit lands on a clean base. Preferred when the pre-state is yours
+   and complete.
+2. **Layer and isolate** — leave the pre-state uncommitted and commit
+   only your hunks. This is the default when the pre-state belongs to
+   another contributor and its owner will handle it.
+
+**Versioned files.** When the pre-state and your change both add a
+CHANGELOG/TRACEABILITY entry and bump the same header:
+
+- the pre-state entry stays first; your entry goes after it;
+- your version MUST be the next version (no duplicate, no reuse);
+- the header MUST reflect the version your commit introduces;
+- after committing, revert the shared header in the working tree to the
+  pre-state version when the pre-state remains uncommitted and its owner
+  will rebase. Disclose the divergence in the commit body or handoff.
+
+**Index-only staging.** Stage only your hunks, never the whole file:
+
+- synthesize a patch against `HEAD` for your hunks and apply it to the
+  index with `git apply --cached <patch>`; or
+- use the hunk selectors in
+  [`git-hunk-staging-primitives`](../git-hunk-staging-primitives/SKILL.md)
+  (`stage-hunk-from-diff.py`, `stage-file-excluding-lines.py`,
+  `stage-specific-hunks.py`).
+
+Do NOT use `git add <file>` while the pre-state is unstaged — it stages
+both changes and destroys the separation.
+
+**Post-commit proof and handoff.** Verify the pre-state is still
+unstaged (`git diff -- <file>...`), then prove it was not altered by
+reconstructing the pre-state in a throwaway worktree and diffing it
+against the live tree (see
+[`git-worktree-state-fingerprint`](../git/basic/audit/git-worktree-state-fingerprint/SKILL.md)).
+Hand the divergence to the pre-state owner; do not silently rewrite
+their work.
+
+For the `AGENTS-legacy.md`-specific variant of this protocol, see
+[`opencode-agents-md-manager`](../opencode-agents-md-manager/SKILL.md).
 
 #### 9i — Commit Message Delivery (Safe Pattern)
 

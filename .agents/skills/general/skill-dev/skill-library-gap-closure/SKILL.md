@@ -40,7 +40,11 @@ delegates *how*.
 
 ## Composition Rationale
 
-This skill is a **composer** over existing skills. It re-implements nothing:
+This skill is a **composer** over existing skills. It re-implements nothing.
+When `--verify-text` is supplied, the driver first composes
+[`opencode-current-session-id`](../../../opencode/opencode-current-session-id/SKILL.md):
+it runs `find-current-session.py --verify-text` before the bundle and fails
+closed on no match or ambiguity.
 
 1. [`opencode-session-analysis-bundle`](../../../opencode/session/opencode-session-analysis-bundle/SKILL.md)
    — invoked FIRST through this skill's `scripts/run-gap-closure-evidence.py`. The driver
@@ -79,6 +83,7 @@ re-derived here with an ad-hoc search; §2.3 mandates the skill-factory method.
 | PyYAML / ruamel.yaml | any | required by the session-analysis bases |
 | `opencode-session-analysis-bundle` | present | `test -f .agents/skills/opencode/session/opencode-session-analysis-bundle/scripts/run-session-analysis-bundle.py` |
 | `opencode-session-path-attribution` | present | `test -f .agents/skills/opencode/opencode-session-path-attribution/scripts/attribute-path-to-session.py` |
+| `opencode-current-session-id` | present | `test -f .agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py` |
 | `scratch-artifact-naming` | present | `test -f .agents/skills/general/file/scratch-artifact-naming/scripts/resolve-scratch-path.py` |
 | `markdownlint-cli2` | any | `markdownlint-cli2 <path>` — gate before presenting any artifact |
 | git | any modern version | `git --version` |
@@ -91,9 +96,23 @@ When the evidence source is a session (a session ID, or a report whose transcrip
 absent), acquire the evidence before extracting any gap. Do NOT ask the user to run the
 bundle or transcribe the session separately.
 
+**Step 0 — verify the session before acquiring evidence.** Resolve and verify the session
+against a unique phrase from the current user message:
+
+```bash
+python3 .agents/skills/opencode/opencode-current-session-id/scripts/find-current-session.py \
+    --verify-text "<unique phrase from the current user message>" --json
+```
+
+If it exits `1` (no match) or `2` (multiple matches), stop and present the candidates; do
+not run the driver. Pass the verified session ID and the same phrase to the driver as
+`--session-id` and `--verify-text`; the driver re-verifies and records
+`session_verification` in the manifest.
+
 ```bash
 python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-gap-closure-evidence.py \
     --session-id <ses-id> \
+    --verify-text "<unique phrase from the current user message>" \
     --repo <repo> \
     --purpose skill-library-gap-closure-evidence \
     --json
@@ -101,11 +120,18 @@ python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-g
 
 The driver:
 
-1. runs [`opencode-session-analysis-bundle`](../../../opencode/session/opencode-session-analysis-bundle/SKILL.md);
-2. writes the session's `transcripts/*-transcript.yaml` human transcripts;
-3. writes the full-fidelity JSONL and the report skeleton to session scratch;
-4. writes `gap-closure-evidence-manifest.json` with the absolute paths of the session
-   directory, source logs, transcripts, report, and JSONL.
+1. verifies the session when `--verify-text` is supplied and fails closed (exit `2`) on
+   no match or ambiguity;
+2. runs [`opencode-session-analysis-bundle`](../../../opencode/session/opencode-session-analysis-bundle/SKILL.md);
+3. writes the session's `transcripts/*-transcript.yaml` human transcripts;
+4. writes the full-fidelity JSONL and the report skeleton to session scratch;
+5. writes `gap-closure-evidence-manifest.json` with the absolute paths of the session
+   directory, source logs, transcripts, report, and JSONL, plus the
+   `session_verification` record.
+
+The `session_verification` record carries `status` (`verified` or `unverified` in a
+written manifest), `text_sha256`, `matched_session`, and `candidates`. The verifier's
+`ambiguous` and `no_match` statuses stop the driver before a manifest is written.
 
 Fill the report's `## 1. Problem`, `## 2. Solution`, `## 4. Rejected / Alternative
 Paths`, and `## 5. Final State` sections per
@@ -192,6 +218,7 @@ evidence and write one token per line to `<evidence-dir>/path-tokens.txt`. Then 
 ```bash
 python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-gap-closure-evidence.py \
     --session-id <ses-id> \
+    --verify-text "<unique phrase from the current user message>" \
     --repo <repo> \
     --purpose skill-library-gap-closure-evidence \
     --evidence-dir <evidence-dir> \
@@ -200,7 +227,8 @@ python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-g
     --json
 ```
 
-The driver defaults to the audited session. Add `--cross-session` when a path may have
+Reuse the verified phrase from §2.1; attribution-only also fails closed on no match or
+ambiguity. The driver defaults to the audited session. Add `--cross-session` when a path may have
 been touched by another session; record that choice in the register.
 
 Every returned record is a JSON array of tool calls that contain the token. Build the
@@ -247,7 +275,8 @@ persists a gap-closure-scoped evidence manifest.
 
 | Step | Script owner |
 | :--- | :--- |
-| Evidence acquisition + manifest | [`scripts/run-gap-closure-evidence.py`](scripts/run-gap-closure-evidence.py) (this skill; composes the bundle and attribution) |
+| Evidence acquisition + manifest | [`scripts/run-gap-closure-evidence.py`](scripts/run-gap-closure-evidence.py) (this skill; composes verification, the bundle, and attribution) |
+| Session verification | `opencode-current-session-id/scripts/find-current-session.py` (composed by the driver when `--verify-text` is supplied) |
 | Session analysis bundle | `opencode-session-analysis-bundle/scripts/run-session-analysis-bundle.py` |
 | Path attribution | `opencode-session-path-attribution/scripts/attribute-path-to-session.py` |
 | Evidence report skeleton | `opencode-session-problem-solution-workflow-analysis/scripts/reconstruct-workflow.py` (called by the bundle) |
@@ -255,8 +284,8 @@ persists a gap-closure-scoped evidence manifest.
 | Taxonomy placement | `skill-library-domain-grouping` §1.2 (tree notation, no script) |
 | Amend-vs-regenerate | `deterministic-artifact-in-place-amendment/scripts/detect-regeneration-need.py` |
 
-The driver resolves the scripts it composes — the session-analysis bundle, path
-attribution, and `resolve-scratch-path.py` — relative to its own location
+The driver resolves the scripts it composes — the session verifier, session-analysis
+bundle, path attribution, and `resolve-scratch-path.py` — relative to its own location
 (`Path(__file__).resolve().parents[4]`) and verifies each mode-required script with
 `Path.is_file()` before execution. A missing composed script is a distinct exit-4
 diagnostic, never a silent re-implementation.
@@ -275,6 +304,10 @@ diagnostic, never a silent re-implementation.
 - **Single-invocation evidence acquisition.** When the evidence source is a session, run
   the gap-closure driver. Do NOT ask the user to run the bundle or transcribe the session
   separately.
+- **Verified session required under concurrency.** Never run the driver on a session that
+  has not been verified against the current user turn when more than one session has an
+  in-flight marker. Pass `--verify-text`; the driver fails closed (exit `2`) on no match or
+  ambiguity and records `session_verification` in the manifest.
 - **Human and machine artifacts are distinct.** Transcripts are human-facing derived
   artifacts; source logs and the full-fidelity JSONL are machine-facing. Never delete,
   trim, or annotate source logs or transcripts to make a report shorter.

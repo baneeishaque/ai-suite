@@ -19,6 +19,8 @@ register and plan are verifiable without a second prompt.
   and path evidence generated as part of the closure pass.
 - You need to verify a gap register or plan claim against the exact session turn and tool
   call that produced it.
+- You need to bind the evidence to the current user turn when more than one session has an
+  in-flight marker.
 
 For the narrower rule-file migration path (turn a redundant RULE into a skill), use
 [`rule-to-skill-industrialization`](../../../rule-to-skill-industrialization/SKILL.md) — this
@@ -29,9 +31,11 @@ skill is for session-derived evidence.
 Read [`SKILL.md`](SKILL.md) for the full operational procedure, including the verdict
 vocabulary, the new-versus-enrich decision, and the plan-first approval gate. Do NOT
 execute any step without first loading `SKILL.md` — this bridge is intentionally
-non-actionable. For session-backed evidence, run `scripts/run-gap-closure-evidence.py`
-before extracting gaps; use `--attribution-only --paths-file` once candidate gaps
-exist.
+non-actionable. For session-backed evidence, resolve and verify the session with
+`opencode-current-session-id` first, then run `scripts/run-gap-closure-evidence.py` with
+`--verify-text "<unique phrase from the current user message>"` before extracting gaps;
+use `--attribution-only --paths-file` once candidate gaps exist. The driver fails closed
+on no match or ambiguity and records `session_verification` in the manifest.
 
 ## Cross-References
 
@@ -45,3 +49,6 @@ exist.
   consumes.
 - [`opencode-session-path-attribution`](../../../opencode/opencode-session-path-attribution/SKILL.md)
   — maps each cited path token to the session turn and tool call that touched it.
+- [`opencode-current-session-id`](../../../opencode/opencode-current-session-id/SKILL.md)
+  — resolves and verifies the current session against a unique phrase from the current
+  user turn.

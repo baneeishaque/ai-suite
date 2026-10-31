@@ -12,10 +12,14 @@ not re-implement session extraction, reporting, or attribution: those remain
 owned by the composed CLIs.
 
 Normal mode:
-  bundle -> manifest -> optional per-token attribution -> final manifest.
+  [verify] -> bundle -> manifest -> optional per-token attribution -> final manifest.
 
 Attribution-only mode:
-  existing manifest -> per-token attribution -> merged manifest.
+  existing manifest -> [verify] -> per-token attribution -> merged manifest.
+
+When --verify-text is supplied, the current-session finder runs first and pins
+the bundle to the verified session; the manifest records session_verification.
+Verification fails closed (exit 2) on no match or ambiguity.
 
 Composed scripts are resolved through Path(__file__).resolve().parents[4]
 (= the skills/ folder), so the driver works from any working directory.
@@ -26,6 +30,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -47,6 +52,11 @@ NAMING = (
     / "general/file/scratch-artifact-naming/scripts"
     / "resolve-scratch-path.py"
 )
+FIND_SESSION = (
+    SKILLS_ROOT
+    / "opencode/opencode-current-session-id/scripts"
+    / "find-current-session.py"
+)
 DEFAULT_PURPOSE = "skill-library-gap-closure-evidence"
 MANIFEST_NAME = "gap-closure-evidence-manifest.json"
 
@@ -67,14 +77,14 @@ def require(path, label):
 def run_capture(cmd):
     """Run a composed CLI and return its completed process."""
     try:
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, check=False, capture_output=True, text=True)
     except OSError as exc:
         raise SystemExit(fail(f"cannot execute composed script: {exc}", 2))
 
 
 def normalize_session_id(value):
     """Return the canonical ses_<short> form."""
-    short = value[4:] if value.startswith("ses_") else value
+    short = value.removeprefix("ses_")
     return f"ses_{short}"
 
 
@@ -183,6 +193,60 @@ def attribution_command(args, token, output, sid, log_dir):
     return cmd
 
 
+def verification_command(args):
+    """Build the session-verification command."""
+    cmd = [
+        sys.executable,
+        str(FIND_SESSION),
+        "--repo-root",
+        str(Path(args.repo).expanduser().resolve()),
+        "--verify-text",
+        args.verify_text,
+        "--json",
+    ]
+    if args.log_dir:
+        cmd.extend(["--log-dir", args.log_dir])
+    return cmd
+
+
+def unverified_verification():
+    """Return the manifest record for a run without phrase verification."""
+    return {
+        "status": "unverified",
+        "text_sha256": None,
+        "matched_session": None,
+        "candidates": [],
+    }
+
+
+def resolve_verification(args):
+    """Run the current-session finder and return its verified payload."""
+    require(FIND_SESSION, "current-session-id")
+    proc = run_capture(verification_command(args))
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        payload = None
+    if proc.returncode != 0 or not isinstance(payload, dict):
+        detail = proc.stderr.strip() or proc.stdout.strip() or "no verifier output"
+        raise SystemExit(fail(f"session verification failed: {detail}", 2))
+    if not payload.get("verified") or payload.get("verification_status") != "verified":
+        detail = proc.stderr.strip() or proc.stdout.strip() or "session not verified"
+        raise SystemExit(fail(f"session verification failed: {detail}", 2))
+    return payload
+
+
+def verification_manifest(payload):
+    """Convert a finder payload into the manifest session_verification record."""
+    candidates = payload.get("candidates")
+    return {
+        "status": payload.get("verification_status", "verified"),
+        "text_sha256": payload.get("matched_text_sha256"),
+        "matched_session": payload.get("session_id"),
+        "candidates": list(candidates) if isinstance(candidates, list) else [],
+    }
+
+
 def parse_bundle_manifest(stdout):
     """Parse and validate the bundle's JSON stdout."""
     try:
@@ -238,12 +302,15 @@ def merge_attributions(existing, additions):
     return [by_token[token] for token in order if token in by_token]
 
 
-def build_manifest(sid, session_dir, log_dir, evidence_dir, bundle):
+def build_manifest(sid, session_dir, log_dir, evidence_dir, bundle, session_verification):
     """Build the common evidence manifest skeleton."""
     return {
         "schema_version": 1,
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": datetime.now(timezone.utc).strftime(  # noqa: UP017
+            "%Y-%m-%dT%H:%M:%SZ"
+        ),
         "session_id": sid,
+        "session_verification": session_verification,
         "session_dir": str(Path(session_dir).resolve()),
         "log_dir": str(Path(log_dir).resolve()),
         "evidence_dir": str(evidence_dir.resolve()),
@@ -310,6 +377,8 @@ def print_summary(manifest, as_json):
         print(json.dumps(manifest, indent=2))
         return
     print(f"session: {manifest['session_id']}")
+    verification = manifest.get("session_verification") or {}
+    print(f"verification: {verification.get('status', 'unknown')}")
     print(f"evidence: {manifest['evidence_dir']}")
     print(f"report: {manifest['bundle']['report']}")
     print(f"jsonl: {manifest['bundle']['jsonl'] or '(skipped)'}")
@@ -327,6 +396,9 @@ def print_dry_run(args, tokens, evidence_dir, sid, log_dir):
     print(f"bundle: {BUNDLE}")
     print(f"attribution: {ATTRIBUTION}")
     print(f"naming: {NAMING}")
+    print(f"find-session: {FIND_SESSION}")
+    if args.verify_text:
+        print("verify command: " + shlex.join(verification_command(args)))
     print(f"session: {sid or 'auto-discover'}")
     print(
         "evidence dir: "
@@ -345,7 +417,7 @@ def print_dry_run(args, tokens, evidence_dir, sid, log_dir):
         ]
         print("command: " + " ".join(naming_command))
     if not args.attribution_only:
-        print("command: " + " ".join(bundle_command(args, args.session_id)))
+        print("command: " + " ".join(bundle_command(args, sid)))
     if tokens:
         target = evidence_dir or Path("<evidence-dir>")
         for token in tokens:
@@ -372,6 +444,14 @@ def main():
             "Session to analyze. Optional in normal mode; in --attribution-only "
             "it is required when --evidence-dir is omitted and must match the "
             "manifest when supplied. ses_ prefix optional."
+        ),
+    )
+    parser.add_argument(
+        "--verify-text",
+        default=None,
+        help=(
+            "Unique phrase from the current user message. Verifies the session "
+            "before evidence acquisition; fails closed on no match or ambiguity."
         ),
     )
     parser.add_argument("--log-dir", default=None, help="Logger root override.")
@@ -425,7 +505,10 @@ def main():
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print commands and paths; perform no writes or subprocesses.",
+        help=(
+            "Print commands and paths; perform no writes. Read-only session "
+            "verification may run when --verify-text is supplied."
+        ),
     )
     args = parser.parse_args()
 
@@ -463,11 +546,39 @@ def main():
                     fail(f"evidence manifest not found: {manifest_path}", 2)
                 )
             print(f"manifest: {manifest_path}")
+            sid = normalize_session_id(args.session_id) if args.session_id else None
+            if evidence_dir and manifest_path.is_file():
+                manifest = load_existing_manifest(manifest_path)
+                manifest_sid = normalize_session_id(manifest["session_id"])
+                if sid and sid != manifest_sid:
+                    raise SystemExit(
+                        fail(
+                            "--session-id does not match the evidence manifest session",
+                            2,
+                        )
+                    )
+                sid = manifest_sid
+            if args.verify_text:
+                verified = resolve_verification(args)
+                verified_sid = verified.get("session_id")
+                if not verified_sid:
+                    raise SystemExit(
+                        fail("session verification returned no session ID", 2)
+                    )
+                verified_sid = normalize_session_id(verified_sid)
+                if sid and sid != verified_sid:
+                    raise SystemExit(
+                        fail(
+                            "verified session does not match the evidence manifest session",
+                            2,
+                        )
+                    )
+                sid = verified_sid
             print_dry_run(
                 args,
                 tokens,
                 evidence_dir,
-                normalize_session_id(args.session_id) if args.session_id else None,
+                sid,
                 args.log_dir,
             )
             return 0
@@ -502,11 +613,33 @@ def main():
                     2,
                 )
             )
+        existing_verification = manifest.get("session_verification")
+        session_verification = (
+            existing_verification
+            if isinstance(existing_verification, dict)
+            else unverified_verification()
+        )
+        if args.verify_text:
+            verified = resolve_verification(args)
+            verified_sid = verified.get("session_id")
+            if not verified_sid:
+                raise SystemExit(
+                    fail("session verification returned no session ID", 2)
+                )
+            if normalize_session_id(verified_sid) != manifest_sid:
+                raise SystemExit(
+                    fail(
+                        "verified session does not match the evidence manifest session",
+                        2,
+                    )
+                )
+            session_verification = verification_manifest(verified)
+        manifest["session_verification"] = session_verification
         if args.log_dir:
             manifest["log_dir"] = str(Path(args.log_dir).resolve())
         sid = manifest_sid
         log_dir = manifest["log_dir"]
-        manifest["generated_at"] = datetime.now(timezone.utc).strftime(
+        manifest["generated_at"] = datetime.now(timezone.utc).strftime(  # noqa: UP017
             "%Y-%m-%dT%H:%M:%SZ"
         )
         manifest["evidence_dir"] = str(evidence_dir.resolve())
@@ -517,7 +650,7 @@ def main():
                 additions.append(
                     attribute_token(args, token, evidence_dir, sid, log_dir)
                 )
-            except SystemExit as exc:
+            except SystemExit:
                 manifest["attributions"] = merge_attributions(
                     manifest["attributions"], additions
                 )
@@ -526,7 +659,7 @@ def main():
                     "message": f"attribution failed for {token}",
                 }
                 write_manifest(manifest_path, manifest)
-                raise exc
+                raise
         manifest["attributions"] = merge_attributions(
             manifest["attributions"], additions
         )
@@ -537,6 +670,25 @@ def main():
     require(BUNDLE, "bundle")
     if tokens:
         require(ATTRIBUTION, "attribution")
+
+    session_verification = unverified_verification()
+    sid = normalize_session_id(args.session_id) if args.session_id else None
+    if args.verify_text:
+        verified = resolve_verification(args)
+        verified_sid = verified.get("session_id")
+        if not verified_sid:
+            raise SystemExit(fail("session verification returned no session ID", 2))
+        verified_sid = normalize_session_id(verified_sid)
+        if sid and sid != verified_sid:
+            raise SystemExit(
+                fail(
+                    "--session-id does not match the verified session",
+                    2,
+                )
+            )
+        sid = verified_sid
+        session_verification = verification_manifest(verified)
+
     if args.dry_run:
         print_dry_run(
             args,
@@ -544,12 +696,12 @@ def main():
             Path(args.evidence_dir).expanduser().resolve()
             if args.evidence_dir
             else None,
-            normalize_session_id(args.session_id) if args.session_id else None,
+            sid,
             args.log_dir,
         )
         return 0
 
-    bundle = run_capture(bundle_command(args, args.session_id))
+    bundle = run_capture(bundle_command(args, sid))
     if bundle.stderr.strip():
         print(bundle.stderr.strip(), file=sys.stderr)
     if bundle.returncode != 0:
@@ -567,20 +719,21 @@ def main():
         log_dir,
         evidence_dir,
         bundle_manifest,
+        session_verification,
     )
     manifest_path = evidence_dir / MANIFEST_NAME
     additions = []
     for token in tokens:
         try:
             additions.append(attribute_token(args, token, evidence_dir, sid, log_dir))
-        except SystemExit as exc:
+        except SystemExit:
             manifest["attributions"] = additions
             manifest["error"] = {
                 "token": token,
                 "message": f"attribution failed for {token}",
             }
             write_manifest(manifest_path, manifest)
-            raise exc
+            raise
     manifest["attributions"] = additions
     write_manifest(manifest_path, manifest)
     print_summary(manifest, args.json)

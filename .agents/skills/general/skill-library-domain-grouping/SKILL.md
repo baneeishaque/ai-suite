@@ -166,14 +166,15 @@ json/
 ```text
 git/
 ├── basic/
-│   ├── edit/                 (9) — atomic-commit-construction, commit-edit,
+│   ├── edit/                 (10) — atomic-commit-construction, commit-edit,
 │   │                              noise-removal-via-commit-edit,
 │   │                              separate-content-from-formatting-commits,
 │   │                              drop-commit-with-divergent-recreation,
 │   │                              git-commit-preview-verify,
 │   │                              git-commit-edit-in-worktree,
 │   │                              git-rebase-drop-noninteractive,
-│   │                              git-commit-replace-and-replay
+│   │                              git-commit-replace-and-replay,
+│   │                              git-apply-patch-cleanup
 │   ├── message/              (4) — commit-message-bulk-reword,
 │   │                              commit-message-reword,
 │   │                              commit-metadata-extraction,
@@ -459,6 +460,13 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-10-31 - git/basic/edit/ 9->10: git-apply-patch-cleanup adopted
+
+* `git-apply-patch-cleanup` (git/basic/edit/, 9->10) - base primitive for applying a
+  git patch with verification, preview, trash-aware cleanup, and a layered
+  patch-coexistence preflight. It was an unregistered flat-root skill; moving it into
+  `git/basic/edit/` puts it beside the commit and hunk primitives that consume it.
 
 ### 2026-10-27 - git/repo/ 6->7: orphaned-worktree remediation composer added
 

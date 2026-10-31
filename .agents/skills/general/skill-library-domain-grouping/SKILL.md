@@ -57,7 +57,7 @@ consumed by:
 ├── eclipse/                      (4 items — flat)
 ├── email/                        (2 items — flat)   <- NEW
 ├── general/                      (10 flat + 7 sub-groups)
-├── git/                          (7 sub-groups)
+├── git/                          (8 sub-groups)
 ├── github/                       (2 flat + 8 sub-groups)
 ├── java/                         (3 items — flat)
 ├── jira/                         (4 items — flat)
@@ -161,7 +161,7 @@ json/
 └── jsonl-content-extractor                    [pending-move — physical folder at .agents/skills/jsonl-content-extractor/]
 ```
 
-**git/** (7 sub-groups):
+**git/** (8 sub-groups):
 
 ```text
 git/
@@ -197,25 +197,34 @@ git/
 │                                  parallel-branch-decommission,
 │                                  rebase-standardization
 │
-├── config/                   (7) — clean-filter-renormalize-backfill,
+├── config/                   (4 realized; 6 pending-move from flat root) —
+│                                  credential-store-secret-safe-audit,
+│                                  git-credential-helper-protocol-probe,
+│                                  git-credential-helper-url-scoped-wiring,
+│                                  git-remote-branch-convention-discovery <- NEW
+│                              PENDING-MOVE (still flat at skills root):
+│                                  clean-filter-renormalize-backfill,
 │                                  jq-pretty-json-filter,
 │                                  post-gitignore-untrack,
 │                                  gitignore-rules,
 │                                  gitignore-whitelist-pattern,
-│                                  gitignored-reference-detection,
-│                                  git-remote-branch-convention-discovery <- NEW (realized)
+│                                  gitignored-reference-detection
 │
-├── repo/                     (6) — canonical-source-vs-workflow-repo-audit,
+├── repo/                     (7) — canonical-source-vs-workflow-repo-audit,
 │                                  cross-repo-cherry-pick,
 │                                  lfs-selective-clone,
 │                                  repo-storage-minimization,
+│                                  git-orphaned-worktree-remediation  <- NEW
 │                                  git-remote-origin-repoint,
-│                                  git-remote-branch-lifecycle  <- NEW
+│                                  git-remote-branch-lifecycle
 │
 ├── sandbox/                  (4) — personal-content-extraction,
 │                                  personal-sandbox-remote,
 │                                  personal-sandbox-restack,
 │                                  personal-team-branch-workflow
+│
+├── snapshot/                 (2) — git-worktree-snapshot-nonintrusive,
+│                                  git-pre-execution-safety-snapshot
 │
 ├── stash/                    (3) — pre-execution-safety-stash,
 │                                  stash-parent-commit,
@@ -349,7 +358,6 @@ media/
 
 ```text
 opencode/
-├── opencode-current-session-id
 ├── opencode-installed-plugin-lookup
 ├── opencode-ssot-provider-ext-sync
 │
@@ -452,6 +460,17 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 
 ## 4. Changelog
 
+### 2026-10-27 - git/repo/ 6->7: orphaned-worktree remediation composer added
+
+* `git-orphaned-worktree-remediation` (git/repo/, 6->7) - diagnoses and safely removes
+  orphaned Git worktrees through the existing content-audit, cleanup, fingerprint, and
+  repository-status primitives. Orphaned-worktree lifecycle is a repo-level workflow, not
+  a snapshot or audit primitive.
+* Four `git/repo/` taxonomy entries (`canonical-source-vs-workflow-repo-audit`,
+  `cross-repo-cherry-pick`, `lfs-selective-clone`, `repo-storage-minimization`) remain
+  pending-move from the flat root; the physical `git/repo/` folder gains only this new
+  composer.
+
 ### 2026-10-17 - remote reachability and convention primitives split; lifecycle + gap closure added
 
 * `git-remote-ref-reachability-primitives` (git/basic/audit/, 9->10, now AT THE CAP) -
@@ -493,6 +512,48 @@ sub-group following the `json/` precedent (1 realized + 8 pending-move, no physi
 `opencode-ssot-provider-ext-sync` stay flat (non-session).
 
 Updated Section 1.1 tree (`opencode/` 10 flat → 2 flat + 1 sub-group) and Section 1.2 listing.
+
+### 2026-10-16 — git/config/ realized (3 items, 6 pending-move): credential suite
+
+The `git/config/` sub-group was declared in the taxonomy but never physically
+created: its six members sat flat at the skills root. This change realizes the
+group with three new skills and marks the six stragglers `pending-move`, matching
+the convention already used for `json/` (9 items, 8 pending-move) — so the
+taxonomy stops over-reporting a group that did not exist without forcing a
+mass folder move in the same change.
+
+* `credential-store-secret-safe-audit` (BASE) — secret-safe inventory of Git credential
+  stores; hard runtime guard against secret-emitting subcommands.
+* `git-credential-helper-protocol-probe` (BASE) — offline+network probes establishing the
+  seven helper wire-protocol facts and six `credential.<url>` matching rules.
+* `git-credential-helper-url-scoped-wiring` (COMPOSER) — per-remote URL-scoped identity
+  wiring; consumes both bases via a preflight gate.
+
+`git/` sub-group count moved 8 -> 9. The names keep a `git-` prefix because the
+sibling root-level auth skill is `git-github-auth-fallback`, and the prefix keeps
+that family greppable from the skills root.
+
+### 2026-10-15 — git/snapshot/ new sub-group (2 items): non-intrusive snapshot base + safety composer
+
+Added:
+
+* **`git/snapshot/`** (new sub-group, 2 items; parent `git/` 7→8 sub-groups):
+    * **`git-worktree-snapshot-nonintrusive`** (new base): captures and restores
+      a worktree snapshot (tracked modifications + untracked files, honoring
+      `.gitignore`) as git objects under `refs/snapshots/*` via a throwaway
+      `GIT_INDEX_FILE` — zero mutation of the real index or the working tree on
+      capture; `create` / `list` / `verify` / `restore` / `drop` CLI.
+    * **`git-pre-execution-safety-snapshot`** (new composer): Snapshot → Hold →
+      Verify-and-Release pre-execution safety protocol over the base — the
+      non-intrusive sibling of `git-pre-execution-safety-stash` (no `stash
+      apply`, so no live-repo apply-conflict class).
+
+Rationale: the nearest existing leaf `git/stash/` is stash-semantics only and
+the new base is explicitly a NON-stash mechanism; a distinct `snapshot/` leaf
+keeps the two mechanisms separate while staying under the 8±2 limit.
+
+Updated Section 1.1 tree (`git/` 7→8 sub-groups) and Section 1.2 listing
+(new `git/snapshot/` block).
 
 ### 2026-10-03 — json/ group realized (9 items, 8 pending-move): jsonc-cst-util added; general/ flat reconciled 12->10
 

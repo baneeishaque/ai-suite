@@ -229,7 +229,6 @@ All scripts:
 
 ## Related Skills
 
-- `git-atomic-commit-construction` — Composer: orchestrates primitives for atomic commit workflows.
 - `git-history-refinement` — Composer: uses primitives for commit splitting/refinement.
 - `git-pre-execution-safety-stash` — Uses staging primitives for safety snapshots.
 - `script-over-instruction-decomposition` — Mandates Tier-A extraction for all primitives.

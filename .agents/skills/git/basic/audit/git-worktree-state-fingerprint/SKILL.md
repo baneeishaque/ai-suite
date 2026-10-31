@@ -8,7 +8,7 @@ description: >-
 category: Git & Repository Management
 ---
 
-# Git Worktree State Fingerprint (v1)
+# Git Worktree State Fingerprint (v1.1)
 
 > **Name:** git-worktree-state-fingerprint<br>
 > **Description:** Base primitive — byte-level worktree state capture + delta comparison<br>
@@ -96,12 +96,60 @@ deltas; `2` usage, I/O, or git error.
    individually explained against the operation's expected effects, or the
    operation STOPS. The script itself applies no tolerances.
 
+## Reconstructed-Baseline Verification
+
+`compare` proves the live worktree did not change across an operation. A
+different question is: **did a commit leave a pre-existing dirty state
+undisturbed?** Answer it by reconstructing that pre-state independently and
+diffing it against the live tree.
+
+[`scripts/reconstruct-baseline-diff.py`](scripts/reconstruct-baseline-diff.py):
+
+| Argument | Description |
+| -------- | ----------- |
+| `--repo` | Repository root (default: current directory) |
+| `--base-ref` | Commit the new work was layered on |
+| `--pre-state-patch` | Saved `git diff --binary` of the pre-state |
+| `--files` | Repo-relative file to verify (repeatable) |
+| `--expected-delta` | File whose delta is expected (repeatable) |
+| `--workdir` | Parent for the isolated worktree (default: `<repo>/scratch`) |
+| `--json` | Emit a machine-readable report |
+| `--keep-worktree` | Keep the reconstructed worktree for inspection |
+
+**Procedure:**
+
+1. Save the pre-state patch before the commit:
+   `git diff --binary > <scratch>/pre-state.patch`.
+2. Record the base commit: `git rev-parse HEAD`.
+3. Commit the new work.
+4. Reconstruct and compare:
+
+   ```bash
+   python3 .agents/skills/git/basic/audit/git-worktree-state-fingerprint/scripts/reconstruct-baseline-diff.py \
+     --repo <repo> \
+     --base-ref <base-sha> \
+     --pre-state-patch <scratch>/pre-state.patch \
+     --files <path> [--files <path> ...] \
+     [--expected-delta <path> ...] [--json]
+   ```
+
+The script checks out `--base-ref` in an isolated worktree, applies the
+pre-state patch, and reports each file as `IDENTICAL`, `DIFFERS`,
+`MISSING_IN_BASELINE`, or `MISSING_IN_LIVE`. A delta listed in
+`--expected-delta` is expected; every other delta is unexpected. Exit 0 means
+the pre-state was left undisturbed (or only expected deltas remain); exit 1
+means an unexpected delta exists. The isolated worktree is created under
+`<repo>/scratch` by default and removed afterwards; use `--keep-worktree` to
+inspect it. The script reports deltas only — the consuming skill owns the
+decision about which deltas are acceptable.
+
 ## Composition by Higher-Level Skills
 
 | Composer | Composition Mechanism |
 | -------- | --------------------- |
 | [`git-commit-edit-in-worktree`](../../edit/git-commit-edit-in-worktree/SKILL.md) | Gate 1 runs `capture` on the target worktree before any mutation; Gate 8 re-runs `capture` and then `compare --pre --post`, consuming the delta list to gate the edit (expected: worktree bytes identical + HEAD at the expected new tip). |
 | [`git-submodule-history-removal`](../../../submodule/lifecycle/git-submodule-history-removal/SKILL.md) | Refresh-2 baseline verification runs `capture`/`compare` around the history-removal rebase instead of the previously hand-rolled shell pipeline. |
+| [`git-atomic-commit-construction`](../../../../git-atomic-commit-construction/SKILL.md) | §9h.1 post-commit proof: reconstructs the pre-state from the saved patch and diffs it against the live tree. |
 
 ## Prohibited Behaviors
 

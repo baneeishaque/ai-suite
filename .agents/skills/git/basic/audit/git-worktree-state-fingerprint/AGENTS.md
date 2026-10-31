@@ -14,6 +14,9 @@ The operational SSOT lives in [`SKILL.md`](SKILL.md).
   operation that must not disturb the surrounding working-tree bytes.
 - You are a composer (e.g. `git-commit-edit-in-worktree`) wiring baseline
   capture/compare gates around a mutation.
+- You need to prove a commit left a pre-existing dirty state undisturbed —
+  reconstruct the pre-state from its saved patch and diff named files against
+  the live worktree with `scripts/reconstruct-baseline-diff.py`.
 
 ## Operational Procedure
 

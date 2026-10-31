@@ -8,10 +8,10 @@ description: Closes skill-library documentation gaps discovered from real sessio
 category: Skill-Authoring
 ---
 
-# Skill Library Gap Closure (v1.3)
+# Skill Library Gap Closure (v1.4)
 
 > **Skill ID:** `skill-library-gap-closure`<br>
-> **Version:** 1.3.0<br>
+> **Version:** 1.4.0<br>
 > **Standard:** [Agent Skills (agentskills.io)](https://agentskills.io)<br>
 > **Layer:** Composer (per [skill-factory §2.0 Layering Decision](../../../skill-factory/SKILL.md))
 
@@ -235,6 +235,47 @@ Every returned record is a JSON array of tool calls that contain the token. Buil
 `Evidence Verification Index` in the gap register and the plan of action from these
 records and the bundle manifest. A `no_match` result is recorded as `no_match`; it is not
 positive evidence. An attribution exit code `2` is a hard stop.
+
+### 2.6.1 Deliberate re-run of the evidence pass
+
+Re-auditing the same session is expected: the register is local-only (§2.3). Run it
+deliberately, never by overwriting the prior pass.
+
+1. **New purpose.** Append a rerun suffix to `--purpose` (for example
+   `skill-library-gap-closure-evidence-rerun2`) so the new artifacts are not confused
+   with the first pass.
+2. **Separate evidence directory.** Point `--evidence-dir` at a sibling directory (for
+   example `<scratch>/gap-closure-rerun2`), never the first pass's directory.
+3. **Pre-create the redirect target.** A report redirect fails with
+   `no such file or directory` when the directory does not exist. Create it first:
+
+   ```bash
+   mkdir -p <scratch>/gap-closure-rerun2
+   ```
+
+4. **Re-verify the session.** Reuse the verified phrase from §2.1 (or a fresh unique
+   phrase from the current turn) and pass `--verify-text`; the driver fails closed on
+   no match or ambiguity.
+5. **Run the driver** with the new purpose and evidence directory:
+
+   ```bash
+   python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-gap-closure-evidence.py \
+       --session-id <ses-id> \
+       --verify-text "<unique phrase from the current user message>" \
+       --repo <repo> \
+       --purpose skill-library-gap-closure-evidence-rerun2 \
+       --evidence-dir <scratch>/gap-closure-rerun2 \
+       --json
+   ```
+
+6. **Keep the prior pass.** Do not delete or overwrite the earlier report or manifest;
+   compare the new manifest to the prior one and record what changed in the register.
+
+The driver's "No report overwrite" guardrail protects a supplied report; it does not
+protect a directory path you reuse. The separate `--evidence-dir` is what makes the
+re-run deliberate. If you only need to amend a filled report, use
+[`deterministic-artifact-in-place-amendment`](../../planning/deterministic-artifact-in-place-amendment/SKILL.md)
+instead of re-running the bundle.
 
 ### 2.7 Plan-first gate
 

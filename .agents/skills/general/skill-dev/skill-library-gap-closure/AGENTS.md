@@ -21,6 +21,9 @@ register and plan are verifiable without a second prompt.
   call that produced it.
 - You need to bind the evidence to the current user turn when more than one session has an
   in-flight marker.
+- You need to re-run evidence acquisition for the same session without overwriting the
+  prior pass — follow §2.6.1's new purpose, separate evidence directory, and pre-created
+  redirect target.
 
 For the narrower rule-file migration path (turn a redundant RULE into a skill), use
 [`rule-to-skill-industrialization`](../../../rule-to-skill-industrialization/SKILL.md) — this
@@ -35,7 +38,9 @@ non-actionable. For session-backed evidence, resolve and verify the session with
 `opencode-current-session-id` first, then run `scripts/run-gap-closure-evidence.py` with
 `--verify-text "<unique phrase from the current user message>"` before extracting gaps;
 use `--attribution-only --paths-file` once candidate gaps exist. The driver fails closed
-on no match or ambiguity and records `session_verification` in the manifest.
+on no match or ambiguity and records `session_verification` in the manifest. For a
+deliberate re-run, follow §2.6.1: new `--purpose` suffix, separate `--evidence-dir`, and
+`mkdir -p` the target first.
 
 ## Cross-References
 

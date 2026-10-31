@@ -19,3 +19,6 @@
    session when multiple sessions are in flight.
 - 2026-10-30 — Plans now require an absolute Files-to-Touch section; a plan without a
    per-file change list cannot reach the approval gate.
+- 2026-10-31 — Added the deliberate evidence re-run recipe (§2.6.1): a new purpose suffix,
+   a separate evidence directory, a pre-created redirect target, session re-verification,
+   and retention of the prior report/manifest.

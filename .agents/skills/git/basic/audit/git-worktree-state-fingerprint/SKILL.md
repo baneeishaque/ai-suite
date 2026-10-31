@@ -39,6 +39,12 @@ commands) in one script. Known composers/consumers:
 - [`git-commit-replace-and-replay`](../../edit/git-commit-replace-and-replay/SKILL.md)
   — the in-place replacement primitive whose post-replay verification pairs
   with this fingerprint.
+- [`git-worktree-snapshot-nonintrusive`](../../../snapshot/git-worktree-snapshot-nonintrusive/SKILL.md)
+  — restorable worktree snapshot; the complementary primitive to this
+  detect-only fingerprint ("state can be restored" vs "nothing changed").
+- [`git-pre-execution-safety-snapshot`](../../../snapshot/git-pre-execution-safety-snapshot/SKILL.md)
+  — composer that captures a restorable safety snapshot before a destructive
+  sequence; pair its capture with this fingerprint to prove non-intrusiveness.
 
 ## Environment & Dependencies
 

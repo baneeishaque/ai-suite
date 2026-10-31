@@ -33,3 +33,8 @@ non-actionable.
   fingerprint.
 - [`git-pre-execution-safety-stash`](../../../../git-pre-execution-safety-stash/SKILL.md)
   — recoverable snapshot sibling; this skill is read-only evidence.
+- [`git-worktree-snapshot-nonintrusive`](../../../snapshot/git-worktree-snapshot-nonintrusive/SKILL.md)
+  — restorable worktree snapshot (complementary: "can be restored" vs "nothing changed").
+- [`git-pre-execution-safety-snapshot`](../../../snapshot/git-pre-execution-safety-snapshot/SKILL.md)
+  — composer capturing a restorable safety snapshot; pair with this fingerprint
+  to prove capture non-intrusiveness.

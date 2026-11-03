@@ -50,6 +50,13 @@ Stdlib only. The extractor requires PyYAML — see its Environment section.
   restricts the set (each `ses_` prefix optional).
 - Inside a session dir, turn files (`NNN-<timestamp>.yaml`) are processed in
   filename (chronological) order; `000-header-*` files are skipped.
+- **Completed turns only.** `TURN_RE` matches `NNN-<timestamp>.yaml`; an
+  in-flight `NNN-pending-<timestamp>.yaml` is deliberately excluded. A path
+  first cited in the live turn therefore yields `no_match` (exit `1`) even
+  though the call is visible in the pending file. Record the pending YAML path
+  plus the call index directly in the evidence index; a later re-run after the
+  turn is archived produces the positive attribution anchor. An exit-`1`
+  `no_match` is not positive evidence — never upgrade it silently.
 - `--since` / `--until` windows are enforced on the **turn-filename
   timestamp** (`2026-08-07T04-14-05-689Z` → aware UTC datetime).
 

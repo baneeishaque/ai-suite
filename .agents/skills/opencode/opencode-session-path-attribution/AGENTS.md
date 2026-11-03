@@ -20,6 +20,11 @@ the CLI contract, exit codes, and the matching semantics. Do NOT execute
 any step without first loading `SKILL.md` — this bridge is intentionally
 non-actionable.
 
+Attribution scans completed turns only: the in-flight
+`NNN-pending-<timestamp>.yaml` is excluded, so a path first cited in the live
+turn yields `no_match`. Record the pending YAML path and call index directly;
+treat the later archived re-run as the positive anchor.
+
 ## Cross-References
 
 - [`opencode-session-yaml-tool-call-extractor`](../opencode-session-yaml-tool-call-extractor/SKILL.md)

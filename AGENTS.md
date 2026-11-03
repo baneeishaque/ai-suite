@@ -236,8 +236,9 @@ When the user requests a durable behavior change, record it here or in the relev
 - Git stash: never run `git stash` / `git stash pop` / `git stash apply` (or any stash mutation)
   without explicit user confirmation — stash operations can hide or lose working-tree changes owned
   by other agent sessions. Use `git show HEAD:<path>` or a single-file checkout for baselines instead.
-- File writes: use the `Write` tool for creating files; never use `cat`/heredoc via Bash for
-  file creation (heredocs are only for feeding scripts, not writing deliverables).
+- File writes: use the `Write` tool for creating files and the `Edit` tool for modifying files;
+  never use `cat`/heredoc/python-inline via Bash to write or modify deliverables (heredocs are
+  only for feeding scripts).
 
 - Artifact retirement: before trashing/deleting any planning artifact (register, plan,
   report, preview), deeply verify it is fully completed and covered (all actions executed,

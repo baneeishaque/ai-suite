@@ -258,13 +258,15 @@ documentation or stylistic refinements.
 List **ALL changes** — staged, unstaged, AND untracked (not just
 violations or modifications to already-tracked files) — with their
 status. This gives the user full visibility and ensures no file is
-analyzed as an afterthought:
+analyzed as an afterthought. **Every row MUST be tagged as author-owned
+(this session) or pre-existing (other agents/sessions); only author-owned
+changes may be committed.**
 
-| # | File | Status | Action |
-|---|---|---|---|
-| 1 | `.gitignore` | Modified | 🔄 Update |
-| 2 | `src/main.java` | Modified | 🔄 Stage |
-| 3 | `README.md` | Untracked | ❓ Confirm with user |
+| # | File | Status | Owner | Action |
+|---|---|---|---|---|
+| 1 | `.gitignore` | Modified | author | 🔄 Update |
+| 2 | `src/main.java` | Modified | author | 🔄 Stage |
+| 3 | `README.md` | Untracked | pre-existing | ❓ Confirm with user |
 
 ---
 

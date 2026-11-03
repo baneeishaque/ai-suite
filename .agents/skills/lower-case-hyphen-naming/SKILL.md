@@ -24,6 +24,37 @@ Consistency in naming eliminates cognitive overhead, prevents build-tool
 edge cases with special characters, and ensures grep/search reliability
 across the entire codebase.
 
+## Name Conversion Algorithm
+
+A source name is converted to kebab-case deterministically. Apply these
+rules to the **stem** only (the file extension is preserved unchanged):
+
+1. **Split camelCase / PascalCase boundaries.** Insert a hyphen before each
+   uppercase letter that follows a lowercase letter or digit
+   (`ClinAssist` → `Clin-Assist`, `finalSlideDeckk` → `final-Slide-Deckk`).
+2. **Normalize separators.** Replace any run of non-alphanumeric characters
+   (spaces, underscores, dots, hyphens) with a single hyphen
+   (`Zetaris Demo Video` → `Zetaris-Demo-Video`,
+   `Final_Slide__Deckk` → `Final-Slide-Deckk`).
+3. **Trim.** Remove leading and trailing hyphens
+   (`_Zetaris Demo Video.txt_` → `zetaris-demo-video.txt`).
+4. **Lowercase.** Convert the entire stem to lowercase
+   (`Clin-Assist` → `clin-assist`).
+5. **Acronym rule.** An all-caps token with no internal boundary
+   (e.g. `README`, `LICENSE`, `AGENTS`) is treated as a single word and
+   lowercased as-is (`readme`, `license`, `agents`) — **unless** it is an
+   industry-standard exempt name listed in the Exemptions table, in which
+   case it is left untouched.
+
+**Examples:**
+
+| Source | Result |
+|---|---|
+| `ClinAssist_AI_Hackathon_FinalSlideDeckk.pptx` | `clinassist-ai-hackathon-final-slide-deckk.pptx` |
+| `Zetaris Demo Video.mp4` | `zetaris-demo-video.mp4` |
+| `_Zetaris Demo Video.txt_` | `zetaris-demo-video.txt` |
+| `README.md` | `README.md` (exempt) |
+
 ## Prerequisites
 
 | Requirement | Minimum |
@@ -231,6 +262,53 @@ OneDrive, or another process, use the **mirror-and-remove** strategy:
    ```powershell
    code --add "path/to/old-name"
    ```
+
+#### Fallback — Non-Git Directories
+
+When the target is **not** a Git repository (`git rev-parse --is-inside-work-tree`
+fails, or the directory is outside any Git worktree), the Git-based steps do
+not apply. Use this procedure instead:
+
+1. **Enumerate files** with a plain directory listing (no `git ls-files`).
+
+   **Bash:**
+   ```bash
+   find "path/to/dir" -type f
+   ```
+
+   **PowerShell:**
+   ```powershell
+   Get-ChildItem -Path "path/to/dir" -Recurse -File
+   ```
+
+2. **Classify exemptions** using the Exemptions table (unchanged).
+
+3. **Blast radius (local only).** Skip the Git-based cross-reference trace.
+   Instead, grep the directory itself for the old names:
+
+   ```bash
+   grep -rl "old-name" "path/to/dir" 2>/dev/null
+   ```
+
+4. **Rename** using plain `mv` / `Rename-Item` (no `git mv`, no history to
+   preserve), deepest-first, files before directories:
+
+   ```bash
+   mv "path/to/old name.ext" "path/to/old-name.ext"
+   ```
+
+5. **Update cross-references** in any files found in step 3.
+
+6. **Verify** with a plain grep over the directory:
+
+   ```bash
+   grep -rl "old-name" "path/to/dir" 2>/dev/null
+   ```
+
+   Expected result: no output.
+
+All other rules (exemptions, conversion algorithm, ordering, verification
+mandate) remain identical to the Git procedure.
 
 ### Step 5 — Update All Cross-References
 

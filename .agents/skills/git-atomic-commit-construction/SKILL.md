@@ -184,6 +184,27 @@ audit risks landing the work in a repo whose changes never reach the
 canonical artifact (real-world precedent: Account-Ledger-Server vs
 Account-Ledger-Server-PHP, May 2026)
 
+#### 0g — Pre-Edit Dirty Check (Red/Green Signal)
+
+Before editing ANY file, check whether that file (and the files it
+depends on) is already dirty in the working tree:
+
+```bash
+git status --short -- <file>
+```
+
+- **Green (no output):** the file is clean — safe to edit.
+- **Red (modified/staged/untracked):** the file carries uncommitted
+  changes — STOP and determine ownership before editing:
+  - If the changes are **author-owned (this session)**: proceed, but
+    stage only the new hunks (do not absorb the pre-existing ones).
+  - If the changes are **pre-existing (other agents/sessions)**: do
+    NOT overwrite; either defer or coordinate.
+  - If ownership is **unknown**: ask the user before editing.
+
+This signal detection is mandatory for every file in the "Files to Touch"
+list, and must be recorded in the commit preview's inventory (§1f).
+
 ---
 
 ### Step 1 — Deep Change Analysis

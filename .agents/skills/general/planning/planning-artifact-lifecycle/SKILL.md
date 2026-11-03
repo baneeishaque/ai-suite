@@ -158,6 +158,10 @@ or superseded. Choose the branch that matches the situation:
 
 Generic deletion rules (branch a):
 
+0. **Deep completeness check (mandatory)**: Before trashing, verify the
+   artifact is fully completed and covered — all actions executed, no
+   pending items, no dangling references to it. If anything is left
+   behind, notify the user and re-confirm before proceeding.
 1. **User must initiate or explicitly confirm**: Never delete artifacts
    without the user saying "yes", "delete", or "clean up".
 2. **Batch deletions**: When user confirms cleanup, delete ALL stale

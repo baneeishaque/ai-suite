@@ -100,3 +100,4 @@ discovery.
 | Composer | Composition Mechanism |
 | --- | --- |
 | [`opencode-session-log-cleanup`](../../../opencode/opencode-session-log-cleanup/SKILL.md) | Calls `scripts/safe_cleanup.py <paths> [--remove-empty-parents]`; consumes exit code and JSON Lines output to confirm cleanup. |
+| [`opencode-session-deletion`](../../../opencode/session/opencode-session-deletion/SKILL.md) | Calls `scripts/safe_cleanup.py <paths>` per scratch/plan file; consumes exit code to confirm per-file removal. |

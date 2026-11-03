@@ -1,0 +1,39 @@
+# opencode-session-deletion — Agent Contract
+
+## Purpose
+
+Owns the end-to-end deletion of an OpenCode session: database record,
+logger-plugin logs, scratch artifacts, and planning artifacts, with discovery,
+explicit confirmation, per-file removal, and verification.
+
+## Ownership
+
+- `SKILL.md` — the skill contract.
+- `scripts/delete-session.py` — the deterministic orchestrator.
+- `CHANGELOG.md` / `TRACEABILITY.md` — metadata companions.
+
+## Local Contracts
+
+- Destructive removal requires `--execute` plus explicit user confirmation;
+  the default mode is `--dry-run`.
+- Scratch files are removed individually, never folder-wide.
+- Composed scripts (`opencode-session-log-cleanup`, `safe-file-cleanup`) are
+  required in execute mode; a missing one is exit `2`.
+- No `rm`; `safe-file-cleanup` uses the system trash.
+
+## Work Guidance
+
+- Close the target session's TUI before deleting logs, or the logger may
+  recreate them.
+- Re-verify after ~10 seconds and repeat if logs reappear.
+- Leave unexpected/new scratch files untouched and report them.
+
+## Verification
+
+- `python3 scripts/delete-session.py --help`
+- Dry-run against a non-existent fake ID exits `1` with no deletion.
+- `markdownlint-cli2 SKILL.md AGENTS.md CHANGELOG.md TRACEABILITY.md`
+
+## Child DOX Index
+
+None.

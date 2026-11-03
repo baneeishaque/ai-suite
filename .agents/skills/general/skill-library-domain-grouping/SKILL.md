@@ -362,8 +362,9 @@ opencode/
 ├── opencode-installed-plugin-lookup
 ├── opencode-ssot-provider-ext-sync
 │
-├── session/                  (1 realized; 8 pending-move)
+├── session/                  (2 realized; 8 pending-move)
 │   ├── opencode-session-analysis-bundle        <- NEW
+│   ├── opencode-session-deletion
 │   │
 │   ├── opencode-current-session-id             [pending-move — physical folder at .agents/skills/opencode/opencode-current-session-id/]
 │   ├── opencode-session-log-cleanup            [pending-move — physical folder at .agents/skills/opencode/opencode-session-log-cleanup/]

@@ -93,4 +93,6 @@ the same YAML/JSONL log formats this skill removes.
 
 ## Composition by Higher-Level Skills
 
-None — this skill is a leaf composer in the opencode/ group.
+| Composer | Composition Mechanism |
+| --- | --- |
+| [`opencode-session-deletion`](../session/opencode-session-deletion/SKILL.md) | Runs `scripts/cleanup_session_logs.py <id> --logs-dir <dir> --yes` as the log-removal step of end-to-end session deletion. |

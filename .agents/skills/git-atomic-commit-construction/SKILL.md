@@ -362,7 +362,16 @@ staging, the preview **MUST** include the specific git hunks.
    If the combined diff is too large for one conversation message, split the
    preview across batches ($2g) and present one batch at a time.
 
-4. **Preview Artifact** — Write the full preview to
+4. **Execution Plan Steps** — The preview MUST include an `## Execution Plan
+   Steps` section listing the staging/commit/verification steps for every
+   commit, so the user can audit the execution order before authorizing.
+
+5. **Author-Owned Scope** — The inventory and preview MUST distinguish
+   changes authored in this session from pre-existing working-tree changes;
+   only author-owned changes may be committed, and pre-existing changes must
+   be left untouched.
+
+6. **Preview Artifact** — Write the full preview to
    `scratch/commit-preview.md` (use
    [`repo-scratch-output-capture`](../repo-scratch-output-capture/SKILL.md)
    to ensure `scratch/` exists and is gitignored), unless a planning-artifact
@@ -401,6 +410,18 @@ Template:
 
   [Body line 1]
   ```
+---
+
+## Execution Plan Steps
+
+1. Verify scope: list ALL changes (staged, unstaged, untracked) and mark
+   which are author-owned vs pre-existing; only author-owned changes may be
+   committed.
+2. For each commit: stage only its hunks, verify with `git diff --cached`,
+   then commit.
+3. After each commit: `git log -1`, `git show --stat`, `git status`.
+4. Final verification: only pre-existing (non-author) changes remain in the
+   working tree.
 ---
 Please say "start" to begin the sequential execution of these atomic
 commits.

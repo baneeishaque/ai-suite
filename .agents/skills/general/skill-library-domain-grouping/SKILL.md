@@ -48,9 +48,9 @@ consumed by:
 
 ### 1.0 Tree Notations
 
-* `<- NEW` — entry added in the most recent taxonomy revision. When adding a
-  new entry, MOVE the marker to the new entry and remove it from entries added
-  in earlier revisions; a stale marker on an older entry is a defect.
+* `<- NEW` — marks an entry added in a recent taxonomy batch. When registering
+  a new entry, MOVE the marker from the previously newest entry to the new
+  entry; markers that record other batches may remain.
 * `[pending-move — physical folder at …]` — entry recorded in its target group
   but physically still at the given path.
 * `(N realized; M pending-move)` — counts of physical vs pending entries.

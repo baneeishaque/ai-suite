@@ -298,6 +298,12 @@ The plan MUST contain a `## Files to Touch (absolute)` section with one row per 
 absolute path, owning gap, and the concrete change. A plan whose touch list is empty or
 uses relative paths MUST NOT be presented for approval.
 
+**Touch-list completeness cross-check (mandatory):** every path named anywhere else in
+the plan — Surface Area Scan, cross-reference rows, registration steps, artifact
+updates — MUST also appear as a row in `## Files to Touch (absolute)`. A plan that
+names a path elsewhere without a touch-list row is incomplete. Before presenting the
+plan, diff the two sets and add every missing path.
+
 ### 2.8 Routing and closure
 
 For each approved row, route to skill-factory §6 (enrich) or §2 (create). Then:

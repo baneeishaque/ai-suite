@@ -118,6 +118,17 @@ python3 scripts/stage-head-synthesize.py \
 stages resulting blob via `git update-index --cacheinfo`. Working
 tree NEVER modified.
 
+**Pipe-containing content (Markdown tables):** `--replace` and
+`--regex-replace` use `|` as the OLD/NEW separator, so literal table rows
+break parsing. Use a regex and encode the pipe as `\x7c` in the pattern
+(no literal `|` before the separator), e.g.:
+
+```bash
+python3 scripts/stage-head-synthesize.py \
+    --file .agents/skills/X/SKILL.md \
+    --regex-replace 'to confirm cleanup\. \x7c\n|to confirm cleanup. |\n| new row |\n'
+```
+
 ### 4. `stage-hunk-from-diff.py`
 
 Stage ONLY hunks matching `--match` / `--match-regex` from the file's

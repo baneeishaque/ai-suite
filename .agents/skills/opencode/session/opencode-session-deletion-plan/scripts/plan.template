@@ -1,0 +1,84 @@
+# Delete OpenCode Session {{SESSION_ID}} and Remove All Its Logs (v{{VERSION}})
+
+**Date:** {{DATE}}
+**Target session:** `{{SESSION_ID}}`
+**Authoring session:** `{{AUTHORING_SESSION_ID}}`
+**Target title:** {{TARGET_TITLE}}
+
+## Rule Compliance Reference
+
+- [`opencode-session-deletion`](../.agents/skills/opencode/session/opencode-session-deletion/SKILL.md)
+  — execution contract.
+- [`opencode-session-deletion-plan`](../.agents/skills/opencode/session/opencode-session-deletion-plan/SKILL.md)
+  — this plan's authoring contract.
+- [`planning-artifact-lifecycle`](../.agents/skills/general/planning/planning-artifact-lifecycle/SKILL.md)
+  — plan-first gate and retirement.
+- [`safe-file-cleanup`](../.agents/skills/general/file/safe-file-cleanup/SKILL.md)
+  — trash-based removal.
+- [`skill-library-gap-closure`](../.agents/skills/general/skill-dev/skill-library-gap-closure/SKILL.md)
+  — mandatory gate.
+
+## 1. Target Inventory
+
+| Artifact class | Count | Paths |
+| :--- | :--- | :--- |
+{{INVENTORY_ROWS}}
+
+## 2. Content-Survival Markers (mandatory)
+
+{{MARKER_SECTION}}
+
+## 3. Commit Roster
+
+{{COMMIT_ROSTER}}
+
+## 4. Gap-Closure Gate (mandatory)
+
+{{GAP_CLOSURE}}
+
+## 5. Execution Phases
+
+### Phase 0 — Pre-flight
+
+1. Confirm the target session exists: `opencode session list | grep {{SESSION_ID}}`.
+2. Confirm the gap-closure gate in section 4 is cleared.
+3. If this plan is already retired, recover it from the OS Trash by exact filename.
+4. Verify every content marker in section 2 against the CURRENT working tree,
+   using the listed command. Record `git status --short` for every marker file.
+   STOP if any marker is missing or if no marker baseline exists.
+5. Run the deletion composer's dry-run and compare its inventory with section 1.
+
+### Phase 1 — Delete
+
+```bash
+python3 .agents/skills/opencode/session/opencode-session-deletion/scripts/delete-session.py {{SESSION_ID}} --execute --gap-closure-cleared
+```
+
+### Phase 2 — Verify and recreation guard
+
+1. Confirm no database record, log path, or scratch path remains.
+2. Wait about 10 seconds and re-run the same checks; if anything reappears,
+   close the target TUI and repeat.
+
+### Phase 3 — Retire this plan last
+
+```bash
+trash "<absolute-path-of-this-plan>"
+```
+
+## 6. Files to Retire
+
+{{RETIRE_ITEMS}}
+
+## 7. Guardrails
+
+- The deletion is irreversible except for trash recovery; confirm the target ID.
+- Never delete scratch files folder-wide; remove only the inventoried files.
+- Never resurrect a deleted session's logs; review them before deletion if needed.
+- macOS retirement uses `trash`, never `rm`.
+
+## 8. Change History
+
+| Timestamp | Summary of Changes | Rationale |
+| :--- | :--- | :--- |
+| {{DATE}} | v{{VERSION}} created by `opencode-session-deletion-plan`. | Plan-first gate for session deletion. |

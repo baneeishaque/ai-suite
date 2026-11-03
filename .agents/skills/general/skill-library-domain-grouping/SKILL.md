@@ -371,9 +371,10 @@ opencode/
 ├── opencode-installed-plugin-lookup
 ├── opencode-ssot-provider-ext-sync
 │
-├── session/                  (2 realized; 8 pending-move)
+├── session/                  (3 realized; 8 pending-move)
 │   ├── opencode-session-analysis-bundle
-│   ├── opencode-session-deletion                <- NEW
+│   ├── opencode-session-deletion
+│   ├── opencode-session-deletion-plan           <- NEW
 │   │
 │   ├── opencode-current-session-id             [pending-move — physical folder at .agents/skills/opencode/opencode-current-session-id/]
 │   ├── opencode-session-log-cleanup            [pending-move — physical folder at .agents/skills/opencode/opencode-session-log-cleanup/]
@@ -470,6 +471,19 @@ domain folder. If `general/` exceeds 10 flat items, create a sub-group.
 *
 
 ## 4. Changelog
+
+### 2026-11-04 - opencode/session/ 2->3 realized: session-deletion plan authoring
+
+Added:
+
+* **`opencode-session-deletion-plan`** (new composer, `opencode/session/`): renders
+  the versioned session-deletion implementation plan — embedded content-survival
+  markers, commit roster, mandatory gap-closure gate, execution phases, and
+  retirement-last — from a JSON spec via a Tier-1 generator. It is the upstream
+  authoring counterpart to `opencode-session-deletion`.
+
+Updated Section 1.2 tree (`session/` 2 → 3 realized) and moved the `<- NEW`
+marker from `opencode-session-deletion` to the new entry.
 
 ### 2026-10-31 - git/basic/edit/ 9->10: git-apply-patch-cleanup adopted
 

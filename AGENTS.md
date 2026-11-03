@@ -239,6 +239,11 @@ When the user requests a durable behavior change, record it here or in the relev
 - File writes: use the `Write` tool for creating files; never use `cat`/heredoc via Bash for
   file creation (heredocs are only for feeding scripts, not writing deliverables).
 
+- Artifact retirement: before trashing/deleting any planning artifact (register, plan,
+  report, preview), deeply verify it is fully completed and covered (all actions executed,
+  no pending items, no dangling references); if anything is left behind, notify the user and
+  re-confirm before proceeding.
+
 ## Child DOX Index
 
 - [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source

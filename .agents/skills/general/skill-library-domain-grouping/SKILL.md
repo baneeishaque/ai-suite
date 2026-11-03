@@ -46,6 +46,15 @@ consumed by:
 
 ## 1. Domain Taxonomy
 
+### 1.0 Tree Notations
+
+* `<- NEW` — entry added in the most recent taxonomy revision. When adding a
+  new entry, MOVE the marker to the new entry and remove it from entries added
+  in earlier revisions; a stale marker on an older entry is a defect.
+* `[pending-move — physical folder at …]` — entry recorded in its target group
+  but physically still at the given path.
+* `(N realized; M pending-move)` — counts of physical vs pending entries.
+
 ### 1.1 Top-Level Domains
 
 ```text

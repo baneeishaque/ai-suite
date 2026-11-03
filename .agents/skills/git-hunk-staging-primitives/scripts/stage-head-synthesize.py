@@ -89,12 +89,14 @@ def run(cmd, cwd=None, input_bytes=None):
 
 def find_repo_root(start: str) -> Path:
     return Path(
-        run(["git", "-C", start, "rev-parse", "--show-toplevel"]).strip()
+        run(["git", "-C", start, "rev-parse", "--show-toplevel"])
+        .strip()
+        .decode("utf-8")
     )
 
 
 def get_index_mode(repo: Path, rel: str) -> str:
-    out = run(["git", "-C", str(repo), "ls-files", "--stage", "--", rel])
+    out = run(["git", "-C", str(repo), "ls-files", "--stage", "--", rel]).decode("utf-8")
     if not out.strip():
         return "100644"
     return out.split()[0]
@@ -191,7 +193,7 @@ def main() -> None:
     sha = run(
         ["git", "-C", str(repo), "hash-object", "-w", "--stdin"],
         input_bytes=new_bytes,
-    ).strip()
+    ).strip().decode("utf-8")
     mode = get_index_mode(repo, rel)
     run(
         ["git", "-C", str(repo), "update-index", "--add", "--cacheinfo",

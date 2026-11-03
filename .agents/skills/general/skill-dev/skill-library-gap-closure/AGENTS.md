@@ -38,9 +38,13 @@ non-actionable. For session-backed evidence, resolve and verify the session with
 `opencode-current-session-id` first, then run `scripts/run-gap-closure-evidence.py` with
 `--verify-text "<unique phrase from the current user message>"` before extracting gaps;
 use `--attribution-only --paths-file` once candidate gaps exist. The driver fails closed
-on no match or ambiguity and records `session_verification` in the manifest. For a
+on no match or ambiguity and records `session_verification` in the manifest. When the
+phrase is ambiguous because it appears in historical sessions, apply the finder's
+sole-pending-marker `--since` disambiguation and pass `--since` to the driver. For a
 deliberate re-run, follow §2.6.1: new `--purpose` suffix, separate `--evidence-dir`, and
-`mkdir -p` the target first.
+`mkdir -p` the target first. Before re-auditing a session whose register was retired,
+recover the register from the OS Trash and run every §2.3 validation check; if any check
+fails, re-audit the entire session.
 
 ## Cross-References
 

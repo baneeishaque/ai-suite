@@ -7,3 +7,4 @@
 | 2026-10-27 | v1.2.0 | Added mandatory session verification via `--verify-text` and the `opencode-current-session-id` finder; the driver fails closed on no match or ambiguity and records `session_verification` in the evidence manifest. |
 | 2026-10-30 | v1.3.0 | Plans now require an absolute Files-to-Touch section, so approval cannot proceed without naming every file the plan will change. |
 | 2026-10-31 | v1.4.0 | Added the deliberate evidence re-run recipe (§2.6.1): new purpose suffix, separate evidence directory, pre-created redirect target, session re-verification, and retention of the prior report/manifest. |
+| 2026-11-04 | v1.5.0 | Added `--since` passthrough for the finder's repeated-message ambiguity disambiguation, and the §2.3 validated Trash-recovery gate: a recovered register is usable only after six reliability, continuity, and legitimacy checks; any failure forces a full A-to-Z re-audit. |

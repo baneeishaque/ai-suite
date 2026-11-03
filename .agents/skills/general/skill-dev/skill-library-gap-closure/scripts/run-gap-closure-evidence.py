@@ -204,6 +204,8 @@ def verification_command(args):
         args.verify_text,
         "--json",
     ]
+    if args.since:
+        cmd.extend(["--since", args.since])
     if args.log_dir:
         cmd.extend(["--log-dir", args.log_dir])
     return cmd
@@ -452,6 +454,14 @@ def main():
         help=(
             "Unique phrase from the current user message. Verifies the session "
             "before evidence acquisition; fails closed on no match or ambiguity."
+        ),
+    )
+    parser.add_argument(
+        "--since",
+        default=None,
+        help=(
+            "ISO timestamp forwarded to the session verifier when the "
+            "verify-text phrase is ambiguous (historical matches)."
         ),
     )
     parser.add_argument("--log-dir", default=None, help="Logger root override.")

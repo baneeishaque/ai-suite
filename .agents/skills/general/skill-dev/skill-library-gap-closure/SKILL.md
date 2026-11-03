@@ -104,10 +104,17 @@ python3 .agents/skills/opencode/opencode-current-session-id/scripts/find-current
     --verify-text "<unique phrase from the current user message>" --json
 ```
 
-If it exits `1` (no match) or `2` (multiple matches), stop and present the candidates; do
-not run the driver. Pass the verified session ID and the same phrase to the driver as
-`--session-id` and `--verify-text`; the driver re-verifies and records
-`session_verification` in the manifest.
+If it exits `1` (no match), stop. If it exits `2` (multiple matches), apply the finder's
+documented disambiguation (owned by
+[`opencode-current-session-id`](../../../opencode/opencode-current-session-id/SKILL.md)):
+when exactly one candidate has a fresh in-flight pending marker, re-run with
+`--since <timestamp just before the current turn>`; only if that still yields zero or
+multiple matches, stop and present the candidates. Record the ambiguity candidates and
+the resolution in the register.
+
+Pass the verified session ID and the same phrase to the driver as `--session-id` and
+`--verify-text`; add `--since` when the disambiguation required it. The driver re-verifies
+and records `session_verification` in the manifest.
 
 ```bash
 python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-gap-closure-evidence.py \
@@ -121,7 +128,8 @@ python3 .agents/skills/general/skill-dev/skill-library-gap-closure/scripts/run-g
 The driver:
 
 1. verifies the session when `--verify-text` is supplied and fails closed (exit `2`) on
-   no match or ambiguity;
+   no match or ambiguity; `--since` is forwarded to the finder for the documented
+   repeated-message disambiguation;
 2. runs [`opencode-session-analysis-bundle`](../../../opencode/session/opencode-session-analysis-bundle/SKILL.md);
 3. writes the session's `transcripts/*-transcript.yaml` human transcripts;
 4. writes the full-fidelity JSONL and the report skeleton to session scratch;
@@ -184,6 +192,23 @@ logs and planning documents under `docs/` can contain sensitive information and 
 be published without deliberate review, so the register is not committed. When a later
 closure pass finds no surviving register, re-running the audit is the correct action —
 it costs time, not correctness. Do not treat a missing register as a reason to skip §2.3.
+
+**Recover before re-auditing, but validate the recovered copy.** Before paying the
+re-audit cost, check the OS Trash (macOS `~/.Trash`) for the retired register by the exact
+filename recorded in the prior audit log or plan. A recovered register is usable only
+after ALL of these checks pass:
+
+1. the filename matches the recorded reference;
+2. its `Session:` equals the target session ID;
+3. every cited evidence path (manifest, report, JSONL) exists, either in place or in the
+   Trash;
+4. a `Verdict` is present and states zero open gaps;
+5. the `Evidence Verification Index` is present and non-empty;
+6. the pass identity (number and date) is the latest known pass.
+
+If ANY check fails, or the register or its evidence is unavailable, discard the recovered
+copy and re-audit the entire session from A to Z (driver, §2.3, register). Partial reuse is
+forbidden — trust is not transferable without validation.
 
 **Durability boundary.** What is committed is capability-facing metadata only: the public
 `CHANGELOG.md` and `TRACEABILITY.md` companions per skill. Historical analysis — evidence

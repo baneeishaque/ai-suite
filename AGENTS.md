@@ -233,6 +233,12 @@ When the user requests a durable behavior change, record it here or in the relev
   `jsonc-cst-util` base skill (`.agents/skills/json/jsonc-cst-util/SKILL.md`) — use its `sort`/`format`
   subcommands instead of ad-hoc JSON sorting.
 
+- Git stash: never run `git stash` / `git stash pop` / `git stash apply` (or any stash mutation)
+  without explicit user confirmation — stash operations can hide or lose working-tree changes owned
+  by other agent sessions. Use `git show HEAD:<path>` or a single-file checkout for baselines instead.
+- File writes: use the `Write` tool for creating files; never use `cat`/heredoc via Bash for
+  file creation (heredocs are only for feeding scripts, not writing deliverables).
+
 ## Child DOX Index
 
 - [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source

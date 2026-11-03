@@ -17,6 +17,8 @@ audit. The analysis evidence is local-only and intentionally not linked here.
 
 ## Design Decisions
 
+- Deletion requires a passing `skill-library-gap-closure` pass (zero open
+  gaps); `--execute` requires `--gap-closure-cleared` as an explicit gate.
 - Default `--dry-run`; destructive behavior requires `--execute`.
 - Scratch removal is per-file because new files may appear in the session
   scratch folder after discovery.

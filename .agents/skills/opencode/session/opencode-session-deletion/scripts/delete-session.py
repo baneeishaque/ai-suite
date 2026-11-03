@@ -107,6 +107,11 @@ def main() -> int:
     parser.add_argument("--execute", action="store_true", help="Perform the deletion")
     parser.add_argument("--retire-docs", action="store_true", help="Also trash matching docs files")
     parser.add_argument("--skip-db", action="store_true", help="Do not call opencode session delete")
+    parser.add_argument(
+        "--gap-closure-cleared",
+        action="store_true",
+        help="Acknowledge gap-closure ran and zero gaps remain (required with --execute)",
+    )
     parser.add_argument("--json", action="store_true", help="Emit JSON")
     args = parser.parse_args()
 
@@ -145,6 +150,13 @@ def main() -> int:
 
     if not execute:
         return 0
+
+    if not args.gap_closure_cleared:
+        sys.stderr.write(
+            "BLOCKED: run skill-library-gap-closure on this session and close all "
+            "gaps first, then pass --gap-closure-cleared.\n"
+        )
+        return 2
 
     if not args.skip_db and db_present is not False:
         result = run(["opencode", "session", "delete", args.session_id])

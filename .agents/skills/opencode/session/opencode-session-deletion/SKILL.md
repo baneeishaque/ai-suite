@@ -68,6 +68,7 @@ verification gate.
 | `--execute` | No | Perform the deletion |
 | `--retire-docs` | No | Also trash matching plan artifacts in `--docs-dir` |
 | `--skip-db` | No | Do not call `opencode session delete` |
+| `--gap-closure-cleared` | Required with `--execute` | Acknowledge that gap-closure ran and zero gaps remain |
 | `--json` | No | Emit JSON instead of text |
 
 Exit codes:
@@ -78,6 +79,10 @@ Exit codes:
 
 ## Protocol
 
+0. **Gap-closure gate (mandatory).** Run `skill-library-gap-closure` on the
+   target session and close every `NOT_DOCUMENTED` / `PARTIAL` gap it reports.
+   Deletion is BLOCKED until the latest gap-closure pass reports zero open
+   gaps (all gaps are `DOCUMENTED` or closed). Record the pass and its verdict.
 1. Accept the target `session_id` (never guess it).
 2. Run the inventory and present it:
 
@@ -88,17 +93,20 @@ Exit codes:
 3. Require explicit user confirmation (`yes` / `delete`).
 4. Ensure the target session's TUI is closed; otherwise the logger may
    recreate logs after cleanup.
-5. Execute:
+5. Execute, passing the gap-closure clearance flag:
 
    ```bash
-   python3 .agents/skills/opencode/session/opencode-session-deletion/scripts/delete-session.py <id> --execute
+   python3 .agents/skills/opencode/session/opencode-session-deletion/scripts/delete-session.py <id> --execute --gap-closure-cleared
    ```
 
+   `--execute` without `--gap-closure-cleared` exits `2` (gate not cleared).
 6. Re-verify after ~10 seconds; if logs reappear, close the TUI and repeat.
 7. Report what was removed and what was left untouched.
 
 ## Edge Cases
 
+- **Open gaps**: deletion is blocked until `skill-library-gap-closure`
+  reports zero open gaps; `--execute` requires `--gap-closure-cleared`.
 - **Session not found in DB**: continue with log/scratch cleanup only.
 - **No artifacts at all**: exit `1`; nothing deleted.
 - **Target TUI still open**: logs may reappear; close it and repeat the

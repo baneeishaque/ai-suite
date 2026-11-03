@@ -14,6 +14,9 @@ explicit confirmation, per-file removal, and verification.
 
 ## Local Contracts
 
+- Deletion requires a passing `skill-library-gap-closure` run on the target
+  session (zero open gaps); `--execute` also requires
+  `--gap-closure-cleared`, otherwise it exits `2`.
 - Destructive removal requires `--execute` plus explicit user confirmation;
   the default mode is `--dry-run`.
 - Scratch files are removed individually, never folder-wide.

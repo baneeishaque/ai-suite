@@ -42,6 +42,8 @@ verification gate.
 
 ## Related Skills
 
+- [`opencode-session-deletion-plan`](../opencode-session-deletion-plan/SKILL.md) —
+  upstream; renders the versioned plan this composer executes.
 - [`opencode-session-yaml-tool-call-extractor`](../../opencode-session-yaml-tool-call-extractor/SKILL.md) —
   sibling; parses the same logger YAML logs this composer removes.
 
@@ -84,13 +86,33 @@ Exit codes:
    Deletion is BLOCKED until the latest gap-closure pass reports zero open
    gaps (all gaps are `DOCUMENTED` or closed). Record the pass and its verdict.
 1. Accept the target `session_id` (never guess it).
+
+   **Cross-session content-survival guard (mandatory when the plan was
+   authored by a different session).** Read the plan's marker list; if the
+   plan is already retired, recover it from the OS Trash by exact filename.
+   Verify every marker against the CURRENT working tree with the plan's match
+   mode (case-insensitive by default; a lowercase literal can false-negative
+   `Gap-closure gate` versus `gap-closure gate`). Record `git status --short`
+   for every marker file. Dirty files are allowed — only the markers must
+   survive. STOP if the plan carries neither a marker list nor an explicit
+   `markers: none`, if any marker is missing, or if neither the plan nor
+   usable related logs can be recovered from the Trash. Never guess a
+   baseline. When related authoring-session logs are needed, reuse the Trash
+   destination used by
+   [`opencode-session-log-cleanup`](../../opencode-session-log-cleanup/SKILL.md).
+
 2. Run the inventory and present it:
 
    ```bash
    python3 .agents/skills/opencode/session/opencode-session-deletion/scripts/delete-session.py <id> --dry-run
    ```
 
-3. Require explicit user confirmation (`yes` / `delete`).
+3. Require explicit user confirmation. An explicit instruction that names the
+   plan and whose sole action is deletion (for example `execute <plan-path>`)
+   satisfies this gate: the plan's mandatory gap-closure gate is always
+   present and records the approved deletion scope, so no second `yes` /
+   `delete` prompt is issued. Any other instruction requires a fresh
+   confirmation.
 4. Ensure the target session's TUI is closed; otherwise the logger may
    recreate logs after cleanup.
 5. Execute, passing the gap-closure clearance flag:
@@ -111,6 +133,12 @@ Exit codes:
 - **No artifacts at all**: exit `1`; nothing deleted.
 - **Target TUI still open**: logs may reappear; close it and repeat the
   verification step.
+- **Missing marker baseline**: if the plan has neither a marker list nor an
+  explicit `markers: none`, STOP and re-plan; never infer markers from memory.
+- **Retired plan**: recover it from the OS Trash by exact filename; related
+  authoring-session logs may be reused from the Trash destination used by
+  [`opencode-session-log-cleanup`](../../opencode-session-log-cleanup/SKILL.md).
+- **Dirty working tree**: allowed; only the declared markers must survive.
 - **New scratch files**: the composer only removes the files it discovered
   during this run; new or unexpected files are left untouched and reported.
 - **Partial removal**: the composer re-enumerates and exits `1` if anything

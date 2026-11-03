@@ -1,5 +1,17 @@
 # Changelog — opencode-session-deletion
 
+## [1.1.0] - 2026-11-04
+
+- Add the cross-session content-survival guard: verify the plan's markers
+  case-insensitively against the current working tree, allow dirty files,
+  recover a retired plan and related logs from the Trash, and STOP when no
+  marker baseline exists.
+- Clarify the confirmation gate: an explicit `execute <plan>` instruction on a
+  deletion-only plan is sufficient because the gap-closure gate is always
+  present; no second prompt.
+- Cross-reference the upstream plan-authoring skill
+  `opencode-session-deletion-plan`.
+
 ## [1.0.1] - 2026-11-04
 
 - Add the mandatory gap-closure gate: deletion is blocked until

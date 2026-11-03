@@ -51,8 +51,8 @@ verification gate.
 | --- | --- | --- |
 | Python | 3.10+ | Stdlib only — no pip dependencies |
 | `opencode` CLI | present on `PATH` | Provides `opencode session list` / `delete` |
-| `opencode-session-log-cleanup` skill | — | At `../opencode-session-log-cleanup/` |
-| `safe-file-cleanup` skill | — | At `../../general/file/safe-file-cleanup/` |
+| `opencode-session-log-cleanup` skill | — | At `../../opencode-session-log-cleanup/` |
+| `safe-file-cleanup` skill | — | At `../../../general/file/safe-file-cleanup/` |
 
 ## CLI Contract
 

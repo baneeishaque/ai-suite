@@ -1,0 +1,145 @@
+diff --git a/.agents/skills/git-atomic-commit-construction/SKILL.md b/.agents/skills/git-atomic-commit-construction/SKILL.md
+--- a/.agents/skills/git-atomic-commit-construction/SKILL.md
++++ b/.agents/skills/git-atomic-commit-construction/SKILL.md
+@@ -499,23 +499,32 @@
+ 2. Run `git log --oneline -20` and check for matching titles
+ 3. Report which commits are done and which are pending
+ 
+-**Cleanup:**
+-
+-Once all commits are verified as executed, delete the preview file:
++**Retirement closeout (mandatory):**
++
++Delegate artifact eligibility and consent to
++[`planning-artifact-lifecycle`](../general/planning/planning-artifact-lifecycle/SKILL.md)
++Step 5a for executed artifacts; superseded versions use Step 5b.
++
++1. Verify the committed contents and every outstanding Execution Plan Step.
++   A matching commit title alone does not establish complete execution.
++2. Check inbound references and determine whether each preview and associated
++   message file is still needed. A message file is eligible only after its
++   contents are preserved in the intended commit and its references are covered.
++3. Obtain explicit, path-scoped retirement consent unless it was already given.
++   Commit and push approval do not grant retirement consent. Ask before final
++   closeout when eligible artifacts remain; a push offer does not close this gate.
++4. After coverage and consent pass, delegate disposal to
++   [`safe-file-cleanup`](../general/file/safe-file-cleanup/SKILL.md).
++   On macOS, require `trash` to be available; do not use permanent-removal fallback.
+ 
+ ```bash
+-# Automated (with verification gate)
+-python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
+-    --preview scratch/commit-preview.md \
+-    --cleanup
+-
+-# Manual
+-trash scratch/commit-preview.md
+-```
+-
+-The preview file MUST NOT be deleted until all commits are confirmed
+-executed. If any commits are pending, the preview must be retained for
+-the next session.
++python3 .agents/skills/general/file/safe-file-cleanup/scripts/safe_cleanup.py "<approved-preview-path>" --json
++```
++
++Verify the cleanup result and report a disposition for every assessed artifact:
++`retired`, `retained-by-user`, `awaiting-consent`, or `blocked` with its reason.
++Retain artifacts with pending commits, uncovered actions, unresolved references,
++or missing consent. Keep retirement consent separate from any later push offer.
+ 
+ #### 2e — Commit Authorization
+ 
+diff --git a/.agents/skills/git-atomic-commit-construction/AGENTS.md b/.agents/skills/git-atomic-commit-construction/AGENTS.md
+--- a/.agents/skills/git-atomic-commit-construction/AGENTS.md
++++ b/.agents/skills/git-atomic-commit-construction/AGENTS.md
+@@ -17,6 +17,11 @@
+   including whole-file commits; an applied-but-excluded patch carries an informational anchor preview marked
+   never-staged.
+ 
++- **Retirement closeout contract**: after commit verification, assess artifact
++  completion and references, obtain path-scoped retirement consent, and report
++  the disposition of each preview and associated message file. Commit and push
++  approval do not grant retirement consent; use recoverable cleanup on macOS.
++
+ - **Primary Entry Point**: [.agents/skills/git-atomic-commit-construction/SKILL.md](./SKILL.md)
+ - **Related Skills**:
+     - [`git-commit-edit`](../git-commit-edit/SKILL.md) — for editing commits already in history
+diff --git a/.agents/skills/general/planning/planning-artifact-naming/SKILL.md b/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
+--- a/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
++++ b/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
+@@ -9,11 +9,10 @@
+ 
+ # Planning Artifact Naming Convention (v1)
+ 
+-This skill defines the naming convention for all planning artifacts
+-generated during AI-agent sessions. The convention embeds session
+-identity (human-readable name + machine-readable ID) directly into
+-each filename, ensuring artifacts are self-traceable to their source
+-conversation and sort chronologically at the filesystem level.
++This skill defines layout profiles for planning artifacts generated during
++AI-agent sessions. Profiles carry session identity in the filename or parent
++directory, keeping each artifact traceable to its source conversation and
++chronologically organized within the selected profile.
+ 
+ The convention was established during an OpenCode config preservation
+ session and generalised here for reuse across all agent workflows.
+@@ -21,6 +20,19 @@
+ ***
+ 
+ ## 1. Formula
++
++Select and record a layout profile before creating an artifact:
++
++- **Legacy flat**: the default unless the owning repository selects another
++  profile. Its formula and filename rules are defined in §§1.1–1.3 below.
++- **Resolver-backed nested**: an explicit local profile described in §1.4.
++  It places session identity in directories and delegates path construction
++  to the existing docs resolver.
++
++A profile choice does not rename existing artifacts. Apply the registered
++artifact types and lifecycle rules to either profile.
++
++The legacy flat formula is:
+ 
+ ```text
+ docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md
+@@ -77,6 +89,39 @@
+ 
+ Artifacts carrying AI-agent session IDs (any assistant or tool) are local-only; never commit them.
+ Committed documents MUST NOT reference them — explain the relevant context self-containedly (see skill-factory §2.2).
++
++### 1.4 Resolver-Backed Nested Profile
++
++```text
++docs/<session-id>/<date>/<purpose>/<artifact>[_v<version>]_<time>.<ext>
++```
++
++Use the existing
++[`resolve-docs-path.py`](../../file/scratch-artifact-naming/scripts/resolve-docs-path.py)
++helper hosted by `scratch-artifact-naming`; this skill owns the planning-layout
++policy. Do not reproduce the path-construction logic in another script.
++
++- `session-id` is the full runtime-verified ID without the `ses_` prefix.
++  Resolve and verify it through `opencode-current-session-id` before passing it;
++  the docs resolver does not replace the pending-marker or phrase-verification gate.
++- `date` is a `YYYY-MM-DD` directory; `purpose` and `artifact` are lowercase-kebab
++  values. Purpose is an explicit task label, not an inferred session title.
++- Supply `--version` for versioned artifact types; omit it for live task files.
++- `time` is `HH-MM-SS-mmm_TZ`. The default timezone is `Asia/Kolkata`;
++  `--timezone` selects another IANA zone, and invalid zones are rejected.
++- `--date` and `--timestamp` provide explicit overrides; the timestamp override
++  is used verbatim. `--ext` is the alphanumeric extension without its dot.
++- The helper prints the absolute filename, including its extension. It creates
++  parent directories by default; `--no-mkdir` prints the path without creating them.
++
++```bash
++python3 .agents/skills/general/file/scratch-artifact-naming/scripts/resolve-docs-path.py \
++    --repo "<repo-root>" --purpose "<purpose>" --artifact commit-preview \
++    --version 1 --ext md --session-id "<verified-session-id>"
++```
++
++Keep these artifacts local-only. Record the chosen profile in the artifact,
++retain earlier versions, and use `planning-artifact-lifecycle` for retirement.
+ 
+ ***
+ 

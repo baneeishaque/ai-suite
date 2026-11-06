@@ -1,0 +1,152 @@
+diff --git a/.agents/skills/general/planning/planning-artifact-naming/SKILL.md b/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
+index 7b8b2b47..21314390 100644
+--- a/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
++++ b/.agents/skills/general/planning/planning-artifact-naming/SKILL.md
+@@ -87,6 +87,7 @@ Committed documents MUST NOT reference them — explain the relevant context sel
+ | Artifact Type | Versioned? | Purpose |
+ | :--- | :--- | :--- |
+ | `task` | No (live checklist) | Track progress of the current session's objectives |
++| `task-<topic>` | No (live checklist) | Topic-scoped variant used when one session has MULTIPLE independent objectives/checklists; `<topic>` is a kebab-case slug disambiguating the task (mirrors `implementation-plan-<topic>`) |
+ | `implementation-plan` | Yes | Detailed step-by-step plan for executing a goal |
+ | `implementation-plan-<topic>` | Yes | Topic-scoped variant used when one session produces MULTIPLE independent implementation plans; `<topic>` is a kebab-case slug disambiguating the plan (e.g. `implementation-plan-acers-audit-history`). The version counter is independent per topic |
+ | `commit-preview` | Yes | Preview of commits to be executed |
+diff --git a/.agents/skills/git-atomic-commit-construction/AGENTS.md b/.agents/skills/git-atomic-commit-construction/AGENTS.md
+index 74184725..5eccf9f3 100644
+--- a/.agents/skills/git-atomic-commit-construction/AGENTS.md
++++ b/.agents/skills/git-atomic-commit-construction/AGENTS.md
+@@ -13,6 +13,10 @@ proposes an authorization-gated commit sequence.
+ It should be invoked whenever the user asks to "commit changes," "stage and commit," "arrange commits," or whenever
+ working-tree changes span multiple concerns that need atomic grouping.
+ 
++- **Anchor preview contract**: every commit preview includes a `Hunks/Preview` block from real `git diff` output,
++  including whole-file commits; an applied-but-excluded patch carries an informational anchor preview marked
++  never-staged.
++
+ - **Primary Entry Point**: [.agents/skills/git-atomic-commit-construction/SKILL.md](./SKILL.md)
+ - **Related Skills**:
+     - [`git-commit-edit`](../git-commit-edit/SKILL.md) — for editing commits already in history
+diff --git a/.agents/skills/git-atomic-commit-construction/SKILL.md b/.agents/skills/git-atomic-commit-construction/SKILL.md
+index 458bbfa1..14550b07 100644
+--- a/.agents/skills/git-atomic-commit-construction/SKILL.md
++++ b/.agents/skills/git-atomic-commit-construction/SKILL.md
+@@ -31,7 +31,7 @@ change. The user retains full control via mandatory preview and explicit
+ This skill distills and operationalizes the following rule files:
+ 
+ | Rule File | Scope Incorporated |
+-|---|---|
++| --- | --- |
+ | [`git-atomic-commit-construction-rules.md`](../../../ai-agent-rules/git-atomic-commit-construction-rules.md) | All 15 phases (primary source) |
+ | [`git-operation-rules.md`](../../../ai-agent-rules/git-operation-rules.md) | Phase -1, 0, 1 (environment, repo context, change detection) and Sections 2–4 (commit/push/stash protocols) |
+ 
+@@ -43,7 +43,7 @@ For complex multi-branch rebasing, see the
+ ## Prerequisites
+ 
+ | Requirement | Minimum |
+-|---|---|
++| --- | --- |
+ | VCS | Git 2.x+ |
+ | Shell | PowerShell 5.1+ or Bash 4+ |
+ | Access | Write access to the project repository |
+@@ -164,7 +164,9 @@ The agent MUST ensure the repository is not in a "detached HEAD" state before co
+ 2. **Handle Detached HEAD**: If the output is empty (detached HEAD), the agent MUST
+    identify and checkout the appropriate branch (usually the default branch,
+    e.g., `main`) before proceeding.
+-3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and avoid push-time conflicts. This planning-stage check goes stale — it does NOT replace the mandatory pre-commit refresh in §9a.1 before every `git commit`.
++3. **Upstream Alignment**: Run `git pull` to synchronize with the remote and
++   avoid push-time conflicts. This planning-stage check goes stale — it does NOT
++   replace the mandatory pre-commit refresh in §9a.1 before every `git commit`.
+ 
+ #### 0f — Pre-Edit Repo Role Classification (Critical for unfamiliar repos)
+ 
+@@ -196,11 +198,11 @@ git status --short -- <file>
+ - **Green (no output):** the file is clean — safe to edit.
+ - **Red (modified/staged/untracked):** the file carries uncommitted
+   changes — STOP and determine ownership before editing:
+-  - If the changes are **author-owned (this session)**: proceed, but
++    - If the changes are **author-owned (this session)**: proceed, but
+     stage only the new hunks (do not absorb the pre-existing ones).
+-  - If the changes are **pre-existing (other agents/sessions)**: do
++    - If the changes are **pre-existing (other agents/sessions)**: do
+     NOT overwrite; either defer or coordinate.
+-  - If ownership is **unknown**: ask the user before editing.
++    - If ownership is **unknown**: ask the user before editing.
+ 
+ This signal detection is mandatory for every file in the "Files to Touch"
+ list, and must be recorded in the commit preview's inventory (§1f).
+@@ -284,7 +286,7 @@ analyzed as an afterthought. **Every row MUST be tagged as author-owned
+ changes may be committed.**
+ 
+ | # | File | Status | Owner | Action |
+-|---|---|---|---|---|
++| --- | --- | --- | --- | --- |
+ | 1 | `.gitignore` | Modified | author | 🔄 Update |
+ | 2 | `src/main.java` | Modified | author | 🔄 Stage |
+ | 3 | `README.md` | Untracked | pre-existing | ❓ Confirm with user |
+@@ -362,8 +364,11 @@ fixes in consumer files MUST be consolidated into a single commit.
+ #### 2d — The Commit Preview (Mandatory Verbose Display)
+ 
+ Present the proposed "Arranged Commits" using a structured format with
+-**maximum detail**. For files with mixed concerns requiring hunk-based
+-staging, the preview **MUST** include the specific git hunks.
++**maximum detail**. EVERY commit preview MUST include a `Hunks/Preview`
++block built from real `git diff` output. Whole-file commits show the
++complete file diff; mixed-concern commits show only the staged hunks. An
++applied-but-excluded patch MUST also carry an informational anchor preview
++marked "never staged".
+ 
+ **Mandates for writing the preview:**
+ 
+@@ -783,7 +788,7 @@ setup. The agent **MUST NOT** assume these are discardable.
+ **Common IDE artifact files to watch for:**
+ 
+ | Pattern | Source |
+-|---|---|
++| --- | --- |
+ | `**/.project` | Eclipse / VS Code Java Language Server |
+ | `**/.classpath` | Eclipse JDT |
+ | `**/.settings/**` | Eclipse workspace preferences |
+@@ -1015,7 +1020,7 @@ python3 .agents/skills/git-hunk-staging-primitives/scripts/stage-hunk-from-diff.
+ **Complementary primitives (delegated to base skill `git-hunk-staging-primitives`):**
+ 
+ | Script | Action | Used in |
+-|---|---|---|
++| --- | --- | --- |
+ | `stage-hunk-from-diff.py` | Stage ONLY matching hunks | §3i (this section) |
+ | `stage-file-excluding-lines.py` | Stage file MINUS matching lines | §2f.1 |
+ | `agents-md-stage-row.py` | Stage exactly one AGENTS.md row | §2f |
+@@ -1232,7 +1237,7 @@ gitignore.io) and user-defined custom rules, split into separate commits.
+ Every commit message MUST meet these quality requirements:
+ 
+ | Requirement | Detail |
+-|---|---|
++| --- | --- |
+ | **Specificity** | Avoid generic titles. List specific components (e.g., `add linux, macos, and windows gitignore rules` not `os-specific`) |
+ | **Anti-Repetition** | The body MUST NOT merely rephrase the title |
+ | **Context Enrichment** | Explain the 'Why' — especially for architectural or security decisions |
+@@ -1516,7 +1521,7 @@ Visualize the commit history as a compass where each direction is a
+ logical area:
+ 
+ | Direction | Area |
+-|---|---|
++| --- | --- |
+ | **North** | Architectural / Schema changes |
+ | **East** | Logic / Feature implementation |
+ | **West** | Testing / Verification |
+@@ -1701,7 +1706,7 @@ be synthesized from real-time analysis, never mocked in a plan.
+ ## Scope Coverage
+ 
+ | Category | Convention |
+-|---|---|
++| --- | --- |
+ | Functional changes | One logical unit per commit |
+ | Formatting / style | Dedicated `style` commit |
+ | Structural refactors | Dedicated `refactor` commit |
+@@ -1792,7 +1797,7 @@ to duplicate them.
+ ## Common Pitfalls
+ 
+ | Pitfall | Solution |
+-|---|---|
++| --- | --- |
+ | Scanned with `Get-ChildItem` and got false positives | Use `git ls-files` as source of truth for tracked files |
+ | `.gitignore` negation patterns missed | Read `.gitignore` carefully — `!dir/*.zip` means those zips ARE tracked |
+ | `.gitignore` references to renamed directories not updated | `.gitignore` is a critical blast-radius target — update patterns or tracked files become untracked |

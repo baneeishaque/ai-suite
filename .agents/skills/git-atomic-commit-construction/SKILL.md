@@ -494,23 +494,32 @@ output.
 2. Run `git log --oneline -20` and check for matching titles
 3. Report which commits are done and which are pending
 
-**Cleanup:**
+**Retirement closeout (mandatory):**
 
-Once all commits are verified as executed, delete the preview file:
+Delegate artifact eligibility and consent to
+[`planning-artifact-lifecycle`](../general/planning/planning-artifact-lifecycle/SKILL.md)
+Step 5a for executed artifacts; superseded versions use Step 5b.
+
+1. Verify the committed contents and every outstanding Execution Plan Step.
+   A matching commit title alone does not establish complete execution.
+2. Check inbound references and determine whether each preview and associated
+   message file is still needed. A message file is eligible only after its
+   contents are preserved in the intended commit and its references are covered.
+3. Obtain explicit, path-scoped retirement consent unless it was already given.
+   Commit and push approval do not grant retirement consent. Ask before final
+   closeout when eligible artifacts remain; a push offer does not close this gate.
+4. After coverage and consent pass, delegate disposal to
+   [`safe-file-cleanup`](../general/file/safe-file-cleanup/SKILL.md).
+   On macOS, require `trash` to be available; do not use permanent-removal fallback.
 
 ```bash
-# Automated (with verification gate)
-python3 .agents/skills/git/basic/edit/git-commit-preview-verify/scripts/verify-commit-preview.py \
-    --preview scratch/commit-preview.md \
-    --cleanup
-
-# Manual
-trash scratch/commit-preview.md
+python3 .agents/skills/general/file/safe-file-cleanup/scripts/safe_cleanup.py "<approved-preview-path>" --json
 ```
 
-The preview file MUST NOT be deleted until all commits are confirmed
-executed. If any commits are pending, the preview must be retained for
-the next session.
+Verify the cleanup result and report a disposition for every assessed artifact:
+`retired`, `retained-by-user`, `awaiting-consent`, or `blocked` with its reason.
+Retain artifacts with pending commits, uncovered actions, unresolved references,
+or missing consent. Keep retirement consent separate from any later push offer.
 
 #### 2e — Commit Authorization
 

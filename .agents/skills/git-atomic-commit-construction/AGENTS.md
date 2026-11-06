@@ -13,6 +13,11 @@ proposes an authorization-gated commit sequence.
 It should be invoked whenever the user asks to "commit changes," "stage and commit," "arrange commits," or whenever
 working-tree changes span multiple concerns that need atomic grouping.
 
+- **Retirement closeout contract**: after commit verification, assess artifact
+  completion and references, obtain path-scoped retirement consent, and report
+  the disposition of each preview and associated message file. Commit and push
+  approval do not grant retirement consent; use recoverable cleanup on macOS.
+
 - **Primary Entry Point**: [.agents/skills/git-atomic-commit-construction/SKILL.md](./SKILL.md)
 - **Related Skills**:
     - [`git-commit-edit`](../git-commit-edit/SKILL.md) — for editing commits already in history

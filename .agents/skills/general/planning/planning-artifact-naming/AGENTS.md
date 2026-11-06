@@ -14,9 +14,9 @@ session.
 
 ## Operational Procedure
 
-Read [`SKILL.md`](SKILL.md) for the full naming convention, part
-reference table, separator rules, versioning rules, and registered
-artifact types. Do NOT create any planning artifact without first
+Read [`SKILL.md`](SKILL.md) for layout-profile selection, resolver
+delegation, part references, separator rules, versioning rules, and
+registered artifact types. Do NOT create any planning artifact without first
 loading `SKILL.md` — this bridge is intentionally non-actionable.
 
 ## Cross-References

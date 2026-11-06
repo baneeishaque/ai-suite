@@ -9,11 +9,10 @@ category: General
 
 # Planning Artifact Naming Convention (v1)
 
-This skill defines the naming convention for all planning artifacts
-generated during AI-agent sessions. The convention embeds session
-identity (human-readable name + machine-readable ID) directly into
-each filename, ensuring artifacts are self-traceable to their source
-conversation and sort chronologically at the filesystem level.
+This skill defines layout profiles for planning artifacts generated during
+AI-agent sessions. Profiles carry session identity in the filename or parent
+directory, keeping each artifact traceable to its source conversation and
+chronologically organized within the selected profile.
 
 The convention was established during an OpenCode config preservation
 session and generalised here for reuse across all agent workflows.
@@ -21,6 +20,19 @@ session and generalised here for reuse across all agent workflows.
 ***
 
 ## 1. Formula
+
+Select and record a layout profile before creating an artifact:
+
+- **Legacy flat**: the default unless the owning repository selects another
+  profile. Its formula and filename rules are defined in §§1.1–1.3 below.
+- **Resolver-backed nested**: an explicit local profile described in §1.4.
+  It places session identity in directories and delegates path construction
+  to the existing docs resolver.
+
+A profile choice does not rename existing artifacts. Apply the registered
+artifact types and lifecycle rules to either profile.
+
+The legacy flat formula is:
 
 ```text
 docs/<date>_<session-id>_<session-name-slug>_<artifact-type>_v<version>.md
@@ -77,6 +89,39 @@ The full 26+ character ID MUST be used — NOT a truncated form.
 
 Artifacts carrying AI-agent session IDs (any assistant or tool) are local-only; never commit them.
 Committed documents MUST NOT reference them — explain the relevant context self-containedly (see skill-factory §2.2).
+
+### 1.4 Resolver-Backed Nested Profile
+
+```text
+docs/<session-id>/<date>/<purpose>/<artifact>[_v<version>]_<time>.<ext>
+```
+
+Use the existing
+[`resolve-docs-path.py`](../../file/scratch-artifact-naming/scripts/resolve-docs-path.py)
+helper hosted by `scratch-artifact-naming`; this skill owns the planning-layout
+policy. Do not reproduce the path-construction logic in another script.
+
+- `session-id` is the full runtime-verified ID without the `ses_` prefix.
+  Resolve and verify it through `opencode-current-session-id` before passing it;
+  the docs resolver does not replace the pending-marker or phrase-verification gate.
+- `date` is a `YYYY-MM-DD` directory; `purpose` and `artifact` are lowercase-kebab
+  values. Purpose is an explicit task label, not an inferred session title.
+- Supply `--version` for versioned artifact types; omit it for live task files.
+- `time` is `HH-MM-SS-mmm_TZ`. The default timezone is `Asia/Kolkata`;
+  `--timezone` selects another IANA zone, and invalid zones are rejected.
+- `--date` and `--timestamp` provide explicit overrides; the timestamp override
+  is used verbatim. `--ext` is the alphanumeric extension without its dot.
+- The helper prints the absolute filename, including its extension. It creates
+  parent directories by default; `--no-mkdir` prints the path without creating them.
+
+```bash
+python3 .agents/skills/general/file/scratch-artifact-naming/scripts/resolve-docs-path.py \
+    --repo "<repo-root>" --purpose "<purpose>" --artifact commit-preview \
+    --version 1 --ext md --session-id "<verified-session-id>"
+```
+
+Keep these artifacts local-only. Record the chosen profile in the artifact,
+retain earlier versions, and use `planning-artifact-lifecycle` for retirement.
 
 ***
 

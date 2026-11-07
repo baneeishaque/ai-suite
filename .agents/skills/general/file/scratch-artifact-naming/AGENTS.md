@@ -2,11 +2,13 @@
 
 ## Purpose
 
-This file is the companion bridge for non-skill-aware agent runtimes that auto-load `AGENTS.md` by filename convention. The operational SSOT lives in [`SKILL.md`](SKILL.md).
+This file is the companion bridge for non-skill-aware agent runtimes that auto-load `AGENTS.md` by filename convention.
+The operational SSOT lives in [`SKILL.md`](SKILL.md).
 
 ## When This Skill Applies
 
-- You are about to capture command output, probe results, or git-ref content into a repo's `scratch/` folder and need the correct session-scoped path and naming.
+- You are about to capture command output, probe results, or git-ref content into a repo's `scratch/` folder and need
+the correct session-scoped path and naming.
 - You need the current opencode session ID as the scratch subfolder name.
 - You are authoring or enriching a skill that writes artifacts under `<repo>/scratch/`.
 
@@ -22,6 +24,9 @@ Read [`SKILL.md`](SKILL.md) for the full CLI contract, naming variants, and edge
 
 ## Cross-References
 
-- [`opencode-current-session-id`](../../opencode/opencode-current-session-id/SKILL.md) — composed for auto session-ID discovery
-- [`repo-scratch-output-capture`](../../../repo-scratch-output-capture/SKILL.md) — sibling; owns `.out`/`.err` pairing and the gitignore guarantee
-- [`git-ref-artifact-extract`](../../../git-ref-artifact-extract/SKILL.md) — composer that delegates naming to this skill
+- [`opencode-current-session-id`](../../opencode/opencode-current-session-id/SKILL.md) — composed for auto session-ID
+discovery
+- [`repo-scratch-output-capture`](../../../repo-scratch-output-capture/SKILL.md) — sibling; owns `.out`/`.err` pairing
+and the gitignore guarantee
+- [`git-ref-artifact-extract`](../../../git-ref-artifact-extract/SKILL.md) — composer that delegates naming to this
+skill

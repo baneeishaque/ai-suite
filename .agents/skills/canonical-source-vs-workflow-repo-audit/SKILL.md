@@ -41,6 +41,7 @@ This skill exists to **stop that mistake at pre-edit time**.
   cloned-locally repo.
 
 Do NOT apply when:
+
 - Editing files under the audit-tool's own repo (the audit ROOT is itself).
 - Editing config / dotfiles that are explicitly the repo's purpose
   (e.g. editing `.github/workflows/*` IN the workflow repo).
@@ -55,7 +56,7 @@ python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-rep
 
 Output:
 
-```
+```text
 REPO_ROOT: /Users/dk/lab-data/Account-Ledger-Server
 VERDICT:   workflow
 SIGNALS:   {'workflow': 5, 'canonical': 4, 'mirror': 0}
@@ -71,7 +72,7 @@ WARNING: editing source code in a workflow repo is almost always wrong.
 ### Step 2 — Decide
 
 | Verdict | Action |
-|---|---|
+| --- | --- |
 | `canonical` | Proceed with the edit. |
 | `workflow` | **STOP.** Find the canonical source repo (often a sibling dir; ask user). |
 | `mirror` | **STOP.** Never edit a read-only mirror. |
@@ -102,7 +103,7 @@ preserves any unrelated WIP. See
 ## Heuristic Signals (consulted by the script)
 
 | Signal | Weight | What it indicates |
-|---|---|---|
+| --- | --- | --- |
 | `.github/workflows/*.yml` filenames match `backup\|snapshot\|mirror\|sync\|dispatch` for ≥50% of files | +3 workflow | Repo's primary job is CI orchestration / backup. |
 | ≥10 of last 20 commit titles match same keywords | +2 workflow | Recent commit history dominated by automated backups. |
 | Source manifest at root (`composer.json` / `package.json` / `pom.xml` / `mise.toml` / etc.) | +2 canonical | Repo declares itself as a buildable project. |
@@ -124,13 +125,15 @@ the verdict + signals to the user — the human breaks ambiguous ties.**
 
 This audit is referenced as a **Step 0 / pre-edit** check by:
 
-- [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) Step 0d — before authoring any new commit in a previously-unedited repo.
-- [`php-mysqli-prepared-statement-modernization`](../php-mysqli-prepared-statement-modernization/SKILL.md) §Pitfalls — explicitly requires the audit before any PHP modernization edit.
+- [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) Step 0d — before authoring any new
+commit in a previously-unedited repo.
+- [`php-mysqli-prepared-statement-modernization`](../php-mysqli-prepared-statement-modernization/SKILL.md) §Pitfalls —
+explicitly requires the audit before any PHP modernization edit.
 
 ## Pitfalls
 
 | Pitfall | Mitigation |
-|---|---|
+| --- | --- |
 | Two repos with `canonical` verdict for same artifact (forks) | Audit is single-repo; cross-repo provenance still requires human verification. |
 | Repo recently rebranded from workflow to canonical (commit history misleads) | Manually inspect README + ask user. |
 | Monorepo with both workflow and source subtrees | Audit returns one verdict per ROOT; not designed for monorepo subtree classification. |
@@ -138,10 +141,11 @@ This audit is referenced as a **Step 0 / pre-edit** check by:
 ## Related Skills
 
 - [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) — Step 0d invokes this audit.
-- [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) — distinct concern: routing personal-only commits.
+- [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) — distinct concern: routing personal-only
+commits.
 
 ## Scripts
 
 | Script | Tier | Purpose |
-|---|---|---|
+| --- | --- | --- |
 | [`scripts/audit-repo-role.py`](scripts/audit-repo-role.py) | Deterministic | Classify enclosing repo via weighted-signal scoring. |

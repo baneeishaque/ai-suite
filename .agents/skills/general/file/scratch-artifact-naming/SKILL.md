@@ -31,7 +31,7 @@ absolute **stem** path on stdout so callers only append the file extension.
 
 ## Scope & Intent
 
-*In scope:*
+In scope:
 
 - Compute the session-scoped scratch path `<repo>/scratch/<session-id>/` for any artifact.
 - Emit the absolute **STEM** path (no extension) — callers append `.out` / `.err` / `.json` / etc.
@@ -42,7 +42,7 @@ absolute **stem** path on stdout so callers only append the file extension.
   when `--session-id` is omitted; strip any `ses_` prefix from the folder name.
 - Create `<repo>/scratch/<session-id>/` idempotently (`--no-mkdir` to override).
 
-*Out of scope:*
+Out of scope:
 
 - Writing the actual file content (that belongs to the caller / composer script).
 - The `.out`/`.err` pairing doctrine is owned by
@@ -77,7 +77,7 @@ python3 scripts/resolve-scratch-path.py --repo <path> --purpose <slug>
 
 **Output:** absolute STEM path on stdout (no extension; caller appends `.ext`).
 
-*Exit codes:*
+Exit codes:
 
 - `0` — success
 - `1` — invalid `--purpose` / unpaired or malformed ref args / repo missing / session discovery failure / mkdir failure

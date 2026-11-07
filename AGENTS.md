@@ -233,9 +233,33 @@ When the user requests a durable behavior change, record it here or in the relev
   `jsonc-cst-util` base skill (`.agents/skills/json/jsonc-cst-util/SKILL.md`) — use its `sort`/`format`
   subcommands instead of ad-hoc JSON sorting.
 
-- Git stash: never run `git stash` / `git stash pop` / `git stash apply` (or any stash mutation)
-  without explicit user confirmation — stash operations can hide or lose working-tree changes owned
-  by other agent sessions. Use `git show HEAD:<path>` or a single-file checkout for baselines instead.
+- Assistant entry point: sessions start in ai-suite. This root's user safety constraints remain applicable
+  when a session works in another repository; changing the working directory does not waive them.
+- Repository liveness: a live declaration, user statement, or known application/session consumer establishes
+  live/shared use. An absent, stale or ambiguous declaration means unknown, not inactive. Treat unknown
+  repositories with the same preservation safeguards as known-live/shared repositories. Clean Git status,
+  no detected writer, stable mtimes or a brief unchanged interval do not establish exclusive access.
+- Repository declarations describe local facts; the operating policy stays here. Consult the applicable
+  repository instructions and known consumers before a disruptive operation. Contrary evidence overrides an
+  inactive label. Use the conservative default instead of requiring exhaustive process or filesystem scans.
+- Do not use ordinary stash push/save, autostash, bulk stash apply/pop, whole-tree checkout/reset or git clean
+  to prepare, snapshot, verify or make a live/shared/unknown working tree clean. Commit/push approval does
+  not authorize those operations. This constraint overrides blanket stash requirements in older skills.
+- For approved safety capture in any repository, use the existing
+  [`git-pre-execution-safety-snapshot`](.agents/skills/git/snapshot/git-pre-execution-safety-snapshot/SKILL.md)
+  composer and its non-intrusive base with a reviewed path scope. Capture must preserve the real index and
+  working files. If unavailable or uncertain, stop; do not fall back to ordinary stashing. If the requested
+  operation itself disrupts a potentially live checkout, obtain a separately approved isolated scope or
+  coordinate exclusive use first. A task-owned isolated checkout is not automatic destructive authorization.
+- Preserve other sessions' tracked, staged and untracked changes. Coordinate overlapping file edits,
+  re-read the current file before a narrow change, and stop on unexpected drift. Never reset, clean,
+  reformat a whole shared file or restore an earlier whole-file copy to resolve an editing conflict.
+  Read baselines with `git show <ref>:<path>`; do not replace working files merely to inspect a baseline.
+- Snapshot restoration and release are separate from capture. Review per-path differences and preserve
+  current bytes before any approved restore. Newer mtimes, larger files and equal status counts do not
+  prove content preservation or a no-op. Retain snapshots while differences or reported loss remain unresolved.
+  Every stash/ref mutation needs explicit authorization; conditional release requires its exact condition
+  to be verified. Reference-only recovery must verify the original object and must not apply it.
 - Repowise-generated metadata: the latest generation wins. With explicit user authorization, release a
   completed safety snapshot when all scoped differences are confined to the marked Repowise-generated
   block and all non-generated content is identical. Preserve the latest generated output.

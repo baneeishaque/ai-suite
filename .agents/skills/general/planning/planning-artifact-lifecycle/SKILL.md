@@ -153,6 +153,11 @@ or superseded. Choose the branch that matches the situation:
   composer: coverage audit MUST be FULL and explicit user consent is
   REQUIRED before any deletion.
 - **c) Both versions still needed** → keep both; do not delete.
+- **Current document still has unfinished work** → retain it. A completed
+  commit batch does not complete a broader audit or implementation plan.
+  Report remaining work and its owner; do not offer retirement as a way
+  to discard unresolved items. For an older version, branch b is allowed
+  only when the retained successor carries all outstanding work.
 - **d) macOS retirement NEVER uses `rm`** → always `trash`
   (recoverable); `rm` is forbidden per AGENTS.md rule 7.
 
@@ -161,7 +166,7 @@ Generic deletion rules (branch a):
 0. **Deep completeness check (mandatory)**: Before trashing, verify the
    artifact is fully completed and covered — all actions executed, no
    pending items, no dangling references to it. If anything is left
-   behind, notify the user and re-confirm before proceeding.
+   behind, report it and retain the current document until the work is done.
 1. **User must initiate or explicitly confirm**: Never delete artifacts
    without the user saying "yes", "delete", or "clean up".
 2. **Batch deletions**: When user confirms cleanup, delete ALL stale
@@ -184,12 +189,10 @@ mandate):
 3. The Fresh Start declaration MUST be explicitly communicated to and
    approved by the user.
 
-A planning artifact is retired ONLY per branch b above, whose gates are
-owned by the composer. Note §2: "old versions are NEVER overwritten by
-edits; a superseded version MAY be retired through the ONE authorized
-path — coverage audit FULL + explicit user consent — via the
-`planning-superseded-version-retirement` composer (macOS: `trash`,
-never `rm`)."
+Completed current artifacts use Step 5a; superseded versions use Step 5b
+and its coverage-audit composer. Both require explicit retirement consent.
+An unfinished current plan stays retained even when its completed subset
+has a verified and retired commit preview.
 
 ## SSOT Compliance
 
@@ -223,3 +226,7 @@ never `rm`)."
 ## Traceability
 
 See [TRACEABILITY.md](TRACEABILITY.md).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).

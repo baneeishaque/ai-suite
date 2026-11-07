@@ -15,8 +15,9 @@ The operational SSOT lives in [`SKILL.md`](SKILL.md).
 
 Read [`SKILL.md`](SKILL.md) for the full lifecycle: creation →
 versioning triggers → CAM §7.1 enforcement → presentation & approval →
-deletion → fresh start protocol. Do NOT skip the CAM §7.1 step before
-creating a new version.
+completed-artifact retirement or superseded-version retirement → fresh
+start protocol. It also distinguishes a finished commit batch from its
+unfinished parent plan and defines the corresponding retention rules.
 
 ## Cross-References
 

@@ -502,6 +502,8 @@ Step 5a for executed artifacts; superseded versions use Step 5b.
 
 1. Verify the committed contents and every outstanding Execution Plan Step.
    A matching commit title alone does not establish complete execution.
+   Report the broader audit/implementation-plan status separately: completion
+   of this commit preview does not authorize retirement of an unfinished parent plan.
 2. Check inbound references and determine whether each preview and associated
    message file is still needed. A message file is eligible only after its
    contents are preserved in the intended commit and its references are covered.
@@ -1825,3 +1827,11 @@ to duplicate them.
 | Commit preview shows wrong `@@` line numbers | Verify every `@@` header against actual `git diff --unified=3 -- <file>` before writing the preview — never estimate from memory |
 | Markdown preview breaks when diff contains fenced code blocks | Wrap the diff in `~~~diff`/`~~~` instead of ` ```diff `/` ``` ` — backtick fences inside a backtick-fenced block terminate the outer block prematurely |
 | Commit preview lines refer to wrong line numbers after edits | Re-run `git diff` to get fresh `@@` headers after any working-tree change and re-write the preview |
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Traceability
+
+See [TRACEABILITY.md](TRACEABILITY.md).

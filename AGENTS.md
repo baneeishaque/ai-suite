@@ -242,8 +242,10 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - Artifact retirement: before trashing/deleting any planning artifact (register, plan,
   report, preview), deeply verify it is fully completed and covered (all actions executed,
-  no pending items, no dangling references); if anything is left behind, notify the user and
-  re-confirm before proceeding.
+  no pending items, no dangling references). Keep current planning documents while work is
+  unfinished; completing a narrower commit preview does not complete its parent plan.
+  Superseded versions may retire only when a retained successor fully carries their content
+  and outstanding work. Follow the `planning-artifact-lifecycle` skill and obtain retirement consent.
 
 ## Child DOX Index
 

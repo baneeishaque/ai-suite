@@ -1,0 +1,464 @@
+# AGENTS.md
+
+## ⚠️ Permanent Operating Reminders (read every boot)
+
+1. **Atomize exploration chains.** Never combine multiple unfamiliar-path
+   probes into one `&&` / `|` chain with `2>/dev/null` suppression — it
+   silently hangs when a path is missing. Issue independent shell calls (use
+   parallel tool calls for unrelated probes). See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1](ai-agent-rules/shell-execution-rules.md).
+2. **Never nest heredocs inside heredocs.** When using
+   `python3 - <<'PY'` whose body contains a Python triple-quoted string,
+   the inner content MUST NOT contain heredoc-sentinel-looking tokens
+   (`EOF`, `PY`, `MARKEREOF`, etc.) or fenced code blocks — the outer
+   heredoc terminates early and the call silently hangs. Use a
+   two-stage `cat > /tmp/payload <<'ZZZ_UNIQUE_ZZZ'` then a separate
+   `cat > /tmp/script.py <<'ZZZ_OTHER_ZZZ'` then run the script. Each
+   stage carries one heredoc with a body-unique sentinel. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.3](ai-agent-rules/shell-execution-rules.md).
+3. **Bound tool-output size AND cumulative scrollback to protect the IDE renderer.** Large outputs
+   streamed into the chat transcript (recursive `grep -r` over many-file
+   trees, `cat` on minified bundles, full dumps of files like
+   `workbench.desktop.main.js`) can freeze the VS Code renderer; the user's
+   only recovery is to force-quit, which reports every in-flight tool call
+   back as `interrupted` and drops live shell sessions. Default behavior:
+   redirect large commands to `/tmp/out.txt` first, then `head` / `grep` /
+   `view` it; prefer the built-in `grep` / `glob` / `view` tools over
+   shell-side recursive scans; narrow scope with `glob` before `grep`; and
+   never combine "produce a large output" with "read a large file" in the
+   same tool-call batch. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.4](ai-agent-rules/shell-execution-rules.md).
+   Single-output size is necessary but not sufficient — long sessions also
+   freeze the renderer from cumulative many-small-outputs pressure, so on
+   long sessions prefer `view_range` over full-file `view`, prefer
+   file-write over stdout for intermediate artifacts, do NOT re-print
+   content already in scrollback, skip trailing verification dumps, and
+   pause-to-consolidate after ~20 tool calls per user message. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.4.1](ai-agent-rules/shell-execution-rules.md).
+   The full catalogue of freeze patterns, the eleven-item per-call self-audit
+   checklist, and the post-freeze recovery protocol — collected across
+   reminders §1–§4 above and reified as one skill — are owned by
+   [`.agents/skills/ide-renderer-freeze-prevention/SKILL.md`](.agents/skills/ide-renderer-freeze-prevention/SKILL.md).
+4. **Prefer scripts over prose instructions — both when authoring AND when
+    consuming a skill.** Scripts are more deterministic than rules, skills,
+    or sub-agent prompts.
+    *Authoring side*: when designing or refactoring a skill/rule/sub-agent,
+    decompose its procedure — every deterministic step (parse, transform,
+    validate, file-mutate) MUST live in an executable script under the
+    skill's `scripts/` directory; prose retains only judgement, branching,
+    and human-gates.
+    *Consumer side* (fires on EVERY skill invocation): before executing any
+    deterministic step described in a skill's prose, FIRST list that skill's
+    `scripts/` directory (`ls <skill-dir>/scripts/` or the in-process `glob`
+    tool) and invoke the matching script — do NOT re-derive the logic
+    ad-hoc from the prose. Re-typing a multi-step recipe inline when the
+    skill ships a script for it is a violation even when the inline output
+    is correct, because it bypasses the script's idempotency checks,
+    env-var validation, and SSOT updates. Fall through to manual recipe
+    only if no script matches the step.
+    See
+    [`.agents/skills/script-over-instruction-decomposition/SKILL.md`](.agents/skills/script-over-instruction-decomposition/SKILL.md)
+    `## Consumer Discipline — Always Invoke, Never Re-derive`.
+5. **Do NOT probe into heavy-filewatcher symlinked trees; address files
+   by exact path.** Walking a directory that fans out into symlinked
+   private-config / cloud-sync / IDE-indexed subtrees (specifically
+   `/Users/dk/Lab_Data/configurations-private/` in this workspace)
+   triggers fsevents / Spotlight / IDE-indexer cascades that freeze
+   the IDE renderer; the user must force-recover, which reports every
+   in-flight tool call as `interrupted`. Read files inside such trees
+   by EXACT absolute path (e.g.
+   `cat /Users/dk/Lab_Data/configurations-private/Account-Ledger-Server/act.secrets`);
+   never `ls`, `find`, or `grep -r` against the tree to discover the
+   path first. Use the built-in `glob` / `grep` / `view` tools for any
+   necessary tree walk. Note: `/Users/dk/Lab_Data/` (private configs)
+   and `/Users/dk/lab-data/` (code repos) are DISTINCT sibling
+   directories — case AND punctuation differ — not the same path
+   reached through case-folding. Case-insensitive volumes (macOS APFS,
+   Windows NTFS) DO add a minor case-folding amplifier when a
+   mis-cased path also targets a filewatcher-heavy tree, so the
+   secondary "derive canonical casing from `ls` of a known-light
+   parent / known-good git artifact / env var / cwd" rule still
+   applies. Compounds with reminder #1 — never bundle a heavy-tree
+   probe inside a chained call. See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1.1](ai-agent-rules/shell-execution-rules.md).
+   (Re-attributed May 2026 from the original case-folding diagnosis,
+   which was incomplete. Further extended May 2026 after a plain
+   `bash ls .agents/skills/` froze the renderer — confirming the
+   hazard covers ANY directory with wide fan-out under active IDE
+   watchers, not only symlinked private-config trees. The same
+   incident — and a follow-up `bash grep -r /Users/dk/lab-data/<repo>`
+   freeze in the same workspace — also proved that `edit` / `create`
+   tool calls issued
+   during the post-freeze drain window are themselves reported as
+   `interrupted`; recover via `bash` heredoc writes first.)
+6. **Prefer the built-in `grep` / `glob` / `view` tools over `bash grep` /
+   `find` / `cat`.** The host runtime exposes first-class code-search
+   tools that respect tool-output sizing, scrollback hygiene, and the
+   §2.3.1 atomization rule. Falling back to `bash grep` (or `rg` inside
+   a chained command) reintroduces every freeze hazard those tools
+   were built to eliminate — most acutely: passing `-r` / `-R` alongside
+   *explicit file paths* is a contradiction that on some ripgrep
+   versions degrades into a recursive walk of the current working
+   directory, which on a large monorepo with active filewatchers can
+   freeze the IDE renderer. Rules:
+   - When searching file contents, use the **`grep` tool** with `paths`
+     pinned to specific files or directories — never `-r` with explicit
+     paths.
+   - When finding files by name, use the **`glob` tool**.
+   - When reading files, use the **`view` tool** with `view_range` for
+     large files.
+   - Fall back to `bash` only when the built-in tool cannot express the
+     query (e.g. piped post-processing the tool does not support).
+   See
+   [`ai-agent-rules/shell-execution-rules.md` §2.3.1.2](ai-agent-rules/shell-execution-rules.md).
+7. **Always use `trash` instead of `rm` or `rmdir` on macOS.** `trash` moves files and directories to
+   `~/.Trash` (recoverable) instead of permanently deleting them. Use `trash` for all file and directory
+   deletions unless the user explicitly asks for permanent removal.
+8. **Never touch `.DS_Store` files on macOS.** Do not read, write, move, trash, or delete `.DS_Store`
+   files by any means. They are Finder metadata files managed by the OS and should be left completely
+   untouched.
+9. **When the user asks "which skills cover X", answer in ONE pass with, per relevant skill:** the skill
+    name, a one-line description, and the skill's file listing with ABSOLUTE paths (tree for a skill folder;
+    the absolute path alone for a single-file skill).
+10. **Pre-commit, run the dangling-link audit** via the `git-commit-dangling-link-audit` composer
+    (`detect-dangling-links.py` over the commit's SKILL.md/AGENTS.md/changelog files) — flag DANGLES
+    for user disposition (FOLD / RESOLVE-NOW / KEEP-AS-IS) rather than silently fixing stale links;
+    also sweep `/tmp` scans for session-evidence drift before reporting final verdicts.
+11. **Every `curl` invocation MUST carry an explicit timeout.** `curl` has NO default
+    timeout — a stalled connection can hang a tool call indefinitely. Accompany
+    every request with a connect timeout and a total timeout (e.g.
+    `--connect-timeout 10 --max-time 30`), optionally `--retry 2` for transient
+    failures. No `curl` call without a time value.
+
+## Conventions
+
+- See [README.md](README.md) for project overview
+
+# DOX framework
+
+- DOX is highly performant AGENTS.md hierarchy installed here
+- Agent must follow DOX instructions across any edits
+
+## Core Contract
+
+- AGENTS.md files are binding work contracts for their subtrees
+- Work products, source materials, instructions, records, assets, and durable docs must stay understandable from the nearest applicable AGENTS.md plus every parent AGENTS.md above it
+
+## Read Before Editing
+
+1. Read the root AGENTS.md
+2. Identify every file or folder you expect to touch
+3. Walk from the repository root to each target path
+4. Read every AGENTS.md found along each route
+5. If a parent AGENTS.md lists a child AGENTS.md whose scope contains the path, read that child and continue from there
+6. Use the nearest AGENTS.md as the local contract and parent docs for repo-wide rules
+7. If docs conflict, the closer doc controls local work details, but no child doc may weaken DOX
+
+Do not rely on memory. Re-read the applicable DOX chain in the current session before editing.
+
+## Update After Editing
+
+Every meaningful change requires a DOX pass before the task is done.
+
+Update the closest owning AGENTS.md when a change affects:
+
+- purpose, scope, ownership, or responsibilities
+- durable structure, contracts, workflows, or operating rules
+- required inputs, outputs, permissions, constraints, side effects, or artifacts
+- user preferences about behavior, communication, process, organization, or quality
+- AGENTS.md creation, deletion, move, rename, or index contents
+
+Update parent docs when parent-level structure, ownership, workflow, or child index changes. Update child docs when parent changes alter local rules. Remove stale or contradictory text immediately. Small edits that do not change behavior or contracts may leave docs unchanged, but the DOX pass still must happen.
+
+## Hierarchy
+
+- Root AGENTS.md is the DOX rail: project-wide instructions, global preferences, durable workflow rules, and the top-level Child DOX Index
+- Child AGENTS.md files own domain-specific instructions and their own Child DOX Index
+- Each parent explains what its direct children cover and what stays owned by the parent
+- The closer a doc is to the work, the more specific and practical it must be
+
+## Child Doc Shape
+
+- Create a child AGENTS.md when a folder becomes a durable boundary with its own purpose, rules, responsibilities, workflow, materials, or quality standards
+- Work Guidance must reflect the current standards of the project or user instructions; if there are no specific standards or instructions yet, leave it empty
+- Verification must reflect an existing check; if no verification framework exists yet, leave it empty and update it when one exists
+
+Default section order:
+
+- Purpose
+- Ownership
+- Local Contracts
+- Work Guidance
+- Verification
+- Child DOX Index
+
+## Style
+
+- Keep docs concise, current, and operational
+- Document stable contracts, not diary entries
+- Put broad rules in parent docs and concrete details in child docs
+- Prefer direct bullets with explicit names
+- Do not duplicate rules across many files unless each scope needs a local version
+- Delete stale notes instead of explaining history
+- Trim obvious statements, repeated rules, misplaced detail, and warnings for risks that no longer exist
+
+## Closeout
+
+1. Re-check changed paths against the DOX chain
+2. Update nearest owning docs and any affected parents or children
+3. Refresh every affected Child DOX Index
+4. Remove stale or contradictory text
+5. Run existing verification when relevant
+6. Report any docs intentionally left unchanged and why
+
+## User Preferences
+
+When the user requests a durable behavior change, record it here or in the relevant child AGENTS.md
+
+- MCP setup: always prefer remote (HTTP) MCP servers over local (stdio) ones when the provider offers a remote endpoint.
+- MCP setup: keep MCP entries in `opencode.json` as `enabled: false` by default; toggle on per task.
+- OpenCode project configuration: keep repository settings in the root `opencode.jsonc`;
+  use `.opencode/` for plugins and other directory-based resources.
+- Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
+- Browser automation while the user is using the computer must not disturb the screen. Keep JXA actions in verified
+  background tabs/windows without activation or focus changes. Playwright must use system Chrome headlessly with an
+  isolated task-owned profile; never attach to, restart, or take control of the user's interactive browser.
+- Skill installs: place third-party / global skills in the cross-client `~/.agents/skills/<name>/SKILL.md` location (agentskills.io convention), not `~/.config/opencode/skills/`.
+- Scratch/intermediate files: never write them to temp folders (`/tmp`, `/var/folders/…`, etc.). Resolve every path via the `scratch-artifact-naming` skill script (session-scoped `<repo>/scratch/<session-id>/`) and capture command output via `repo-scratch-output-capture`; then deliberately decide each file's placement and filename — deliverables get a chosen user-facing location with a descriptive kebab-case name.
+- Public documents: tracked/committed files MUST NOT contain AI-agent session IDs (any assistant or
+  tool) or references to local-only artifacts (gitignored `docs/`, `scratch/`); replace such references
+  with self-contained explanations or links to public repository content. Local-only files MAY keep
+  session IDs for traceability.
+- JSON/JSONC files: never remove existing trailing commas unless explicitly requested; when the document
+  is JSONC (or `.json` whose consumer supports JSONC — e.g. VS Code / Zed settings), apply merge-friendly
+  trailing commas after every item of every multi-line object/array. Enforced mechanically by the
+  `jsonc-cst-util` base skill (`.agents/skills/json/jsonc-cst-util/SKILL.md`) — use its `sort`/`format`
+  subcommands instead of ad-hoc JSON sorting.
+- GitHub account: always use the personal account `Baneeishaque` for repository creation, remotes, and
+  pushes — unless the user explicitly says to use another account (e.g., the org account
+  `baneeishaque-ompventure`).
+- Pull request integration: use rebase merges.
+- Git GC: never run `git gc` (incl. `--prune`/`--prune=now`/`--aggressive`), `git reflog expire`, or
+  any reflog-pruning / unreachable-object-pruning command unless the user explicitly requests it —
+  reflogs and unreachable objects must stay intact so any prior tip remains recoverable at any time.
+- Assistant entry point: sessions start in ai-suite. This root's user safety constraints remain applicable
+  when a session works in another repository; changing the working directory does not waive them.
+- Repository liveness: a live declaration, user statement, or known application/session consumer establishes
+  live/shared use. An absent, stale or ambiguous declaration means unknown, not inactive. Treat unknown
+  repositories with the same preservation safeguards as known-live/shared repositories. Clean Git status,
+  no detected writer, stable mtimes or a brief unchanged interval do not establish exclusive access.
+- Repository declarations describe local facts; the operating policy stays here. Consult the applicable
+  repository instructions and known consumers before a disruptive operation. Contrary evidence overrides an
+  inactive label. Use the conservative default instead of requiring exhaustive process or filesystem scans.
+- Do not use ordinary stash push/save, autostash, bulk stash apply/pop, whole-tree checkout/reset or git clean
+  to prepare, snapshot, verify or make a live/shared/unknown working tree clean. Commit/push approval does
+  not authorize those operations. This constraint overrides blanket stash requirements in older skills.
+- For approved safety capture in any repository, use the existing
+  [`git-pre-execution-safety-snapshot`](.agents/skills/git/snapshot/git-pre-execution-safety-snapshot/SKILL.md)
+  composer and its non-intrusive base with a reviewed path scope. Capture must preserve the real index and
+  working files. If unavailable or uncertain, stop; do not fall back to ordinary stashing. If the requested
+  operation itself disrupts a potentially live checkout, obtain a separately approved isolated scope or
+  coordinate exclusive use first. A task-owned isolated checkout is not automatic destructive authorization.
+- Preserve other sessions' tracked, staged and untracked changes. Coordinate overlapping file edits,
+  re-read the current file before a narrow change, and stop on unexpected drift. Never reset, clean,
+  reformat a whole shared file or restore an earlier whole-file copy to resolve an editing conflict.
+  Read baselines with `git show <ref>:<path>`; do not replace working files merely to inspect a baseline.
+- Snapshot restoration and release are separate from capture. Review per-path differences and preserve
+  current bytes before any approved restore. Newer mtimes, larger files and equal status counts do not
+  prove content preservation or a no-op. Retain snapshots while differences or reported loss remain unresolved.
+  Every stash/ref mutation needs explicit authorization; conditional release requires its exact condition
+  to be verified. Reference-only recovery must verify the original object and must not apply it.
+- Repowise-generated metadata: the latest generation wins. With explicit user authorization, release a
+  completed safety snapshot when all scoped differences are confined to the marked Repowise-generated
+  block and all non-generated content is identical. Preserve the latest generated output.
+- Markdown lint: always lint with the standalone `markdownlint-cli2` binary (Homebrew
+  `/opt/homebrew/bin/markdownlint-cli2`) run from the repository root — never `npx markdownlint-cli2`
+  or any `mise x node -- npx` indirection. SSOT: `.agents/skills/general/markdown-lint-workflow/SKILL.md` §5.0.
+- File writes: use the `Write` tool for creating files and the `Edit` tool for modifying files;
+  never use `cat`/heredoc/python-inline via Bash to write or modify deliverables (heredocs are
+  only for feeding scripts).
+- Artifact retirement: before trashing/deleting any planning artifact (register, plan,
+  report, preview), deeply verify it is fully completed and covered (all actions executed,
+  no pending items, no dangling references). Keep current planning documents while work is
+  unfinished; completing a narrower commit preview does not complete its parent plan.
+  Superseded versions may retire only when a retained successor fully carries their content
+  and outstanding work. Follow the `planning-artifact-lifecycle` skill and obtain retirement consent.
+- Rules vs skills: the `ai-agent-rules` submodule is deprecated — add no new rules there (only
+  mandatory changes that skills cannot avoid); author every new rule as an ai-suite skill, and
+  migrate existing `ai-agent-rules` content into skills gradually (rules are the base of skills).
+
+## Child DOX Index
+
+- [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source
+  chat, supporting media, and derived meeting and operating documents.
+- [`cline-plugins/cline-session-logger/AGENTS.md`](cline-plugins/cline-session-logger/AGENTS.md) owns the Cline session-logger
+  hooks plugin (Option A port of `opencode-logger.ts`), live via symlinks in
+  `~/Documents/Cline/Hooks/`, plus its node:test suite.
+- [`copilot-plugins/copilot-session-logger/AGENTS.md`](copilot-plugins/copilot-session-logger/AGENTS.md) owns the GitHub
+  Copilot session-logger agent-hooks plugin (separate fork for the VS Code
+  hooks contract, `origin: copilot`), user-level install via
+  `~/.copilot/hooks/`, plus its node:test suite.
+- [`scripts/swh/AGENTS.md`](scripts/swh/AGENTS.md) owns the Software Heritage
+  crawl-submission automation (Save-code-now JXA, ingest-verify engine,
+  content-link minter) for `ai-suite` and its `ai-agent-rules` submodule.
+- [`opencode-plugins/AGENTS.md`](opencode-plugins/AGENTS.md) owns the opencode
+  plugins (`opencode-logger`, `image-cap`), their bun:test suites, config
+  schemas, and `docs/testing/` SSOTs, live via symlinks in
+  `~/.config/opencode/plugins/`.
+- [`avd-profiles/AGENTS.md`](avd-profiles/AGENTS.md) owns the Android emulator
+  spec profiles (fresh AVD blueprints, app manifests, provisioning, verification,
+  and fullscreen-launch scripts).
+- [`n8n/AGENTS.md`](n8n/AGENTS.md) owns the version-controlled n8n workflow
+  sources (SDK TypeScript), their deployment metadata, and canvas-sync rules.
+- [`mom-automation/AGENTS.md`](mom-automation/AGENTS.md) owns the Personal MoM
+  automation documentation set — requirements, architecture, research,
+  feasibility, plans, ADRs, and platform references.
+- [`handoffs/AGENTS.md`](handoffs/AGENTS.md) owns session-independent cross-session
+  handoff records and evidence, retained until the receiving session completes
+  and the user authorizes retirement.
+- Root-owned files: `README.md`, `LICENSE`, `banner.jpg`, `video-thumbnail.jpg`, and root-level project documentation.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+
+Rules:
+
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+
+<!-- code-review-graph MCP tools -->
+## MCP Tools: code-review-graph
+
+**IMPORTANT: This project has a knowledge graph. ALWAYS use the
+code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
+the codebase.** The graph is faster, cheaper (fewer tokens), and gives
+you structural context (callers, dependents, test coverage) that file
+scanning cannot.
+
+### When to use graph tools FIRST
+
+- **Exploring code**: `semantic_search_nodes_tool` or `query_graph_tool` instead of Grep
+- **Understanding impact**: `get_impact_radius_tool` instead of manually tracing imports
+- **Code review**: `detect_changes_tool` + `get_review_context_tool` instead of reading entire files
+- **Finding relationships**: `query_graph_tool` with callers_of/callees_of/imports_of/tests_for
+- **Architecture questions**: `get_architecture_overview_tool` + `list_communities_tool`
+
+Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
+
+### Key Tools
+
+| Tool | Use when |
+| ------ | ---------- |
+| `detect_changes_tool` | Reviewing code changes — gives risk-scored analysis |
+| `get_review_context_tool` | Need source snippets for review — token-efficient |
+| `get_impact_radius_tool` | Understanding blast radius of a change |
+| `get_affected_flows_tool` | Finding which execution paths are impacted |
+| `query_graph_tool` | Tracing callers, callees, imports, tests, dependencies |
+| `semantic_search_nodes_tool` | Finding functions/classes by name or keyword |
+| `get_architecture_overview_tool` | Understanding high-level codebase structure |
+| `refactor_tool` | Planning renames, finding dead code |
+
+### Workflow
+
+1. The graph auto-updates on file changes (via hooks).
+2. Use `detect_changes_tool` for code review.
+3. Use `get_affected_flows_tool` to understand impact.
+4. Use `query_graph_tool` pattern="tests_for" to check coverage.
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **ai-suite** (18776 symbols, 19715 relationships, 32 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> Index stale? Run `node .gitnexus/run.cjs analyze` from the project root — it auto-selects an available runner. No `.gitnexus/run.cjs` yet? `npx gitnexus analyze` (npm 11 crash → `npm i -g gitnexus`; #1939).
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows. For regression review, compare against the default branch: `detect_changes({scope: "compare", base_ref: "main"})`.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `query({search_query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `context({name: "symbolName"})`.
+- For security review, `explain({target: "fileOrSymbol"})` lists taint findings (source→sink flows; needs `analyze --pdg`).
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `rename` which understands the call graph.
+- NEVER commit changes without running `detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+| ---------- | --------- |
+| `gitnexus://repo/ai-suite/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/ai-suite/clusters` | All functional areas |
+| `gitnexus://repo/ai-suite/processes` | All execution flows |
+| `gitnexus://repo/ai-suite/process/{name}` | Step-by-step execution trace |
+
+## CLI
+
+| Task | Read this skill file |
+| ------ | --------------------- |
+| Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+| Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+| Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+| Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
+| Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
+| Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+
+<!-- gitnexus:end -->
+
+<!-- REPOWISE_AGENTS:START — Do not edit below this line. Auto-generated by Repowise. -->
+## Codebase Intelligence for ai-suite (Repowise)
+
+Last indexed: 2026-11-07 (commit f39495b).
+
+### Architecture
+ai-suite is a multi-package yaml codebase of 6220 files, split across 2 packages. Execution starts at ai-agent-rules/architectures/sync/samples/cra-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/main.tsx. Start here when reading the codebase. Ranked by PageRank over the import graph: the files most of the codebase ultimately depends on.
+
+### Key modules
+- `root`: Sync Reference Implementation and Scripts covers 8 typescript files across 4 directories, exposing 28 public symbols
+
+### Entry points
+- `ai-agent-rules/architectures/sync/packages/core/src/index.ts`
+
+### Files that need care (bug-fix history first, then churn; check `get_risk` before editing)
+- `.agents/skills/redaction-portability/scripts/detect-cross-repo-links.py`: 4 bug fixes, last fix 2026-09-19; 7 commits/90d
+- `copilot-plugins/copilot-session-logger/lib/copilot-transcript.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
+- `copilot-plugins/copilot-session-logger/lib/router.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
+- `copilot-plugins/copilot-session-logger/lib/core.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
+- `.agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/extract-editors.py`: 1 bug fix, last fix 2026-10-14; 4 commits/90d
+
+### Code health
+7.95/10 avg (Good), worst `copilot-plugins/copilot-session-logger/lib/copilot-transcript.js` at 1.98/10. Detail: `get_health()`.
+
+### How to work in this repo
+
+- **Pre-edit, not instead-of-edit.** These tools decide *which* files to read and edit. Reading a file before you edit it is correct and expected. Bytes marked `verified: true` need no re-read; re-read only what `bounds: "approximate"` names. An empty `callers`/`used_by` comes with a `*_basis`: read it before concluding nothing calls a symbol.
+- **Noisy commands** (tests, builds, `git log`/`diff`): prefer `repowise distill <cmd>`, same exit code, errors first. Recover a `[repowise#<ref>: N lines omitted]` marker with `repowise expand <ref>` (`-q <regex>` filters); never re-run the command.
+- **Record a decision** you reasoned out: `repowise decision add --title T --decision D` (lands `proposed` for a person to confirm).
+
+### Tools
+
+| Tool | When and why |
+|------|--------------|
+| `get_answer(question)` | First call for any how/where/why question. Cite `confidence: "high"` or `grounding: "extracted"` directly; `degraded` means no prose; `confidence` rates the evidence. `symbol_bodies` has live bodies. |
+| `get_context(targets=[...])` | Triage card for files/modules/symbols: docs, signatures, hotspot, fix history. No source bytes — `include=["skeleton"]` for the whole file verified, `["callers"|"decisions"]` for depth. Batch targets. |
+| `get_symbol(id, depth?)` | **Follow-up, not an entry point** — one verified body for an id a prior response named (`path.py::Name`, `path.py:140-180`, `repowise#<hex>`). Never walk a file symbol by symbol; Read it. |
+| `search_codebase(query)` | Hybrid search, auto-routed by query shape; force with `mode=symbol|path|concept|hybrid`. A hit whose `sources` are `[fts]` only has no semantic agreement, so verify it. |
+| `get_why(query, targets?)` | Why the code is shaped this way: decision records, git archaeology, rationale comments. Call before a refactor or a pattern divergence. |
+| `get_risk(targets?, changed_files?, include?)` | File history and structural reach. PR mode leads with `directive`; its 0-10 structural heuristic is uncalibrated, not a probability. Read typed test recommendations and coverage state first. |
+| `get_change_risk(revspec?, extensions?, exclude_patterns?)` | Deterministic live-diff review signal for a commit or range. Lead with benchmarked percentile/classification; the 0-10 diff-shape score is supporting, not a probability. `get_risk` scores paths. |
+| `get_health(targets?, include?)` | Defect / maintainability / performance scores and findings, plus documentation the code no longer supports. Self-check the files you touched before finishing. |
+| `get_dead_code(tier?, min_confidence?, safe_only?)` | Confidence-tiered unreachable files / unused exports / zombie packages. For cleanup sweeps, not targeted fixes. |
+| `get_overview()` | Architecture map. Call once, first, in an unfamiliar repo; skip it after that. |
+
+<!-- REPOWISE_AGENTS:END -->

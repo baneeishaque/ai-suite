@@ -1,0 +1,218 @@
+diff --git a/AGENTS.md b/AGENTS.md
+index 0d7a903cc8188a944d7996a3971278e4a4ecb107..8d76abeb88679ddd6d3dc230ea4310f0acf2e02b 100644
+--- a/AGENTS.md
++++ b/AGENTS.md
+@@ -124,14 +124,11 @@
+     (`detect-dangling-links.py` over the commit's SKILL.md/AGENTS.md/changelog files) — flag DANGLES
+     for user disposition (FOLD / RESOLVE-NOW / KEEP-AS-IS) rather than silently fixing stale links;
+     also sweep `/tmp` scans for session-evidence drift before reporting final verdicts.
+-12. **Never deduce or reuse opencode session IDs — resolve and verify at runtime.**
+-    Session IDs change when an opencode session is forked, so an ID seen in
+-    artifact filenames, scratch folders, or earlier conversation is NOT the
+-    current session's ID. Run the `opencode-current-session-id` script at the
+-    point of use and verify its pending-marker flag (an in-flight
+-    `NNN-pending-*.yaml` in the winning `ses_*/` log dir) before passing the ID
+-    to any consumer — never pass a remembered ID to scripts. See
+-    [`.agents/skills/opencode/opencode-current-session-id/SKILL.md`](.agents/skills/opencode/opencode-current-session-id/SKILL.md).
++11. **Every `curl` invocation MUST carry an explicit timeout.** `curl` has NO default
++    timeout — a stalled connection can hang a tool call indefinitely. Accompany
++    every request with a connect timeout and a total timeout (e.g.
++    `--connect-timeout 10 --max-time 30`), optionally `--retry 2` for transient
++    failures. No `curl` call without a time value.
+ 
+ ## Conventions
+ 
+@@ -187,6 +184,7 @@ Update parent docs when parent-level structure, ownership, workflow, or child in
+ - Verification must reflect an existing check; if no verification framework exists yet, leave it empty and update it when one exists
+ 
+ Default section order:
++
+ - Purpose
+ - Ownership
+ - Local Contracts
+@@ -219,10 +217,14 @@ When the user requests a durable behavior change, record it here or in the relev
+ 
+ - MCP setup: always prefer remote (HTTP) MCP servers over local (stdio) ones when the provider offers a remote endpoint.
+ - MCP setup: keep MCP entries in `opencode.json` as `enabled: false` by default; toggle on per task.
++- OpenCode project configuration: keep repository settings in the root `opencode.jsonc`;
++  use `.opencode/` for plugins and other directory-based resources.
+ - Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
++- Browser automation while the user is using the computer must not disturb the screen. Keep JXA actions in verified
++  background tabs/windows without activation or focus changes. Playwright must use system Chrome headlessly with an
++  isolated task-owned profile; never attach to, restart, or take control of the user's interactive browser.
+ - Skill installs: place third-party / global skills in the cross-client `~/.agents/skills/<name>/SKILL.md` location (agentskills.io convention), not `~/.config/opencode/skills/`.
+ - Scratch/intermediate files: never write them to temp folders (`/tmp`, `/var/folders/…`, etc.). Resolve every path via the `scratch-artifact-naming` skill script (session-scoped `<repo>/scratch/<session-id>/`) and capture command output via `repo-scratch-output-capture`; then deliberately decide each file's placement and filename — deliverables get a chosen user-facing location with a descriptive kebab-case name.
+-
+ - Public documents: tracked/committed files MUST NOT contain AI-agent session IDs (any assistant or
+   tool) or references to local-only artifacts (gitignored `docs/`, `scratch/`); replace such references
+   with self-contained explanations or links to public repository content. Local-only files MAY keep
+@@ -232,20 +234,31 @@ When the user requests a durable behavior change, record it here or in the relev
+   trailing commas after every item of every multi-line object/array. Enforced mechanically by the
+   `jsonc-cst-util` base skill (`.agents/skills/json/jsonc-cst-util/SKILL.md`) — use its `sort`/`format`
+   subcommands instead of ad-hoc JSON sorting.
+-
++- GitHub account: always use the personal account `Baneeishaque` for repository creation, remotes, and
++  pushes — unless the user explicitly says to use another account (e.g., the org account
++  `baneeishaque-ompventure`).
++- Pull request integration: use rebase merges.
++- Git GC: never run `git gc` (incl. `--prune`/`--prune=now`/`--aggressive`), `git reflog expire`, or
++  any reflog-pruning / unreachable-object-pruning command unless the user explicitly requests it —
++  reflogs and unreachable objects must stay intact so any prior tip remains recoverable at any time.
+ - Git stash: never run `git stash` / `git stash pop` / `git stash apply` (or any stash mutation)
+   without explicit user confirmation — stash operations can hide or lose working-tree changes owned
+   by other agent sessions. Use `git show HEAD:<path>` or a single-file checkout for baselines instead.
++- Markdown lint: always lint with the standalone `markdownlint-cli2` binary (Homebrew
++  `/opt/homebrew/bin/markdownlint-cli2`) run from the repository root — never `npx markdownlint-cli2`
++  or any `mise x node -- npx` indirection. SSOT: `.agents/skills/general/markdown-lint-workflow/SKILL.md` §5.0.
+ - File writes: use the `Write` tool for creating files and the `Edit` tool for modifying files;
+   never use `cat`/heredoc/python-inline via Bash to write or modify deliverables (heredocs are
+   only for feeding scripts).
+-
+ - Artifact retirement: before trashing/deleting any planning artifact (register, plan,
+   report, preview), deeply verify it is fully completed and covered (all actions executed,
+   no pending items, no dangling references). Keep current planning documents while work is
+   unfinished; completing a narrower commit preview does not complete its parent plan.
+   Superseded versions may retire only when a retained successor fully carries their content
+   and outstanding work. Follow the `planning-artifact-lifecycle` skill and obtain retirement consent.
++- Rules vs skills: the `ai-agent-rules` submodule is deprecated — add no new rules there (only
++  mandatory changes that skills cannot avoid); author every new rule as an ai-suite skill, and
++  migrate existing `ai-agent-rules` content into skills gradually (rules are the base of skills).
+ 
+ ## Child DOX Index
+ 
+@@ -261,8 +274,21 @@ When the user requests a durable behavior change, record it here or in the relev
+ - [`scripts/swh/AGENTS.md`](scripts/swh/AGENTS.md) owns the Software Heritage
+   crawl-submission automation (Save-code-now JXA, ingest-verify engine,
+   content-link minter) for `ai-suite` and its `ai-agent-rules` submodule.
++- [`opencode-plugins/AGENTS.md`](opencode-plugins/AGENTS.md) owns the opencode
++  plugins (`opencode-logger`, `image-cap`), their bun:test suites, config
++  schemas, and `docs/testing/` SSOTs, live via symlinks in
++  `~/.config/opencode/plugins/`.
++- [`avd-profiles/AGENTS.md`](avd-profiles/AGENTS.md) owns the Android emulator
++  spec profiles (fresh AVD blueprints, app manifests, provisioning, verification,
++  and fullscreen-launch scripts).
+ - [`n8n/AGENTS.md`](n8n/AGENTS.md) owns the version-controlled n8n workflow
+   sources (SDK TypeScript), their deployment metadata, and canvas-sync rules.
++- [`mom-automation/AGENTS.md`](mom-automation/AGENTS.md) owns the Personal MoM
++  automation documentation set — requirements, architecture, research,
++  feasibility, plans, ADRs, and platform references.
++- [`handoffs/AGENTS.md`](handoffs/AGENTS.md) owns session-independent cross-session
++  handoff records and evidence, retained until the receiving session completes
++  and the user authorizes retirement.
+ - Root-owned files: `README.md`, `LICENSE`, `banner.jpg`, `video-thumbnail.jpg`, and root-level project documentation.
+ 
+ ## graphify
+@@ -272,6 +298,7 @@ This project has a knowledge graph at graphify-out/ with god nodes, community st
+ When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
+ 
+ Rules:
++
+ - For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+ - Dirty graphify-out/ files are expected after hooks or incremental updates; dirty graph files are not a reason to skip graphify. Only skip graphify if the task is about stale or incorrect graph output, or the user explicitly says not to use it.
+ - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+@@ -343,7 +370,7 @@ This project is indexed by GitNexus as **ai-suite** (18776 symbols, 19715 relati
+ ## Resources
+ 
+ | Resource | Use for |
+-|----------|---------|
++| ---------- | --------- |
+ | `gitnexus://repo/ai-suite/context` | Codebase overview, check index freshness |
+ | `gitnexus://repo/ai-suite/clusters` | All functional areas |
+ | `gitnexus://repo/ai-suite/processes` | All execution flows |
+@@ -352,7 +379,7 @@ This project is indexed by GitNexus as **ai-suite** (18776 symbols, 19715 relati
+ ## CLI
+ 
+ | Task | Read this skill file |
+-|------|---------------------|
++| ------ | --------------------- |
+ | Understand architecture / "How does X work?" | `.claude/skills/gitnexus/gitnexus-exploring/SKILL.md` |
+ | Blast radius / "What breaks if I change X?" | `.claude/skills/gitnexus/gitnexus-impact-analysis/SKILL.md` |
+ | Trace bugs / "Why is X failing?" | `.claude/skills/gitnexus/gitnexus-debugging/SKILL.md` |
+@@ -365,60 +392,46 @@ This project is indexed by GitNexus as **ai-suite** (18776 symbols, 19715 relati
+ <!-- REPOWISE_AGENTS:START — Do not edit below this line. Auto-generated by Repowise. -->
+ ## Codebase Intelligence for ai-suite (Repowise)
+ 
+-Indexed by [Repowise](https://repowise.dev). Last indexed: 2026-09-15 (commit eaedbc3). Confidence: 95%.
++Last indexed: 2026-11-07 (commit 671c7f5).
++
++### Architecture
++ai-suite is a multi-package yaml codebase of 6220 files, split across 2 packages. Execution starts at ai-agent-rules/architectures/sync/samples/cra-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/main.tsx. Start here when reading the codebase. Ranked by PageRank over the import graph: the files most of the codebase ultimately depends on.
++
++### Key modules
++- `root`: Sync Reference Implementation and Scripts covers 8 typescript files across 4 directories, exposing 28 public symbols
++
++### Entry points
++- `ai-agent-rules/architectures/sync/packages/core/src/index.ts`
++
++### Files that need care (bug-fix history first, then churn; check `get_risk` before editing)
++- `.agents/skills/redaction-portability/scripts/detect-cross-repo-links.py`: 4 bug fixes, last fix 2026-09-19; 7 commits/90d
++- `copilot-plugins/copilot-session-logger/lib/copilot-transcript.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
++- `copilot-plugins/copilot-session-logger/lib/router.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
++- `copilot-plugins/copilot-session-logger/lib/core.js`: 2 bug fixes, last fix 2026-09-15; 3 commits/90d
++- `.agents/skills/vscode/config/vscode-state-vscdb-editor-extract/scripts/extract-editors.py`: 1 bug fix, last fix 2026-10-14; 4 commits/90d
++
++### Code health
++7.95/10 avg (Good), worst `copilot-plugins/copilot-session-logger/lib/copilot-transcript.js` at 1.98/10. Detail: `get_health()`.
++
+ ### How to work in this repo
+ 
+-- **Trust the index.** `verified: true` and `_meta.complete` mean the bytes were checked against the live tree, so never re-read them. Re-read only what `bounds: "approximate"` or `_meta.stale_warning` names. `confidence` rates the prose, not the evidence: on `low` read the `fallback_targets` or `best_guesses` the reply names, and run `repowise update` and ask again if `_meta.hint` says the index is behind HEAD. `index_behind: true` alone is informational.
+-- **A zero carries its basis.** An empty `callers`/`callees`/`used_by` comes with a `*_basis` saying how much of that language's calls the graph resolved, so read it before concluding nothing calls a symbol. `_meta.scope_hint` names the areas the answer did not touch.
+-- **Pre-edit, not instead-of-edit.** These tools decide *which* files to read and edit. Reading a file before you edit it is correct and expected.
+-- **Noisy commands** (tests, builds, `git log`/`diff`, searches, listings): prefer `repowise distill <cmd>`, the same command with its exit code preserved and errors-first output. A `[repowise#<ref>: N lines omitted]` marker is recoverable via `repowise expand <ref>` (add `-q <regex>` to filter); never re-run the command to see omitted output.
+-- **Recording a decision** you had to reason out: `repowise decision add --title T --decision D` records it without prompting and prints the id (`--format json` to parse it back). It lands `proposed`, for a person to confirm.
++- **Pre-edit, not instead-of-edit.** These tools decide *which* files to read and edit. Reading a file before you edit it is correct and expected. Bytes marked `verified: true` need no re-read; re-read only what `bounds: "approximate"` names. An empty `callers`/`used_by` comes with a `*_basis`: read it before concluding nothing calls a symbol.
++- **Noisy commands** (tests, builds, `git log`/`diff`): prefer `repowise distill <cmd>`, same exit code, errors first. Recover a `[repowise#<ref>: N lines omitted]` marker with `repowise expand <ref>` (`-q <regex>` filters); never re-run the command.
++- **Record a decision** you reasoned out: `repowise decision add --title T --decision D` (lands `proposed` for a person to confirm).
+ 
+ ### Tools
+ 
+ | Tool | When and why |
+ |------|--------------|
+-| `get_answer(question)` | First call for any how/where/why question. Cite `confidence: "high"` or `grounding: "extracted"` directly; `degraded` means judge by `retrieval_quality`. `symbol_bodies` has live bodies. |
++| `get_answer(question)` | First call for any how/where/why question. Cite `confidence: "high"` or `grounding: "extracted"` directly; `degraded` means no prose; `confidence` rates the evidence. `symbol_bodies` has live bodies. |
+ | `get_context(targets=[...])` | Triage card for files/modules/symbols: docs, signatures, hotspot, fix history. No source bytes — `include=["skeleton"]` for the whole file verified, `["callers"|"decisions"]` for depth. Batch targets. |
+ | `get_symbol(id, depth?)` | **Follow-up, not an entry point** — one verified body for an id a prior response named (`path.py::Name`, `path.py:140-180`, `repowise#<hex>`). Never walk a file symbol by symbol; Read it. |
+ | `search_codebase(query)` | Hybrid search, auto-routed by query shape; force with `mode=symbol|path|concept|hybrid`. A hit whose `sources` are `[fts]` only has no semantic agreement, so verify it. |
+ | `get_why(query, targets?)` | Why the code is shaped this way: decision records, git archaeology, rationale comments. Call before a refactor or a pattern divergence. |
+-| `get_risk(targets, changed_files?, include?)` | File history and structural reach. PR mode leads with `directive`; its 0-10 structural heuristic is uncalibrated, not a probability. Read typed test recommendations and coverage state first. |
++| `get_risk(targets?, changed_files?, include?)` | File history and structural reach. PR mode leads with `directive`; its 0-10 structural heuristic is uncalibrated, not a probability. Read typed test recommendations and coverage state first. |
+ | `get_change_risk(revspec?, extensions?, exclude_patterns?)` | Deterministic live-diff review signal for a commit or range. Lead with benchmarked percentile/classification; the 0-10 diff-shape score is supporting, not a probability. `get_risk` scores paths. |
+-| `get_health(targets?, include?)` | Defect / maintainability / performance scores and findings. Self-check the files you touched before finishing. |
++| `get_health(targets?, include?)` | Defect / maintainability / performance scores and findings, plus documentation the code no longer supports. Self-check the files you touched before finishing. |
+ | `get_dead_code(tier?, min_confidence?, safe_only?)` | Confidence-tiered unreachable files / unused exports / zombie packages. For cleanup sweeps, not targeted fixes. |
+ | `get_overview()` | Architecture map. Call once, first, in an unfamiliar repo; skip it after that. |
+ 
+-### Architecture
+-**Files:** 6220 | **Lines:** 5594003 | **Monorepo:** 2 packages
+-ai-suite is a multi-package yaml codebase of 6220 files, split across 2 packages. Execution starts at ai-agent-rules/architectures/sync/samples/cra-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/App.tsx, ai-agent-rules/architectures/sync/samples/vite-project/src/main.tsx. Start here when reading the codebase. Ranked by PageRank over the import graph: the files most of the codebase ultimately depends on.
+-
+-### Key modules
+-- `root` — ai-agent-rules/architectures/sync/packages/core/src · ai-agent-rules/architectures/sync/samples/shared/src ·…
+-
+-### Entry points
+-- `ai-agent-rules/architectures/sync/samples/vite-project/src/main.tsx`
+-- `ai-agent-rules/architectures/sync/samples/vite-project/src/App.tsx`
+-- `ai-agent-rules/architectures/sync/samples/cra-project/src/App.tsx`
+-- `scripts/teams-chat-nav/teams-chat-nav-inject.js`
+-- `scripts/teams-chat-nav/teams-read-messages-inject.js`
+-- `scripts/wa-chat-read/wa-chat-read-inject.js`
+-
+-### Files that need care (bug-fix history first, then churn — check `get_risk` before editing)
+-- `copilot-plugins/copilot-session-logger/lib/copilot-transcript.js` — 2 bug fixes, last fix today; 3 commits/90d
+-- `copilot-plugins/copilot-session-logger/lib/router.js` — 2 bug fixes, last fix today; 3 commits/90d
+-- `copilot-plugins/copilot-session-logger/lib/core.js` — 2 bug fixes, last fix today; 3 commits/90d
+-- `.agents/skills/brew-upgrade-workflow/scripts/run-brew-upgrade.py` — 1 bug fix, last fix 6 weeks ago; 3 commits/90d
+-- `session-tracker.yaml` — 67 commits/90d
+-
+-### Code health
+-Three co-equal signals: code health 7.26/10 avg (Good), hotspot health 4.74/10 (improving), worst `cline-plugins/cline-session-logger/lib/router.js` at 2.13/10 · maintainability 6.37/10 · performance risk 30 open static I/O-in-loop / N+1 findings. Detail: `get_health()`.
+-
+-Critical files:
+-- `cline-plugins/cline-session-logger/lib/router.js` — change entropy — impact −3.0
+-- `cline-plugins/cline-session-logger/lib/core.js` — change entropy — impact −3.0
+-- `cline-plugins/cline-session-logger/lib/router.js` — brain method (handle) — impact −0.7
+-- `cline-plugins/cline-session-logger/lib/router.js` — complex method (handle) — impact −0.5
+-- `copilot-plugins/copilot-session-logger/lib/router.js` — complex method (handle) — impact −0.5
+-
+ <!-- REPOWISE_AGENTS:END -->

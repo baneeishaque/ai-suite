@@ -250,6 +250,13 @@ When the user requests a durable behavior change, record it here or in the relev
   Superseded versions may retire only when a retained successor fully carries their content
   and outstanding work. Follow the `planning-artifact-lifecycle` skill and obtain retirement consent.
 
+- Commit previews (git-atomic-commit-construction §2d): always place the commit-preview artifact via
+  the planning-artifact naming resolver-backed nested profile under `docs/`
+  (`docs/<session-id>/<date>/<purpose>/<artifact>_v<version>_<time>.<ext>`), not the default
+  `scratch/commit-preview.md` fallback, for versioned planning artifacts such as commit-preview;
+  the session id must be the full runtime-verified opencode session id (via
+  `opencode-current-session-id`, without the `ses_` prefix) passed to the docs resolver.
+
 ## Child DOX Index
 
 - [`whatsapp-chat-automation/AGENTS.md`](whatsapp-chat-automation/AGENTS.md) owns the Python WhatsApp community source

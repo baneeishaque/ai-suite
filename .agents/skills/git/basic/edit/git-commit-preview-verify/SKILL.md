@@ -1,6 +1,6 @@
 ---
 name: git-commit-preview-verify
-description: Verify whether commits listed in a commit-preview markdown file have been executed against git history, with optional cleanup.
+description: Verify commit-preview titles against Git history and optionally delegate authorized cleanup, failing closed without macOS Trash.
 category: Git & Repository Management
 ---
 
@@ -20,16 +20,29 @@ cross-references each `Commit N:` title against `git log --oneline`, and
 reports each arranged commit as `done` or `pending`.
 
 The primitive supports human-readable text output and machine-readable
-JSON, plus an optional `--cleanup` gate that deletes the preview file
-ONLY when every listed commit is verified as executed — so a partially
-executed plan never loses its handoff artifact.
+JSON. Optional `--cleanup` delegates removal only when no listed commit
+is pending. Title matching is evidence for a caller's completion audit,
+not proof that the committed contents or all plan actions are correct.
+
+## Composition Rationale
+
+Verification remains a standalone, read-only primitive. Its optional
+cleanup mode composes
+[`safe-file-cleanup`](../../../../general/file/safe-file-cleanup/SKILL.md)
+through that skill's `scripts/safe_cleanup.py <preview> --json` CLI.
+The helper path is anchored to this script's location, so another working
+directory does not change the selected implementation. The caller owns
+content/coverage/reference checks and consent; this script owns pending
+commit refusal, the macOS Trash preflight, and cleanup-result verification.
 
 ## Environment & Dependencies
 
 | Requirement | Minimum |
 | --- | --- |
 | Git | 2.x |
-| Python | 3.10+ |
+| Python | 3.12+ |
+| safe-file-cleanup | Required only with `--cleanup`; sibling helper must exist |
+| macOS `trash` | Required for macOS cleanup; no permanent-removal fallback |
 
 Verify:
 
@@ -78,7 +91,7 @@ python3 scripts/verify-commit-preview.py --preview <path> [--repo <path>] [--for
 | `--repo PATH` | Git repository root (default: auto-detect from CWD) |
 | `--format text\|json` | Output format (default: `text`) |
 | `--window N` | `git log` window size in commits (default: 50) |
-| `--cleanup` | Delete the preview file only when ALL commits are done |
+| `--cleanup` | Delegate retirement after caller approval/coverage checks and zero pending commits |
 
 ### Examples
 
@@ -89,7 +102,7 @@ python3 scripts/verify-commit-preview.py --preview scratch/commit-preview.md
 # Machine-readable JSON
 python3 scripts/verify-commit-preview.py --preview scratch/commit-preview.md --format json
 
-# Verify, then delete the preview (only fires when all commits done)
+# After caller coverage checks and retirement consent
 python3 scripts/verify-commit-preview.py --preview scratch/commit-preview.md --cleanup
 ```
 
@@ -102,6 +115,7 @@ python3 scripts/verify-commit-preview.py --preview scratch/commit-preview.md --c
 | 2 | Preview file not found or unreadable |
 | 3 | Not inside a git repository (and `--repo` not provided / invalid) |
 | 4 | Preview file contains no parseable commit entries |
+| 5 | Cleanup helper missing, unavailable, failed, timed out, or did not verify removal |
 
 ### Input / Output Format
 
@@ -117,12 +131,12 @@ Text output:
 Commit Preview Verification
 ==========================
 Preview: scratch/commit-preview.md
-Repository: /Users/dk/lab-data/ai-suite
+Repository: <repo-root>
 
  #  Status   SHA       Title
- 1  done     febd2a47  docs(gists-ai-prompts): add commit preview instruction log entries
+ 1  done     abc1234   docs(example): describe preview verification
 
-Result: 5/5 commits executed
+Result: 1/1 commits executed
 ```
 
 JSON output:
@@ -130,22 +144,47 @@ JSON output:
 ```json
 {
   "preview_file": "scratch/commit-preview.md",
-  "repo": "/Users/dk/lab-data/ai-suite",
-  "total": 5,
-  "done": 5,
+  "repo": "<repo-root>",
+  "total": 1,
+  "done": 1,
   "pending": 0,
   "commits": [
-    { "index": 1, "title": "docs(gists-ai-prompts): ...", "status": "done", "sha": "febd2a47" }
+    { "index": 1, "title": "docs(example): describe preview verification", "status": "done", "sha": "abc1234" }
   ]
 }
 ```
 
 ### Cleanup Semantics
 
-- `--cleanup` deletes the preview file and prints `Cleaned up: <path>`
-  ONLY when `pending == 0`.
-- If any commit is pending, cleanup is refused with a warning and the
-  exit code is 1 — the preview MUST be retained for the next session.
+- Before invoking `--cleanup`, the caller verifies actual commit contents,
+  all actions within this preview's scope, inbound references, and explicit
+  retirement consent. A finished preview does not complete an unfinished
+  parent plan; retain current plans with open work.
+- Pending commits refuse cleanup with exit 1 and no disposal call.
+- A missing helper or missing macOS `trash` fails closed with exit 5.
+- The helper runs under the same Python interpreter with an absolute
+  preview path and a 30-second timeout. Nonzero exit, malformed JSON,
+  a status other than `removed`, or a still-existing preview returns exit 5.
+  Inspect the path after a helper failure; never infer removal or retry blindly.
+- Without `--cleanup`, the existing JSON verification shape is unchanged.
+  With it, `cleanup.status` is `removed`, `refused`, or `failed`.
+  JSON stdout remains one valid report; diagnostics go to stderr. Text
+  mode prints `Cleaned up: <path>` only after verified removal.
+- On other platforms, disposal follows the base skill's backend policy.
+  This caller adds a macOS fail-closed guard; it does not change the base.
+
+## Verification
+
+Run [scripts/test-preview-cleanup.py](scripts/test-preview-cleanup.py) with
+`TEST_ARTIFACT_DIR` set to an existing session-scratch directory. Tests cover
+read-only defaults, pending refusal, missing helper/Trash, delegated success,
+invalid results, helper errors, and invocation from a different working directory.
+Disposal is mocked as a fixture move; no user preview or actual Trash is touched.
+The source fixture lives in [preview-cleanup-fixture.md.template](scripts/preview-cleanup-fixture.md.template).
+
+```bash
+python3 scripts/test-preview-cleanup.py
+```
 
 ## Composition by Higher-Level Skills
 
@@ -155,8 +194,6 @@ JSON output:
 
 ## Related Skills
 
-- [`git-atomic-commit-construction`](../../../../git-atomic-commit-construction/SKILL.md)
-  — the composer that generates the preview this skill verifies.
 - [`git-commit-metadata-extraction`](../../../../git-commit-metadata-extraction/SKILL.md)
   — for extracting individual commit metadata.
 - [`git-hunk-staging-primitives`](../../../../git-hunk-staging-primitives/SKILL.md)
@@ -167,3 +204,7 @@ JSON output:
 ## Traceability
 
 See [TRACEABILITY.md](TRACEABILITY.md).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).

@@ -6,8 +6,13 @@ git-atomic-commit-construction composer) and cross-references each
 listed "Commit N:" section title against `git log --oneline` to report
 which arranged commits have been executed and which remain pending.
 
-Read-only by default; the optional --cleanup flag deletes the preview
-file ONLY when every listed commit is verified as executed.
+Read-only by default; optional --cleanup delegates to safe-file-cleanup
+only when every listed commit is found. The caller must first verify
+content, outstanding actions, references, and explicit retirement consent.
+On macOS, missing Trash fails closed. No permanent-removal code lives here.
+
+Tier 1 (Python 3.12+) per Scripting Language Selection Rules §§3–5:
+portable parsing and subprocess composition, with no ecosystem-specific runtime.
 
 Usage
 -----
@@ -24,6 +29,7 @@ Exit Codes
     2   Preview file not found or unreadable
     3   Not inside a git repository (and --repo not provided)
     4   Preview file contains no parseable commit entries
+    5   Cleanup unavailable, failed, or unverified
 """
 
 from __future__ import annotations
@@ -32,11 +38,43 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
 COMMIT_HEADER_RE = re.compile(r"^#{1,6}\s*Commit\s+(\d+)\s*:\s*(.+?)\s*$", re.MULTILINE)
+CLEANUP_SCRIPT = (
+    Path(__file__).resolve().parents[5]
+    / "general/file/safe-file-cleanup/scripts/safe_cleanup.py"
+)
+
+
+def cleanup_preview(preview_path: Path) -> dict[str, object]:
+    """Delegate one authorized retirement; require a verified removal result."""
+    if not CLEANUP_SCRIPT.is_file():
+        raise RuntimeError(f"cleanup helper not found: {CLEANUP_SCRIPT}")
+    if sys.platform == "darwin" and shutil.which("trash") is None:
+        raise RuntimeError("macOS Trash is unavailable; preview retained")
+    result = subprocess.run(
+        [sys.executable, str(CLEANUP_SCRIPT), str(preview_path.absolute()), "--json"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"cleanup helper exited {result.returncode}: {detail}")
+    try:
+        record = json.loads(result.stdout)
+    except json.JSONDecodeError as error:
+        raise RuntimeError("cleanup helper returned invalid JSON") from error
+    if not isinstance(record, dict) or record.get("status") != "removed":
+        raise RuntimeError("cleanup helper did not confirm removal")
+    if os.path.lexists(preview_path):
+        raise RuntimeError("cleanup helper reported removal but preview still exists")
+    return record
 
 
 def find_repo_root(start: str) -> str:
@@ -146,7 +184,7 @@ def main() -> int:
     parser.add_argument(
         "--cleanup",
         action="store_true",
-        help="Delete the preview file after successful verification (all commits done).",
+        help="Retire a verified preview via safe-file-cleanup; requires prior caller consent and coverage checks.",
     )
     args = parser.parse_args()
 
@@ -199,23 +237,30 @@ def main() -> int:
         "commits": commits,
     }
 
-    if args.format == "json":
-        print(json.dumps(report, indent=2))
-    else:
-        print(format_text(report))
-
+    exit_code = 0 if pending == 0 else 1
     if args.cleanup:
-        if pending == 0:
-            os.remove(preview_path)
-            print(f"Cleaned up: {args.preview}")
-        else:
+        if pending:
+            report["cleanup"] = {"status": "refused", "reason": "pending commits"}
             print(
                 "Cleanup refused: pending commits present — preview retained.",
                 file=sys.stderr,
             )
-            return 1
+        else:
+            try:
+                report["cleanup"] = cleanup_preview(preview_path)
+            except (OSError, subprocess.SubprocessError, RuntimeError) as error:
+                report["cleanup"] = {"status": "failed", "reason": str(error)}
+                print(f"Cleanup failed: {error}", file=sys.stderr)
+                exit_code = 5
 
-    return 0 if pending == 0 else 1
+    if args.format == "json":
+        print(json.dumps(report, indent=2))
+    else:
+        print(format_text(report))
+        if args.cleanup and exit_code == 0:
+            print(f"Cleaned up: {args.preview}")
+
+    return exit_code
 
 
 if __name__ == "__main__":

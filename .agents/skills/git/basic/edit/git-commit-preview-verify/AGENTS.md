@@ -1,23 +1,24 @@
----
-name: Git Commit Preview Verify
-description: Passive context bridge for verifying commit preview execution status.
-category: Git & Repository Management
----
+# Git Commit Preview Verify — Companion Bridge
 
-# Git Commit Preview Verify (Ref)
+## Purpose
 
-This bridge provides passive context for the `git-commit-preview-verify`
-skill, which parses commit-preview markdown files and verifies whether
-the listed commits have been executed against git history.
+Expose the preview-verification skill to non-skill-aware runtimes.
+The operational SSOT lives in [SKILL.md](SKILL.md).
 
-It should be invoked whenever the user asks to check whether planned
-commits were completed, or points to an existing preview file for
-verification.
+## When This Skill Applies
 
-- **Primary Entry Point**:
-  [.agents/skills/git/basic/edit/git-commit-preview-verify/SKILL.md](./SKILL.md)
-- **Related Skills**:
-    - [`git-atomic-commit-construction`](../../../../git-atomic-commit-construction/SKILL.md)
-      — composer that generates previews
-    - [`git-commit-metadata-extraction`](../../../../git-commit-metadata-extraction/SKILL.md)
-      — for individual commit metadata
+- Checking whether the titles in an existing preview appear in Git history.
+- Verifying a completed atomic-commit batch before its retirement decision.
+- Requesting optional cleanup after caller-owned completion and consent checks.
+
+## Operational Procedure
+
+Read [SKILL.md](SKILL.md) for the read-only default, optional cleanup
+delegation, macOS Trash requirement, output/exit contracts, and regression
+checks. Title matching does not replace the caller's content and plan-coverage audit.
+
+## Cross-References
+
+- [Atomic commit construction](../../../../git-atomic-commit-construction/SKILL.md) — preview producer and consumer.
+- [Safe file cleanup](../../../../general/file/safe-file-cleanup/SKILL.md) — delegated removal primitive.
+- [Commit metadata extraction](../../../../git-commit-metadata-extraction/SKILL.md) — individual commit inspection.

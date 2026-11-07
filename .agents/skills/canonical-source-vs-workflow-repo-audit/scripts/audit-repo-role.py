@@ -24,12 +24,15 @@ Signals consulted (weighted):
     + Repo description / README explicitly says "mirror of"             -> mirror
 
 Inputs:
-    <path>             positional; defaults to cwd
+    <path>             existing file or directory; defaults to cwd
     --json             emit machine-readable verdict
+
+Tier 1 (Python 3.12+) per Scripting Language Selection Rules §§3–5:
+portable path inspection, Git orchestration, and structured output.
 
 Exit codes:
     0  verdict reported (any classification)
-    2  path is not inside a Git working tree
+    2  invalid/missing path or not inside a Git working tree
 """
 import argparse
 import json
@@ -57,9 +60,19 @@ def main():
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args()
 
-    root = git(a.path, "rev-parse", "--show-toplevel")
+    path = Path(a.path).expanduser()
+    if path.is_file():
+        directory = path.parent
+    elif path.is_dir():
+        directory = path
+    else:
+        print(f"ERROR: path is not an existing file or directory: {a.path}", file=sys.stderr)
+        sys.exit(2)
+
+    root = git(directory, "rev-parse", "--show-toplevel")
     if not root:
-        print(f"ERROR: not in a Git repo: {a.path}", file=sys.stderr); sys.exit(2)
+        print(f"ERROR: not in a Git repo: {a.path}", file=sys.stderr)
+        sys.exit(2)
     root = Path(root)
 
     signals = {"workflow": 0, "canonical": 0, "mirror": 0}

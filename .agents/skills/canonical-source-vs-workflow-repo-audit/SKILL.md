@@ -1,6 +1,6 @@
 ---
 name: canonical-source-vs-workflow-repo-audit
-description: Audits a repository to classify it as canonical-source or workflow-backup before allowing source code edits.
+description: Classify the enclosing Git repository from an existing file or directory before source edits; reject missing or non-repository inputs.
 category: Git-Operations
 ---
 
@@ -18,18 +18,38 @@ enclosing repository as **canonical-source**, **workflow-backup**, or
 common in ecosystems where a workflow / backup / CI repo coexists with
 the canonical source repo and shares a similar name pattern.
 
-### Real-world trigger (Account-Ledger ecosystem)
+### Typical trigger: related source and workflow repositories
 
-- `Account-Ledger-Server` — the **workflow / backup** repo. Hosts
+- `<service>-ops` — the **workflow / backup** repo. Hosts
   `.github/workflows/database-backup.yml` and a small `http_API/` snapshot
   of the live production server. Edits here NEVER reach the canonical PHP.
-- `Account-Ledger-Server-PHP` — the **canonical source** PHP repo. Every
+- `<service>-api` — the **canonical source** PHP repo. Every
   HTTP-API edit MUST land here first; the workflow repo only consumes
   what production already serves.
 
-In May 2026 an edit to `select_User.php` landed in the workflow repo,
+In May 2026 an API edit landed in the workflow repo,
 was caught by review, soft-reset, and re-applied in the canonical repo.
 This skill exists to **stop that mistake at pre-edit time**.
+
+## Composition Rationale
+
+This standalone read-only classifier owns enclosing-repository discovery
+and weighted role signals. Existing file inputs are normalized to their
+containing directory before Git resolves the root; callers consume the
+same verdict, signals, and notes as directory inputs. Other skills retain
+the judgement about whether a particular edit belongs in that repository.
+
+## Input and Output Contract
+
+- Python 3.12+ and Git are required; the script uses the standard library.
+- The optional positional input is an existing file or directory and defaults to `.`.
+  Relative paths are resolved from the caller's working directory; `~` is expanded.
+- Git resolves the closest enclosing repository, including a nested repository.
+  For a file symlink, discovery starts at the link's containing directory.
+- Missing paths, broken symlinks, unsupported path types, and paths outside Git return exit 2 with stderr diagnostics.
+  The script does not create the requested path.
+- Exit 0 reports `root`, `verdict`, `signals`, and `notes`; `--json` emits that object.
+- Path normalization does not change the scoring weights or edit-approval policy.
 
 ## When to Apply
 
@@ -57,7 +77,7 @@ python3 .agents/skills/canonical-source-vs-workflow-repo-audit/scripts/audit-rep
 Output:
 
 ```text
-REPO_ROOT: /Users/dk/lab-data/Account-Ledger-Server
+REPO_ROOT: <repo-root>
 VERDICT:   workflow
 SIGNALS:   {'workflow': 5, 'canonical': 4, 'mirror': 0}
   - 1/1 workflow files match backup/mirror/sync pattern
@@ -116,9 +136,11 @@ otherwise the verdict is `unknown`.
 ### Tie-breaker note
 
 A repo can score positive in BOTH `workflow` AND `canonical` (e.g. the
-Account-Ledger-Server case: it has 1 backup workflow AND a small
+workflow-repository example: it has 1 backup workflow AND a small
 `http_API/` source dir for production sync purposes). The script picks
-the highest score; tied scores fall back to `unknown`. **Always present
+the highest score; equal maxima currently use the score-table order
+(`workflow`, `canonical`, `mirror`). Do not mistake that tie-break for
+conclusive evidence. **Always present
 the verdict + signals to the user — the human breaks ambiguous ties.**
 
 ## Composition with Other Skills
@@ -140,7 +162,6 @@ explicitly requires the audit before any PHP modernization edit.
 
 ## Related Skills
 
-- [`git-atomic-commit-construction`](../git-atomic-commit-construction/SKILL.md) — Step 0d invokes this audit.
 - [`git-personal-sandbox-remote`](../git-personal-sandbox-remote/SKILL.md) — distinct concern: routing personal-only
 commits.
 
@@ -149,3 +170,25 @@ commits.
 | Script | Tier | Purpose |
 | --- | --- | --- |
 | [`scripts/audit-repo-role.py`](scripts/audit-repo-role.py) | Deterministic | Classify enclosing repo via weighted-signal scoring. |
+| [`scripts/test-audit-repo-role.py`](scripts/test-audit-repo-role.py) | Tier 1 Python | Regression checks for file/directory parity and invalid-input behavior. |
+
+## Verification
+
+Set `TEST_ARTIFACT_DIR` to an existing session-scratch directory, then run:
+
+```bash
+python3 scripts/test-audit-repo-role.py
+```
+
+Fixtures stay in that directory. The suite covers absolute and relative files,
+directory defaults, spaces, nested repositories, missing/broken paths, non-Git inputs,
+and worktree preservation. The separate
+[manifest template](scripts/repo-role-manifest.json.template) supplies the fixture contents.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Traceability
+
+See [TRACEABILITY.md](TRACEABILITY.md).

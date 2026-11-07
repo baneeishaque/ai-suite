@@ -31,7 +31,10 @@ Exit codes:
     0  verdict reported (any classification)
     2  path is not inside a Git working tree
 """
-import argparse, json, os, subprocess, sys
+import argparse
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 SOURCE_DIRS = ("src","lib","http_API","app","kotlin","java","pkg","cmd","internal")

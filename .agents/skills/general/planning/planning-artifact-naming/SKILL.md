@@ -104,6 +104,11 @@ policy. Do not reproduce the path-construction logic in another script.
 - `session-id` is the full runtime-verified ID without the `ses_` prefix.
   Resolve and verify it through `opencode-current-session-id` before passing it;
   the docs resolver does not replace the pending-marker or phrase-verification gate.
+  For versioned artifacts the filename embeds `_v<version>_<time>.<ext>`; the
+  session-id segment must be the full runtime-verified ID without the `ses_`
+  prefix, verified via `opencode-current-session-id` (pending-marker /
+  phrase verification), and passed into the docs resolver — never derived from
+  remembered or deduced values.
 - `date` is a `YYYY-MM-DD` directory; `purpose` and `artifact` are lowercase-kebab
   values. Purpose is an explicit task label, not an inferred session title.
 - Supply `--version` for versioned artifact types; omit it for live task files.

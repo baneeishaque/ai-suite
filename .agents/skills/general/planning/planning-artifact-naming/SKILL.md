@@ -137,6 +137,7 @@ retain earlier versions, and use `planning-artifact-lifecycle` for retirement.
 | Artifact Type | Versioned? | Purpose |
 | :--- | :--- | :--- |
 | `task` | No (live checklist) | Track progress of the current session's objectives |
+| `task-<topic>` | No (live checklist) | Topic-scoped variant used when one session has MULTIPLE independent objectives/checklists; `<topic>` is a kebab-case slug disambiguating the task (mirrors `implementation-plan-<topic>`) |
 | `implementation-plan` | Yes | Detailed step-by-step plan for executing a goal |
 | `implementation-plan-<topic>` | Yes | Topic-scoped variant used when one session produces MULTIPLE independent implementation plans; `<topic>` is a kebab-case slug disambiguating the plan (e.g. `implementation-plan-acers-audit-history`). The version counter is independent per topic |
 | `commit-preview` | Yes | Preview of commits to be executed |

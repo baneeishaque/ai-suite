@@ -21,6 +21,8 @@ loading `SKILL.md` — this bridge is intentionally non-actionable.
 
 ## Cross-References
 
+- [`scratch-artifact-naming`](../../file/scratch-artifact-naming/SKILL.md) — hosts the existing docs resolver;
+  this naming skill owns the planning-layout policy.
 - [`skill-factory`](../../../skill-factory/SKILL.md) — Consumes this
   convention when generating planning artifacts for new skills.
 - [`markdown-generation`](../../../markdown-generation/SKILL.md) — Markdown

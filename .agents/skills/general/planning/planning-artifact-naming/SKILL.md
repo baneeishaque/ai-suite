@@ -202,3 +202,7 @@ session-name-slug) and differ only in artifact-type and version.
 ## 5. Traceability
 
 See [TRACEABILITY.md](TRACEABILITY.md).
+
+## 6. Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).

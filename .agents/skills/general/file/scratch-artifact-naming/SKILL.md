@@ -132,6 +132,9 @@ Exit codes:
 
 ## Composition by Higher-Level Skills
 
+- [`planning-artifact-naming`](../../planning/planning-artifact-naming/SKILL.md) — delegates the explicitly selected
+  nested docs profile to `scripts/resolve-docs-path.py --repo --purpose --artifact`; receives an absolute filename.
+
 - [`git-ref-artifact-extract`](../../../git-ref-artifact-extract/SKILL.md) —
   composer; captures a file at any git ref into session-scoped scratch by calling
   this script with `--ref-name --ref-sha`.
@@ -148,3 +151,23 @@ Exit codes:
   provides the git-ref plumbing a composer may need before calling this skill.
 - [`opencode-session-path-attribution`](../../../opencode/opencode-session-path-attribution/SKILL.md)
   — related — evidence cards (attribution results) land in session-scoped scratch.
+
+## Hosted Docs Resolver
+
+This folder also hosts [scripts/resolve-docs-path.py](scripts/resolve-docs-path.py).
+Planning layout policy belongs to
+[`planning-artifact-naming` §1.4](../../planning/planning-artifact-naming/SKILL.md#14-resolver-backed-nested-profile).
+Keep that helper at its existing path; do not duplicate it or infer its profile from the scratch stem convention.
+
+The docs helper returns a complete filename with the requested extension; the scratch helper returns a stem.
+It accepts `--repo`, `--purpose`, `--artifact`, optional `--version`, `--ext`, a verified `--session-id`,
+`--date`, `--timestamp`, `--timezone`, and `--no-mkdir`. Runtime session verification precedes path resolution.
+Use `--no-mkdir` for read-only profile checks. All field rules and the timezone default are documented by the owner.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## Traceability
+
+See [TRACEABILITY.md](TRACEABILITY.md).

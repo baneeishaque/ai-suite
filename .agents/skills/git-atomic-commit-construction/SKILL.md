@@ -362,8 +362,11 @@ fixes in consumer files MUST be consolidated into a single commit.
 #### 2d — The Commit Preview (Mandatory Verbose Display)
 
 Present the proposed "Arranged Commits" using a structured format with
-**maximum detail**. For files with mixed concerns requiring hunk-based
-staging, the preview **MUST** include the specific git hunks.
+**maximum detail**. EVERY commit preview MUST include a `Hunks/Preview`
+block built from real `git diff` output. Whole-file commits show the
+complete file diff; mixed-concern commits show only the staged hunks. An
+applied-but-excluded patch MUST also carry an informational anchor preview
+marked "never staged".
 
 **Mandates for writing the preview:**
 
@@ -401,9 +404,13 @@ staging, the preview **MUST** include the specific git hunks.
    convention applies: then place it per
    [`planning-artifact-naming`](../general/planning/planning-artifact-naming/SKILL.md)
    and the user's artifact-placement preference (e.g. `docs/`), and substitute
-   that path for `scratch/commit-preview.md` in §2d.1/§2d.2. The user can then
-   refer to specific line numbers when giving feedback. Present the summary in
-   the conversation as well.
+   that path for `scratch/commit-preview.md` in §2d.1/§2d.2. For versioned
+   planning artifacts such as `commit-preview`, the planning-artifact naming
+   profile (docs resolver-backed nested) is the default placement; the scratch
+   path is the fallback only when no planning layout applies and the user has
+   not expressed a docs placement preference. The user can then refer to
+   specific line numbers when giving feedback. Present the summary in the
+   conversation as well.
 
 Template:
 

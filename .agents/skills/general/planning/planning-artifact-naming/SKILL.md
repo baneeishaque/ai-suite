@@ -201,6 +201,4 @@ session-name-slug) and differ only in artifact-type and version.
 
 ## 5. Traceability
 
-- Created: 2026-07-03
-- Source: OpenCode config versioning & preservation workflow. The convention was refined iteratively: underscore
-  separators, omission of `ses_` prefix, date prefix for task files, independent versioning for artifact types.
+See [TRACEABILITY.md](TRACEABILITY.md).

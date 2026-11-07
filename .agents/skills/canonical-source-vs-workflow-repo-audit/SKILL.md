@@ -49,6 +49,7 @@ the judgement about whether a particular edit belongs in that repository.
 - Missing paths, broken symlinks, unsupported path types, and paths outside Git return exit 2 with stderr diagnostics.
   The script does not create the requested path.
 - Exit 0 reports `root`, `verdict`, `signals`, and `notes`; `--json` emits that object.
+  Repositories with no role signals report `unknown` rather than failing.
 - Path normalization does not change the scoring weights or edit-approval policy.
 
 ## When to Apply
@@ -182,7 +183,7 @@ python3 scripts/test-audit-repo-role.py
 
 Fixtures stay in that directory. The suite covers absolute and relative files,
 directory defaults, spaces, nested repositories, missing/broken paths, non-Git inputs,
-and worktree preservation. The separate
+zero-signal repositories, and worktree preservation. The separate
 [manifest template](scripts/repo-role-manifest.json.template) supplies the fixture contents.
 
 ## Changelog

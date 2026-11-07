@@ -127,7 +127,7 @@ def main():
             break
 
     verdict = max(signals, key=signals.get) if any(signals.values()) else "unknown"
-    if signals[verdict] < 2:
+    if verdict == "unknown" or signals[verdict] < 2:
         verdict = "unknown"
 
     result = {"root": str(root), "verdict": verdict, "signals": signals, "notes": notes}

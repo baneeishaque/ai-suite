@@ -77,6 +77,16 @@ class RepoRoleTests(unittest.TestCase):
         self.assertIn("not an existing file or directory", result.stderr)
         self.assertFalse(missing.exists())
 
+    def test_file_in_repository_without_signals_reports_unknown(self):
+        repo = self.root / "unclassified repository"
+        subprocess.run(["git", "init", "--quiet", str(repo)], check=True, capture_output=True, timeout=15)
+        file = repo / "notes.txt"
+        file.write_bytes((HERE / "repo-role-manifest.json.template").read_bytes())
+        from_file = self.verdict(self.run_audit(file))
+        self.assertEqual(from_file, self.verdict(self.run_audit(repo)))
+        self.assertEqual(from_file["verdict"], "unknown")
+        self.assertEqual(from_file["signals"], {"workflow": 0, "canonical": 0, "mirror": 0})
+
     def test_non_repository_directory_and_file_are_rejected(self):
         # The task scratch directory may itself be inside the host repository.
         # A ceiling bounds discovery to this fixture without modifying Git config.

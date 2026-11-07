@@ -236,6 +236,9 @@ When the user requests a durable behavior change, record it here or in the relev
 - Git stash: never run `git stash` / `git stash pop` / `git stash apply` (or any stash mutation)
   without explicit user confirmation — stash operations can hide or lose working-tree changes owned
   by other agent sessions. Use `git show HEAD:<path>` or a single-file checkout for baselines instead.
+- Repowise-generated metadata: the latest generation wins. With explicit user authorization, release a
+  completed safety snapshot when all scoped differences are confined to the marked Repowise-generated
+  block and all non-generated content is identical. Preserve the latest generated output.
 - File writes: use the `Write` tool for creating files and the `Edit` tool for modifying files;
   never use `cat`/heredoc/python-inline via Bash to write or modify deliverables (heredocs are
   only for feeding scripts).

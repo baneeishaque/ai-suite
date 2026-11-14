@@ -11,6 +11,10 @@ failover options.
 - `README.md`: the comprehensive incident report, root-cause analysis, configuration audit, gateway options,
   remediation, and validation criteria.
 - `sources.md`: the primary public citations, verification scope, and qualifiers.
+- `rate-limiting-handling-guide.md`: the beginner-oriented operational guide (rate-limit types, plugin options,
+  configuration patterns, and recovery steps).
+- `rate-limiting-implementation-plan.md`: the step-by-step implementation plan for applying the guide's
+  recommendations and verifying them.
 - This file owns the folder's evidence and documentation contracts.
 
 ## Local Contracts
@@ -40,4 +44,4 @@ failover options.
 
 ## Child DOX Index
 
-No narrower contracts. This file owns the two documents in this folder.
+No narrower contracts. This file owns the four documents in this folder.

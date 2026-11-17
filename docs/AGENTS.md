@@ -83,6 +83,12 @@ Own local documentation, research reports, and planning artifacts under `docs/`.
   owns the VS Code editor-tab compare extensions research, including the comparison of
   in4margaret.compareit, moshfeu.diff-merge, DavidKol.fastcompare, and outofsync42.select-compare-tabs,
   with maintainer evidence and candidate recommendations.
+- [`research/vscode/markdown-preview-anchor-navigation/AGENTS.md`][markdown-anchor-dox]
+  owns exact cross-file HTML-ID Markdown preview navigation research, maintainer and source evidence,
+  renderer/fork comparisons, synthetic fixtures, and the preview acceptance matrix.
+- [`research/android/avd-multiple-instances/AGENTS.md`][avd-multiple-instances-dox]
+  owns Android Emulator same-AVD multi-instance research, the `-read-only` flag contract,
+  maintainer/community responses, prior implementations, and usage caveats.
 - [`research/code-review/github-pr-audit-signals/AGENTS.md`][pr-audit-signals-dox]
   owns ECC Tools audit meanings, GitHub check permissions, Sonar/SemanticDiff/CodeRabbit comment lifecycle,
   and the distinction between workflow runs, jobs, checks, and coverage evidence.
@@ -99,16 +105,32 @@ Own local documentation, research reports, and planning artifacts under `docs/`.
   and portable sanitized audit evidence.
 - [`research/opencode/providers/nvidia-nim/AGENTS.md`][nvidia-nim-dox]
   owns NVIDIA NIM API/catalog research, hosted endpoint metadata, minimal cache-gap supplements, and portable evidence.
+- [`research/opencode/providers/kenari/AGENTS.md`][kenari-dox]
+  owns Kenari live catalog/pricing research, cache-gap supplements, free-key scope, and portable evidence.
+- [`research/opencode/providers/100milionseek/AGENTS.md`][millionseek-dox]
+  owns 100milionseek free quota/status research, OpenCode integration, and portable verification evidence.
 - [`guides/opencode/AGENTS.md`][opencode-guides-dox]
   owns local OpenCode setup guides, provider operations, and dated investigations.
+- [`research/assistant-command-autoapprove/AGENTS.md`][autoapprove-research-dox]
+  owns the gist inventory, path-normalization rules, per-line safety classification, the per-assistant
+  ecosystem survey, and the cross-cutting prior-art survey for onboarding commands into assistant
+  auto-approve allowlists.
+- [`guides/assistant-command-autoapprove/AGENTS.md`][autoapprove-guides-dox]
+  owns the per-assistant procedure for auto-approving the SAFE + SAFE-IF-PIPED command families.
 
 [autofill-dox]: research/browser-automation/chrome-password-autofill/AGENTS.md
 [refuseless-dox]: research/browser-automation/cloudflare-refuseless/AGENTS.md
 [experiential-research-dox]: research/opencode/providers/experiential-labs/AGENTS.md
 [bailu-research-dox]: research/opencode/providers/bailu-ai/AGENTS.md
 [nvidia-nim-dox]: research/opencode/providers/nvidia-nim/AGENTS.md
+[kenari-dox]: research/opencode/providers/kenari/AGENTS.md
+[millionseek-dox]: research/opencode/providers/100milionseek/AGENTS.md
 [opencode-guides-dox]: guides/opencode/AGENTS.md
 [coderabbit-bot-dox]: research/code-review/coderabbit-bot-pull-requests/AGENTS.md
 [pr-audit-signals-dox]: research/code-review/github-pr-audit-signals/AGENTS.md
 [settings-comparison-dox]: research/development-environments/code-server-vs-vscode-insiders/AGENTS.md
 [vscode-tab-compare-dox]: research/vscode/editor-tab-compare-extensions/AGENTS.md
+[markdown-anchor-dox]: research/vscode/markdown-preview-anchor-navigation/AGENTS.md
+[avd-multiple-instances-dox]: research/android/avd-multiple-instances/AGENTS.md
+[autoapprove-research-dox]: research/assistant-command-autoapprove/AGENTS.md
+[autoapprove-guides-dox]: guides/assistant-command-autoapprove/AGENTS.md

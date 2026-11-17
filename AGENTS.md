@@ -219,6 +219,15 @@ When the user requests a durable behavior change, record it here or in the relev
 
 - MCP setup: always prefer remote (HTTP) MCP servers over local (stdio) ones when the provider offers a remote endpoint.
 - MCP setup: keep MCP entries in `opencode.json` as `enabled: false` by default; toggle on per task.
+- Bailu AI/OpenCode model picker: show only verified free, properly working OpenCode-compatible chat models.
+  Give confirmed-free display names exactly one `" (free)"` suffix, independently of zero/missing cost estimates;
+  preserve exact model IDs. Blacklist payment/insufficient-balance, non-chat, down, access-blocked, improperly
+  working, and unresolved/unverified entries. Do not pay, top up, or use paid fallback to enable them.
+  Use an API-provided model name when available; otherwise use the exact model ID as the display name before
+  applying the free suffix. Do not invent or generate model names.
+  Retain provider-specific Bailu research under `docs/research/opencode/providers/bailu-ai/` with portable,
+  sanitized evidence. For OpenCode-only input-length failures, retry from a verified blank folder under `lab-data`;
+  record repo/global skill-context effects separately from direct curl results before a final model verdict.
 - Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
 - Browser automation while the user is using the computer must not disturb the screen. Keep JXA actions in verified
   background tabs/windows without activation or focus changes. Playwright must use system Chrome headlessly with an

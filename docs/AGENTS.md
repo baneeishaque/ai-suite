@@ -94,12 +94,16 @@ Own local documentation, research reports, and planning artifacts under `docs/`.
   owns Refuseless access research, Cloudflare tooling comparisons, maintainer evidence, and new-account onboarding gates.
 - [`research/opencode/providers/experiential-labs/AGENTS.md`][experiential-research-dox]
   owns Experiential Labs catalog/access/billing research and the durable evidence bundle.
+- [`research/opencode/providers/bailu-ai/AGENTS.md`][bailu-research-dox]
+  owns Bailu exact-ID catalogs, verified-free visibility/naming, OpenCode compatibility, input-length context,
+  and portable sanitized audit evidence.
 - [`guides/opencode/AGENTS.md`][opencode-guides-dox]
   owns local OpenCode setup guides, provider operations, and dated investigations.
 
 [autofill-dox]: research/browser-automation/chrome-password-autofill/AGENTS.md
 [refuseless-dox]: research/browser-automation/cloudflare-refuseless/AGENTS.md
 [experiential-research-dox]: research/opencode/providers/experiential-labs/AGENTS.md
+[bailu-research-dox]: research/opencode/providers/bailu-ai/AGENTS.md
 [opencode-guides-dox]: guides/opencode/AGENTS.md
 [coderabbit-bot-dox]: research/code-review/coderabbit-bot-pull-requests/AGENTS.md
 [pr-audit-signals-dox]: research/code-review/github-pr-audit-signals/AGENTS.md

@@ -228,6 +228,9 @@ When the user requests a durable behavior change, record it here or in the relev
   Retain provider-specific Bailu research under `docs/research/opencode/providers/bailu-ai/` with portable,
   sanitized evidence. For OpenCode-only input-length failures, retry from a verified blank folder under `lab-data`;
   record repo/global skill-context effects separately from direct curl results before a final model verdict.
+- NVIDIA NIM/OpenCode catalogs: supplement only exact model IDs missing from the current NVIDIA models cache;
+  preserve cached metadata and unrelated configuration. Retire only unchanged generated supplement entries when
+  the cache later includes them, using explicit ownership evidence. Retain current API/schema research and provenance.
 - Node-based tooling: always prefer mise-managed Node (`mise x node -- …`, mise `npm:` backend) over system / Homebrew Node.
 - Browser automation while the user is using the computer must not disturb the screen. Keep JXA actions in verified
   background tabs/windows without activation or focus changes. Playwright must use system Chrome headlessly with an

@@ -97,6 +97,8 @@ Own local documentation, research reports, and planning artifacts under `docs/`.
 - [`research/opencode/providers/bailu-ai/AGENTS.md`][bailu-research-dox]
   owns Bailu exact-ID catalogs, verified-free visibility/naming, OpenCode compatibility, input-length context,
   and portable sanitized audit evidence.
+- [`research/opencode/providers/nvidia-nim/AGENTS.md`][nvidia-nim-dox]
+  owns NVIDIA NIM API/catalog research, hosted endpoint metadata, minimal cache-gap supplements, and portable evidence.
 - [`guides/opencode/AGENTS.md`][opencode-guides-dox]
   owns local OpenCode setup guides, provider operations, and dated investigations.
 
@@ -104,6 +106,7 @@ Own local documentation, research reports, and planning artifacts under `docs/`.
 [refuseless-dox]: research/browser-automation/cloudflare-refuseless/AGENTS.md
 [experiential-research-dox]: research/opencode/providers/experiential-labs/AGENTS.md
 [bailu-research-dox]: research/opencode/providers/bailu-ai/AGENTS.md
+[nvidia-nim-dox]: research/opencode/providers/nvidia-nim/AGENTS.md
 [opencode-guides-dox]: guides/opencode/AGENTS.md
 [coderabbit-bot-dox]: research/code-review/coderabbit-bot-pull-requests/AGENTS.md
 [pr-audit-signals-dox]: research/code-review/github-pr-audit-signals/AGENTS.md
